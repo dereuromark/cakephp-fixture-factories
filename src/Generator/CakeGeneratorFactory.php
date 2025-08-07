@@ -94,6 +94,7 @@ class CakeGeneratorFactory
             );
         }
 
+        /** @var \CakephpFixtureFactories\Generator\GeneratorInterface */
         return new $adapterClass($locale);
     }
 

@@ -78,7 +78,7 @@ class DummyGeneratorAdapter implements GeneratorInterface
             return $this->__call($property, []);
         }
 
-        throw new BadMethodCallException("Property or method '$property' not found");
+        throw new BadMethodCallException("Property or method `$property` not found");
     }
 
     /**
@@ -86,31 +86,32 @@ class DummyGeneratorAdapter implements GeneratorInterface
      */
     public function __call(string $name, array $arguments): mixed
     {
-        if (!method_exists($this->generator, $name)) {
-            throw new BadMethodCallException("Method '$name' not found");
+        // DummyGenerator uses __call for all its methods, so we try to call it directly
+        try {
+            if ($this->isUnique) {
+                $maxRetries = 10000;
+                $retries = 0;
+
+                do {
+                    $value = $this->generator->$name(...$arguments);
+                    $key = $name . '::' . serialize($value);
+
+                    if (!isset($this->uniqueValues[$key])) {
+                        $this->uniqueValues[$key] = true;
+
+                        return $value;
+                    }
+
+                    $retries++;
+                } while ($retries < $maxRetries);
+
+                throw new OverflowException("Unable to generate unique value for '$name' after $maxRetries attempts");
+            }
+
+            return $this->generator->$name(...$arguments);
+        } catch (BadMethodCallException $e) {
+            throw new BadMethodCallException("Method `$name` not found");
         }
-
-        if ($this->isUnique) {
-            $maxRetries = 10000;
-            $retries = 0;
-
-            do {
-                $value = $this->generator->$name(...$arguments);
-                $key = $name . '::' . serialize($value);
-
-                if (!isset($this->uniqueValues[$key])) {
-                    $this->uniqueValues[$key] = true;
-
-                    return $value;
-                }
-
-                $retries++;
-            } while ($retries < $maxRetries);
-
-            throw new OverflowException("Unable to generate unique value for '$name' after $maxRetries attempts");
-        }
-
-        return $this->generator->$name(...$arguments);
     }
 
     /**

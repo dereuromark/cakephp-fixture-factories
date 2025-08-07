@@ -50,7 +50,7 @@ class TestCaseWithFixtureBaking extends TestCase
         $this->FactoryCommand = new BakeFixtureFactoryCommand();
     }
 
-    private function dropTestFactories()
+    private function dropTestFactories(): void
     {
         $factoryFolder = TESTS . 'Factory';
         array_map('unlink', glob("$factoryFolder/*.*"));
@@ -84,7 +84,7 @@ class TestCaseWithFixtureBaking extends TestCase
         $test->bake([], ['plugin' => 'TestPlugin', 'all' => true, 'methods' => true,]);
     }
 
-    protected function bake(array $args = [], array $options = [], array $argNames = ['model'])
+    protected function bake(array $args = [], array $options = [], array $argNames = ['model']): void
     {
         $options['force'] = $options['force'] ?? true;
         $options['quiet'] = $options['quiet'] ?? true;

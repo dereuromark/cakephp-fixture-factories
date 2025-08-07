@@ -12,11 +12,11 @@ declare(strict_types=1);
  * @license       http://www.opensource.org/licenses/mit-license.php MIT License
  */
 
-use Migrations\AbstractMigration;
+use Migrations\BaseMigration;
 
-class InitialMigration extends AbstractMigration
+class InitialMigration extends BaseMigration
 {
-    public function up()
+    public function up(): void
     {
         $this->table('authors', ['id' => false])
             ->addColumn('id', 'integer', [
@@ -191,7 +191,7 @@ class InitialMigration extends AbstractMigration
             ->save();
     }
 
-    public function down()
+    public function down(): void
     {
         $this->table('articles_authors')->drop();
         $this->table('articles')->drop();

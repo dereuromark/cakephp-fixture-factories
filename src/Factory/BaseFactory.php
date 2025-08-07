@@ -41,7 +41,7 @@ abstract class BaseFactory
     /**
      * @var \CakephpFixtureFactories\Generator\GeneratorInterface|null
      */
-    private static ?GeneratorInterface $faker = null;
+    private static ?GeneratorInterface $generator = null;
     /**
      * @deprecated
      * @var bool
@@ -207,15 +207,26 @@ abstract class BaseFactory
      *
      * @return \CakephpFixtureFactories\Generator\GeneratorInterface
      */
-    public function getFaker(): GeneratorInterface
+    public function getGenerator(): GeneratorInterface
     {
-        if (is_null(self::$faker)) {
+        if (is_null(self::$generator)) {
             $locale = I18n::getLocale();
-            self::$faker = CakeGeneratorFactory::create($locale);
-            self::$faker->seed(1234);
+            self::$generator = CakeGeneratorFactory::create($locale);
+            self::$generator->seed(1234);
         }
 
-        return self::$faker;
+        return self::$generator;
+    }
+
+    /**
+     * Get the generator instance, using the locale from I18n
+     *
+     * @return \CakephpFixtureFactories\Generator\GeneratorInterface
+     * @deprecated 3.1.0 Use getGenerator() instead. Will be removed in v4.0
+     */
+    public function getFaker(): GeneratorInterface
+    {
+        return $this->getGenerator();
     }
 
     /**
@@ -228,8 +239,8 @@ abstract class BaseFactory
     public function setGenerator(string $type, ?string $locale = null)
     {
         $locale = $locale ?? I18n::getLocale();
-        self::$faker = CakeGeneratorFactory::create($locale, $type);
-        self::$faker->seed(1234);
+        self::$generator = CakeGeneratorFactory::create($locale, $type);
+        self::$generator->seed(1234);
 
         return $this;
     }
@@ -674,6 +685,34 @@ abstract class BaseFactory
         Closure|string|null $cacheKey = null,
         mixed ...$args,
     ): EntityInterface {
+        // Handle backward compatibility for options array
+        if (is_array($finder)) {
+            $options = $finder;
+            $finder = 'all';
+
+            // Convert common options to named parameters
+            $table = (new static())->getTable();
+
+            // Extract contain option if present
+            if (isset($options['contain'])) {
+                // Use named parameters for contain
+                if (empty($args)) {
+                    return $table->get($primaryKey, finder: $finder, contain: $options['contain'], cache: $cache, cacheKey: $cacheKey);
+                } else {
+                    // If there are additional args, we need to use the old style
+                    return $table->get($primaryKey, $finder, $cache, $cacheKey, ...$options, ...$args);
+                }
+            }
+
+            // For other options, pass them through args (this will still trigger deprecation)
+            return $table->get($primaryKey, $finder, $cache, $cacheKey, ...$options, ...$args);
+        }
+
+        // Use named parameters for cleaner calls
+        if (empty($args)) {
+            return (new static())->getTable()->get($primaryKey, finder: $finder, cache: $cache, cacheKey: $cacheKey);
+        }
+
         return (new static())->getTable()->get($primaryKey, $finder, $cache, $cacheKey, ...$args);
     }
 

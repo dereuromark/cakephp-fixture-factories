@@ -19,9 +19,9 @@ $article = ArticleFactory::make()->withAuthors(10)->persist();
 
 If we wish to randomly populate the field `biography` of the 10 authors of our article, with 10 different biographies:
 ```php
-$article = ArticleFactory::make()->withAuthors(function(AuthorFactory $factory, Generator $faker) {
+$article = ArticleFactory::make()->withAuthors(function(AuthorFactory $factory, GeneratorInterface $generator) {
     return [
-        'biography' => $faker->realText()
+        'biography' => $generator->realText()
     ];
 }, 10)->persist();
 ```

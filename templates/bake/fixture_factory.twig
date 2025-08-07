@@ -39,7 +39,7 @@ class {{ factory }} extends CakephpBaseFactory
      */
     protected function setDefaultTemplate(): void
     {
-        $this->setDefaultData(function (GeneratorInterface $faker) {
+        $this->setDefaultData(function (GeneratorInterface $generator) {
             return [
                 {{ FactoryBake.defaultData(defaultData)|raw }}
             ];

@@ -14,7 +14,7 @@ declare(strict_types=1);
 namespace CakephpFixtureFactories\Test\Factory;
 
 use CakephpFixtureFactories\Factory\BaseFactory;
-use Faker\Generator;
+use CakephpFixtureFactories\Generator\GeneratorInterface;
 use TestApp\Model\Entity\Article;
 
 /**
@@ -50,9 +50,9 @@ class ArticleFactory extends BaseFactory
      */
     protected function setDefaultTemplate(): void
     {
-        $this->setDefaultData(function (Generator $faker) {
+        $this->setDefaultData(function (GeneratorInterface $generator) {
             return [
-                'title' => $faker->text(120),
+                'title' => $generator->text(120),
             ];
         })
         ->withAuthors(null, self::DEFAULT_NUMBER_OF_AUTHORS);
@@ -107,7 +107,7 @@ class ArticleFactory extends BaseFactory
      */
     public function setJobTitle()
     {
-        return $this->setField('title', $this->getFaker()->jobTitle());
+        return $this->setField('title', $this->getGenerator()->jobTitle());
     }
 
     public function withHiddenBiography(string $text)

@@ -14,7 +14,7 @@ declare(strict_types=1);
 namespace CakephpFixtureFactories\Test\Factory;
 
 use CakephpFixtureFactories\Factory\BaseFactory;
-use Faker\Generator;
+use CakephpFixtureFactories\Generator\GeneratorInterface;
 
 /**
  * Class CustomerFactory
@@ -32,9 +32,9 @@ class CustomerFactory extends BaseFactory
 
     protected function setDefaultTemplate(): void
     {
-        $this->setDefaultData(function (Generator $faker) {
+        $this->setDefaultData(function (GeneratorInterface $generator) {
             return [
-                'name' => $faker->lastName,
+                'name' => $generator->lastName(),
             ];
         });
     }

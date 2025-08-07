@@ -18,6 +18,7 @@ use Cake\ORM\TableRegistry;
 use Cake\TestSuite\TestCase;
 use Cake\Utility\Inflector;
 use CakephpFixtureFactories\Factory\BaseFactory;
+use CakephpFixtureFactories\Generator\GeneratorInterface;
 use CakephpFixtureFactories\Test\Factory\AddressFactory;
 use CakephpFixtureFactories\Test\Factory\ArticleFactory;
 use CakephpFixtureFactories\Test\Factory\AuthorFactory;
@@ -26,7 +27,6 @@ use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpFixtureFactories\Test\Factory\CustomerFactory;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
-use Faker\Generator;
 use TestApp\Model\Entity\Address;
 use TestApp\Model\Entity\Article;
 use TestApp\Model\Entity\Author;
@@ -73,7 +73,7 @@ class BaseFactoryTest extends TestCase
     public function testGetEntityWithCallbackReturningArray()
     {
         $title = 'blah';
-        $entity = ArticleFactory::make(function (ArticleFactory $factory, Generator $faker) use ($title) {
+        $entity = ArticleFactory::make(function (ArticleFactory $factory, GeneratorInterface $generator) use ($title) {
             return compact('title');
         })->getEntity();
 
@@ -98,9 +98,9 @@ class BaseFactoryTest extends TestCase
     public function testGetEntitiesWithCallbackReturningArray()
     {
         $n = 3;
-        $entities = ArticleFactory::make(function (ArticleFactory $factory, Generator $faker) {
+        $entities = ArticleFactory::make(function (ArticleFactory $factory, GeneratorInterface $generator) {
             return [
-                'title' => $faker->word,
+                'title' => $generator->word(),
             ];
         }, $n)->getEntities();
 
@@ -141,9 +141,9 @@ class BaseFactoryTest extends TestCase
     public function testMakeMultipleWithArray()
     {
         $n = 3;
-        $entities = ArticleFactory::make(function (ArticleFactory $factory, Generator $faker) {
+        $entities = ArticleFactory::make(function (ArticleFactory $factory, GeneratorInterface $generator) {
             return [
-                'title' => $faker->sentence,
+                'title' => $generator->sentence(),
             ];
         }, $n)->persist();
 
@@ -204,9 +204,9 @@ class BaseFactoryTest extends TestCase
         $articles = ArticleFactory::make([
             'title' => 'test title',
         ], $n)
-            ->withAuthors(function (AuthorFactory $factory, Generator $faker) {
+            ->withAuthors(function (AuthorFactory $factory, GeneratorInterface $generator) {
                 return [
-                    'name' => $faker->lastName,
+                    'name' => $generator->lastName(),
                 ];
             }, $m)
             ->persist();
@@ -226,9 +226,9 @@ class BaseFactoryTest extends TestCase
 
     public function testMakeSingleWithArray()
     {
-        $article = ArticleFactory::make(function (ArticleFactory $factory, Generator $faker) {
+        $article = ArticleFactory::make(function (ArticleFactory $factory, GeneratorInterface $generator) {
             return [
-                'title' => $faker->sentence,
+                'title' => $generator->sentence(),
             ];
         })->persist();
 
@@ -237,15 +237,15 @@ class BaseFactoryTest extends TestCase
 
     public function testMakeSingleWithArrayWithSubFactory()
     {
-        $city = CityFactory::make(function (CityFactory $factory, Generator $faker) {
-            $factory->withCountry(function (CountryFactory $factory, Generator $faker) {
+        $city = CityFactory::make(function (CityFactory $factory, GeneratorInterface $generator) {
+            $factory->withCountry(function (CountryFactory $factory, GeneratorInterface $generator) {
                 return [
-                    'name' => $faker->country,
+                    'name' => $generator->country(),
                 ];
             });
 
             return [
-                'name' => $faker->city,
+                'name' => $generator->city(),
             ];
         })->persist();
 
@@ -260,14 +260,14 @@ class BaseFactoryTest extends TestCase
         $n = 3;
         $m = 2;
         $articles = ArticleFactory::make(
-            function (ArticleFactory $factory, Generator $faker) {
-                return ['title' => $faker->sentence];
+            function (ArticleFactory $factory, GeneratorInterface $generator) {
+                return ['title' => $generator->sentence()];
             },
             $n,
         )
         ->withAuthors(
-            function (AuthorFactory $factory, Generator $faker) {
-                return ['name' => $faker->lastName];
+            function (AuthorFactory $factory, GeneratorInterface $generator) {
+                return ['name' => $generator->lastName()];
             },
             $m,
         )
@@ -289,27 +289,27 @@ class BaseFactoryTest extends TestCase
         $n = 3;
         $m = 2;
         $articles = ArticleFactory::make(['title' => 'test title'], $n)
-            ->withAuthors(function (AuthorFactory $factory, Generator $faker) {
-                $factory->withAddress(function (AddressFactory $factory, Generator $faker) {
-                    $factory->withCity(function (CityFactory $factory, Generator $faker) {
-                        $factory->withCountry(function (CountryFactory $factory, Generator $faker) {
+            ->withAuthors(function (AuthorFactory $factory, GeneratorInterface $generator) {
+                $factory->withAddress(function (AddressFactory $factory, GeneratorInterface $generator) {
+                    $factory->withCity(function (CityFactory $factory, GeneratorInterface $generator) {
+                        $factory->withCountry(function (CountryFactory $factory, GeneratorInterface $generator) {
                             return [
-                                'name' => $faker->country,
+                                'name' => $generator->country(),
                             ];
                         });
 
                         return [
-                            'name' => $faker->city,
+                            'name' => $generator->city(),
                         ];
                     });
 
                     return [
-                        'street' => $faker->streetName,
+                        'street' => $generator->streetName(),
                     ];
                 });
 
                 return [
-                    'name' => $faker->lastName,
+                    'name' => $generator->lastName(),
                 ];
             }, $m)
             ->persist();
@@ -332,17 +332,17 @@ class BaseFactoryTest extends TestCase
     public function testWithOneGetEntityTwoLevel()
     {
         $author = AuthorFactory::make(['name' => 'test author'])
-            ->withAddress(function (AddressFactory $factory, Generator $faker) {
-                $factory->withCity(function (CityFactory $factory, Generator $faker) {
+            ->withAddress(function (AddressFactory $factory, GeneratorInterface $generator) {
+                $factory->withCity(function (CityFactory $factory, GeneratorInterface $generator) {
                     $factory->withCountry(['name' => 'Wonderland']);
 
                     return [
-                        'name' => $faker->city,
+                        'name' => $generator->city(),
                     ];
                 });
 
                 return [
-                    'street' => $faker->streetName,
+                    'street' => $generator->streetName(),
                 ];
             })
             ->getEntity();
@@ -458,15 +458,15 @@ class BaseFactoryTest extends TestCase
 
     public function testMakeHasOneAssociationFromCallableThenPersist()
     {
-        $entity = AuthorFactory::make(function (AuthorFactory $factory, Generator $faker) {
-            $factory->withAddress(function (AddressFactory $factory, Generator $faker) {
+        $entity = AuthorFactory::make(function (AuthorFactory $factory, GeneratorInterface $generator) {
+            $factory->withAddress(function (AddressFactory $factory, GeneratorInterface $generator) {
                 return [
-                    'street' => $faker->streetAddress,
+                    'street' => $generator->streetAddress(),
                 ];
             });
 
             return [
-                'name' => $faker->lastName,
+                'name' => $generator->lastName(),
             ];
         })->persist();
 
@@ -478,11 +478,11 @@ class BaseFactoryTest extends TestCase
 
     public function testMakeHasOneAssociationFromCallableWithAssociatedDataInSingleArrayThenPersist()
     {
-        $author = AuthorFactory::make(function (AuthorFactory $factory, Generator $faker) {
+        $author = AuthorFactory::make(function (AuthorFactory $factory, GeneratorInterface $generator) {
             return [
-                'name' => $faker->name,
+                'name' => $generator->name(),
                 'business_address' => [
-                    'street' => $faker->streetAddress,
+                    'street' => $generator->streetAddress(),
                 ],
             ];
         })->persist();
@@ -494,10 +494,10 @@ class BaseFactoryTest extends TestCase
 
     public function testMakeHasOneAssociationFromCallableWithAssociatedDataUsingWith()
     {
-        $entity = AuthorFactory::make(function (AuthorFactory $factory, Generator $faker) {
-            $factory->with('Address', AddressFactory::make(['street' => $faker->streetAddress]));
+        $entity = AuthorFactory::make(function (AuthorFactory $factory, GeneratorInterface $generator) {
+            $factory->with('Address', AddressFactory::make(['street' => $generator->streetAddress()]));
 
-            return ['name' => $faker->lastName];
+            return ['name' => $generator->lastName()];
         })->persist();
 
         $this->assertSame(true, $entity instanceof Author);
@@ -509,10 +509,10 @@ class BaseFactoryTest extends TestCase
     public function testMakeTenHasOneAssociationFromCallableWithAssociatedDataUsingWith()
     {
         $n = 10;
-        $entities = AuthorFactory::make(function (AuthorFactory $factory, Generator $faker) {
-            $factory->with('Address', AddressFactory::make(['street' => $faker->streetAddress]));
+        $entities = AuthorFactory::make(function (AuthorFactory $factory, GeneratorInterface $generator) {
+            $factory->with('Address', AddressFactory::make(['street' => $generator->streetAddress()]));
 
-            return ['name' => $faker->lastName];
+            return ['name' => $generator->lastName()];
         }, $n)->persist();
 
         $this->assertSame($n, count($entities));
@@ -578,10 +578,10 @@ class BaseFactoryTest extends TestCase
     {
         $id = 100;
 
-        $article = ArticleFactory::make(function (ArticleFactory $factory, Generator $faker) use ($id) {
+        $article = ArticleFactory::make(function (ArticleFactory $factory, GeneratorInterface $generator) use ($id) {
             return [
                 'id' => $id,
-                'name' => $faker->sentence,
+                'name' => $generator->sentence(),
              ];
         })->persist();
 

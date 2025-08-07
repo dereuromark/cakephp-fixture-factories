@@ -29,6 +29,8 @@ namespace CakephpFixtureFactories\Generator;
  * @method string city() Generate a random city name
  * @method string postcode() Generate a random postcode
  * @method string country() Generate a random country
+ * @method string streetName() Generate a random street name
+ * @method string streetAddress() Generate a random street address
  * @method string company() Generate a random company name
  * @method string jobTitle() Generate a random job title
  * @method string text(int $maxNbChars = 200) Generate random text

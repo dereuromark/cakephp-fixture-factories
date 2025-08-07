@@ -22,7 +22,7 @@ belonging to a `country` and having many `addresses` in the `initialize` method:
 
 ```php
 use CakephpFixtureFactories\Factory\BaseFactory;
-use Faker\Generator;
+use CakephpFixtureFactories\Generator\GeneratorInterface;
 
 class CityFactory extends BaseFactory
 {
@@ -40,9 +40,9 @@ class CityFactory extends BaseFactory
     
     protected function setDefaultTemplate(): void
     {
-        $this->setDefaultData(function (Generator $faker) {
+        $this->setDefaultData(function (GeneratorInterface $generator) {
             return [
-                'name' => $faker->city(),
+                'name' => $generator->city(),
             ];
         })
         ->withCountry();

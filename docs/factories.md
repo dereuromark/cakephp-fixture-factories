@@ -4,7 +4,7 @@ A factory is a class that extends the `CakephpFixtureFactories\Factory\BaseFacto
 * `getRootTableRegistryName()`  which indicates the model, or the table name in PascalCase, where the factory will insert its fixtures;
 * `setDefaultTemplate()`  which sets the default configuration of each entity created by the factory.
 
-The generator is used in order to randomly populate fields, and is anytime available using `$this->getFaker()`.
+The generator is used in order to randomly populate fields, and is anytime available using `$this->getGenerator()`.
 
 Let us consider for example a model `Articles`, related to multiple `Authors`.
 
@@ -35,10 +35,10 @@ class ArticleFactory extends BaseFactory
      */
     protected function setDefaultTemplate(): void
     {
-          $this->setDefaultData(function(GeneratorInterface $faker) {
+          $this->setDefaultData(function(GeneratorInterface $generator) {
                return [
-                    'title' => $faker->text(30),
-                    'body'  => $faker->text(1000),
+                    'title' => $generator->text(30),
+                    'body'  => $generator->text(1000),
                ];
           })
           ->withAuthors(2);
@@ -55,7 +55,7 @@ class ArticleFactory extends BaseFactory
      */
     public function setJobTitle()
     {
-        return $this->setField('title', $this->getFaker()->jobTitle());
+        return $this->setField('title', $this->getGenerator()->jobTitle());
     }
 }
 ```
@@ -251,8 +251,10 @@ The following generators are available out of the box:
 - **faker** (default): [FakerPHP/Faker](https://github.com/FakerPHP/Faker) - Full-featured data generation
 - **dummy**: [johnykvsky/dummygenerator](https://github.com/johnykvsky/dummygenerator) - Modern and lean PHP 8.3+ generator, supports enums.
 
-Both are included as "reuire-dev" dependencies in this plugin.
-Chose the one you want to use and "require" it.
+Both are included as "require-dev" dependencies in this plugin.
+Choose the one you want to use and "require" it.
+
+> **Note**: For a detailed comparison of available methods and migration guide, see [Generator Differences](generator-differences.md).
 
 #### Custom Generators
 

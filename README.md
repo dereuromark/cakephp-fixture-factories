@@ -46,6 +46,7 @@ composer require --dev vierge-noire/cakephp-fixture-factories "^1.0"
 * ### [Queries](docs/queries.md)
 * ### [Bake command](docs/bake.md)
 * ### [Persist command](docs/commands.md)
+* ### [Generator Abstraction](docs/generator-differences.md)
 
 ---
 

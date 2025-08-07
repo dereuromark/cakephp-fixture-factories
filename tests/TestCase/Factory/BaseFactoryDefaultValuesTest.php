@@ -15,11 +15,11 @@ namespace CakephpFixtureFactories\Test\TestCase\Factory;
 
 use Cake\TestSuite\TestCase;
 use Cake\Utility\Hash;
+use CakephpFixtureFactories\Generator\GeneratorInterface;
 use CakephpFixtureFactories\Test\Factory\AddressFactory;
 use CakephpFixtureFactories\Test\Factory\ArticleFactory;
 use CakephpFixtureFactories\Test\Factory\ArticleWithFiveBillsFactory;
 use CakephpFixtureFactories\Test\Factory\AuthorFactory;
-use Faker\Generator;
 use TestApp\Model\Entity\Author;
 
 class BaseFactoryDefaultValuesTest extends TestCase
@@ -70,10 +70,10 @@ class BaseFactoryDefaultValuesTest extends TestCase
     {
         $n = 2;
         $title = 'Some title';
-        $articles = ArticleFactory::make(function (ArticleFactory $factory, Generator $faker) {
+        $articles = ArticleFactory::make(function (ArticleFactory $factory, GeneratorInterface $generator) {
             return [
-                'title' => $faker->jobTitle,
-                'body' => $faker->realText(100),
+                'title' => $generator->jobTitle(),
+                'body' => $generator->realText(100),
             ];
         }, $n)->withTitle($title)->persist();
         foreach ($articles as $article) {
@@ -98,9 +98,9 @@ class BaseFactoryDefaultValuesTest extends TestCase
     public function testTitleModifiedInMultipleCreationWithCallback()
     {
         $n = 3;
-        $articles = ArticleFactory::make(function (ArticleFactory $factory, Generator $faker) {
+        $articles = ArticleFactory::make(function (ArticleFactory $factory, GeneratorInterface $generator) {
             return [
-                'body' => $faker->realText(100),
+                'body' => $generator->realText(100),
             ];
         }, $n)->persist();
         $firstTitle = $articles[0]->title;

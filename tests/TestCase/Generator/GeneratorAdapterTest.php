@@ -47,17 +47,19 @@ class GeneratorAdapterTest extends TestCase
     public function testDummyGeneratorAdapter(): void
     {
         Configure::write('FixtureFactories.generatorType', 'dummy');
+        CakeGeneratorFactory::clearInstances();
 
         $generator = CakeGeneratorFactory::create();
         $this->assertInstanceOf(GeneratorInterface::class, $generator);
 
-        // Test common methods work
-        $this->assertIsString($generator->firstName());
+        // Test common methods work with DummyGenerator
+        $this->assertIsString($generator->name());
         $this->assertIsString($generator->email());
-        $this->assertIsString($generator->text());
+        $this->assertIsString($generator->word());
 
         // Reset config
         Configure::delete('FixtureFactories.generatorType');
+        CakeGeneratorFactory::clearInstances();
     }
 
     /**
