@@ -14,8 +14,6 @@ declare(strict_types=1);
 
 namespace CakephpFixtureFactories\Test\TestCase\Factory;
 
-
-use Cake\Datasource\EntityInterface;
 use Cake\ORM\Entity;
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Error\UniquenessException;
@@ -41,7 +39,6 @@ class UniquenessJanitorTest extends TestCase
      * @And two entities have given properties
      * @When they share a unique property
      * @Then an exception should be triggered
-     *
      * @dataProvider dataForSanitizeEntityArrayOnPrimary
      * @param array $uniqueProperties
      * @param bool $expectException
@@ -71,8 +68,9 @@ class UniquenessJanitorTest extends TestCase
     {
         $associatedData = [
             ['property_1' => 'foo', 'property_2' => 'foo'],
-            ['property_1' => 'foo', 'property_2' => 'dah']
+            ['property_1' => 'foo', 'property_2' => 'dah'],
         ];
+
         return [
             [[], $associatedData],
             [['property_1'], [$associatedData[0]]],
@@ -87,9 +85,8 @@ class UniquenessJanitorTest extends TestCase
      * @And two entities have given properties
      * @When they share a unique property
      * @Then the second one will be ignored.
-     *
      * @dataProvider dataForSanitizeEntityArrayOnAssociation
-     * @param EntityInterface[] $uniqueProperties
+     * @param \Cake\Datasource\EntityInterface[] $uniqueProperties
      * @param array $expectOutput
      */
     public function testSanitizeEntityArrayOnAssociation(array $uniqueProperties, array $expectOutput)

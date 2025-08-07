@@ -3,4 +3,12 @@
     <description>App Coding Standard</description>
     <!-- CakePHP coding standard -->
     <rule ref="vendor/cakephp/cakephp-codesniffer/CakePHP"/>
+
+    <arg name="tab-width" value="4"/>
+    <arg value="nps"/>
+
+    <file>src/</file>
+    <file>tests/TestCase/</file>
+    <file>tests/TestApp/tests/Factory/</file>
+    <file>tests/TestApp/plugins/TestPlugin/tests/Factory/</file>
 </ruleset>

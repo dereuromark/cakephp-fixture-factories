@@ -24,7 +24,6 @@ use CakephpFixtureFactories\Test\Factory\AuthorFactory;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
-use TestApp\Model\Entity\Country;
 
 class BaseFactoryUniqueEntitiesTest extends TestCase
 {
@@ -44,11 +43,11 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
     {
         $this->assertSame(
             ['unique_stamp'],
-            CountryFactory::make()->getUniqueProperties()
+            CountryFactory::make()->getUniqueProperties(),
         );
         $this->assertSame(
             [],
-            AuthorFactory::make()->getUniqueProperties()
+            AuthorFactory::make()->getUniqueProperties(),
         );
     }
 
@@ -112,7 +111,7 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
         $authorName = 'Foo';
         $article = ArticleFactory::make()->with('Authors', [
             'id' => $authorId,
-            'name' => $authorName
+            'name' => $authorName,
         ])->persist();
 
         $newAuthor = $article->get('authors')[0];
@@ -148,7 +147,6 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
      * with two entries.
      * @When we get entities
      * @Then An Exception is thrown
-     *
      * @throws \Exception
      */
     public function testDetectDuplicateInInstantiationWithTimes()
@@ -176,7 +174,7 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
 
         $unique_stamp = 'Foo';
 
-        CountryFactory::make( 2)->patchData(compact('unique_stamp'))->getEntities();
+        CountryFactory::make(2)->patchData(compact('unique_stamp'))->getEntities();
     }
 
     /**
@@ -204,7 +202,6 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
      * with two entries
      * @When we get entities
      * @Then An exception is thrown.
-     *
      * @throws \Exception
      */
     public function testDetectDuplicateInInstantiationWithTimesInAssociation()
@@ -226,7 +223,6 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
      * with two entries provided by numerically
      * @When we get entities
      * @Then An exception is thrown.
-     *
      * @throws \Exception
      */
     public function testDetectDuplicateInInstantiationWithTimesInAssociationNumeric()
@@ -287,7 +283,7 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
         $this->assertSame($nCities, CityFactory::count());
         $countryId = CountryFactory::find()->first()->get('id');
         foreach ($cities as $city) {
-            $this->assertSame( $unique_stamp, $city->country->unique_stamp);
+            $this->assertSame($unique_stamp, $city->country->unique_stamp);
             $this->assertSame($countryId, $city->country_id);
         }
     }
@@ -312,12 +308,12 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
 
         $this->assertSame(1, CountryFactory::count());
         $this->assertSame($nCities, CityFactory::count());
-        /** @var Country $retrievedCountry */
+        /** @var \TestApp\Model\Entity\Country $retrievedCountry */
         $retrievedCountry = CountryFactory::find()->first();
         $countryId = $retrievedCountry->id;
         $this->assertSame($countryName, $retrievedCountry->name);
         foreach ($cities as $city) {
-            $this->assertSame( $unique_stamp, $city->country->unique_stamp);
+            $this->assertSame($unique_stamp, $city->country->unique_stamp);
             $this->assertSame($countryId, $city->country_id);
         }
     }

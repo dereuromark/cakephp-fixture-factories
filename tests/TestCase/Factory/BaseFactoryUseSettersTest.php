@@ -35,7 +35,7 @@ class BaseFactoryUseSettersTest extends TestCase
             'field_with_setter_3' => $value,
         ])->skipSetterFor([])->getEntity();
 
-        for($i=1;$i<4;$i++) {
+        for ($i = 1; $i < 4; $i++) {
             $this->assertSame($author->prependPrefixToField($value), $author->get("field_with_setter_$i"));
         }
     }
@@ -50,7 +50,7 @@ class BaseFactoryUseSettersTest extends TestCase
         ], 2)->skipSetterFor([])->getEntities();
 
         foreach ($authors as $author) {
-            for($i=1;$i<4;$i++) {
+            for ($i = 1; $i < 4; $i++) {
                 $this->assertSame($author->prependPrefixToField($value), $author->get("field_with_setter_$i"));
             }
         }
@@ -69,7 +69,7 @@ class BaseFactoryUseSettersTest extends TestCase
         $authors = ArticleFactory::make()->with('Authors', $authorFactory)->getEntity()->authors;
 
         foreach ($authors as $author) {
-            for($i=1;$i<4;$i++) {
+            for ($i = 1; $i < 4; $i++) {
                 $this->assertSame($author->prependPrefixToField($value), $author->get("field_with_setter_$i"));
             }
         }
@@ -84,9 +84,9 @@ class BaseFactoryUseSettersTest extends TestCase
             'field_with_setter_3' => $value,
         ])->getEntity();
 
-        $this->assertSame($value, $author->get("field_with_setter_1"));
-        $this->assertSame($author->prependPrefixToField($value), $author->get("field_with_setter_2"));
-        $this->assertSame($author->prependPrefixToField($value), $author->get("field_with_setter_3"));
+        $this->assertSame($value, $author->get('field_with_setter_1'));
+        $this->assertSame($author->prependPrefixToField($value), $author->get('field_with_setter_2'));
+        $this->assertSame($author->prependPrefixToField($value), $author->get('field_with_setter_3'));
     }
 
     public function testSettersAreSkippedDefinedOnTwoAuthors()
@@ -99,9 +99,9 @@ class BaseFactoryUseSettersTest extends TestCase
         ], 2)->skipSetterFor('field_with_setter_2')->getEntities();
 
         foreach ($authors as $author) {
-            $this->assertSame($author->prependPrefixToField($value), $author->get("field_with_setter_1"));
-            $this->assertSame($value, $author->get("field_with_setter_2"));
-            $this->assertSame($author->prependPrefixToField($value), $author->get("field_with_setter_3"));
+            $this->assertSame($author->prependPrefixToField($value), $author->get('field_with_setter_1'));
+            $this->assertSame($value, $author->get('field_with_setter_2'));
+            $this->assertSame($author->prependPrefixToField($value), $author->get('field_with_setter_3'));
         }
     }
 
@@ -115,9 +115,9 @@ class BaseFactoryUseSettersTest extends TestCase
         ], 2)->skipSetterFor('field_with_setter_2', true)->getEntities();
 
         foreach ($authors as $author) {
-            $this->assertSame($value, $author->get("field_with_setter_1"));
-            $this->assertSame($value, $author->get("field_with_setter_2"));
-            $this->assertSame($author->prependPrefixToField($value), $author->get("field_with_setter_3"));
+            $this->assertSame($value, $author->get('field_with_setter_1'));
+            $this->assertSame($value, $author->get('field_with_setter_2'));
+            $this->assertSame($author->prependPrefixToField($value), $author->get('field_with_setter_3'));
         }
     }
 
@@ -134,9 +134,9 @@ class BaseFactoryUseSettersTest extends TestCase
         $authors = ArticleFactory::make()->with('Authors', $authorFactory)->getEntity()->authors;
 
         foreach ($authors as $author) {
-            $this->assertSame($author->prependPrefixToField($value), $author->get("field_with_setter_1"));
-            $this->assertSame($value, $author->get("field_with_setter_2"));
-            $this->assertSame($value, $author->get("field_with_setter_3"));
+            $this->assertSame($author->prependPrefixToField($value), $author->get('field_with_setter_1'));
+            $this->assertSame($value, $author->get('field_with_setter_2'));
+            $this->assertSame($value, $author->get('field_with_setter_3'));
         }
     }
 }

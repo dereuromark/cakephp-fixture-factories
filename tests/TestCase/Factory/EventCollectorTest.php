@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace CakephpFixtureFactories\Test\TestCase\Factory;
 
+use ArrayObject;
 use Cake\Core\Configure;
 use Cake\Event\Event;
 use Cake\ORM\TableRegistry;
@@ -32,7 +33,6 @@ use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
 use TestApp\Model\Entity\Address;
 use TestApp\Model\Entity\Article;
 use TestApp\Model\Entity\City;
-use TestApp\Model\Table\CountriesTable;
 use TestPlugin\Model\Behavior\SomePluginBehavior;
 
 class EventCollectorTest extends TestCase
@@ -40,7 +40,7 @@ class EventCollectorTest extends TestCase
     use TruncateDirtyTables;
 
     /**
-     * @var CountriesTable
+     * @var \TestApp\Model\Table\CountriesTable
      */
     private $Countries;
 
@@ -58,7 +58,7 @@ class EventCollectorTest extends TestCase
 
     public function setUp(): void
     {
-        /** @var CountriesTable $Countries */
+        /** @var \TestApp\Model\Table\CountriesTable $Countries */
         $Countries = TableRegistry::getTableLocator()->get('Countries');
         $this->Countries = $Countries;
 
@@ -84,7 +84,7 @@ class EventCollectorTest extends TestCase
 
         $this->assertSame(
             ['Sluggable', 'Timestamp'],
-            $EventManager->getListeningBehaviors()
+            $EventManager->getListeningBehaviors(),
         );
     }
 
@@ -98,7 +98,7 @@ class EventCollectorTest extends TestCase
         ];
         $this->assertSame(
             $expected,
-            $EventManager->getListeningBehaviors()
+            $EventManager->getListeningBehaviors(),
         );
     }
 
@@ -140,7 +140,7 @@ class EventCollectorTest extends TestCase
     {
         $name = 'Foo';
 
-        $this->Countries->getEventManager()->on('Model.beforeMarshal', function (Event $event, \ArrayObject $entity) use ($applyEvent) {
+        $this->Countries->getEventManager()->on('Model.beforeMarshal', function (Event $event, ArrayObject $entity) use ($applyEvent) {
             $entity['eventApplied'] = $applyEvent;
         });
 
@@ -149,7 +149,7 @@ class EventCollectorTest extends TestCase
         $this->assertSame($applyEvent, $country->get('eventApplied'));
 
         $factory = CountryFactory::make();
-        $factory->getTable()->getEventManager()->on('Model.beforeMarshal', function (Event $event, \ArrayObject $entity) use ($applyEvent) {
+        $factory->getTable()->getEventManager()->on('Model.beforeMarshal', function (Event $event, ArrayObject $entity) use ($applyEvent) {
             $entity['eventApplied'] = $applyEvent;
         });
         $country = $factory->getEntity();
@@ -211,7 +211,7 @@ class EventCollectorTest extends TestCase
         ];
         $this->assertSame(
             $expected,
-            $EventManager->getListeningBehaviors()
+            $EventManager->getListeningBehaviors(),
         );
     }
 
@@ -291,7 +291,7 @@ class EventCollectorTest extends TestCase
                 'City',
                 CityFactory::make()
                     ->listeningToModelEvents('Model.beforeMarshal')
-                    ->without('Country')
+                    ->without('Country'),
             )
             ->getEntity();
         $this->assertInstanceOf(Address::class, $address);

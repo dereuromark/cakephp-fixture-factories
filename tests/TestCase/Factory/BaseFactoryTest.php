@@ -263,13 +263,13 @@ class BaseFactoryTest extends TestCase
             function (ArticleFactory $factory, Generator $faker) {
                 return ['title' => $faker->sentence];
             },
-            $n
+            $n,
         )
         ->withAuthors(
             function (AuthorFactory $factory, Generator $faker) {
                 return ['name' => $faker->lastName];
             },
-            $m
+            $m,
         )
         ->persist();
 

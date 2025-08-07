@@ -1,0 +1,134 @@
+<?php
+declare(strict_types=1);
+
+namespace CakephpFixtureFactories\Test\TestCase\Generator;
+
+use Cake\Core\Configure;
+use Cake\TestSuite\TestCase;
+use CakephpFixtureFactories\Generator\CakeGeneratorFactory;
+use CakephpFixtureFactories\Generator\GeneratorInterface;
+
+class GeneratorAdapterTest extends TestCase
+{
+    /**
+     * Test backward compatibility with Faker
+     *
+     * @return void
+     */
+    public function testFakerBackwardCompatibility(): void
+    {
+        // Default should be Faker
+        $generator = CakeGeneratorFactory::create();
+        $this->assertInstanceOf(GeneratorInterface::class, $generator);
+
+        // Test common Faker methods work
+        $this->assertIsString($generator->name());
+        $this->assertIsString($generator->email());
+        $this->assertIsString($generator->text());
+        $this->assertIsInt($generator->randomNumber());
+        $this->assertIsBool($generator->boolean());
+
+        // Test seeding works
+        $generator->seed(1234);
+        $value1 = $generator->randomNumber();
+
+        $generator2 = CakeGeneratorFactory::create();
+        $generator2->seed(1234);
+        $value2 = $generator2->randomNumber();
+
+        $this->assertEquals($value1, $value2);
+    }
+
+    /**
+     * Test switching to DummyGenerator
+     *
+     * @return void
+     */
+    public function testDummyGeneratorAdapter(): void
+    {
+        Configure::write('FixtureFactories.generatorType', 'dummy');
+
+        $generator = CakeGeneratorFactory::create();
+        $this->assertInstanceOf(GeneratorInterface::class, $generator);
+
+        // Test common methods work
+        $this->assertIsString($generator->firstName());
+        $this->assertIsString($generator->email());
+        $this->assertIsString($generator->text());
+
+        // Reset config
+        Configure::delete('FixtureFactories.generatorType');
+    }
+
+    /**
+     * Test unique() method works
+     *
+     * @return void
+     */
+    public function testUniqueGenerator(): void
+    {
+        $generator = CakeGeneratorFactory::create();
+        $unique = $generator->unique();
+
+        $this->assertInstanceOf(GeneratorInterface::class, $unique);
+
+        // Generate some unique values
+        $values = [];
+        for ($i = 0; $i < 10; $i++) {
+            $values[] = $unique->randomDigit();
+        }
+
+        // Should have 10 unique values
+        $this->assertCount(10, array_unique($values));
+    }
+
+    /**
+     * Test optional() method works
+     *
+     * @return void
+     */
+    public function testOptionalGenerator(): void
+    {
+        $generator = CakeGeneratorFactory::create();
+        $optional = $generator->optional(0.5);
+
+        $this->assertInstanceOf(GeneratorInterface::class, $optional);
+
+        // Generate some values - some should be null
+        $hasNull = false;
+        $hasValue = false;
+
+        for ($i = 0; $i < 100; $i++) {
+            $value = $optional->randomNumber();
+            /** @phpstan-ignore-next-line */
+            if ($value === null) {
+                $hasNull = true;
+            } else {
+                $hasValue = true;
+            }
+
+            /** @phpstan-ignore-next-line */
+            if ($hasNull && $hasValue) {
+                break;
+            }
+        }
+
+        $this->assertTrue($hasNull, 'Optional generator should produce some null values');
+        $this->assertTrue($hasValue, 'Optional generator should produce some actual values');
+    }
+
+    /**
+     * Test locale support
+     *
+     * @return void
+     */
+    public function testLocaleSupport(): void
+    {
+        // Test with a specific locale
+        $generator = CakeGeneratorFactory::create('fr_FR');
+        $this->assertInstanceOf(GeneratorInterface::class, $generator);
+
+        // The name should work regardless of locale
+        $this->assertIsString($generator->name());
+    }
+}

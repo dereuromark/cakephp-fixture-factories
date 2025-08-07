@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace {{ namespace }};
 
 use CakephpFixtureFactories\Factory\BaseFactory as CakephpBaseFactory;
-use Faker\Generator;
+use CakephpFixtureFactories\Generator\GeneratorInterface;
 {% if useStatements %}
 {% for useStatement in useStatements %}
 use {{ useStatement }};
@@ -39,7 +39,7 @@ class {{ factory }} extends CakephpBaseFactory
      */
     protected function setDefaultTemplate(): void
     {
-        $this->setDefaultData(function (Generator $faker) {
+        $this->setDefaultData(function (GeneratorInterface $faker) {
             return [
                 {{ FactoryBake.defaultData(defaultData)|raw }}
             ];

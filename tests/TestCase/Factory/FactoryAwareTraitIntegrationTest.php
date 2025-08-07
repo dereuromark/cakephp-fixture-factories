@@ -12,7 +12,6 @@ use CakephpFixtureFactories\Test\Factory\PremiumAuthorFactory;
 
 class FactoryAwareTraitIntegrationTest extends TestCase
 {
-
     public static function setUpBeforeClass(): void
     {
         Configure::write('FixtureFactories.testFixtureNamespace', 'CakephpFixtureFactories\Test\Factory');

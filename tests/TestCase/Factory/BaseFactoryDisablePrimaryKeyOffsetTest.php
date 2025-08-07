@@ -19,7 +19,6 @@ use CakephpFixtureFactories\Test\Factory\BillFactory;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
-use TestApp\Model\Entity\Country;
 
 class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
 {
@@ -66,7 +65,7 @@ class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
         $cities = CityFactory::make($n)
             ->with(
                 'Country',
-                CountryFactory::make()->setPrimaryKeyOffset($countryOffset)->disablePrimaryKeyOffset()
+                CountryFactory::make()->setPrimaryKeyOffset($countryOffset)->disablePrimaryKeyOffset(),
             )
             ->persist();
 
@@ -88,7 +87,7 @@ class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
         $cities = CityFactory::make($nCities)
             ->with(
                 'Country',
-                CountryFactory::make()->setPrimaryKeyOffset($countryOffset)->disablePrimaryKeyOffset()
+                CountryFactory::make()->setPrimaryKeyOffset($countryOffset)->disablePrimaryKeyOffset(),
             )
             ->setPrimaryKeyOffset($cityOffset)
             ->disablePrimaryKeyOffset()
@@ -106,11 +105,11 @@ class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
         $cityOffset = rand(1, 100000);
         $countryOffset = rand(1, 100000);
 
-        /** @var Country $country */
+        /** @var \TestApp\Model\Entity\Country $country */
         $country = CountryFactory::make()
             ->with(
                 'Cities',
-                CityFactory::make($nCities)->setPrimaryKeyOffset($cityOffset)->disablePrimaryKeyOffset()
+                CityFactory::make($nCities)->setPrimaryKeyOffset($cityOffset)->disablePrimaryKeyOffset(),
             )
             ->setPrimaryKeyOffset($countryOffset)
             ->disablePrimaryKeyOffset()

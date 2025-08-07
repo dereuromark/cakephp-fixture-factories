@@ -14,14 +14,12 @@ declare(strict_types=1);
 
 namespace CakephpFixtureFactories\Test\TestCase\Factory;
 
-
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Test\Factory\AddressFactory;
 use CakephpFixtureFactories\Test\Factory\ArticleFactory;
 use CakephpFixtureFactories\Test\Factory\AuthorFactory;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
-
 
 class BaseFactoryMakeWithEntityTest extends TestCase
 {
@@ -125,8 +123,8 @@ class BaseFactoryMakeWithEntityTest extends TestCase
         $authors = AuthorFactory::make($authors1, $m)->persist();
 
         $count = 0;
-        for ($i=0; $i<$m; $i++) {
-            for ($j=0; $j<$n; $j++) {
+        for ($i = 0; $i < $m; $i++) {
+            for ($j = 0; $j < $n; $j++) {
                 $this->assertSame($authors1[$j], $authors[$count]);
                 $count++;
             }
@@ -139,7 +137,7 @@ class BaseFactoryMakeWithEntityTest extends TestCase
     {
         $article1 = ArticleFactory::make()->persist();
         $this->assertSame(ArticleFactory::DEFAULT_NUMBER_OF_AUTHORS, count($article1->authors));
-        $article2 = ArticleFactory::make($article1)->persist();
+        ArticleFactory::make($article1)->persist();
         $this->assertSame(ArticleFactory::DEFAULT_NUMBER_OF_AUTHORS, count($article1->authors));
     }
 }

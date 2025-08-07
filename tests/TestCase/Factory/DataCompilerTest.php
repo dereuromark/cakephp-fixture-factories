@@ -21,11 +21,11 @@ use CakephpFixtureFactories\Factory\DataCompiler;
 use CakephpFixtureFactories\Test\Factory\ArticleFactory;
 use CakephpFixtureFactories\Test\Factory\AuthorFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
+use InvalidArgumentException;
 use TestApp\Model\Table\PremiumAuthorsTable;
 
 class DataCompilerTest extends TestCase
 {
-
     /**
      * @var DataCompiler
      */
@@ -45,7 +45,7 @@ class DataCompilerTest extends TestCase
 
     public function testGetMarshallerAssociationNameShouldThrowInvalidArgumentException()
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $this->authorDataCompiler->getMarshallerAssociationName('business_address');
     }
 
@@ -178,9 +178,9 @@ class DataCompilerTest extends TestCase
             'field_with_setter_3' => $value,
         ]);
 
-        $this->assertSame($value, $author->get("field_with_setter_1"));
-        $this->assertSame($author->prependPrefixToField($value), $author->get("field_with_setter_2"));
-        $this->assertSame($author->prependPrefixToField($value), $author->get("field_with_setter_3"));
+        $this->assertSame($value, $author->get('field_with_setter_1'));
+        $this->assertSame($author->prependPrefixToField($value), $author->get('field_with_setter_2'));
+        $this->assertSame($author->prependPrefixToField($value), $author->get('field_with_setter_3'));
     }
 
     public function testEntityHasRegistryAlias()

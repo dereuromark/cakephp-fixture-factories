@@ -33,9 +33,9 @@ class BaseFactoryStaticFinderTest extends TestCase
         $this->Articles = TableRegistry::getTableLocator()->get('Articles');
         $this->Articles->getEventManager()->on(
             'Model.beforeFind',
-            function(EventInterface $event, SelectQuery $query) {
+            function (EventInterface $event, SelectQuery $query) {
                 $query->where(['title' => 'Cannot be found.']);
-            }
+            },
         );
     }
 

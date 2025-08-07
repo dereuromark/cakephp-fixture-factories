@@ -22,9 +22,9 @@ use Cake\ORM\ResultSet;
 use Cake\ORM\Table;
 use CakephpFixtureFactories\Error\FixtureFactoryException;
 use CakephpFixtureFactories\Error\PersistenceException;
+use CakephpFixtureFactories\Generator\CakeGeneratorFactory;
+use CakephpFixtureFactories\Generator\GeneratorInterface;
 use Closure;
-use Faker\Factory;
-use Faker\Generator;
 use InvalidArgumentException;
 use Psr\SimpleCache\CacheInterface;
 use Throwable;
@@ -39,9 +39,9 @@ use function is_array;
 abstract class BaseFactory
 {
     /**
-     * @var \Faker\Generator|null
+     * @var \CakephpFixtureFactories\Generator\GeneratorInterface|null
      */
-    private static ?Generator $faker = null;
+    private static ?GeneratorInterface $faker = null;
     /**
      * @deprecated
      * @var bool
@@ -203,26 +203,35 @@ abstract class BaseFactory
     }
 
     /**
-     * Faker's local is set as the I18n local.
-     * If not supported by Faker, take faker's default.
+     * Get the generator instance, using the locale from I18n
      *
-     * @return \Faker\Generator
+     * @return \CakephpFixtureFactories\Generator\GeneratorInterface
      */
-    public function getFaker(): Generator
+    public function getFaker(): GeneratorInterface
     {
         if (is_null(self::$faker)) {
-            try {
-                $fakerLocale = I18n::getLocale();
-                $faker = Factory::create($fakerLocale);
-            } catch (Throwable $e) {
-                $fakerLocale = Factory::DEFAULT_LOCALE;
-                $faker = Factory::create($fakerLocale);
-            }
-            $faker->seed(1234);
-            self::$faker = $faker;
+            $locale = I18n::getLocale();
+            self::$faker = CakeGeneratorFactory::create($locale);
+            self::$faker->seed(1234);
         }
 
         return self::$faker;
+    }
+
+    /**
+     * Set the generator type to use for this factory
+     *
+     * @param string $type The generator type ('faker' or 'dummy')
+     * @param string|null $locale Optional locale override
+     * @return $this
+     */
+    public function setGenerator(string $type, ?string $locale = null)
+    {
+        $locale = $locale ?? I18n::getLocale();
+        self::$faker = CakeGeneratorFactory::create($locale, $type);
+        self::$faker->seed(1234);
+
+        return $this;
     }
 
     /**

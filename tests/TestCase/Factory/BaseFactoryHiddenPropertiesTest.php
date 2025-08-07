@@ -62,7 +62,6 @@ class BaseFactoryHiddenPropertiesTest extends TestCase
      * @Given a property is hidden
      * @When a factory is persisted
      * @Then the field is accessible and persisted.
-     *
      * @param int $n
      * @param bool $persist
      * @throws \Exception
@@ -84,7 +83,6 @@ class BaseFactoryHiddenPropertiesTest extends TestCase
      * @Given a property in a belongs to many association is hidden
      * @When a factory is persisted
      * @Then the field is accessible and persisted.
-     *
      * @param int $n
      * @param bool $persist
      * @throws \Exception
@@ -92,8 +90,9 @@ class BaseFactoryHiddenPropertiesTest extends TestCase
      */
     public function testHiddenPropertyInBelongsToManyAssociation(int $n, bool $persist)
     {
-        $factory = AuthorFactory::make()->with('Articles',
-            ArticleFactory::make($n)->withHiddenBiography(self::DUMMY_HIDDEN_PARAGRAPH)
+        $factory = AuthorFactory::make()->with(
+            'Articles',
+            ArticleFactory::make($n)->withHiddenBiography(self::DUMMY_HIDDEN_PARAGRAPH),
         );
 
         $articles = $persist ? $factory->persist()->get('articles') : $factory->getEntity()->get('articles');
@@ -104,7 +103,6 @@ class BaseFactoryHiddenPropertiesTest extends TestCase
      * @Given a property in a has many association is hidden
      * @When a factory is persisted
      * @Then the field is accessible and persisted.
-     *
      * @param int $n
      * @param bool $persist
      * @throws \Exception
@@ -112,8 +110,9 @@ class BaseFactoryHiddenPropertiesTest extends TestCase
      */
     public function testHiddenPropertyInBelongsToAssociation(int $n, bool $persist)
     {
-        $factory = BillFactory::make($n)->with('Article',
-            ArticleFactory::make()->withHiddenBiography(self::DUMMY_HIDDEN_PARAGRAPH)
+        $factory = BillFactory::make($n)->with(
+            'Article',
+            ArticleFactory::make()->withHiddenBiography(self::DUMMY_HIDDEN_PARAGRAPH),
         );
 
         $bills = $persist ? $factory->persist() : $factory->getEntity();

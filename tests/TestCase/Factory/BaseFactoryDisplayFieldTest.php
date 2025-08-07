@@ -19,7 +19,6 @@ use CakephpFixtureFactories\Test\Factory\AddressFactory;
 use CakephpFixtureFactories\Test\Factory\ArticleFactory;
 use CakephpFixtureFactories\Test\Factory\BillFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
-use TestPlugin\Model\Table\BillsTable;
 
 class BaseFactoryDisplayFieldTest extends TestCase
 {

@@ -65,7 +65,7 @@ class FixtureScenarioTest extends TestCase
             $this->assertInstanceOf(Author::class, $author);
             $this->assertSame(
                 NAustralianAuthorsScenario::COUNTRY_NAME,
-                $author->address->city->country->name
+                $author->address->city->country->name,
             );
         }
     }

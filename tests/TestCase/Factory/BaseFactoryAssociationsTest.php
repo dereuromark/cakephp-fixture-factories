@@ -29,9 +29,7 @@ use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpFixtureFactories\Test\Factory\CustomerFactory;
 use CakephpFixtureFactories\Test\Factory\SubDirectory\SubCityFactory;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
-use Exception;
 use TestApp\Model\Entity\Address;
-use TestApp\Model\Entity\Article;
 use TestApp\Model\Entity\City;
 use TestApp\Model\Entity\Country;
 use TestApp\Model\Entity\PremiumAuthor;
@@ -221,7 +219,7 @@ class BaseFactoryAssociationsTest extends TestCase
 
         $author = AuthorFactory::make()->with(
             'BusinessAddress.City',
-            CityFactory::make(['name' => $city])
+            CityFactory::make(['name' => $city]),
         )->persist();
 
         $this->assertInstanceOf(City::class, $author->business_address->city);
@@ -320,7 +318,7 @@ class BaseFactoryAssociationsTest extends TestCase
             ->with('Articles.Authors', ['name' => $name2])
             ->persist();
 
-        /** @var Article $article */
+        /** @var \TestApp\Model\Entity\Article $article */
         $article = ArticleFactory::find()
             ->contain('Authors', function ($q) {
                 return $q->orderBy('Authors.name');
@@ -604,7 +602,6 @@ class BaseFactoryAssociationsTest extends TestCase
      * associated factory
      *
      * @see Country::_getVirtualCities()
-     * @throws Exception
      */
     public function testAssociationWithVirtualFieldNamedIdentically()
     {

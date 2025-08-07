@@ -51,7 +51,7 @@ class BaseFactoryGetResultSetTest extends TestCase
             ['name' => $name1],
             ['name' => $name2],
         ])
-        ->with("Authors.Address", compact('street'));
+        ->with('Authors.Address', compact('street'));
 
         $articles = $isPersisted ? $factory->getPersistedResultSet() : $factory->getResultSet();
         $this->assertSame(2, $articles->count());

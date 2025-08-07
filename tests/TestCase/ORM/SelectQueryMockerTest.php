@@ -74,7 +74,6 @@ class SelectQueryMockerTest extends TestCase
         ])->withCountry();
         SelectQueryMocker::mock($this, $cityFactory);
 
-
         $CountriesTable = TableRegistry::getTableLocator()->get('Countries');
         $CitiesTable = TableRegistry::getTableLocator()->get('Cities');
 

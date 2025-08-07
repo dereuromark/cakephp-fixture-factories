@@ -161,7 +161,7 @@ class BaseFactoryLoadAssociationsInInitializeTest extends TestCase
 
         $name = 'Foo';
         $id = $country->id;
-        $city = $factory->with("Country", compact('id', 'name'))->persist();
+        $city = $factory->with('Country', compact('id', 'name'))->persist();
 
         $country = $city->country;
         $this->assertInstanceOf(Entity::class, $country);
@@ -179,7 +179,7 @@ class BaseFactoryLoadAssociationsInInitializeTest extends TestCase
         $factory->getTable()->belongsToMany('ParallelArticles', [
             'className' => $className,
             'joinTable' => 'articles_authors',
-            'targetForeignKey' => 'article_id'
+            'targetForeignKey' => 'article_id',
         ]);
 
         $name = 'Foo';
