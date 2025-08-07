@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace CakephpFixtureFactories\Generator;
 
 use BadMethodCallException;
+use Cake\Utility\Text;
 use DummyGenerator\Container\DefinitionContainerBuilder;
 use DummyGenerator\DummyGenerator;
 use DummyGenerator\Strategy\SimpleStrategy;
@@ -86,6 +87,11 @@ class DummyGeneratorAdapter implements GeneratorInterface
      */
     public function __call(string $name, array $arguments): mixed
     {
+        // Handle shimmed methods that DummyGenerator doesn't support
+        if ($name === 'uuid') {
+            return $this->generateUuid();
+        }
+
         // DummyGenerator uses __call for all its methods, so we try to call it directly
         try {
             if ($this->isUnique) {
@@ -141,5 +147,48 @@ class DummyGeneratorAdapter implements GeneratorInterface
     public function resetUnique(): void
     {
         $this->uniqueValues = [];
+    }
+
+    /**
+     * Generate a UUID v4 string
+     *
+     * This is a shim method since DummyGenerator doesn't support uuid() natively.
+     * Generates a proper UUID v4 compatible string.
+     *
+     * @return string UUID v4 string
+     */
+    private function generateUuid(): string
+    {
+        if ($this->isUnique) {
+            $maxRetries = 10000;
+            $retries = 0;
+
+            do {
+                $uuid = $this->createUuidV4();
+                $key = 'uuid::' . $uuid;
+
+                if (!isset($this->uniqueValues[$key])) {
+                    $this->uniqueValues[$key] = true;
+
+                    return $uuid;
+                }
+
+                $retries++;
+            } while ($retries < $maxRetries);
+
+            throw new OverflowException("Unable to generate unique UUID after $maxRetries attempts");
+        }
+
+        return $this->createUuidV4();
+    }
+
+    /**
+     * Create a UUID v4 string
+     *
+     * @return string UUID v4 string
+     */
+    private function createUuidV4(): string
+    {
+        return Text::uuid();
     }
 }

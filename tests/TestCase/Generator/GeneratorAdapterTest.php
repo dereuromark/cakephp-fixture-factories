@@ -133,4 +133,64 @@ class GeneratorAdapterTest extends TestCase
         // The name should work regardless of locale
         $this->assertIsString($generator->name());
     }
+
+    /**
+     * Test UUID generation works with both Faker and DummyGenerator
+     *
+     * @return void
+     */
+    public function testUuidGenerationCrossAdapter(): void
+    {
+        // Test with Faker (default)
+        $fakerGenerator = CakeGeneratorFactory::create();
+        $fakerUuid = $fakerGenerator->uuid();
+        $this->assertIsString($fakerUuid);
+        $this->assertMatchesRegularExpression('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $fakerUuid);
+
+        // Test with DummyGenerator
+        Configure::write('FixtureFactories.generatorType', 'dummy');
+        CakeGeneratorFactory::clearInstances();
+
+        $dummyGenerator = CakeGeneratorFactory::create();
+        $dummyUuid = $dummyGenerator->uuid();
+        $this->assertIsString($dummyUuid);
+        $this->assertMatchesRegularExpression('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $dummyUuid);
+
+        // Ensure they generate different values
+        $this->assertNotEquals($fakerUuid, $dummyUuid);
+
+        // Reset config
+        Configure::delete('FixtureFactories.generatorType');
+        CakeGeneratorFactory::clearInstances();
+    }
+
+    /**
+     * Test UUID generation with unique() modifier works with DummyGenerator
+     *
+     * @return void
+     */
+    public function testUuidGenerationWithUniqueAdapter(): void
+    {
+        Configure::write('FixtureFactories.generatorType', 'dummy');
+        CakeGeneratorFactory::clearInstances();
+
+        $generator = CakeGeneratorFactory::create();
+        $uniqueGenerator = $generator->unique();
+
+        // Generate multiple unique UUIDs
+        $uuids = [];
+        for ($i = 0; $i < 5; $i++) {
+            $uuid = $uniqueGenerator->uuid();
+            $this->assertIsString($uuid);
+            $this->assertMatchesRegularExpression('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $uuid);
+            $uuids[] = $uuid;
+        }
+
+        // Ensure all UUIDs are unique
+        $this->assertCount(5, array_unique($uuids));
+
+        // Reset config
+        Configure::delete('FixtureFactories.generatorType');
+        CakeGeneratorFactory::clearInstances();
+    }
 }

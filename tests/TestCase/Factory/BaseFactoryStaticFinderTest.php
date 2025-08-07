@@ -16,6 +16,7 @@ namespace CakephpFixtureFactories\Test\TestCase\Factory;
 use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\Event\EventInterface;
 use Cake\ORM\Query\SelectQuery;
+use Cake\ORM\Table;
 use Cake\ORM\TableRegistry;
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Test\Factory\ArticleFactory;
@@ -25,7 +26,7 @@ class BaseFactoryStaticFinderTest extends TestCase
 {
     use TruncateDirtyTables;
 
-    public \Cake\ORM\Table $Articles;
+    public Table $Articles;
 
     public function setUp(): void
     {
