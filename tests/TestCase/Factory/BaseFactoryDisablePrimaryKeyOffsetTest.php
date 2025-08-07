@@ -24,7 +24,7 @@ class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
 {
     use TruncateDirtyTables;
 
-    public static function dataForTestDisablePrimaryKeyOffset()
+    public static function dataForTestDisablePrimaryKeyOffset(): array
     {
         return [
             [rand(1, 1000000)],
@@ -37,7 +37,7 @@ class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
      * @dataProvider dataForTestDisablePrimaryKeyOffset
      * @param int $cityOffset
      */
-    public function testDisablePrimaryKeyOffset(int $cityOffset)
+    public function testDisablePrimaryKeyOffset(int $cityOffset): void
     {
         $n = 10;
         $cities = CityFactory::make($n)
@@ -59,7 +59,7 @@ class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
      * @dataProvider dataForTestDisablePrimaryKeyOffset
      * @param int $countryOffset
      */
-    public function testDisablePrimaryKeyOffsetInAssociation(int $countryOffset)
+    public function testDisablePrimaryKeyOffsetInAssociation(int $countryOffset): void
     {
         $n = 5;
         $cities = CityFactory::make($n)
@@ -78,7 +78,7 @@ class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
         }
     }
 
-    public function testDisablePrimaryKeyOffsetInAssociationAndBase()
+    public function testDisablePrimaryKeyOffsetInAssociationAndBase(): void
     {
         $nCities = rand(3, 5);
         $cityOffset = rand(1, 100000);
@@ -99,7 +99,7 @@ class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
         $this->assertIsInt($cities[$nCities - 1]->country->id);
     }
 
-    public function testDisablePrimaryKeyOffsetInMultipleAssociationAndBase()
+    public function testDisablePrimaryKeyOffsetInMultipleAssociationAndBase(): void
     {
         $nCities = rand(3, 5);
         $cityOffset = rand(1, 100000);
@@ -121,7 +121,7 @@ class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
         $this->assertIsInt($country->cities[$nCities - 1]->id);
     }
 
-    public function testDisablePrimaryKeyOffsetOnMultipleCalls()
+    public function testDisablePrimaryKeyOffsetOnMultipleCalls(): void
     {
         /** @var \TestApp\Model\Entity\Country $country1 */
         $country1 = CountryFactory::make()->persist();
@@ -138,7 +138,7 @@ class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
         $this->assertIsInt($country3->id);
     }
 
-    public function testDisablePrimaryOffsetOnMultipleCallsInAssociations()
+    public function testDisablePrimaryOffsetOnMultipleCallsInAssociations(): void
     {
         $nCitiesPerCountry = rand(3, 5);
         $nCountries = rand(3, 5);
@@ -158,7 +158,7 @@ class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
         }
     }
 
-    public function testDisablePrimaryKeyOffsetWithCollectedAssociation()
+    public function testDisablePrimaryKeyOffsetWithCollectedAssociation(): void
     {
         $country = CountryFactory::make()
             ->with('Cities', CityFactory::make()->disablePrimaryKeyOffset())
@@ -170,7 +170,7 @@ class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
         $this->assertIsInt($country->cities[1]->id);
     }
 
-    public function testDisablePrimaryKeyOffsetWithPrimaryKeyManually()
+    public function testDisablePrimaryKeyOffsetWithPrimaryKeyManually(): void
     {
         $id = 2;
         /** @var \TestApp\Model\Entity\Country $country */
@@ -183,7 +183,7 @@ class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
         $this->assertSame($id, $country->id);
     }
 
-    public function testDisablePrimaryKeyOffsetWithPrimaryKeyManuallyInPlugin()
+    public function testDisablePrimaryKeyOffsetWithPrimaryKeyManuallyInPlugin(): void
     {
         $id = 2;
         /** @var \TestPlugin\Model\Entity\Bill $bill */

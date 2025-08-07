@@ -33,7 +33,7 @@ class FactoryTableRegistryTest extends TestCase
         TableRegistry::getTableLocator()->clear();
     }
 
-    public static function tables()
+    public static function tables(): array
     {
         return [
             ['Articles', ArticlesTable::class],
@@ -49,7 +49,7 @@ class FactoryTableRegistryTest extends TestCase
     /**
      * @dataProvider tables
      */
-    public function testReturnedTableShouldHaveSameAssociations(string $tableName, string $table)
+    public function testReturnedTableShouldHaveSameAssociations(string $tableName, string $table): void
     {
         $FactoryTable = FactoryTableRegistry::getTableLocator()->get($tableName);
         $Table = TableRegistry::getTableLocator()->get($tableName);
@@ -70,7 +70,7 @@ class FactoryTableRegistryTest extends TestCase
         $this->assertTrue($Table->hasBehavior('Timestamp'));
     }
 
-    public function testLoadedPlugin()
+    public function testLoadedPlugin(): void
     {
         $CountriesTable = TableRegistry::getTableLocator()->get('Countries');
 
@@ -86,7 +86,7 @@ class FactoryTableRegistryTest extends TestCase
         $this->assertSame($expectedPluginsLoaded, $CountryFactory->getTable()->behaviors()->loaded());
     }
 
-    public function testDoNotTouchTheRegularTableRegistry()
+    public function testDoNotTouchTheRegularTableRegistry(): void
     {
         TableRegistry::getTableLocator()->clear();
         CityFactory::make()->withCountry()->persist();

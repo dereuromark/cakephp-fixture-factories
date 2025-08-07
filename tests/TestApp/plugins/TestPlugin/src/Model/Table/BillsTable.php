@@ -15,7 +15,7 @@ namespace TestPlugin\Model\Table;
 
 use ArrayObject;
 use Cake\Datasource\EntityInterface;
-use Cake\Event\Event;
+use Cake\Event\EventInterface;
 use Cake\ORM\Table;
 
 class BillsTable extends Table
@@ -43,16 +43,16 @@ class BillsTable extends Table
     }
 
     /**
-     * @param Event $event
-     * @param ArrayObject $data
-     * @param ArrayObject $options
+     * @param \Cake\Event\EventInterface $event
+     * @param \ArrayObject $data
+     * @param \ArrayObject $options
      */
-    public function beforeMarshal(Event $event, ArrayObject $data, ArrayObject $options)
+    public function beforeMarshal(EventInterface $event, ArrayObject $data, ArrayObject $options): void
     {
         $data['beforeMarshalTriggeredPerDefault'] = true;
     }
 
-    public function afterSave(Event $event, EntityInterface $entity, ArrayObject $options)
+    public function afterSave(EventInterface $event, EntityInterface $entity, ArrayObject $options): void
     {
         $entity->set('afterSaveTriggeredPerDefault', true);
         $entity->set('created', '2010-01-01');

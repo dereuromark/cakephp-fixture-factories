@@ -15,14 +15,14 @@ namespace TestPlugin\Model\Behavior;
 
 use ArrayObject;
 use Cake\Datasource\EntityInterface;
-use Cake\Event\Event;
+use Cake\Event\EventInterface;
 use Cake\ORM\Behavior;
 
 class SomePluginBehavior extends Behavior
 {
     public const BEFORE_SAVE_FIELD =  'beforeSaveWasCalledInSomePluginBehavior';
 
-    public function beforeSave(Event $event, EntityInterface $entity, ArrayObject $options)
+    public function beforeSave(EventInterface $event, EntityInterface $entity, ArrayObject $options): void
     {
         $entity->set(self::BEFORE_SAVE_FIELD, true);
     }

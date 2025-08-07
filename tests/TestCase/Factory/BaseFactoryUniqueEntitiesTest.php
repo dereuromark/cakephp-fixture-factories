@@ -39,7 +39,7 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
         Configure::delete('FixtureFactories.testFixtureNamespace');
     }
 
-    public function testGetUniqueProperties()
+    public function testGetUniqueProperties(): void
     {
         $this->assertSame(
             ['unique_stamp'],
@@ -51,7 +51,7 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
         );
     }
 
-    public function testDetectDuplicateAndThrowErrorWhenPrimary()
+    public function testDetectDuplicateAndThrowErrorWhenPrimary(): void
     {
         $this->expectException(PersistenceException::class);
         $unique_stamp = 'Foo';
@@ -59,14 +59,14 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
         CountryFactory::make(compact('unique_stamp'))->persist();
     }
 
-    public function testSaveEntitiesWithTheSameId()
+    public function testSaveEntitiesWithTheSameId(): void
     {
         $this->expectException(PersistenceException::class);
         AuthorFactory::make(['id' => 1])->persist();
         AuthorFactory::make(['id' => 1])->persist();
     }
 
-    public function testNoUniquenessCreatesMultipleEntities()
+    public function testNoUniquenessCreatesMultipleEntities(): void
     {
         $nCities = 3;
         CityFactory::make($nCities)->with('Country')->persist();
@@ -74,7 +74,7 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
         $this->assertSame($nCities, CountryFactory::count());
     }
 
-    public function testDetectDuplicateInAssociation()
+    public function testDetectDuplicateInAssociation(): void
     {
         $unique_stamp = 'Foo';
         $originalCountry = CountryFactory::make([
@@ -101,7 +101,7 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
      * @When an article with that same author is created
      * @Then the author is not created again, but updated.
      */
-    public function testDetectDuplicatePrimaryKeyInAssociation()
+    public function testDetectDuplicatePrimaryKeyInAssociation(): void
     {
         $authorId = rand();
         $originalAuthor = AuthorFactory::make([
@@ -128,7 +128,7 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
      * @When we get entities
      * @Then An Exception is thrown
      */
-    public function testDetectDuplicateInInstantiation()
+    public function testDetectDuplicateInInstantiation(): void
     {
         $this->expectException(UniquenessException::class);
         $factoryName = CountryFactory::class;
@@ -149,7 +149,7 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
      * @Then An Exception is thrown
      * @throws \Exception
      */
-    public function testDetectDuplicateInInstantiationWithTimes()
+    public function testDetectDuplicateInInstantiationWithTimes(): void
     {
         $this->expectException(UniquenessException::class);
         $factoryName = CountryFactory::class;
@@ -166,7 +166,7 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
      * @When we get entities
      * @Then An Exception is thrown.
      */
-    public function testDetectDuplicateInPatchWithTimes()
+    public function testDetectDuplicateInPatchWithTimes(): void
     {
         $this->expectException(UniquenessException::class);
         $factoryName = CountryFactory::class;
@@ -183,7 +183,7 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
      * @When we persist
      * @Then An Exception is thrown.
      */
-    public function testDetectDuplicateInInstantiationPersist()
+    public function testDetectDuplicateInInstantiationPersist(): void
     {
         $this->expectException(UniquenessException::class);
         $factoryName = CountryFactory::class;
@@ -204,7 +204,7 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
      * @Then An exception is thrown.
      * @throws \Exception
      */
-    public function testDetectDuplicateInInstantiationWithTimesInAssociation()
+    public function testDetectDuplicateInInstantiationWithTimesInAssociation(): void
     {
         $this->expectException(UniquenessException::class);
         $factoryName = CityFactory::class;
@@ -225,7 +225,7 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
      * @Then An exception is thrown.
      * @throws \Exception
      */
-    public function testDetectDuplicateInInstantiationWithTimesInAssociationNumeric()
+    public function testDetectDuplicateInInstantiationWithTimesInAssociationNumeric(): void
     {
         $this->expectException(UniquenessException::class);
         $factoryName = CityFactory::class;
@@ -242,7 +242,7 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
      * @Then only on single city should be persisted and be associated
      * to all n countries.
      */
-    public function testCreateSeveralEntitiesWithSameAssociationHasMany()
+    public function testCreateSeveralEntitiesWithSameAssociationHasMany(): void
     {
         $virtual_unique_stamp = 'foo';
 
@@ -269,7 +269,7 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
      * @Then only on single country should be persisted and be associated
      * to all n cities.
      */
-    public function testCreateSeveralEntitiesWithSameAssociationBelongsTo()
+    public function testCreateSeveralEntitiesWithSameAssociationBelongsTo(): void
     {
         $unique_stamp = 'foo';
 
@@ -294,7 +294,7 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
      * @Then only on single country should be persisted and be associated
      * to all n cities.
      */
-    public function testCreateSeveralEntitiesWithSameAssociationBelongsToWithChainedWith()
+    public function testCreateSeveralEntitiesWithSameAssociationBelongsToWithChainedWith(): void
     {
         $unique_stamp = 'foo';
 

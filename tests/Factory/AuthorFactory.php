@@ -55,17 +55,17 @@ class AuthorFactory extends BaseFactory
             ->withAddress();
     }
 
-    public function withArticles($parameter = null, int $n = 1)
+    public function withArticles(mixed $parameter = null, int $n = 1): self
     {
         return $this->with('Articles', ArticleFactory::make($parameter, $n)->without('Authors'));
     }
 
-    public function withAddress($parameter = null)
+    public function withAddress(mixed $parameter = null): self
     {
         return $this->with('Address', AddressFactory::make($parameter));
     }
 
-    public function fromCountry(string $name)
+    public function fromCountry(string $name): self
     {
         return $this->with('Address.City.Country', CountryFactory::make(compact('name')));
     }

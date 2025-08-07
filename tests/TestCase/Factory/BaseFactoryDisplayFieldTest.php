@@ -22,7 +22,7 @@ use CakephpFixtureFactories\Test\Factory\CountryFactory;
 
 class BaseFactoryDisplayFieldTest extends TestCase
 {
-    public function testUseDisplayFieldIfFieldIsNotSpecified()
+    public function testUseDisplayFieldIfFieldIsNotSpecified(): void
     {
         $title = 'Some title';
         $article = ArticleFactory::make('Some title')->getEntity();
@@ -30,7 +30,7 @@ class BaseFactoryDisplayFieldTest extends TestCase
         $this->assertSame($title, $article->title);
     }
 
-    public function testUseDisplayFieldIfFieldIsNotSpecified_Multiple()
+    public function testUseDisplayFieldIfFieldIsNotSpecified_Multiple(): void
     {
         $titles = ['Some title 1', 'Some title 2'];
         $articles = ArticleFactory::make($titles)->getEntities();
@@ -40,7 +40,7 @@ class BaseFactoryDisplayFieldTest extends TestCase
         }
     }
 
-    public function testUseDisplayFieldInAssociationIfFieldIsNotSpecified()
+    public function testUseDisplayFieldInAssociationIfFieldIsNotSpecified(): void
     {
         $country = 'India';
         $address = AddressFactory::make()->with('City.Country', $country)->getEntity();
@@ -48,7 +48,7 @@ class BaseFactoryDisplayFieldTest extends TestCase
         $this->assertSame($country, $address->city->country->name);
     }
 
-    public function testUseDisplayFieldInAssociationIfFieldIsNotSpecified_Multiple()
+    public function testUseDisplayFieldInAssociationIfFieldIsNotSpecified_Multiple(): void
     {
         $cities = ['Chennai', 'Jodhpur', 'Kolkata'];
         $country = CountryFactory::make()->with('Cities', $cities)->getEntity();
@@ -65,7 +65,7 @@ class BaseFactoryDisplayFieldTest extends TestCase
      *
      * @see BillsTable::initialize()
      */
-    public function testUseDisplayFieldErrorIfDisplayFieldAnArray()
+    public function testUseDisplayFieldErrorIfDisplayFieldAnArray(): void
     {
         $this->expectException(FixtureFactoryException::class);
         $expectedMessage = "The display field of a table must be a string when injecting a string into its factory. You injected 'Some bill' in CakephpFixtureFactories\Test\Factory\BillFactory but TestPlugin\Model\Table\BillsTable's display field is not a string.";

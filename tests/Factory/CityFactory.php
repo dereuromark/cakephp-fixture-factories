@@ -58,7 +58,7 @@ class CityFactory extends BaseFactory
      * @param array|callable|null|int $parameter
      * @return $this
      */
-    public function withCountry($parameter = null)
+    public function withCountry(mixed $parameter = null): self
     {
         return $this->with('Country', CountryFactory::make($parameter));
     }

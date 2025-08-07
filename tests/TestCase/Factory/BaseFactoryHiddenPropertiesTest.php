@@ -32,7 +32,7 @@ class BaseFactoryHiddenPropertiesTest extends TestCase
      * @param Article|Article[] $articles
      * @param bool $persisted
      */
-    private function assertHiddenParagraphIsVisible($articles, bool $persisted)
+    private function assertHiddenParagraphIsVisible($articles, bool $persisted): void
     {
         $articles = is_array($articles) ? $articles : [$articles];
         foreach ($articles as $article) {
@@ -48,7 +48,7 @@ class BaseFactoryHiddenPropertiesTest extends TestCase
         }
     }
 
-    public static function iterate()
+    public static function iterate(): array
     {
         return [
             [1, false],
@@ -67,7 +67,7 @@ class BaseFactoryHiddenPropertiesTest extends TestCase
      * @throws \Exception
      * @dataProvider iterate
      */
-    public function testHiddenPropertyInMainBuild(int $n, bool $persist)
+    public function testHiddenPropertyInMainBuild(int $n, bool $persist): void
     {
         $factory = ArticleFactory::make($n)->withHiddenBiography(self::DUMMY_HIDDEN_PARAGRAPH);
 
@@ -88,7 +88,7 @@ class BaseFactoryHiddenPropertiesTest extends TestCase
      * @throws \Exception
      * @dataProvider iterate
      */
-    public function testHiddenPropertyInBelongsToManyAssociation(int $n, bool $persist)
+    public function testHiddenPropertyInBelongsToManyAssociation(int $n, bool $persist): void
     {
         $factory = AuthorFactory::make()->with(
             'Articles',
@@ -108,7 +108,7 @@ class BaseFactoryHiddenPropertiesTest extends TestCase
      * @throws \Exception
      * @dataProvider iterate
      */
-    public function testHiddenPropertyInBelongsToAssociation(int $n, bool $persist)
+    public function testHiddenPropertyInBelongsToAssociation(int $n, bool $persist): void
     {
         $factory = BillFactory::make($n)->with(
             'Article',

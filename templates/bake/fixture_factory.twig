@@ -49,7 +49,7 @@ class {{ factory }} extends CakephpBaseFactory
 
     /**
      * @param array|callable|null|int|\Cake\Datasource\EntityInterface|string $parameter
-     * @return {{ factory }}
+     * @return self
      */
     public function with{{ association }}($parameter = null): {{ factory }}
     {
@@ -64,7 +64,7 @@ class {{ factory }} extends CakephpBaseFactory
     /**
      * @param array|callable|null|int|\Cake\Datasource\EntityInterface|string $parameter
      * @param int $n
-     * @return {{ factory }}
+     * @return self
      */
     public function with{{ association }}($parameter = null, int $n = 1): {{ factory }}
     {
@@ -79,7 +79,7 @@ class {{ factory }} extends CakephpBaseFactory
     /**
      * @param array|callable|null|int|\Cake\Datasource\EntityInterface|string $parameter
      * @param int $n
-     * @return {{ factory }}
+     * @return self
      */
     public function with{{ association }}($parameter = null, int $n = 1): {{ factory }}
     {

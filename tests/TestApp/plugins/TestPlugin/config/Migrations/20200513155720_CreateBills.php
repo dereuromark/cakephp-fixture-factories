@@ -51,7 +51,7 @@ class CreateBills extends AbstractMigration
             ->create();
     }
 
-    public function down()
+    public function down(): void
     {
         $this->table('bills')->drop();
     }

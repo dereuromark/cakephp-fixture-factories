@@ -25,7 +25,7 @@ class BaseFactoryStaticFinderTest extends TestCase
 {
     use TruncateDirtyTables;
 
-    public $Articles;
+    public \Cake\ORM\Table $Articles;
 
     public function setUp(): void
     {
@@ -52,7 +52,7 @@ class BaseFactoryStaticFinderTest extends TestCase
      * @When I query on the factory tables
      * @Then $n articles are found
      */
-    public function testBaseFactoryStaticFind()
+    public function testBaseFactoryStaticFind(): void
     {
         $n = 2;
         ArticleFactory::make(2)->unpublished()->persist();
@@ -62,7 +62,7 @@ class BaseFactoryStaticFinderTest extends TestCase
         $this->assertSame($n, ArticleFactory::count());
     }
 
-    public function testBaseFactoryStaticFirstOrFail()
+    public function testBaseFactoryStaticFirstOrFail(): void
     {
         $articles = ArticleFactory::make([
             ['title' => 'title 1'],
@@ -76,7 +76,7 @@ class BaseFactoryStaticFinderTest extends TestCase
         $this->assertSame(2, ArticleFactory::count());
     }
 
-    public function testBaseFactoryStaticFirstOrFail_No_Parameters()
+    public function testBaseFactoryStaticFirstOrFail_No_Parameters(): void
     {
         $article = ArticleFactory::make()->persist();
 
@@ -84,7 +84,7 @@ class BaseFactoryStaticFinderTest extends TestCase
         $this->assertSame($article->id, $retrievedArticle->id);
     }
 
-    public function testBaseFactoryStaticFirstOrFailNotFound()
+    public function testBaseFactoryStaticFirstOrFailNotFound(): void
     {
         ArticleFactory::make([
             ['title' => 'title 1'],

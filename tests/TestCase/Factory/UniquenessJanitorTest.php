@@ -22,7 +22,7 @@ use CakephpFixtureFactories\Factory\UniquenessJanitor;
 
 class UniquenessJanitorTest extends TestCase
 {
-    public static function dataForSanitizeEntityArrayOnPrimary()
+    public static function dataForSanitizeEntityArrayOnPrimary(): array
     {
         return [
             [[], false],
@@ -43,7 +43,7 @@ class UniquenessJanitorTest extends TestCase
      * @param array $uniqueProperties
      * @param bool $expectException
      */
-    public function testSanitizeEntityArrayOnPrimary(array $uniqueProperties, bool $expectException)
+    public function testSanitizeEntityArrayOnPrimary(array $uniqueProperties, bool $expectException): void
     {
         $factoryStub = $this->getMockBuilder(BaseFactory::class)->disableOriginalConstructor()->getMock();
         $factoryStub->method('getUniqueProperties')->willReturn($uniqueProperties);
@@ -64,7 +64,7 @@ class UniquenessJanitorTest extends TestCase
         UniquenessJanitor::sanitizeEntityArray($factoryStub, $entities, true);
     }
 
-    public static function dataForSanitizeEntityArrayOnAssociation()
+    public static function dataForSanitizeEntityArrayOnAssociation(): array
     {
         $associatedData = [
             ['property_1' => 'foo', 'property_2' => 'foo'],
@@ -89,7 +89,7 @@ class UniquenessJanitorTest extends TestCase
      * @param \Cake\Datasource\EntityInterface[] $uniqueProperties
      * @param array $expectOutput
      */
-    public function testSanitizeEntityArrayOnAssociation(array $uniqueProperties, array $expectOutput)
+    public function testSanitizeEntityArrayOnAssociation(array $uniqueProperties, array $expectOutput): void
     {
         $factoryStub = $this->getMockBuilder(BaseFactory::class)->disableOriginalConstructor()->getMock();
         $factoryStub->method('getUniqueProperties')->willReturn($uniqueProperties);

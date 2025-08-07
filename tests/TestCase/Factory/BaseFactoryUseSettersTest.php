@@ -20,13 +20,13 @@ use CakephpFixtureFactories\Test\Factory\AuthorFactory;
 
 class BaseFactoryUseSettersTest extends TestCase
 {
-    public function testNonStringField()
+    public function testNonStringField(): void
     {
         $this->expectException(FixtureFactoryException::class);
         AuthorFactory::make()->skipSetterFor(0);
     }
 
-    public function testSettersAreDefinedOnOneAuthor()
+    public function testSettersAreDefinedOnOneAuthor(): void
     {
         $value = 'Foo';
         $author = AuthorFactory::make([
@@ -40,7 +40,7 @@ class BaseFactoryUseSettersTest extends TestCase
         }
     }
 
-    public function testSettersAreDefinedOnTwoAuthors()
+    public function testSettersAreDefinedOnTwoAuthors(): void
     {
         $value = 'Foo';
         $authors = AuthorFactory::make([
@@ -56,7 +56,7 @@ class BaseFactoryUseSettersTest extends TestCase
         }
     }
 
-    public function testSettersAreDefinedOnAssociatedAuthor()
+    public function testSettersAreDefinedOnAssociatedAuthor(): void
     {
         $value = 'Foo';
         $authorFactory = AuthorFactory::make(4)
@@ -75,7 +75,7 @@ class BaseFactoryUseSettersTest extends TestCase
         }
     }
 
-    public function testSetterIsSkippedForDefaultFields()
+    public function testSetterIsSkippedForDefaultFields(): void
     {
         $value = 'Foo';
         $author = AuthorFactory::make([
@@ -89,7 +89,7 @@ class BaseFactoryUseSettersTest extends TestCase
         $this->assertSame($author->prependPrefixToField($value), $author->get('field_with_setter_3'));
     }
 
-    public function testSettersAreSkippedDefinedOnTwoAuthors()
+    public function testSettersAreSkippedDefinedOnTwoAuthors(): void
     {
         $value = 'Foo';
         $authors = AuthorFactory::make([
@@ -105,7 +105,7 @@ class BaseFactoryUseSettersTest extends TestCase
         }
     }
 
-    public function testSettersAreSkippedDefinedOnTwoAuthorsWithMerge()
+    public function testSettersAreSkippedDefinedOnTwoAuthorsWithMerge(): void
     {
         $value = 'Foo';
         $authors = AuthorFactory::make([
@@ -121,7 +121,7 @@ class BaseFactoryUseSettersTest extends TestCase
         }
     }
 
-    public function testSettersAreSkippedOnAssociatedAuthor()
+    public function testSettersAreSkippedOnAssociatedAuthor(): void
     {
         $value = 'Foo';
         $authorFactory = AuthorFactory::make(4)

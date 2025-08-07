@@ -29,14 +29,14 @@ class ModelEventsHandlerTest extends TestCase
         TableRegistry::getTableLocator()->clear();
     }
 
-    public function testBeforeMarshalOnTable()
+    public function testBeforeMarshalOnTable(): void
     {
         $Countries = TableRegistry::getTableLocator()->get('Countries');
         $country = $Countries->newEntity(['name' => 'Foo']);
         $this->assertTrue($country->get('beforeMarshalTriggered'));
     }
 
-    public function testBeforeMarshalOnTableHandled()
+    public function testBeforeMarshalOnTableHandled(): void
     {
         $Countries = TableRegistry::getTableLocator()->get('Countries');
         ModelEventsHandler::handle($Countries);
@@ -44,7 +44,7 @@ class ModelEventsHandlerTest extends TestCase
         $this->assertNull($country->get('beforeMarshalTriggered'));
     }
 
-    public function testBeforeMarshalOnTableHandledPermissive()
+    public function testBeforeMarshalOnTableHandledPermissive(): void
     {
         $Countries = TableRegistry::getTableLocator()->get('Countries');
         ModelEventsHandler::handle($Countries, ['Model.beforeMarshal']);
@@ -52,7 +52,7 @@ class ModelEventsHandlerTest extends TestCase
         $this->assertTrue($country->get('beforeMarshalTriggered'));
     }
 
-    public function testBeforeSaveInBehaviorOnTable()
+    public function testBeforeSaveInBehaviorOnTable(): void
     {
         $Articles = TableRegistry::getTableLocator()->get('Articles');
         $article = $Articles->newEntity(['title' => 'Foo']);
@@ -60,7 +60,7 @@ class ModelEventsHandlerTest extends TestCase
         $this->assertTrue($article->get('beforeSaveInBehaviorTriggered'));
     }
 
-    public function testBeforeSaveInBehaviorOnTableHandled()
+    public function testBeforeSaveInBehaviorOnTableHandled(): void
     {
         $Articles = TableRegistry::getTableLocator()->get('Articles');
         ModelEventsHandler::handle($Articles);
@@ -69,7 +69,7 @@ class ModelEventsHandlerTest extends TestCase
         $this->assertNull($article->get('beforeSaveInBehaviorTriggered'));
     }
 
-    public function testBeforeSaveInBehaviorOnTableHandledPermissive()
+    public function testBeforeSaveInBehaviorOnTableHandledPermissive(): void
     {
         $Articles = TableRegistry::getTableLocator()->get('Articles');
         ModelEventsHandler::handle($Articles, [], ['Sluggable']);

@@ -24,7 +24,7 @@ use TestApp\Model\Entity\Author;
 
 class BaseFactoryDefaultValuesTest extends TestCase
 {
-    public function testMakeAuthorWithDefaultName()
+    public function testMakeAuthorWithDefaultName(): void
     {
         $author = AuthorFactory::make()->getEntity();
         $this->assertTrue(is_string($author->name));
@@ -33,7 +33,7 @@ class BaseFactoryDefaultValuesTest extends TestCase
         $this->assertTrue(is_string($author->address->city->country->name));
     }
 
-    public function testMakeAuthorWithArticlesWithDefaultTitles()
+    public function testMakeAuthorWithArticlesWithDefaultTitles(): void
     {
         $n = 2;
         $author = AuthorFactory::make()->withArticles($n)->getEntity();
@@ -43,7 +43,7 @@ class BaseFactoryDefaultValuesTest extends TestCase
         }
     }
 
-    public function testPersistAddressWithCityAndCountry()
+    public function testPersistAddressWithCityAndCountry(): void
     {
         $address = AddressFactory::make()->persist();
 
@@ -54,7 +54,7 @@ class BaseFactoryDefaultValuesTest extends TestCase
         $this->assertTrue(is_numeric($address->city->country_id));
     }
 
-    public function testChildAssociation()
+    public function testChildAssociation(): void
     {
         $article = ArticleWithFiveBillsFactory::make()->getEntity();
 
@@ -66,7 +66,7 @@ class BaseFactoryDefaultValuesTest extends TestCase
      * PatchData should overwrite the data passed
      * in the instantiation
      */
-    public function testPatchDataAndCallable()
+    public function testPatchDataAndCallable(): void
     {
         $n = 2;
         $title = 'Some title';
@@ -81,21 +81,21 @@ class BaseFactoryDefaultValuesTest extends TestCase
         }
     }
 
-    public function testPatchDataAndDefaultValue()
+    public function testPatchDataAndDefaultValue(): void
     {
         $title = 'Some title';
         $article = ArticleFactory::make()->patchData(compact('title'))->persist();
         $this->assertSame($title, $article->title);
     }
 
-    public function testPatchDataAndStaticValue()
+    public function testPatchDataAndStaticValue(): void
     {
         $title = 'Some title';
         $article = ArticleFactory::make(['title' => 'Some other title'])->patchData(compact('title'))->persist();
         $this->assertSame($title, $article->title);
     }
 
-    public function testTitleModifiedInMultipleCreationWithCallback()
+    public function testTitleModifiedInMultipleCreationWithCallback(): void
     {
         $n = 3;
         $articles = ArticleFactory::make(function (ArticleFactory $factory, GeneratorInterface $generator) {
@@ -112,7 +112,7 @@ class BaseFactoryDefaultValuesTest extends TestCase
         }
     }
 
-    public function testDefaultValuesOfArticleDifferent()
+    public function testDefaultValuesOfArticleDifferent(): void
     {
         $n = 5;
         $articles = ArticleFactory::make($n)->getEntities();
@@ -124,7 +124,7 @@ class BaseFactoryDefaultValuesTest extends TestCase
      * When creating multiples Authors for an article,
      * these authors should be different
      */
-    public function testDefautlValuesOfArticleAuthorsDifferent()
+    public function testDefautlValuesOfArticleAuthorsDifferent(): void
     {
         $n = 5;
         $article = ArticleFactory::make()->withAuthors($n)->getEntity();

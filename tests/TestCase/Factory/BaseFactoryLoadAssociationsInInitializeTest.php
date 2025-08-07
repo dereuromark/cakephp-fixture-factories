@@ -56,7 +56,7 @@ class BaseFactoryLoadAssociationsInInitializeTest extends TestCase
         FactoryTableRegistry::getTableLocator()->clear();
     }
 
-    public function testLoadAssociationInInitialize_Get_Entity()
+    public function testLoadAssociationInInitialize_Get_Entity(): void
     {
         $name = 'Foo';
         $city = CityFactory::make()
@@ -69,7 +69,7 @@ class BaseFactoryLoadAssociationsInInitializeTest extends TestCase
         $this->assertSame($name, $tableWithoutModel->get('name'));
     }
 
-    public function testLoadAssociationInInitialize_Get_Entities()
+    public function testLoadAssociationInInitialize_Get_Entities(): void
     {
         $name = 'Foo';
         $n = 2;
@@ -84,7 +84,7 @@ class BaseFactoryLoadAssociationsInInitializeTest extends TestCase
         }
     }
 
-    public function testLoadAssociationInInitialize_Persist()
+    public function testLoadAssociationInInitialize_Persist(): void
     {
         $name = 'Foo';
         $city = CityFactory::make()
@@ -100,7 +100,7 @@ class BaseFactoryLoadAssociationsInInitializeTest extends TestCase
         $this->assertSame(1, CountryFactory::count());
     }
 
-    public function testLoadAssociationOnTheFly_Has_One_Persist()
+    public function testLoadAssociationOnTheFly_Has_One_Persist(): void
     {
         $factory = CityFactory::make();
         $factory->getTable()->hasOne('HasOneTableWithoutModel', [
@@ -127,7 +127,7 @@ class BaseFactoryLoadAssociationsInInitializeTest extends TestCase
     }
 
     /** @dataProvider dataForClassName */
-    public function testLoadAssociationOnTheFly_HasMany_With_Magic_Persist($className)
+    public function testLoadAssociationOnTheFly_HasMany_With_Magic_Persist(string $className): void
     {
         CityFactory::make()->getTable()->associations()->remove('Addresses');
         CityFactory::make()->getTable()->hasMany('Addresses', compact('className'));
@@ -149,7 +149,7 @@ class BaseFactoryLoadAssociationsInInitializeTest extends TestCase
     }
 
     /** @dataProvider dataForClassName */
-    public function testLoadAssociationOnTheFly_BelongsTo_With_Magic_Persist($className)
+    public function testLoadAssociationOnTheFly_BelongsTo_With_Magic_Persist(string $className): void
     {
         // Because of a foreign key constrain at the DB level, a country with id $city->country_id
         // must be in the DB
@@ -173,7 +173,7 @@ class BaseFactoryLoadAssociationsInInitializeTest extends TestCase
     }
 
     /** @dataProvider dataForClassName */
-    public function testLoadAssociationOnTheFly_BelongsToMany_With_Magic_Persist($className)
+    public function testLoadAssociationOnTheFly_BelongsToMany_With_Magic_Persist(string $className): void
     {
         $factory = AuthorFactory::make();
         $factory->getTable()->belongsToMany('ParallelArticles', [
@@ -206,7 +206,7 @@ class BaseFactoryLoadAssociationsInInitializeTest extends TestCase
         }
     }
 
-    public function testLoadAssociationOnTheFly_Overwrite_Existing_Association_Persist()
+    public function testLoadAssociationOnTheFly_Overwrite_Existing_Association_Persist(): void
     {
         $factory = CityFactory::make();
         $this->assertTrue($factory->getTable()->hasAssociation('Addresses'));

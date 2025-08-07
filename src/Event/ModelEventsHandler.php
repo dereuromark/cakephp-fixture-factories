@@ -156,9 +156,11 @@ class ModelEventsHandler
                 continue;
             }
 
-            $behavior = $table->getBehavior($behavior);
-            $behavior = get_class($behavior);
-            if ($listener instanceof $behavior) {
+            /** @phpstan-ignore-next-line */
+            $behaviorInstance = $table->getBehavior($behavior);
+
+            $behaviorClassName = get_class($behaviorInstance);
+            if ($listener instanceof $behaviorClassName) {
                 return;
             }
         }
