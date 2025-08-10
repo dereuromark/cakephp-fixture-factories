@@ -21,7 +21,7 @@ CakePHP 5 and non-CakePHP applications
 ```
 composer require --dev vierge-noire/cakephp-fixture-factories "^3.0"
 ```
-Note: 3.1+ requires PHP 8.2+.
+Note: 3.1+ requires PHP 8.3+.
 
 CakePHP 4
 ```
