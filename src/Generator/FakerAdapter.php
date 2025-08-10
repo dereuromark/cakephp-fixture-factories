@@ -15,6 +15,8 @@ namespace CakephpFixtureFactories\Generator;
 
 use Faker\Factory;
 use Faker\Generator;
+use InvalidArgumentException;
+use ReflectionEnum;
 use Throwable;
 
 /**
@@ -64,6 +66,26 @@ class FakerAdapter implements GeneratorInterface
      */
     public function __call(string $name, array $arguments): mixed
     {
+        // Handle enum method specially since Faker doesn't have it
+        if ($name === 'enum' && count($arguments) === 1) {
+            $enumClass = $arguments[0];
+            if (!is_string($enumClass) || !enum_exists($enumClass)) {
+                throw new InvalidArgumentException("Invalid enum class: $enumClass");
+            }
+
+            $reflection = new ReflectionEnum($enumClass);
+            if (!$reflection->isBacked()) {
+                throw new InvalidArgumentException("Only backed enums are supported: $enumClass");
+            }
+
+            $cases = $enumClass::cases();
+            if (empty($cases)) {
+                throw new InvalidArgumentException("Enum has no cases: $enumClass");
+            }
+
+            return $this->generator->randomElement($cases)->value;
+        }
+
         return $this->generator->$name(...$arguments);
     }
 

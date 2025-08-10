@@ -19,7 +19,9 @@ use DummyGenerator\Container\DefinitionContainerBuilder;
 use DummyGenerator\Container\DefinitionContainerInterface;
 use DummyGenerator\DummyGenerator;
 use DummyGenerator\Strategy\UniqueStrategy;
+use InvalidArgumentException;
 use OverflowException;
+use ReflectionEnum;
 
 /**
  * Adapter for DummyGenerator library
@@ -101,6 +103,34 @@ class DummyGeneratorAdapter implements GeneratorInterface
         // Handle shimmed methods that DummyGenerator doesn't support
         if ($name === 'uuid') {
             return $this->generateUuid();
+        }
+
+        // Handle enum method specially since DummyGenerator doesn't have it
+        if ($name === 'enum' && count($arguments) === 1) {
+            /** @var \BackedEnum $enumClass */
+            $enumClass = $arguments[0];
+            if (!is_string($enumClass) || !enum_exists($enumClass)) {
+                throw new InvalidArgumentException("Invalid enum class: $enumClass");
+            }
+
+            $reflection = new ReflectionEnum($enumClass);
+            if (!$reflection->isBacked()) {
+                throw new InvalidArgumentException("Only backed enums are supported: $enumClass");
+            }
+
+            $cases = $enumClass::cases();
+            if (empty($cases)) {
+                throw new InvalidArgumentException("Enum has no cases: $enumClass");
+            }
+
+            // Use randomElement if available, otherwise fall back to array_rand
+            if (method_exists($this->generator, 'randomElement')) {
+                return $this->generator->randomElement(array_map(fn($case) => $case->value, $cases));
+            } else {
+                $randomCase = $cases[array_rand($cases)];
+
+                return $randomCase->value;
+            }
         }
 
         // DummyGenerator uses __call for all its methods, so we try to call it directly
