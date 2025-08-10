@@ -16,8 +16,9 @@ namespace CakephpFixtureFactories\Generator;
 use BadMethodCallException;
 use Cake\Utility\Text;
 use DummyGenerator\Container\DefinitionContainerBuilder;
+use DummyGenerator\Container\DefinitionContainerInterface;
 use DummyGenerator\DummyGenerator;
-use DummyGenerator\Strategy\SimpleStrategy;
+use DummyGenerator\Strategy\UniqueStrategy;
 use OverflowException;
 
 /**
@@ -43,6 +44,11 @@ class DummyGeneratorAdapter implements GeneratorInterface
     private bool $isUnique = false;
 
     /**
+     * @var \DummyGenerator\Container\DefinitionContainerInterface
+     */
+    private DefinitionContainerInterface $container;
+
+    /**
      * Constructor
      *
      * @param string|null $locale The locale to use
@@ -52,9 +58,12 @@ class DummyGeneratorAdapter implements GeneratorInterface
     {
         // DummyGenerator doesn't use locale in the same way as Faker
         // The $locale parameter is kept for interface compatibility
-        $container = DefinitionContainerBuilder::all();
-        $strategy = new SimpleStrategy();
-        $this->generator = new DummyGenerator($container, $strategy);
+        $this->container = DefinitionContainerBuilder::all();
+
+        // Configure with UniqueStrategy as suggested in PR comments
+        $strategy = new UniqueStrategy(retries: 1000);
+
+        $this->generator = new DummyGenerator($this->container, $strategy);
     }
 
     /**
@@ -63,9 +72,11 @@ class DummyGeneratorAdapter implements GeneratorInterface
     public function seed(?int $seed = null): void
     {
         if ($seed !== null) {
-            // DummyGenerator doesn't support seeding directly
-            // We would need to implement a custom strategy with seeded randomizer
-            // For now, this is a no-op to maintain interface compatibility
+            // Note: The current version of DummyGenerator (0.0.5) doesn't support
+            // seeded randomization in the same way as Faker. The PR comment suggested
+            // using XoshiroRandomizer, but that would require a newer version
+            // or custom integration with the definition container.
+            // For now, this is a no-op to maintain interface compatibility.
         }
     }
 
