@@ -14,14 +14,14 @@ declare(strict_types=1);
 namespace CakephpFixtureFactories\Generator;
 
 use BadMethodCallException;
-use Cake\Utility\Text;
 use DummyGenerator\Container\DefinitionContainerBuilder;
 use DummyGenerator\Container\DefinitionContainerInterface;
+use DummyGenerator\Core\Randomizer\XoshiroRandomizer;
+use DummyGenerator\Definitions\Randomizer\RandomizerInterface;
 use DummyGenerator\DummyGenerator;
 use DummyGenerator\Strategy\UniqueStrategy;
 use InvalidArgumentException;
 use OverflowException;
-use ReflectionEnum;
 
 /**
  * Adapter for DummyGenerator library
@@ -74,11 +74,15 @@ class DummyGeneratorAdapter implements GeneratorInterface
     public function seed(?int $seed = null): void
     {
         if ($seed !== null) {
-            // Note: The current version of DummyGenerator (0.0.5) doesn't support
-            // seeded randomization in the same way as Faker. The PR comment suggested
-            // using XoshiroRandomizer, but that would require a newer version
-            // or custom integration with the definition container.
-            // For now, this is a no-op to maintain interface compatibility.
+            // Use XoshiroRandomizer with seed for deterministic generation
+            $this->container->add(
+                RandomizerInterface::class,
+                new XoshiroRandomizer($seed),
+            );
+
+            // Recreate the generator with the updated container
+            $strategy = new UniqueStrategy(retries: 1000);
+            $this->generator = new DummyGenerator($this->container, $strategy);
         }
     }
 
@@ -100,48 +104,34 @@ class DummyGeneratorAdapter implements GeneratorInterface
      */
     public function __call(string $name, array $arguments): mixed
     {
-        // Handle shimmed methods that DummyGenerator doesn't support
+        // Map uuid() to uuid4() for compatibility
         if ($name === 'uuid') {
-            return $this->generateUuid();
-        }
-
-        // Handle enum method specially since DummyGenerator doesn't have it
-        if ($name === 'enum' && count($arguments) === 1) {
-            /** @var \BackedEnum $enumClass */
-            $enumClass = $arguments[0];
-            if (!is_string($enumClass) || !enum_exists($enumClass)) {
-                throw new InvalidArgumentException("Invalid enum class: $enumClass");
-            }
-
-            $reflection = new ReflectionEnum($enumClass);
-            if (!$reflection->isBacked()) {
-                throw new InvalidArgumentException("Only backed enums are supported: $enumClass");
-            }
-
-            $cases = $enumClass::cases();
-            if (empty($cases)) {
-                throw new InvalidArgumentException("Enum has no cases: $enumClass");
-            }
-
-            // Use randomElement if available, otherwise fall back to array_rand
-            if (method_exists($this->generator, 'randomElement')) {
-                return $this->generator->randomElement(array_map(fn($case) => $case->value, $cases));
-            } else {
-                $randomCase = $cases[array_rand($cases)];
-
-                return $randomCase->value;
-            }
+            return $this->handleUniqueCall('uuid4', []);
         }
 
         // DummyGenerator uses __call for all its methods, so we try to call it directly
+        return $this->handleUniqueCall($name, $arguments);
+    }
+
+    /**
+     * Handle method calls with unique value tracking
+     *
+     * @param string $method The method name to call
+     * @param array $arguments The arguments to pass
+     * @return mixed The result of the method call
+     * @throws \OverflowException If unable to generate unique value
+     * @throws \BadMethodCallException If method not found
+     */
+    private function handleUniqueCall(string $method, array $arguments): mixed
+    {
         try {
             if ($this->isUnique) {
                 $maxRetries = 10000;
                 $retries = 0;
 
                 do {
-                    $value = $this->generator->$name(...$arguments);
-                    $key = $name . '::' . serialize($value);
+                    $value = $this->generator->$method(...$arguments);
+                    $key = $method . '::' . serialize($value);
 
                     if (!isset($this->uniqueValues[$key])) {
                         $this->uniqueValues[$key] = true;
@@ -152,12 +142,12 @@ class DummyGeneratorAdapter implements GeneratorInterface
                     $retries++;
                 } while ($retries < $maxRetries);
 
-                throw new OverflowException("Unable to generate unique value for '$name' after $maxRetries attempts");
+                throw new OverflowException("Unable to generate unique value for '$method' after $maxRetries attempts");
             }
 
-            return $this->generator->$name(...$arguments);
-        } catch (BadMethodCallException $e) {
-            throw new BadMethodCallException("Method `$name` not found");
+            return $this->generator->$method(...$arguments);
+        } catch (BadMethodCallException | InvalidArgumentException $e) {
+            throw new BadMethodCallException("Method `$method` not found");
         }
     }
 
@@ -188,48 +178,5 @@ class DummyGeneratorAdapter implements GeneratorInterface
     public function resetUnique(): void
     {
         $this->uniqueValues = [];
-    }
-
-    /**
-     * Generate a UUID v4 string
-     *
-     * This is a shim method since DummyGenerator doesn't support uuid() natively.
-     * Generates a proper UUID v4 compatible string.
-     *
-     * @return string UUID v4 string
-     */
-    private function generateUuid(): string
-    {
-        if ($this->isUnique) {
-            $maxRetries = 10000;
-            $retries = 0;
-
-            do {
-                $uuid = $this->createUuidV4();
-                $key = 'uuid::' . $uuid;
-
-                if (!isset($this->uniqueValues[$key])) {
-                    $this->uniqueValues[$key] = true;
-
-                    return $uuid;
-                }
-
-                $retries++;
-            } while ($retries < $maxRetries);
-
-            throw new OverflowException("Unable to generate unique UUID after $maxRetries attempts");
-        }
-
-        return $this->createUuidV4();
-    }
-
-    /**
-     * Create a UUID v4 string
-     *
-     * @return string UUID v4 string
-     */
-    private function createUuidV4(): string
-    {
-        return Text::uuid();
     }
 }

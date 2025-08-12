@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace CakephpFixtureFactories\Generator;
 
 use Faker\UniqueGenerator;
+use OverflowException;
 use ReflectionObject;
 
 /**
@@ -46,8 +47,7 @@ class FakerUniqueAdapter implements UniqueGeneratorInterface
         $reflection = new ReflectionObject($this->generator);
         $uniquesProperty = $reflection->getProperty('uniques');
         $uniquesProperty->setAccessible(true);
-        $uniques = &$uniquesProperty->getValue($this->generator);
-        $uniques = [];
+        $uniquesProperty->setValue($this->generator, []);
     }
 
     /**
@@ -71,6 +71,63 @@ class FakerUniqueAdapter implements UniqueGeneratorInterface
      */
     public function __call(string $name, array $arguments): mixed
     {
+        // Handle enum methods that Faker's unique generator doesn't understand
+        if ($name === 'enumValue' && count($arguments) === 1) {
+            // Get the underlying generator and manually handle unique tracking
+            $reflection = new ReflectionObject($this->generator);
+
+            // Get unique values array
+            $uniquesProperty = $reflection->getProperty('uniques');
+            $uniquesProperty->setAccessible(true);
+            $uniques = $uniquesProperty->getValue($this->generator);
+
+            $maxRetries = 10000;
+            $key = 'enumValue';
+
+            for ($i = 0; $i < $maxRetries; $i++) {
+                // Manually call enumValue on the FakerAdapter
+                $adapter = new FakerAdapter();
+                $value = $adapter->enumValue($arguments[0]);
+
+                if (!isset($uniques[$key]) || !in_array($value, $uniques[$key], true)) {
+                    $uniques[$key][] = $value;
+                    $uniquesProperty->setValue($this->generator, $uniques);
+
+                    return $value;
+                }
+            }
+
+            throw new OverflowException("Unable to generate unique value for 'enumValue'");
+        }
+
+        if ($name === 'enumElement' && count($arguments) === 1) {
+            // Similar handling for enumElement
+            $reflection = new ReflectionObject($this->generator);
+
+            // Get unique values array
+            $uniquesProperty = $reflection->getProperty('uniques');
+            $uniquesProperty->setAccessible(true);
+            $uniques = $uniquesProperty->getValue($this->generator);
+
+            $maxRetries = 10000;
+            $key = 'enumElement';
+
+            for ($i = 0; $i < $maxRetries; $i++) {
+                // Manually call enumElement on the FakerAdapter
+                $adapter = new FakerAdapter();
+                $element = $adapter->enumElement($arguments[0]);
+
+                if (!isset($uniques[$key]) || !in_array($element, $uniques[$key], true)) {
+                    $uniques[$key][] = $element;
+                    $uniquesProperty->setValue($this->generator, $uniques);
+
+                    return $element;
+                }
+            }
+
+            throw new OverflowException("Unable to generate unique value for 'enumElement'");
+        }
+
         return $this->generator->$name(...$arguments);
     }
 
