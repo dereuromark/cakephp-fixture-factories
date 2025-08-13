@@ -44,7 +44,7 @@ class ArticleFactory extends BaseFactory
           ->withAuthors(2);
     }
 
-    public function withAuthors($parameter = null, int $n = 1): self
+    public function withAuthors($parameter = null, int $n = 1): static
     {
         return $this->with('Authors', AuthorFactory::make($parameter, $n));
     }

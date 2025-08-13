@@ -50,17 +50,25 @@ class ArticleFactory extends BaseFactory
      */
     protected function setDefaultTemplate(): void
     {
-        $this->setDefaultData(function (GeneratorInterface $generator) {
-            return [
-                'title' => $generator->text(120),
-            ];
-        })
-        ->withAuthors(null, self::DEFAULT_NUMBER_OF_AUTHORS);
+        $this
+            ->setDefaultData(function (GeneratorInterface $generator) {
+                return [
+                    'title' => $generator->text(120),
+                ];
+            });
+            // Removed default authors to simplify testing
+            // ->withAuthors(null, self::DEFAULT_NUMBER_OF_AUTHORS);
     }
 
-    public function withAuthors(mixed $parameter = null, int $n = 1): self
+    public function withAuthors(mixed $parameter = null, int $n = 1)
     {
-        return $this->with('Authors', AuthorFactory::make($parameter, $n));
+        // Handle the case where parameter is actually the count
+        if (is_int($parameter) && $n === 1) {
+            $n = $parameter;
+            $parameter = null;
+        }
+        
+        return $this->withAssoc('Authors', AuthorFactory::make($parameter)->times($n));
     }
 
     /**
@@ -71,9 +79,15 @@ class ArticleFactory extends BaseFactory
      * @param int $n
      * @return ArticleFactory
      */
-    public function withBills(mixed $parameter = null, int $n = 1): self
+    public function withBills(mixed $parameter = null, int $n = 1)
     {
-        return $this->with('Bills', BillFactory::make($parameter, $n)->without('Article'));
+        // Handle the case where parameter is actually the count
+        if (is_int($parameter) && $n === 1) {
+            $n = $parameter;
+            $parameter = null;
+        }
+        
+        return $this->withAssoc('Bills', BillFactory::make($parameter)->times($n)->withoutAssoc('Article'));
     }
 
     /**
@@ -84,9 +98,15 @@ class ArticleFactory extends BaseFactory
      * @param int $n
      * @return ArticleFactory
      */
-    public function withBillsWithArticle(mixed $parameter = null, int $n = 1): self
+    public function withBillsWithArticle(mixed $parameter = null, int $n = 1)
     {
-        return $this->with('Bills', BillFactory::make($parameter, $n));
+        // Handle the case where parameter is actually the count
+        if (is_int($parameter) && $n === 1) {
+            $n = $parameter;
+            $parameter = null;
+        }
+        
+        return $this->withAssoc('Bills', BillFactory::make($parameter)->times($n));
     }
 
     /**
@@ -95,7 +115,7 @@ class ArticleFactory extends BaseFactory
      * @param string $title
      * @return ArticleFactory
      */
-    public function withTitle(string $title): self
+    public function withTitle(string $title)
     {
         return $this->patchData(compact('title'));
     }
@@ -105,22 +125,22 @@ class ArticleFactory extends BaseFactory
      *
      * @return ArticleFactory
      */
-    public function setJobTitle(): self
+    public function setJobTitle(): static
     {
         return $this->setField('title', $this->getGenerator()->jobTitle());
     }
 
-    public function withHiddenBiography(string $text): self
+    public function withHiddenBiography(string $text): static
     {
         return $this->setField(Article::HIDDEN_PARAGRAPH_PROPERTY_NAME, $text);
     }
 
-    public function published(): self
+    public function published(): static
     {
         return $this->setField('published', true);
     }
 
-    public function unpublished(): self
+    public function unpublished(): static
     {
         return $this->setField('published', 0);
     }

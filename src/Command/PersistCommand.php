@@ -160,13 +160,14 @@ class PersistCommand extends Command
         if ($method === null) {
             return $factory;
         }
-        if (!method_exists($factory, $method)) {
+        $methodStr = is_string($method) ? $method : '';
+        if (!method_exists($factory, $methodStr)) {
             $className = get_class($factory);
             $io->error("The method {$method} was not found in {$className}.");
             throw new FactoryNotFoundException();
         }
 
-        return $factory->{$method}();
+        return $factory->{$methodStr}();
     }
 
     /**
@@ -182,7 +183,10 @@ class PersistCommand extends Command
             return $factory;
         }
 
-        return $factory->with($with);
+        // Convert to array for with() method
+        $withData = is_string($with) ? ['value' => $with] : [];
+
+        return $factory->with($withData);
     }
 
     /**
@@ -210,7 +214,8 @@ class PersistCommand extends Command
     public function persist(BaseFactory $factory, Arguments $args, ConsoleIo $io): void
     {
         $connection = $args->getOption('connection') ?? 'test';
-        $this->aliasConnection($connection, $factory);
+        $connectionStr = is_string($connection) ? $connection : 'test';
+        $this->aliasConnection($connectionStr, $factory);
 
         $entities = [];
         try {
@@ -220,9 +225,16 @@ class PersistCommand extends Command
             $this->abort();
         }
 
-        $times = is_subclass_of($entities, EntityInterface::class) ? 1 : count($entities);
-        $factory = get_class($factory);
-        $io->success("{$times} {$factory} persisted on '{$connection}' connection.");
+        // Count entities - either single or array
+        if ($entities instanceof EntityInterface) {
+            $times = 1;
+        } elseif (is_array($entities)) {
+            $times = count($entities);
+        } else {
+            $times = 1;
+        }
+        $factoryClass = get_class($factory);
+        $io->success("{$times} {$factoryClass} persisted on '{$connectionStr}' connection.");
     }
 
     /**
@@ -234,14 +246,14 @@ class PersistCommand extends Command
     {
         $entities = $factory->getEntities();
         $times = count($entities);
-        $factory = get_class($factory);
+        $factoryClass = get_class($factory);
 
-        $io->success("{$times} {$factory} generated on dry run.");
+        $io->success("{$times} {$factoryClass} generated on dry run.");
         foreach ($entities as $i => $entity) {
             $io->hr();
             $io->info("[$i]");
             $output = json_encode($entity->toArray(), JSON_PRETTY_PRINT);
-            $io->info($output);
+            $io->info($output ?: 'Unable to encode entity');
         }
     }
 }

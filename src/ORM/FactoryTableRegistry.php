@@ -60,6 +60,10 @@ class FactoryTableRegistry extends TableRegistry
             return self::$_locator;
         }
 
-        return self::$_locator = new static::$_defaultLocatorClass();
+        /** @var \CakephpFixtureFactories\ORM\FactoryTableLocator $locator */
+        $locator = new static::$_defaultLocatorClass();
+        self::$_locator = $locator;
+
+        return self::$_locator;
     }
 }

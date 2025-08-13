@@ -49,8 +49,8 @@ class FixtureInjectorTest extends TestCase
     {
         return [
             [1, ArticleFactory::make()],
-            [2, ArticleFactory::make(2)],
-            [10, ArticleFactory::make(10)],
+            [2, ArticleFactory::make()->times(2)],
+            [10, ArticleFactory::make()->times(10)],
         ];
     }
 

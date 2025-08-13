@@ -268,7 +268,7 @@ class EventCollectorTest extends TestCase
 
     public function testSkipValidation(): void
     {
-        $city = CityFactory::make()->without('Country')->getEntity();
+        $city = CityFactory::make()->withoutAssoc('Country')->getEntity();
         $this->assertInstanceOf(City::class, $city);
         $this->assertEmpty($city->getErrors());
     }
@@ -276,7 +276,7 @@ class EventCollectorTest extends TestCase
     public function testSkipValidationInAssociation(): void
     {
         $address = AddressFactory::make()
-            ->with('City', CityFactory::make()->without('Country'))
+            ->with('City', CityFactory::make()->withoutAssoc('Country'))
             ->getEntity();
         $this->assertInstanceOf(Address::class, $address);
         $this->assertInstanceOf(City::class, $address->city);
@@ -291,7 +291,7 @@ class EventCollectorTest extends TestCase
                 'City',
                 CityFactory::make()
                     ->listeningToModelEvents('Model.beforeMarshal')
-                    ->without('Country'),
+                    ->withoutAssoc('Country'),
             )
             ->getEntity();
         $this->assertInstanceOf(Address::class, $address);

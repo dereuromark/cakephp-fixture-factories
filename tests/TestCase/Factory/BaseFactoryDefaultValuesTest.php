@@ -75,7 +75,7 @@ class BaseFactoryDefaultValuesTest extends TestCase
                 'title' => $generator->jobTitle(),
                 'body' => $generator->realText(100),
             ];
-        }, $n)->withTitle($title)->persist();
+        })->times($n)->withTitle($title)->persist();
         foreach ($articles as $article) {
             $this->assertEquals($title, $article->title);
         }
@@ -102,7 +102,7 @@ class BaseFactoryDefaultValuesTest extends TestCase
             return [
                 'body' => $generator->realText(100),
             ];
-        }, $n)->persist();
+        })->times($n)->persist();
         $firstTitle = $articles[0]->title;
         $firstBody = $articles[0]->body;
         unset($articles[0]);
@@ -115,7 +115,7 @@ class BaseFactoryDefaultValuesTest extends TestCase
     public function testDefaultValuesOfArticleDifferent(): void
     {
         $n = 5;
-        $articles = ArticleFactory::make($n)->getEntities();
+        $articles = ArticleFactory::make()->times($n)->getEntities();
         $titles = Hash::extract($articles, '{n}.title');
         $this->assertEquals($n, count(array_unique($titles)));
     }

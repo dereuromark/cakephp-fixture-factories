@@ -28,7 +28,6 @@ use CakephpFixtureFactories\Factory\FactoryAwareTrait;
 use Exception;
 use Override;
 use ReflectionClass;
-use ReflectionException;
 
 class BakeFixtureFactoryCommand extends BakeCommand
 {
@@ -163,7 +162,9 @@ class BakeFixtureFactoryCommand extends BakeCommand
         try {
             $this->table->getSchema();
         } catch (Exception $e) {
-            $io->warning("The table $tableName could not be found... in " . $this->getModelPath());
+            $modelPath = $this->getModelPath();
+            $modelPathStr = is_array($modelPath) ? implode(', ', $modelPath) : $modelPath;
+            $io->warning("The table $tableName could not be found... in " . $modelPathStr);
             $io->abort($e->getMessage());
         }
 
@@ -213,7 +214,9 @@ class BakeFixtureFactoryCommand extends BakeCommand
      */
     public function getTableList(ConsoleIo $io): array
     {
-        $tables = glob($this->getModelPath() . '*Table.php') ?: [];
+        $modelPath = $this->getModelPath();
+        $modelPathStr = is_array($modelPath) ? implode('/', $modelPath) : $modelPath;
+        $tables = glob($modelPathStr . '*Table.php') ?: [];
 
         $tables = array_map(function ($a) {
             return preg_replace('/Table.php$/', '', $a);
@@ -245,8 +248,10 @@ class BakeFixtureFactoryCommand extends BakeCommand
         $tableClassName .= "\Model\Table\\{$table}Table";
 
         try {
+            /** @var class-string $tableClassName */
             $class = new ReflectionClass($tableClassName);
-        } catch (ReflectionException $e) {
+        /** @phpstan-ignore-next-line */
+        } catch (Exception $e) {
             $io->error($e->getMessage());
 
             return false;
@@ -268,7 +273,9 @@ class BakeFixtureFactoryCommand extends BakeCommand
     {
         $tables = $this->getTableList($io);
         if (empty($tables)) {
-            $io->err(sprintf('No tables were found at `%s`', $this->getModelPath()));
+            $modelPath = $this->getModelPath();
+            $modelPathStr = is_array($modelPath) ? implode(', ', $modelPath) : $modelPath;
+            $io->err(sprintf('No tables were found at `%s`', $modelPathStr));
         } else {
             foreach ($tables as $table) {
                 $this->bakeFixtureFactory($table, $args, $io);
@@ -347,7 +354,9 @@ class BakeFixtureFactoryCommand extends BakeCommand
         $path = $this->getPath($args);
         $filename = $path . $this->getFactoryFileName($modelName);
 
-        return $io->createFile($filename, $contents, $args->getOption('force') ?? false);
+        $forceOverwrite = (bool)($args->getOption('force') ?? false);
+
+        return $io->createFile($filename, $contents, $forceOverwrite);
     }
 
     /**

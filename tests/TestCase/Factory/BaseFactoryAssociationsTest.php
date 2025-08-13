@@ -79,7 +79,7 @@ class BaseFactoryAssociationsTest extends TestCase
         $nAuthors = 3;
         $mArticles = 5;
         $article = ArticleFactory::make()
-            ->with("Authors[$nAuthors].Articles[$mArticles].Bills", BillFactory::make()->without('Article'))
+            ->with("Authors[$nAuthors].Articles[$mArticles].Bills", BillFactory::make()->withoutAssoc('Article'))
             ->persist();
 
         $authors = $article->authors;
@@ -233,7 +233,7 @@ class BaseFactoryAssociationsTest extends TestCase
         $n = 10;
         $country = 'Foo';
         $path = 'BusinessAddress.City.Country';
-        $authors = AuthorFactory::make($n)->with($path, [
+        $authors = AuthorFactory::make()->times($n)->with($path, [
             'name' => $country,
         ])->persist();
 
@@ -279,7 +279,7 @@ class BaseFactoryAssociationsTest extends TestCase
     public function testGetAssociatedFactoryInPluginWithMultipleConstructs(): void
     {
         $n = 10;
-        $article = ArticleFactory::make()->with('Bills', BillFactory::make($n)->with('Customer'))->persist();
+        $article = ArticleFactory::make()->with('Bills', BillFactory::make()->times($n)->with('Customer'))->persist();
 
         $this->assertInstanceOf(Bill::class, $article->bills[0]);
         $this->assertInstanceOf(Customer::class, $article->bills[0]->customer);
@@ -334,7 +334,7 @@ class BaseFactoryAssociationsTest extends TestCase
         $author = AuthorFactory::make()
             ->with('BusinessAddress.City.Country')
             ->with('BusinessAddress.City')
-            ->without('BusinessAddress')
+            ->withoutAssoc('BusinessAddress')
             ->persist();
 
         $this->assertNull($author->business_address);
@@ -429,7 +429,7 @@ class BaseFactoryAssociationsTest extends TestCase
         $nPremiumAuthors = rand(2, 5);
         $article = ArticleFactory::make()
             ->with('ExclusivePremiumAuthors', $nPremiumAuthors)
-            ->without('Authors')
+            ->withoutAssoc('Authors')
             ->persist();
 
         $alias = PremiumAuthorsTable::ASSOCIATION_ALIAS;
@@ -468,7 +468,7 @@ class BaseFactoryAssociationsTest extends TestCase
         AddressFactory::make([
             ['street' => $street1],
             ['street' => $street2],
-        ])->with('City', CityFactory::make(['country_id' => $country->id])->without('Country'))
+        ])->with('City', CityFactory::make(['country_id' => $country->id])->withoutAssoc('Country'))
         ->persist();
 
         $country = CountryFactory::get($country->id, [
@@ -547,8 +547,8 @@ class BaseFactoryAssociationsTest extends TestCase
 
         $country = CountryFactory::make()
             ->with('Cities', [
-                CityFactory::make([['name' => $city1], ['name' => $city3]])->without('Country'),
-                CityFactory::make()->setField('name', $city2)->without('Country'),
+                CityFactory::make([['name' => $city1], ['name' => $city3]])->withoutAssoc('Country'),
+                CityFactory::make()->setField('name', $city2)->withoutAssoc('Country'),
             ])
             ->persist();
 
@@ -627,7 +627,7 @@ class BaseFactoryAssociationsTest extends TestCase
      */
     public function testReproduceIssue84(): void
     {
-        $articles = ArticleFactory::make(2)
+        $articles = ArticleFactory::make()->times(2)
             ->with('Authors[5]', ['biography' => 'Foo'])
             ->with('Bills')
             ->persist();
@@ -651,10 +651,10 @@ class BaseFactoryAssociationsTest extends TestCase
      */
     public function testReproduceIssue84WithArticlesAuthors(): void
     {
-        $articles = ArticleFactory::make(2)
+        $articles = ArticleFactory::make()->times(2)
             ->with('ArticlesAuthors[5].Authors', ['biography' => 'Foo'])
             ->with('Bills')
-            ->without('Authors') // do not create the default authors
+            ->withoutAssoc('Authors') // do not create the default authors
             ->persist();
 
         $this->assertSame(2, count($articles));

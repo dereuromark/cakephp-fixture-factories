@@ -112,7 +112,7 @@ class AssociationBuilderTest extends TestCase
         $AssociationBuilder = new AssociationBuilder(AuthorFactory::make());
 
         $this->assertTrue(
-            $AssociationBuilder->validateToOneAssociation('Articles', ArticleFactory::make(2)),
+            $AssociationBuilder->validateToOneAssociation('Articles', ArticleFactory::make()->times(2)),
         );
     }
 
@@ -121,7 +121,7 @@ class AssociationBuilderTest extends TestCase
         $AssociationBuilder = new AssociationBuilder(AuthorFactory::make());
 
         $this->expectException(AssociationBuilderException::class);
-        $AssociationBuilder->validateToOneAssociation('Address', AddressFactory::make(2));
+        $AssociationBuilder->validateToOneAssociation('Address', AddressFactory::make()->times(2));
     }
 
     public function testRemoveBrackets(): void
@@ -255,14 +255,14 @@ class AssociationBuilderTest extends TestCase
 
     public function testGetAssociatedFactoryWithoutAssociation(): void
     {
-        $AddressFactory = AddressFactory::make()->without('City');
+        $AddressFactory = AddressFactory::make()->withoutAssoc('City');
 
         $this->assertEmpty($AddressFactory->getAssociated());
     }
 
     public function testGetAssociatedFactoryWithoutAssociationDeep2(): void
     {
-        $AddressFactory = AddressFactory::make()->without('City.Country');
+        $AddressFactory = AddressFactory::make()->withoutAssoc('City.Country');
 
         $this->assertSame(
             ['City' => [
@@ -297,7 +297,7 @@ class AssociationBuilderTest extends TestCase
     {
         $ArticleFactory = ArticleFactory::make()
             ->with('ExclusivePremiumAuthors')
-            ->without('Authors');
+            ->withoutAssoc('Authors');
 
         $this->assertSame([
             'ExclusivePremiumAuthors' => [

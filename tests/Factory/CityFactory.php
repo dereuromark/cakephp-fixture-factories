@@ -55,11 +55,14 @@ class CityFactory extends BaseFactory
     }
 
     /**
-     * @param array|callable|null|int $parameter
+     * @param array|null $parameter
      * @return $this
      */
-    public function withCountry(mixed $parameter = null): self
+    public function withCountry(?array $parameter = null)
     {
-        return $this->with('Country', CountryFactory::make($parameter));
+        if ($parameter === null) {
+            return $this->withAssoc('Country');
+        }
+        return $this->withAssoc('Country', CountryFactory::make($parameter));
     }
 }

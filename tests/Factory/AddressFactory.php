@@ -32,17 +32,19 @@ class AddressFactory extends BaseFactory
 
     protected function setDefaultTemplate(): void
     {
-        $this
-            ->setDefaultData(function (GeneratorInterface $generator) {
-                return [
-                    'street' => $generator->streetAddress(),
-                ];
-            })
-            ->withCity();
+        $this->setDefaultData(function (GeneratorInterface $generator) {
+            return [
+                'street' => $generator->streetAddress(),
+            ];
+        })
+        ->withCity();
     }
 
-    public function withCity(mixed $parameter = null): self
+    public function withCity(mixed $parameter = null): static
     {
-        return $this->with('City', CityFactory::make($parameter));
+        if ($parameter === null) {
+            return $this->withAssoc('City');
+        }
+        return $this->withAssoc('City', CityFactory::make($parameter));
     }
 }

@@ -157,7 +157,7 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
 
         $unique_stamp = 'Foo';
 
-        CountryFactory::make(compact('unique_stamp'), 2)->getEntities();
+        CountryFactory::make(compact('unique_stamp'))->times(2)->getEntities();
     }
 
     /**
@@ -174,7 +174,7 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
 
         $unique_stamp = 'Foo';
 
-        CountryFactory::make(2)->patchData(compact('unique_stamp'))->getEntities();
+        CountryFactory::make()->times(2)->patchData(compact('unique_stamp'))->getEntities();
     }
 
     /**

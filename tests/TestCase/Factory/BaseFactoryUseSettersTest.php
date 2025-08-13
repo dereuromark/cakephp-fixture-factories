@@ -59,7 +59,7 @@ class BaseFactoryUseSettersTest extends TestCase
     public function testSettersAreDefinedOnAssociatedAuthor(): void
     {
         $value = 'Foo';
-        $authorFactory = AuthorFactory::make(4)
+        $authorFactory = AuthorFactory::make()->times(4)
             ->patchData([
                 'field_with_setter_1' => $value,
                 'field_with_setter_2' => $value,
@@ -124,7 +124,7 @@ class BaseFactoryUseSettersTest extends TestCase
     public function testSettersAreSkippedOnAssociatedAuthor(): void
     {
         $value = 'Foo';
-        $authorFactory = AuthorFactory::make(4)
+        $authorFactory = AuthorFactory::make()->times(4)
             ->patchData([
                 'field_with_setter_1' => $value,
                 'field_with_setter_2' => $value,

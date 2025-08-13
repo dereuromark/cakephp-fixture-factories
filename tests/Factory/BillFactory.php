@@ -45,13 +45,13 @@ class BillFactory extends BaseFactory
         ]);
     }
 
-    public function withArticle(mixed $parameter = null): self
+    public function withArticle(mixed $parameter = null): static
     {
-        return $this->with('Article', ArticleFactory::make($parameter));
+        return $this->withAssoc('Article', ArticleFactory::make($parameter));
     }
 
-    public function withCustomer(mixed $parameter = null): self
+    public function withCustomer(mixed $parameter = null): static
     {
-        return $this->with('Customer', CustomerFactory::make($parameter));
+        return $this->withAssoc('Customer', CustomerFactory::make($parameter));
     }
 }

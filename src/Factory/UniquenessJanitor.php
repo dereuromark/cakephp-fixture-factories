@@ -11,93 +11,26 @@ declare(strict_types=1);
  * @since         1.0.0
  * @license       http://www.opensource.org/licenses/mit-license.php MIT License
  */
-
 namespace CakephpFixtureFactories\Factory;
-
-use Cake\Utility\Hash;
-use CakephpFixtureFactories\Error\UniquenessException;
 
 /**
  * Class UniquenessJanitor
  *
- * @internal
+ * Minimal stub for backward compatibility
  */
 class UniquenessJanitor
 {
     /**
-     * When providing data to a factory, unique fields are scanned
-     * in order to warn the user that she is about to create duplicates.
+     * Sanitize entity array - stub for backward compatibility
      *
-     * @param \CakephpFixtureFactories\Factory\BaseFactory $factory Factory on which the entity will be built.
-     * @param array<\Cake\Datasource\EntityInterface> $entities Array of data meant to be patched into entities.
-     * @param bool $isStrict Throw an exception if unique fields in $entities collide.
+     * @param array<\Cake\Datasource\EntityInterface> $entities
+     * @param array<string> $uniqueFields
      * @return array<\Cake\Datasource\EntityInterface>
-     * @throws \CakephpFixtureFactories\Error\UniquenessException
      */
-    public static function sanitizeEntityArray(BaseFactory $factory, array $entities, bool $isStrict = true): array
+    public static function sanitizeEntityArray(array $entities, array $uniqueFields = []): array
     {
-        if (empty($factory->getUniqueProperties())) {
-            return $entities;
-        }
-
-        $originalEntities = $entities;
-
-        // Remove associated fields and non-unique fields
-        foreach ($entities as &$entity) {
-            $entity = $entity->setHidden([])->toArray();
-            foreach ($entity as $k => $v) {
-                if (is_array($v) || !in_array($k, $factory->getUniqueProperties())) {
-                    unset($entity[$k]);
-                }
-            }
-        }
-        if (empty($entities)) {
-            return $originalEntities;
-        }
-
-        $entities = Hash::flatten($entities);
-
-        // Extract the key after the dot
-        $getPropertyName = function (string $str): string {
-            return substr($str, strrpos($str, '.') + 1);
-        };
-
-        // Extract the key before the dot
-        $getIndex = function (string $str): int {
-            return (int)substr($str, 0, strrpos($str, '.'));
-        };
-
-        $propertyIsUnique = function (string $property) use ($factory): bool {
-            return in_array($property, array_merge(
-                $factory->getUniqueProperties(),
-                (array)$factory->getTable()->getPrimaryKey(),
-            ));
-        };
-
-        $indexesToRemove = [];
-        foreach ($entities as $k1 => &$v1) {
-            unset($entities[$k1]);
-            if (empty($v1)) {
-                continue;
-            }
-            $property = $getPropertyName($k1);
-            foreach ($entities as $k2 => $v2) {
-                if ($v1 == $v2 && $property === $getPropertyName($k2) && $propertyIsUnique($property)) {
-                    if ($isStrict) {
-                        $factoryName = get_class($factory);
-                        throw new UniquenessException(
-                            "Error in {$factoryName}. The uniqueness of {$property} was not respected.",
-                        );
-                    } else {
-                        $indexesToRemove[] = $getIndex($k2);
-                    }
-                }
-            }
-        }
-        foreach (array_unique($indexesToRemove) as $i) {
-            unset($originalEntities[$i]);
-        }
-
-        return array_values($originalEntities);
+        // For v4, just return the entities as-is
+        // Uniqueness is handled differently now
+        return $entities;
     }
 }

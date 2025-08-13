@@ -53,7 +53,9 @@ class BaseFactoryDisplayFieldTest extends TestCase
         $cities = ['Chennai', 'Jodhpur', 'Kolkata'];
         $country = CountryFactory::make()->with('Cities', $cities)->getEntity();
 
+        $this->assertNotEmpty($country->cities, 'Country should have cities');
         foreach ($cities as $i => $city) {
+            $this->assertArrayHasKey($i, $country->cities, "City index $i should exist");
             $this->assertSame($city, $country->cities[$i]->name);
         }
     }

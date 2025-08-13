@@ -23,8 +23,8 @@ class DocumentationExamplesTest extends TestCase
 {
     public function testArticlesFindPublished(): void
     {
-        $articles = ArticleFactory::make(['published' => 1], 3)->persist();
-        ArticleFactory::make(['published' => 0], 2)->persist();
+        $articles = ArticleFactory::make(['published' => 1])->times(3)->persist();
+        ArticleFactory::make(['published' => 0])->times(2)->persist();
 
         $result = ArticleFactory::find('published')->find('list')->toArray();
 
@@ -42,7 +42,7 @@ class DocumentationExamplesTest extends TestCase
         $article = ArticleFactory::make()->getEntity();
         $this->assertInstanceOf(Article::class, $article);
 
-        $articles = ArticleFactory::make(2)->getEntities();
+        $articles = ArticleFactory::make()->times(2)->getEntities();
         $previous = '';
         foreach ($articles as $article) {
             $this->assertNotEquals($previous, $article['title']);
@@ -51,13 +51,13 @@ class DocumentationExamplesTest extends TestCase
 
         ArticleFactory::make(['title' => 'Foo'])->getEntity();
 
-        $articles = ArticleFactory::make(['title' => 'Foo'], 3)->getEntities();
+        $articles = ArticleFactory::make(['title' => 'Foo'])->times(3)->getEntities();
         $this->assertEquals(3, count($articles));
         foreach ($articles as $article) {
             $this->assertEquals('Foo', $article['title']);
         }
 
-        $articles = ArticleFactory::make(['title' => 'Foo'], 3)->persist();
+        $articles = ArticleFactory::make(['title' => 'Foo'])->times(3)->persist();
         $this->assertEquals(3, count($articles));
         foreach ($articles as $article) {
             $this->assertEquals('Foo', $article['title']);
@@ -101,7 +101,7 @@ class DocumentationExamplesTest extends TestCase
 
     public function testAssociationsMultiple(): void
     {
-        $article = ArticleFactory::make()->with('Authors', AuthorFactory::make(10))->persist();
+        $article = ArticleFactory::make()->with('Authors', AuthorFactory::make()->times(10))->persist();
         $this->assertEquals(10, count($article['authors']));
         $previous = '';
         foreach ($article['authors'] as $author) {

@@ -40,7 +40,7 @@ class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
     public function testDisablePrimaryKeyOffset(int $cityOffset): void
     {
         $n = 10;
-        $cities = CityFactory::make($n)
+        $cities = CityFactory::make()->times($n)
             ->setPrimaryKeyOffset($cityOffset)
             ->disablePrimaryKeyOffset()
             ->persist();
@@ -62,7 +62,7 @@ class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
     public function testDisablePrimaryKeyOffsetInAssociation(int $countryOffset): void
     {
         $n = 5;
-        $cities = CityFactory::make($n)
+        $cities = CityFactory::make()->times($n)
             ->with(
                 'Country',
                 CountryFactory::make()->setPrimaryKeyOffset($countryOffset)->disablePrimaryKeyOffset(),

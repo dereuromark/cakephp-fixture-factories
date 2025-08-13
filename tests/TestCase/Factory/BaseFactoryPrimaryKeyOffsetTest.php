@@ -41,7 +41,7 @@ class BaseFactoryPrimaryKeyOffsetTest extends TestCase
     public function testSetPrimaryKeyOffset(int $cityOffset): void
     {
         $n = 10;
-        $cities = CityFactory::make($n)
+        $cities = CityFactory::make()->times($n)
             ->setPrimaryKeyOffset($cityOffset)
             ->persist();
 
@@ -60,7 +60,7 @@ class BaseFactoryPrimaryKeyOffsetTest extends TestCase
     public function testSetPrimaryKeyOffsetInAssociation(int $countryOffset): void
     {
         $n = 5;
-        $cities = CityFactory::make($n)
+        $cities = CityFactory::make()->times($n)
             ->with('Country', CountryFactory::make()->setPrimaryKeyOffset($countryOffset))
             ->persist();
 
@@ -124,7 +124,7 @@ class BaseFactoryPrimaryKeyOffsetTest extends TestCase
         $n = rand(3, 5);
         $m = rand(3, 5);
         $offset = rand(1, 1000000);
-        $factory = CountryFactory::make($n)->setPrimaryKeyOffset($offset);
+        $factory = CountryFactory::make()->times($n)->setPrimaryKeyOffset($offset);
 
         $countries = [];
         for ($i = 0; $i < $m; $i++) {

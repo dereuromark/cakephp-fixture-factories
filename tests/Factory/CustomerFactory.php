@@ -44,17 +44,17 @@ class CustomerFactory extends BaseFactory
      * @param int $n
      * @return CustomerFactory
      */
-    public function withBills($parameter = null, int $n = 1): self
+    public function withBills($parameter = null, int $n = 1): static
     {
-        return $this->with('Bills', BillFactory::make($parameter, $n)->without('Customer'));
+        return $this->withAssoc('Bills', BillFactory::make($parameter)->times($n)->withoutAssoc('Customer'));
     }
 
     /**
      * @param array|callable|null|int|\Cake\Datasource\EntityInterface $parameter Injected data
      * @return CustomerFactory
      */
-    public function withAddress($parameter = null): self
+    public function withAddress($parameter = null): static
     {
-        return $this->with('Address', AddressFactory::make($parameter));
+        return $this->withAssoc('Address', AddressFactory::make($parameter));
     }
 }

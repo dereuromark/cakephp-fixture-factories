@@ -134,7 +134,7 @@ class DataCompilerTest extends TestCase
 
     public function testSetPrimaryKeyOnEntity(): void
     {
-        $countries = CountryFactory::make(2)->getEntity();
+        $countries = CountryFactory::make()->times(2)->getEntity();
 
         $this->articleDataCompiler->startPersistMode();
         $res = $this->articleDataCompiler->setPrimaryKey($countries);
@@ -169,7 +169,7 @@ class DataCompilerTest extends TestCase
     public function testCompileEntityWithoutSetters(): void
     {
         $value = 'Foo';
-        $dataCompiler = new DataCompiler(AuthorFactory::make()->without('Address'));
+        $dataCompiler = new DataCompiler(AuthorFactory::make()->withoutAssoc('Address'));
         $dataCompiler->setSkippedSetters(['field_with_setter_1']);
         /** @var \TestApp\Model\Entity\Author $author */
         $author = $dataCompiler->compileEntity([

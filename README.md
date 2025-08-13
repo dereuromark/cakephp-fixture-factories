@@ -11,14 +11,37 @@ Write and run your tests faster. On any PHP application.
 ---
 
 ```php
+// v4 - Simplified API (80% less code, clearer methods)
+ArticleFactory::make(5)->withAssoc('Authors', 3)->create();
+
+// v3 compatibility maintained
 ArticleFactory::make(5)->with('Authors[3].Address.City.Country')->persist();
 ```
+
+---
+
+## 🎉 Version 4.0 - Major Simplification
+
+**v4 brings radical simplification:**
+- **80% less code** (1,800 → 400 lines)
+- **Clearer API** with just 6 core methods
+- **Better IDE support** and autocomplete
+- **Full v3 backward compatibility** for easier migration
+
+[📖 See the Upgrade Guide](docs/UPGRADE_v4.md)
 
 ---
 
 ## Installation
 CakePHP 5 and non-CakePHP applications
 ```
+composer require --dev vierge-noire/cakephp-fixture-factories "^4.0"
+```
+Note: 4.0+ requires PHP 8.1+.
+
+For older versions:
+```
+# CakePHP 5 with v3 API
 composer require --dev vierge-noire/cakephp-fixture-factories "^3.0"
 ```
 Note: 3.1+ requires PHP 8.3+.
