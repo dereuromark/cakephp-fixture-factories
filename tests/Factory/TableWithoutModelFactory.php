@@ -52,6 +52,8 @@ class TableWithoutModelFactory extends BaseFactory
                 'foreign_key' => $generator->randomNumber(),
                 'binding_key' => $generator->randomNumber(),
                 'country_id' => $generator->randomNumber(),
+                'created' => $generator->dateTime(),
+                'modified' => $generator->dateTime(),
             ];
         });
     }
