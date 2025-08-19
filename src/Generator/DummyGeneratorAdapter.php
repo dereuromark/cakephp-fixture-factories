@@ -16,6 +16,7 @@ declare(strict_types=1);
 namespace CakephpFixtureFactories\Generator;
 
 use BadMethodCallException;
+use CakephpFixtureFactories\Error\FixtureFactoryException;
 use DummyGenerator\Container\DefinitionContainerBuilder;
 use DummyGenerator\Container\DefinitionContainerInterface;
 use DummyGenerator\Core\Randomizer\XoshiroRandomizer;
@@ -58,14 +59,21 @@ class DummyGeneratorAdapter implements GeneratorInterface
      * @phpstan-ignore-next-line
      *
      * @param string|null $locale The locale to use
+     *
+     * @throws \CakephpFixtureFactories\Error\FixtureFactoryException if DummyGenerator library is not installed
      */
     public function __construct(?string $locale = null)
     {
+        if (!class_exists(DummyGenerator::class)) {
+            throw new FixtureFactoryException(
+                'DummyGenerator library is not installed. Please install it using: `composer require johnykvsky/dummygenerator`',
+            );
+        }
+
         // DummyGenerator doesn't use locale in the same way as Faker
         // The $locale parameter is kept for interface compatibility
         $this->container = DefinitionContainerBuilder::all();
 
-        // Configure with UniqueStrategy as suggested in PR comments
         $strategy = new UniqueStrategy(retries: 1000);
 
         $this->generator = new DummyGenerator($this->container, $strategy);

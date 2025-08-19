@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace CakephpFixtureFactories\Generator;
 
+use CakephpFixtureFactories\Error\FixtureFactoryException;
 use Faker\Factory;
 use Faker\Generator;
 use InvalidArgumentException;
@@ -37,9 +38,17 @@ class FakerAdapter implements GeneratorInterface
      * Constructor
      *
      * @param string|null $locale The locale to use
+     *
+     * @throws \CakephpFixtureFactories\Error\FixtureFactoryException if Faker library is not installed
      */
     public function __construct(?string $locale = null)
     {
+        if (!class_exists(Factory::class)) {
+            throw new FixtureFactoryException(
+                'Faker library is not installed. Please install it using: `composer require fakerphp/faker`',
+            );
+        }
+
         try {
             $this->generator = Factory::create($locale ?? Factory::DEFAULT_LOCALE);
         } catch (Throwable $e) {
