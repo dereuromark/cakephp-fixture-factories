@@ -14,9 +14,9 @@ class FactoryAwareTraitUnitTest extends TestCase
     public static function getFactoryNamespaceData(): array
     {
         return [
-          [null, 'TestApp\Test\Factory'],
-          ['FooPlugin', 'FooPlugin\Test\Factory'],
-          ['FooCorp/BarPlugin', 'FooCorp\BarPlugin\Test\Factory'],
+            [null, 'TestApp\Test\Factory'],
+            ['FooPlugin', 'FooPlugin\Test\Factory'],
+            ['FooCorp/BarPlugin', 'FooCorp\BarPlugin\Test\Factory'],
         ];
     }
 
@@ -32,8 +32,8 @@ class FactoryAwareTraitUnitTest extends TestCase
     public static function getFactoryClassNameData(): array
     {
         return [
-          ['Apples', 'TestApp\Test\Factory\AppleFactory'],
-          ['FooPlugin.Apples', 'FooPlugin\Test\Factory\AppleFactory'],
+            ['Apples', 'TestApp\Test\Factory\AppleFactory'],
+            ['FooPlugin.Apples', 'FooPlugin\Test\Factory\AppleFactory'],
         ];
     }
 

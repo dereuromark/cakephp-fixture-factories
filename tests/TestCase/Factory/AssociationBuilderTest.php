@@ -267,11 +267,12 @@ class AssociationBuilderTest extends TestCase
 
         $this->assertSame(
             [
-            'City' => [
-                'validate' => false,
-                'forceNew' => true,
-                'accessibleFields' => ['*' => true],
-            ]],
+                'City' => [
+                    'validate' => false,
+                    'forceNew' => true,
+                    'accessibleFields' => ['*' => true],
+                ],
+            ],
             $AddressFactory->getAssociated(),
         );
     }
@@ -344,11 +345,12 @@ class AssociationBuilderTest extends TestCase
         );
 
         $this->assertSame([
-        'Cities' => [
-            'validate' => false,
-            'forceNew' => true,
-            'accessibleFields' => ['*' => true],
-        ]], $CountryFactory->getAssociated());
+            'Cities' => [
+                'validate' => false,
+                'forceNew' => true,
+                'accessibleFields' => ['*' => true],
+            ],
+        ], $CountryFactory->getAssociated());
 
         $country = $CountryFactory->persist();
 

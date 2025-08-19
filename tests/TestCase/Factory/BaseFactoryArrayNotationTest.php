@@ -127,10 +127,11 @@ class BaseFactoryArrayNotationTest extends TestCase
     public function testBaseFactoryArrayNotationOverwriteOneFieldWithDeepAssociation(): void
     {
         $author = AuthorFactory::make([
-        'json_field.subField1' => [
+            'json_field.subField1' => [
                 'subSubField1' => 'subSubValue1',
                 'subSubField2' => 'subSubValue2',
-            ]])
+            ],
+        ])
             ->setField('json_field.subField1.subSubField2', 'blah')
             ->getEntity();
 

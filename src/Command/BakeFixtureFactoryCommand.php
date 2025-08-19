@@ -506,9 +506,9 @@ class BakeFixtureFactoryCommand extends BakeCommand
             'Fixture factory generator.',
         )
             ->addArgument('model', [
-                'help' => 'Name of the model the factory will create entities from' .
-                    '(plural, without the `Table` suffix). You can use the Foo.Bars notation ' .
-                    'to bake a factory for the model Bars located in the plugin Foo. \n
+                'help' => 'Name of the model the factory will create entities from'
+                    . '(plural, without the `Table` suffix). You can use the Foo.Bars notation '
+                    . 'to bake a factory for the model Bars located in the plugin Foo. \n
                     Factories are located in the folder test\Factory of your app, resp. plugin.',
             ])
             ->addOption('all', [

@@ -26,14 +26,14 @@ class FactoryAwareTraitIntegrationTest extends TestCase
     public static function factoryFoundData(): array
     {
         return [
-          ['country', CountryFactory::class],
-          ['Country', CountryFactory::class],
-          ['countries', CountryFactory::class],
-          ['Countries', CountryFactory::class],
-          ['premiumAuthor', PremiumAuthorFactory::class],
-          ['PremiumAuthor', PremiumAuthorFactory::class],
-          ['premiumAuthors', PremiumAuthorFactory::class],
-          ['PremiumAuthors', PremiumAuthorFactory::class],
+            ['country', CountryFactory::class],
+            ['Country', CountryFactory::class],
+            ['countries', CountryFactory::class],
+            ['Countries', CountryFactory::class],
+            ['premiumAuthor', PremiumAuthorFactory::class],
+            ['PremiumAuthor', PremiumAuthorFactory::class],
+            ['premiumAuthors', PremiumAuthorFactory::class],
+            ['PremiumAuthors', PremiumAuthorFactory::class],
         ];
     }
 

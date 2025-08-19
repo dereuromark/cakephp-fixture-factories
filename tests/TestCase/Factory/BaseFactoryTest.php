@@ -588,7 +588,7 @@ class BaseFactoryTest extends TestCase
             return [
                 'id' => $id,
                 'name' => $generator->sentence(),
-             ];
+            ];
         })->persist();
 
         $this->assertSame($id, $article->id);

@@ -584,8 +584,8 @@ class BaseFactoryAssociationsTest extends TestCase
 
         // Make sure that all was correctly persisted
         $country = CountryFactory::get($country->id, [
-                'contain' => 'Cities',
-            ]);
+            'contain' => 'Cities',
+        ]);
 
         $this->assertSame(4, count($country->cities));
         $this->assertSame(4, CityFactory::count());

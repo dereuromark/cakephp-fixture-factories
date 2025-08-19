@@ -316,8 +316,8 @@ class DataCompiler
         $table = get_class($this->getFactory()->getTable());
 
         throw new FixtureFactoryException(
-            'The display field of a table must be a string when injecting a string into its factory. ' .
-            "You injected '$data' in $factory but $table's display field is not a string.",
+            'The display field of a table must be a string when injecting a string into its factory. '
+            . "You injected '$data' in $factory but $table's display field is not a string.",
         );
     }
 

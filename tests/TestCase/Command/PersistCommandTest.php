@@ -69,9 +69,9 @@ class PersistCommandTest extends TestCase
     public static function dataProviderForStringFactories(): array
     {
         return [
-          ['Articles'],
-          ['Article'],
-          [ArticleFactory::class],
+            ['Articles'],
+            ['Article'],
+            [ArticleFactory::class],
         ];
     }
 
