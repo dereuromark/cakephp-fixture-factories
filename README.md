@@ -12,13 +12,17 @@ Write and run your tests faster. On any PHP application.
     <a href="https://github.com/dereuromark/cakephp-fixture-factories/actions/workflows/ci.yml?query=branch%3Amain"><img src="https://github.com/dereuromark/cakephp-fixture-factories/actions/workflows/ci.yml/badge.svg?branch=main" alt="Build Status"></a>
     <a href="https://codecov.io/gh/dereuromark/cakephp-fixture-factories"><img src="https://codecov.io/gh/dereuromark/cakephp-fixture-factories/branch/main/graph/badge.svg" alt="Coverage Status"></a>
     <a href="https://packagist.org/packages/dereuromark/cakephp-fixture-factories"><img src="https://poser.pugx.org/dereuromark/cakephp-fixture-factories/v/stable.svg" alt="Latest Stable Version"></a>
-    <a href="https://php.net/"><img src="https://img.shields.io/badge/php-%3E%3D%208.1-8892BF.svg" alt="Minimum PHP Version"></a>
+    <a href="https://php.net/"><img src="https://img.shields.io/badge/php-%3E%3D%208.2-8892BF.svg" alt="Minimum PHP Version"></a>
     <a href="LICENSE"><img src="https://poser.pugx.org/dereuromark/cakephp-fixture-factories/license.svg" alt="License"></a>
     <a href="https://packagist.org/packages/dereuromark/cakephp-fixture-factories"><img src="https://poser.pugx.org/dereuromark/cakephp-fixture-factories/d/total.svg" alt="Total Downloads"></a>
     <a href="https://github.com/cakephp/cakephp-codesniffer"><img src="https://img.shields.io/badge/cs-CakePHP-yellow.svg" alt="Coding Standards"></a>
 </p>
 
 Note: This is a maintained fork of the original [CakePHPFixtureFactories](https://github.com/vierge-noire/cakephp-fixture-factories).
+
+Main differences:
+- Supports multiple generators via adapters (chose your generator library).
+- Modern configurable generator type guessing per field name/type.
 
 ---
 

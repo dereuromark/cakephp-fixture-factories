@@ -219,16 +219,13 @@ Note that even if the behavior is located in a plugin, you should, according to 
 
 ### Switching Data Generators
 
-By default, the factories use the [DummyGenerator](https://github.com/johnykvsky/dummygenerator) library for generating random data.
+By default, the factories use the [Faker](https://github.com/fakerphp/faker) library for generating random data.
+This provides full backward compatibility with the original plugin.
 Make sure to include the dependency as a "require-dev" in your `composer.json`.
-DummyGenerator is the leaner API and has active support.
 
-However, you can switch to alternative generators like [Faker](https://github.com/FakerPHP/Faker).
-That would also be the one if you want to keep full BC with the original plugin.
+Alternatively, you can switch to [DummyGenerator](https://github.com/johnykvsky/dummygenerator) which is a leaner API with active support.
 
 You can also use any custom generator, see below.
-
-```json
 
 #### Global Configuration
 
@@ -237,10 +234,10 @@ To change the generator globally, set the configuration key in your test bootstr
 ```php
 use Cake\Core\Configure;
 
-// Switch to Faker
+// Use Faker (default)
 Configure::write('FixtureFactories.generatorType', 'faker');
 
-// Switch back to DummyGenerator (default)
+// Switch to DummyGenerator
 Configure::write('FixtureFactories.generatorType', 'dummy');
 ```
 
