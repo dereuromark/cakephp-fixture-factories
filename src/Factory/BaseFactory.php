@@ -653,6 +653,8 @@ abstract class BaseFactory
     }
 
     /**
+     * @internal Not for normal use, only used for testing.
+     *
      * @param array $data Data to merge
      *
      * @return $this
