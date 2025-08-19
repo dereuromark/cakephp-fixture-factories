@@ -255,6 +255,10 @@ class BakeFixtureFactoryCommand extends BakeCommand
         $tableClassName = ($this->plugin ?: Configure::read('App.namespace'))
             . "\Model\Table\\{$table}Table";
 
+        if (!class_exists($tableClassName)) {
+            return false;
+        }
+
         $class = new ReflectionClass($tableClassName);
 
         if ($class->isAbstract() || $class->isInterface() || $class->isTrait()) {
