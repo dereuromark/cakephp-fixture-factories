@@ -43,11 +43,6 @@ abstract class BaseFactory
      */
     private static ?Generator $faker = null;
     /**
-     * @deprecated
-     * @var bool
-     */
-    protected static bool $applyListenersAndBehaviors = false;
-    /**
      * @var array
      */
     protected array $marshallerOptions = [
@@ -611,18 +606,12 @@ abstract class BaseFactory
      * Per default setters defined in entities are applied.
      * Here the user may define a list of fields for which setters should be ignored
      *
-     * @param mixed|array<string>|string $skippedSetters Field or list of fields for which setters ought to be skipped
+     * @param array<string>|string $skippedSetters Field or list of fields for which setters ought to be skipped
      * @param bool $merge Merge the first argument with the setters already skipped. False by default.
      * @return $this
-     * @throws \CakephpFixtureFactories\Error\FixtureFactoryException is no string or array is passed
      */
-    public function skipSetterFor(mixed $skippedSetters, bool $merge = false)
+    public function skipSetterFor(array|string $skippedSetters, bool $merge = false)
     {
-        if (!is_string($skippedSetters) && !is_array($skippedSetters)) {
-            throw new FixtureFactoryException(
-                'BaseFactory::skipSettersFor() accepts an array of string or a string as argument.',
-            );
-        }
         $skippedSetters = (array)$skippedSetters;
         if ($merge) {
             $skippedSetters = array_unique(array_merge($this->skippedSetters, $skippedSetters));

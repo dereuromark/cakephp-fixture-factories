@@ -22,7 +22,7 @@ class BaseFactoryUseSettersTest extends TestCase
 {
     public function testNonStringField()
     {
-        $this->expectException(FixtureFactoryException::class);
+        $this->expectException(\TypeError::class);
         AuthorFactory::make()->skipSetterFor(0);
     }
 
