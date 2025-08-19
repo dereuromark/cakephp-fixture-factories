@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace {{ namespace }};
@@ -48,10 +49,11 @@ class {{ factory }} extends CakephpBaseFactory
 {% for association, associationData in toOne %}
 
     /**
-     * @param array|callable|null|int|\Cake\Datasource\EntityInterface|string $parameter
-     * @return self
+     * @param \Cake\Datasource\EntityInterface|callable|array|string|int|null $parameter
+     *
+     * @return static
      */
-    public function with{{ association }}($parameter = null): {{ factory }}
+    public function with{{ association }}($parameter = null): static
     {
         return $this->with(
             '{{ association }}',
@@ -62,11 +64,12 @@ class {{ factory }} extends CakephpBaseFactory
 {% for association, associationData in oneToMany %}
 
     /**
-     * @param array|callable|null|int|\Cake\Datasource\EntityInterface|string $parameter
+     * @param \Cake\Datasource\EntityInterface|callable|array|string|int|null $parameter
      * @param int $n
-     * @return self
+     *
+     * @return static
      */
-    public function with{{ association }}($parameter = null, int $n = 1): {{ factory }}
+    public function with{{ association }}($parameter = null, int $n = 1): static
     {
         return $this->with(
             '{{ association }}',
@@ -77,11 +80,12 @@ class {{ factory }} extends CakephpBaseFactory
 {% for association, associationData in manyToMany %}
 
     /**
-     * @param array|callable|null|int|\Cake\Datasource\EntityInterface|string $parameter
+     * @param \Cake\Datasource\EntityInterface|callable|array|string|int|null $parameter
      * @param int $n
-     * @return self
+     *
+     * @return static
      */
-    public function with{{ association }}($parameter = null, int $n = 1): {{ factory }}
+    public function with{{ association }}($parameter = null, int $n = 1): static
     {
         return $this->with(
             '{{ association }}',
