@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -6,11 +7,12 @@ declare(strict_types=1);
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
- * @link          https://webrider.de/
- * @since         1.0.0
- * @license       http://www.opensource.org/licenses/mit-license.php MIT License
+ * @copyright Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
+ * @link https://webrider.de/
+ * @since 1.0.0
+ * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
+
 namespace CakephpFixtureFactories\Test\TestCase\Command;
 
 use Cake\Console\Arguments;
@@ -207,7 +209,8 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
     public function testBakeUnexistingTable(): void
     {
         $this->expectException(StopException::class);
-        $this->assertFalse($this->FactoryCommand->setTable('ignore_that', $this->io));
+
+        $this->FactoryCommand->setTable('ignore_that', $this->io);
     }
 
     public function testRunBakeWithNoArguments(): void
@@ -239,7 +242,7 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
 
     public function testRunBakeAllInTestAppWithMethods(): void
     {
-        $this->bake([], ['all' => true, 'methods' => true,]);
+        $this->bake([], ['all' => true, 'methods' => true]);
 
         $this->assertInstanceOf(BaseFactory::class, ArticleFactory::make());
         $this->assertInstanceOf(BaseFactory::class, AddressFactory::make());
@@ -279,7 +282,7 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
 
     public function testRunBakeAllInTestApp(): void
     {
-        $this->bake([], ['all' => true,]);
+        $this->bake([], ['all' => true]);
 
         $this->assertInstanceOf(BaseFactory::class, ArticleFactory::make());
         $this->assertInstanceOf(BaseFactory::class, AddressFactory::make());
@@ -307,7 +310,7 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
     {
         $this->bake(['Articles']);
 
-        $this->bake([], ['plugin' => 'TestPlugin', 'all' => true, 'methods' => true,]);
+        $this->bake([], ['plugin' => 'TestPlugin', 'all' => true, 'methods' => true]);
 
         $customer = CustomerFactory::make(['name' => 'Foo'])->persist();
         unset($customer['id']);
@@ -341,6 +344,7 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
 
     /**
      * @dataProvider dataForTestThisTableShouldBeBaked
+     *
      * @param string $model
      * @param mixed $plugin
      * @param bool $expected

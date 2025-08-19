@@ -1,8 +1,6 @@
 <?xml version="1.0"?>
 <ruleset name="App">
-    <description>App Coding Standard</description>
-    <!-- CakePHP coding standard -->
-    <rule ref="vendor/cakephp/cakephp-codesniffer/CakePHP"/>
+    <config name="installed_paths" value="../../php-collective/code-sniffer"/>
 
     <arg name="tab-width" value="4"/>
     <arg value="nps"/>
@@ -11,4 +9,19 @@
     <file>tests/TestCase/</file>
     <file>tests/TestApp/tests/Factory/</file>
     <file>tests/TestApp/plugins/TestPlugin/tests/Factory/</file>
+
+    <exclude-pattern>/templates/</exclude-pattern>
+
+    <rule ref="PhpCollective"/>
+
+    <rule ref="SlevomatCodingStandard.Functions.RequireTrailingCommaInDeclaration"/>
+    <rule ref="SlevomatCodingStandard.Functions.RequireTrailingCommaInClosureUse"/>
+
+    <rule ref="PSR2.Classes.PropertyDeclaration.Underscore">
+        <severity>0</severity>
+    </rule>
+    <rule ref="SlevomatCodingStandard.Commenting.InlineDocCommentDeclaration.NoAssignment">
+        <severity>0</severity>
+    </rule>
+
 </ruleset>

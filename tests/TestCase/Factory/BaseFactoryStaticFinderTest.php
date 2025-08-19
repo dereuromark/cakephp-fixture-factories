@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -6,11 +7,12 @@ declare(strict_types=1);
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
- * @link          https://webrider.de/
- * @since         1.0.0
- * @license       http://www.opensource.org/licenses/mit-license.php MIT License
+ * @copyright Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
+ * @link https://webrider.de/
+ * @since 1.0.0
+ * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
+
 namespace CakephpFixtureFactories\Test\TestCase\Factory;
 
 use Cake\Datasource\Exception\RecordNotFoundException;
@@ -48,9 +50,13 @@ class BaseFactoryStaticFinderTest extends TestCase
 
     /**
      * @Given there are $n articles
+     *
      * @When I query on the base table, considering the before find in the setup
+     *
      * @Then no articles are found
+     *
      * @When I query on the factory tables
+     *
      * @Then $n articles are found
      */
     public function testBaseFactoryStaticFind(): void
@@ -77,7 +83,7 @@ class BaseFactoryStaticFinderTest extends TestCase
         $this->assertSame(2, ArticleFactory::count());
     }
 
-    public function testBaseFactoryStaticFirstOrFail_No_Parameters(): void
+    public function testBaseFactoryStaticFirstOrFailNoParameters(): void
     {
         $article = ArticleFactory::make()->persist();
 

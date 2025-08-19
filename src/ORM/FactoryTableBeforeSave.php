@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -6,10 +7,10 @@ declare(strict_types=1);
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
- * @link          https://webrider.de/
- * @since         1.0.0
- * @license       http://www.opensource.org/licenses/mit-license.php MIT License
+ * @copyright Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
+ * @link https://webrider.de/
+ * @since 1.0.0
+ * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
 
 namespace CakephpFixtureFactories\ORM;
@@ -48,6 +49,7 @@ final class FactoryTableBeforeSave
     /**
      * @param \Cake\ORM\Table $table Table on which the beforeFind actions are taken.
      * @param \Cake\Datasource\EntityInterface $entity Entity concerned by the saving.
+     *
      * @return void
      */
     public static function handle(Table $table, EntityInterface $entity): void
@@ -69,7 +71,7 @@ final class FactoryTableBeforeSave
     {
         $filter = $this->getEnforcedUniquePropertyValues();
 
-        if (!empty($filter) && $this->getIsAssociated()) {
+        if ($filter && $this->getIsAssociated()) {
             $duplicate = $this->findDuplicate($filter);
             if ($duplicate) {
                 $this->patchDuplicateOntoEntity($duplicate);
@@ -84,6 +86,7 @@ final class FactoryTableBeforeSave
      * while creating then entity
      *
      * @see DataCompiler::compileEntity()
+     *
      * @return array
      */
     public function getEntityModifiedUniqueProperties(): array
@@ -110,6 +113,7 @@ final class FactoryTableBeforeSave
 
     /**
      * @param array $conditions Conditions that a duplicate should meet
+     *
      * @return array|null
      */
     public function findDuplicate(array $conditions): ?array
@@ -148,6 +152,7 @@ final class FactoryTableBeforeSave
      * fields shall be overwritten by the already existing entity.
      *
      * @param array $duplicate Values to patch from the existing entity to the one about to be created.
+     *
      * @return void
      */
     public function patchDuplicateOntoEntity(array $duplicate): void
@@ -186,6 +191,7 @@ final class FactoryTableBeforeSave
 
     /**
      * @param \Cake\ORM\Table $table The class's table.
+     *
      * @return void
      */
     public function setTable(Table $table): void
@@ -203,6 +209,7 @@ final class FactoryTableBeforeSave
 
     /**
      * @param \Cake\Datasource\EntityInterface $entity The class's entity.
+     *
      * @return void
      */
     public function setEntity(EntityInterface $entity): void

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -6,11 +7,12 @@ declare(strict_types=1);
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
- * @link          https://webrider.de/
- * @since         1.0.0
- * @license       http://www.opensource.org/licenses/mit-license.php MIT License
+ * @copyright Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
+ * @link https://webrider.de/
+ * @since 1.0.0
+ * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
+
 namespace CakephpFixtureFactories\Test\TestCase\Factory;
 
 use Cake\Core\Configure;
@@ -36,7 +38,7 @@ class BaseFactoryGetResultSetTest extends TestCase
 
     public static function isPersisted(): array
     {
-        return [[false], [true],];
+        return [[false], [true]];
     }
 
     /**
@@ -55,7 +57,7 @@ class BaseFactoryGetResultSetTest extends TestCase
 
         $articles = $isPersisted ? $factory->getPersistedResultSet() : $factory->getResultSet();
         $this->assertSame(2, $articles->count());
-        $this->assertSame(!$isPersisted, is_null($articles->first()->get('id')));
+        $this->assertSame(!$isPersisted, $articles->first()->get('id') === null);
         $this->assertSame($name1, $articles->first()->get('name'));
         $this->assertSame($street, $articles->first()['authors'][0]['address']['street']);
         $this->assertSame($name2, $articles->last()->get('name'));
@@ -64,7 +66,7 @@ class BaseFactoryGetResultSetTest extends TestCase
         $this->assertSame($isPersisted ? 2 : 0, ArticleFactory::count());
     }
 
-    public function testBaseFactoryGetResultSet_With_Ids(): void
+    public function testBaseFactoryGetResultSetWithIds(): void
     {
         $id1 = 5;
         $id2 = 10;

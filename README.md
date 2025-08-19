@@ -63,7 +63,7 @@ composer require --dev dereuromark/cakephp-fixture-factories
 Send PRs or tickets in GitHub.
 
 ## Authors
-previously, Juan Pablo Ramirez and Nicolas Masson.
+Previously, Juan Pablo Ramirez and Nicolas Masson.
 This fork is maintained by Mark Scherer (dereuromark)
 
 ## License

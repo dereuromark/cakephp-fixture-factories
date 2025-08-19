@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -6,10 +7,10 @@ declare(strict_types=1);
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
- * @link          https://webrider.de/
- * @since         1.0.0
- * @license       http://www.opensource.org/licenses/mit-license.php MIT License
+ * @copyright Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
+ * @link https://webrider.de/
+ * @since 1.0.0
+ * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
 
 namespace CakephpFixtureFactories\Test\TestCase\Factory;
@@ -117,7 +118,8 @@ class EventCollectorTest extends TestCase
 
     /**
      * @dataProvider provideFactories
-     * @param BaseFactory $factory
+     *
+     * @param \CakephpFixtureFactories\Factory\BaseFactory $factory
      */
     public function testTimestamp(BaseFactory $factory): void
     {
@@ -134,6 +136,7 @@ class EventCollectorTest extends TestCase
 
     /**
      * @dataProvider runSeveralTimesWithOrWithoutEvents
+     *
      * @param bool $applyEvent Bind the event once to the model
      */
     public function testApplyOrIgnoreBeforeMarshalSetOnTheFly(bool $applyEvent): void
@@ -158,10 +161,10 @@ class EventCollectorTest extends TestCase
 
         // Event should be skipped
         $country = CountryFactory::make()->getEntity();
-        $this->assertSame(null, $country->get('eventApplied'));
+        $this->assertNull($country->get('eventApplied'));
 
         $country = CountryFactory::make()->listeningToModelEvents('Model.beforeMarshal')->getEntity();
-        $this->assertSame(null, $country->get('eventApplied'));
+        $this->assertNull($country->get('eventApplied'));
     }
 
     /**

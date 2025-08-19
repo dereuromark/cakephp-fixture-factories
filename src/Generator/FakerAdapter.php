@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -6,11 +7,12 @@ declare(strict_types=1);
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
- * @link          https://webrider.de/
- * @since         3.1.0
- * @license       http://www.opensource.org/licenses/mit-license.php MIT License
+ * @copyright Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
+ * @link https://webrider.de/
+ * @since 3.1.0
+ * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
+
 namespace CakephpFixtureFactories\Generator;
 
 use Faker\Factory;
@@ -63,6 +65,8 @@ class FakerAdapter implements GeneratorInterface
 
     /**
      * @inheritDoc
+     *
+     * @throws \InvalidArgumentException
      */
     public function __call(string $name, array $arguments): mixed
     {
@@ -80,7 +84,7 @@ class FakerAdapter implements GeneratorInterface
             }
 
             $cases = $enumClass::cases();
-            if (empty($cases)) {
+            if (!$cases) {
                 throw new InvalidArgumentException("Enum has no cases: $enumClass");
             }
 
@@ -99,7 +103,7 @@ class FakerAdapter implements GeneratorInterface
             }
 
             $cases = $enumClass::cases();
-            if (empty($cases)) {
+            if (!$cases) {
                 throw new InvalidArgumentException("Enum has no cases: $enumClass");
             }
 

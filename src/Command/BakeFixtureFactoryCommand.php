@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -6,11 +7,12 @@ declare(strict_types=1);
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
- * @link          https://webrider.de/
- * @since         1.0.0
- * @license       http://www.opensource.org/licenses/mit-license.php MIT License
+ * @copyright Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
+ * @link https://webrider.de/
+ * @since 1.0.0
+ * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
+
 namespace CakephpFixtureFactories\Command;
 
 use Bake\Command\BakeCommand;
@@ -148,8 +150,9 @@ class BakeFixtureFactoryCommand extends BakeCommand
     }
 
     /**
-     * @param string    $tableName Name of the table being baked
+     * @param string $tableName Name of the table being baked
      * @param \Cake\Console\ConsoleIo $io Console
+     *
      * @return $this
      */
     public function setTable(string $tableName, ConsoleIo $io)
@@ -170,6 +173,7 @@ class BakeFixtureFactoryCommand extends BakeCommand
 
     /**
      * @param \Cake\Console\Arguments $args Arguments
+     *
      * @return string
      */
     public function getPath(Arguments $args): string
@@ -206,6 +210,7 @@ class BakeFixtureFactoryCommand extends BakeCommand
      * List the tables, ignore tables that should not be baked
      *
      * @param \Cake\Console\ConsoleIo $io Console
+     *
      * @return array
      */
     public function getTableList(ConsoleIo $io): array
@@ -234,6 +239,7 @@ class BakeFixtureFactoryCommand extends BakeCommand
      *
      * @param string $table Table
      * @param \Cake\Console\ConsoleIo $io Console
+     *
      * @return bool
      */
     public function thisTableShouldBeBaked(string $table, ConsoleIo $io): bool
@@ -259,12 +265,13 @@ class BakeFixtureFactoryCommand extends BakeCommand
     /**
      * @param \Cake\Console\Arguments $args Arguments
      * @param \Cake\Console\ConsoleIo $io Console
+     *
      * @return string
      */
     private function bakeAllModels(Arguments $args, ConsoleIo $io): string
     {
         $tables = $this->getTableList($io);
-        if (empty($tables)) {
+        if (!$tables) {
             $io->err(sprintf('No tables were found at `%s`', $this->getModelPath()));
         } else {
             foreach ($tables as $table) {
@@ -280,6 +287,7 @@ class BakeFixtureFactoryCommand extends BakeCommand
      *
      * @param \Cake\Console\Arguments $args The command arguments.
      * @param \Cake\Console\ConsoleIo $io The console io
+     *
      * @return int|null The exit code or null for success
      */
     public function execute(Arguments $args, ConsoleIo $io): ?int
@@ -305,7 +313,7 @@ class BakeFixtureFactoryCommand extends BakeCommand
             return self::CODE_SUCCESS;
         }
 
-        if (empty($model)) {
+        if (!$model) {
             if ($loud) {
                 $io->out('Choose a table from the following, choose -a for all, or -h for help:');
             }
@@ -324,9 +332,10 @@ class BakeFixtureFactoryCommand extends BakeCommand
     }
 
     /**
-     * @param string    $modelName Name of the model
+     * @param string $modelName Name of the model
      * @param \Cake\Console\Arguments $args Arguments
      * @param \Cake\Console\ConsoleIo $io Console
+     *
      * @return int|bool
      */
     public function bakeFixtureFactory(string $modelName, Arguments $args, ConsoleIo $io): bool|int
@@ -427,18 +436,21 @@ class BakeFixtureFactoryCommand extends BakeCommand
                         'fqcn' => $factory,
                         'className' => $factoryClassName,
                     ];
+
                     break;
                 case 'oneToMany':
                     $associations['oneToMany'][$association->getName()] = [
                         'fqcn' => $factory,
                         'className' => $factoryClassName,
                     ];
+
                     break;
                 case 'manyToMany':
                     $associations['manyToMany'][$association->getName()] = [
                         'fqcn' => $factory,
                         'className' => $factoryClassName,
                     ];
+
                     break;
             }
         }
@@ -450,12 +462,13 @@ class BakeFixtureFactoryCommand extends BakeCommand
      * @param string $name Name of the factory
      * @param \Cake\Console\Arguments $args Arguments
      * @param \Cake\Console\ConsoleIo $io Console
+     *
      * @return void
      */
     public function handleFactoryWithSameName(string $name, Arguments $args, ConsoleIo $io): void
     {
         $factoryWithSameName = glob($this->getPath($args) . $name . '.php');
-        if (!empty($factoryWithSameName)) {
+        if ($factoryWithSameName) {
             if (!$args->getOption('force')) {
                 $io->abort(
                     sprintf(
@@ -551,6 +564,7 @@ class BakeFixtureFactoryCommand extends BakeCommand
      * @param string $column
      * @param string $modelName
      * @param array $columnSchema
+     *
      * @return mixed
      */
     protected function guessDefault(string $column, string $modelName, array $columnSchema): mixed
@@ -698,6 +712,7 @@ class BakeFixtureFactoryCommand extends BakeCommand
 
     /**
      * @param \Cake\ORM\AssociationCollection $associations
+     *
      * @return array<string>
      */
     protected function foreignKeys(AssociationCollection $associations): array

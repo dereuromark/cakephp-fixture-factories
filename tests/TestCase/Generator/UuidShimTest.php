@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace CakephpFixtureFactories\Test\TestCase\Generator;
@@ -99,6 +100,7 @@ class UuidShimTest extends TestCase
      * Helper method to validate UUID format
      *
      * @param string $uuid The UUID to validate
+     *
      * @return bool True if valid UUID format
      */
     private function isValidUuid(string $uuid): bool

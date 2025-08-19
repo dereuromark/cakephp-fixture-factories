@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -6,11 +7,12 @@ declare(strict_types=1);
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
- * @link          https://webrider.de/
- * @since         1.0.0
- * @license       http://www.opensource.org/licenses/mit-license.php MIT License
+ * @copyright Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
+ * @link https://webrider.de/
+ * @since 1.0.0
+ * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
+
 namespace CakephpFixtureFactories\Test\TestCase\Factory;
 
 use Cake\Datasource\EntityInterface;
@@ -56,7 +58,8 @@ class BaseFactoryTest extends TestCase
 
     /**
      * @dataProvider dataForTestConnectionInDataProvider
-     * @param BaseFactory $factory
+     *
+     * @param \CakephpFixtureFactories\Factory\BaseFactory $factory
      */
     public function testConnectionInDataProvider(BaseFactory $factory): void
     {
@@ -68,8 +71,8 @@ class BaseFactoryTest extends TestCase
     {
         $title = 'blah';
         $entity = ArticleFactory::make()->withTitle($title)->getEntity();
-        $this->assertSame(true, $entity instanceof EntityInterface);
-        $this->assertSame(true, $entity instanceof Article);
+        $this->assertTrue($entity instanceof EntityInterface);
+        $this->assertTrue($entity instanceof Article);
         $this->assertSame($title, $entity->title);
     }
 
@@ -80,8 +83,8 @@ class BaseFactoryTest extends TestCase
             return compact('title');
         })->getEntity();
 
-        $this->assertSame(true, $entity instanceof EntityInterface);
-        $this->assertSame(true, $entity instanceof Article);
+        $this->assertTrue($entity instanceof EntityInterface);
+        $this->assertTrue($entity instanceof Article);
         $this->assertSame($title, $entity->title);
     }
 
@@ -122,9 +125,9 @@ class BaseFactoryTest extends TestCase
 
     /**
      * Given : EntitiesTable has association belongsTo 'EntityType' to table Options
-     * When  : Calling EntityFactory withOne OptionFactory
+     * When : Calling EntityFactory withOne OptionFactory
      *         And calling persist
-     * Then  : The returned root entity should be of type Entity
+     * Then : The returned root entity should be of type Entity
      *         And the entity stored in entity_type should be of type Option
      *         And the root entity's foreign key should be an int
      *         And the root entity id key should be an int
@@ -135,9 +138,9 @@ class BaseFactoryTest extends TestCase
             ->with('Address', AddressFactory::make(['street' => 'test street']))
             ->persist();
 
-        $this->assertSame(true, $author instanceof Author);
-        $this->assertSame(true, is_int($author->id));
-        $this->assertSame(true, $author->address instanceof Address);
+        $this->assertTrue($author instanceof Author);
+        $this->assertTrue(is_int($author->id));
+        $this->assertTrue($author->address instanceof Address);
         $this->assertSame($author->address_id, $author->address->id);
     }
 
@@ -153,7 +156,7 @@ class BaseFactoryTest extends TestCase
         $this->assertSame($n, count($entities));
         $previousName = '';
         foreach ($entities as $entity) {
-            $this->assertSame(true, $entity instanceof Article);
+            $this->assertTrue($entity instanceof Article);
             $this->assertNotSame($previousName, $entity->title);
             $previousName = $entity->title;
         }
@@ -169,7 +172,7 @@ class BaseFactoryTest extends TestCase
         $this->assertSame($n, count($entities));
         $previousName = '';
         foreach ($entities as $entity) {
-            $this->assertSame(true, $entity instanceof Article);
+            $this->assertTrue($entity instanceof Article);
             $previousName = $entity->title;
             $this->assertSame($previousName, $entity->title);
         }
@@ -191,11 +194,11 @@ class BaseFactoryTest extends TestCase
 
         foreach ($articles as $article) {
             $this->assertInstanceOf(Article::class, $article);
-            $this->assertSame(true, is_int($article->id));
+            $this->assertTrue(is_int($article->id));
             $this->assertSame($m, count($article->authors));
             foreach ($article->authors as $author) {
                 $this->assertInstanceOf(Author::class, $author);
-                $this->assertSame(true, is_int($author->id));
+                $this->assertTrue(is_int($author->id));
             }
         }
     }
@@ -218,11 +221,11 @@ class BaseFactoryTest extends TestCase
 
         foreach ($articles as $article) {
             $this->assertInstanceOf(Article::class, $article);
-            $this->assertSame(true, is_int($article->id));
+            $this->assertTrue(is_int($article->id));
             $this->assertSame($m, count($article->authors));
             foreach ($article->authors as $author) {
                 $this->assertInstanceOf(Author::class, $author);
-                $this->assertSame(true, is_int($author->id));
+                $this->assertTrue(is_int($author->id));
             }
         }
     }
@@ -235,7 +238,7 @@ class BaseFactoryTest extends TestCase
             ];
         })->persist();
 
-        $this->assertSame(true, $article instanceof Article);
+        $this->assertTrue($article instanceof Article);
     }
 
     public function testMakeSingleWithArrayWithSubFactory(): void
@@ -252,9 +255,9 @@ class BaseFactoryTest extends TestCase
             ];
         })->persist();
 
-        $this->assertSame(true, $city instanceof City);
-        $this->assertSame(true, is_int($city->id));
-        $this->assertSame(true, $city->country instanceof Country);
+        $this->assertTrue($city instanceof City);
+        $this->assertTrue(is_int($city->id));
+        $this->assertTrue($city->country instanceof Country);
         $this->assertSame($city->country_id, $city->country->id);
     }
 
@@ -277,12 +280,12 @@ class BaseFactoryTest extends TestCase
         ->persist();
 
         foreach ($articles as $article) {
-            $this->assertSame(true, $article instanceof Article);
-            $this->assertSame(true, is_int($article->id));
+            $this->assertTrue($article instanceof Article);
+            $this->assertTrue(is_int($article->id));
             $this->assertSame($m, count($article->authors));
             foreach ($article->authors as $author) {
                 $this->assertInstanceOf(Author::class, $author);
-                $this->assertSame(true, is_int($author->id));
+                $this->assertTrue(is_int($author->id));
             }
         }
     }
@@ -324,7 +327,7 @@ class BaseFactoryTest extends TestCase
             $this->assertSame($m, count($article->authors));
             foreach ($article->authors as $author) {
                 $this->assertInstanceOf(Author::class, $author);
-                $this->assertSame(true, is_int($author->id));
+                $this->assertTrue(is_int($author->id));
                 $this->assertSame($author->address_id, $author->address->id);
                 $this->assertSame($author->address->city_id, $author->address->city->id);
                 $this->assertSame($author->address->city->country_id, $author->address->city->country_id);
@@ -350,16 +353,16 @@ class BaseFactoryTest extends TestCase
             })
             ->getEntity();
 
-        $this->assertSame(true, $author->address instanceof Address);
-        $this->assertSame(true, $author->address->city instanceof City);
-        $this->assertSame(true, $author->address->city->country instanceof Country);
+        $this->assertTrue($author->address instanceof Address);
+        $this->assertTrue($author->address->city instanceof City);
+        $this->assertTrue($author->address->city->country instanceof Country);
     }
 
     /**
      * Given : The AuthorsTable has an association of type 'belongsTo' to table AddressesTable called 'BusinessAddress'
-     * When  : Making an author with a 'business address' key containing a name
+     * When : Making an author with a 'business address' key containing a name
      *         And without setting the associated data manually by calling mergeAssociated
-     * Then  : When calling persist, the returned entity should be of type Author
+     * Then : When calling persist, the returned entity should be of type Author
      *         And the returned entity should have an id because it was persisted
      *         And the address key should contain an array
      *         And that object should NOT have an id because it was NOT persisted
@@ -373,17 +376,17 @@ class BaseFactoryTest extends TestCase
             ],
         ])->persist();
 
-        $this->assertSame(true, $persistedEntity instanceof Author);
-        $this->assertSame(true, is_int($persistedEntity->id));
-        $this->assertSame(true, is_array($persistedEntity->business_address));
-        $this->assertSame(false, isset($persistedEntity->business_address->id));
+        $this->assertTrue($persistedEntity instanceof Author);
+        $this->assertTrue(is_int($persistedEntity->id));
+        $this->assertTrue(is_array($persistedEntity->business_address));
+        $this->assertFalse(isset($persistedEntity->business_address->id));
     }
 
     /**
      * Given : The AuthorsTable has an association of type 'hasOne' to table AddressesTable called 'Address'
-     * When  : Making an author with an 'address' key containing a name
+     * When : Making an author with an 'address' key containing a name
      *         And without setting the associated data manually by calling mergeAssociated
-     * Then  : When calling getEntity, the returned entity should be of type Author
+     * Then : When calling getEntity, the returned entity should be of type Author
      *         And the returned entity should not have an id because it was not persisted
      *         And the address key should contain an array
      *         And that object should NOT have an id because it was NOT persisted
@@ -399,16 +402,16 @@ class BaseFactoryTest extends TestCase
 
         $marshalledEntity = $factory->getEntity();
 
-        $this->assertSame(true, $marshalledEntity instanceof Author);
-        $this->assertSame(false, isset($marshalledEntity->id));
-        $this->assertSame(true, is_array($marshalledEntity->business_address));
+        $this->assertTrue($marshalledEntity instanceof Author);
+        $this->assertFalse(isset($marshalledEntity->id));
+        $this->assertTrue(is_array($marshalledEntity->business_address));
     }
 
     /**
      * Given : The AuthorsTable has an association of type 'hasOne' to table AddressesTable called 'Address'
-     * When  : Making an author with an 'address' key containing a name
+     * When : Making an author with an 'address' key containing a name
      *         And setting the associated data manually by calling mergeAssociated
-     * Then  : When calling persist,
+     * Then : When calling persist,
      *             the returned entity should be of type Author
      *         And the returned entity should have an id because it was persisted
      *         And the address key should contain an Entity of type Address
@@ -426,17 +429,17 @@ class BaseFactoryTest extends TestCase
 
         $persistedEntity = $factory->persist();
 
-        $this->assertSame(true, $persistedEntity instanceof Author);
-        $this->assertSame(true, is_int($persistedEntity->id));
-        $this->assertSame(true, $persistedEntity->business_address instanceof Address);
-        $this->assertSame(true, is_int($persistedEntity->business_address->id));
+        $this->assertTrue($persistedEntity instanceof Author);
+        $this->assertTrue(is_int($persistedEntity->id));
+        $this->assertTrue($persistedEntity->business_address instanceof Address);
+        $this->assertTrue(is_int($persistedEntity->business_address->id));
     }
 
     /**
      * Given : The AuthorsTable has an association of type 'hasOne' to table AddressesTable called 'Address'
-     * When  : Making a project with an 'address' key containing a name
+     * When : Making a project with an 'address' key containing a name
      *         And setting the associated data manually by calling mergeAssociated
-     * Then  : When calling getEntity,
+     * Then : When calling getEntity,
      *             the returned entity should be of type Author
      *         And the returned entity should NOT have an id because it marshalled
      *         And the address key should contain an Entity of type Address
@@ -453,10 +456,10 @@ class BaseFactoryTest extends TestCase
 
         $marshalledEntity = $factory->getEntity();
 
-        $this->assertSame(true, $marshalledEntity instanceof Author);
-        $this->assertSame(false, isset($marshalledEntity->id));
-        $this->assertSame(true, $marshalledEntity->business_address instanceof Address);
-        $this->assertSame(false, isset($marshalledEntity->business_address->id));
+        $this->assertTrue($marshalledEntity instanceof Author);
+        $this->assertFalse(isset($marshalledEntity->id));
+        $this->assertTrue($marshalledEntity->business_address instanceof Address);
+        $this->assertFalse(isset($marshalledEntity->business_address->id));
     }
 
     public function testMakeHasOneAssociationFromCallableThenPersist(): void
@@ -473,10 +476,10 @@ class BaseFactoryTest extends TestCase
             ];
         })->persist();
 
-        $this->assertSame(true, $entity instanceof Author);
-        $this->assertSame(true, is_int($entity->id));
-        $this->assertSame(true, $entity->address instanceof Address);
-        $this->assertSame(true, is_int($entity->address->id));
+        $this->assertTrue($entity instanceof Author);
+        $this->assertTrue(is_int($entity->id));
+        $this->assertTrue($entity->address instanceof Address);
+        $this->assertTrue(is_int($entity->address->id));
     }
 
     public function testMakeHasOneAssociationFromCallableWithAssociatedDataInSingleArrayThenPersist(): void
@@ -490,9 +493,9 @@ class BaseFactoryTest extends TestCase
             ];
         })->persist();
 
-        $this->assertSame(true, $author instanceof Author);
-        $this->assertSame(true, is_int($author->id));
-        $this->assertSame(false, $author->business_address instanceof Address);
+        $this->assertTrue($author instanceof Author);
+        $this->assertTrue(is_int($author->id));
+        $this->assertFalse($author->business_address instanceof Address);
     }
 
     public function testMakeHasOneAssociationFromCallableWithAssociatedDataUsingWith(): void
@@ -503,10 +506,10 @@ class BaseFactoryTest extends TestCase
             return ['name' => $generator->lastName()];
         })->persist();
 
-        $this->assertSame(true, $entity instanceof Author);
-        $this->assertSame(true, is_int($entity->id));
-        $this->assertSame(true, $entity->address instanceof Address);
-        $this->assertSame(true, is_int($entity->address->id));
+        $this->assertTrue($entity instanceof Author);
+        $this->assertTrue(is_int($entity->id));
+        $this->assertTrue($entity->address instanceof Address);
+        $this->assertTrue(is_int($entity->address->id));
     }
 
     public function testMakeTenHasOneAssociationFromCallableWithAssociatedDataUsingWith(): void
@@ -520,10 +523,10 @@ class BaseFactoryTest extends TestCase
 
         $this->assertSame($n, count($entities));
         foreach ($entities as $entity) {
-            $this->assertSame(true, $entity instanceof Author);
-            $this->assertSame(true, is_int($entity->id));
-            $this->assertSame(true, $entity->address instanceof Address);
-            $this->assertSame(true, is_int($entity->address->id));
+            $this->assertTrue($entity instanceof Author);
+            $this->assertTrue(is_int($entity->id));
+            $this->assertTrue($entity->address instanceof Address);
+            $this->assertTrue(is_int($entity->address->id));
         }
     }
 
@@ -555,14 +558,14 @@ class BaseFactoryTest extends TestCase
     public function testHasAssociation(): void
     {
         $authorsTable = AuthorFactory::make()->getTable();
-        $this->assertSame(true, $authorsTable->hasAssociation('Address'));
-        $this->assertSame(true, $authorsTable->hasAssociation('Articles'));
+        $this->assertTrue($authorsTable->hasAssociation('Address'));
+        $this->assertTrue($authorsTable->hasAssociation('Articles'));
     }
 
     public function testAssociationByPropertyName(): void
     {
         $articlesTable = ArticleFactory::make()->getTable();
-        $this->assertSame(true, $articlesTable->hasAssociation(Inflector::camelize('authors')));
+        $this->assertTrue($articlesTable->hasAssociation(Inflector::camelize('authors')));
     }
 
     public function testEvaluateCallableThatReturnsArray(): void
@@ -611,8 +614,8 @@ class BaseFactoryTest extends TestCase
         $bill = BillFactory::make(compact('amount'))
             ->withArticle(compact('title'))
             ->persist();
-        $this->assertSame(true, is_int($bill->id));
-        $this->assertSame(true, is_int($bill->article->id));
+        $this->assertTrue(is_int($bill->id));
+        $this->assertTrue(is_int($bill->article->id));
         $this->assertEquals($title, $bill->article->title);
         $this->assertEquals($amount, $bill->amount);
         $this->assertEquals($bill->article_id, $bill->article->id);
@@ -646,7 +649,7 @@ class BaseFactoryTest extends TestCase
             ->withBills(compact('amount'), $n)
             ->persist();
 
-        $this->assertSame(true, is_int($article->id));
+        $this->assertTrue(is_int($article->id));
         $this->assertSame($n, count($article->bills));
         $this->assertEquals($title, $article->title);
         foreach ($article->bills as $bill) {
@@ -661,8 +664,6 @@ class BaseFactoryTest extends TestCase
      * The fixture factories stop infinite propagation
      * Bills have an article set by default in their factory
      * However, this redundant association is stopped
-     *
-     * @throws \Exception
      */
     public function testPersistingWithAssociationWithDefaultAssociationUnstopped(): void
     {
@@ -673,7 +674,7 @@ class BaseFactoryTest extends TestCase
             ->withBillsWithArticle(compact('amount'), $n)
             ->persist();
 
-        $this->assertSame(true, is_int($article->id));
+        $this->assertTrue(is_int($article->id));
         $this->assertSame($n, count($article->bills));
         $this->assertEquals($title, $article->title);
         foreach ($article->bills as $bill) {
@@ -709,7 +710,7 @@ class BaseFactoryTest extends TestCase
             ->withBills(compact('amount'), $n)
             ->persist();
 
-        $this->assertSame(true, is_int($customer->id));
+        $this->assertTrue(is_int($customer->id));
         $this->assertSame($n, count($customer->bills));
         $this->assertEquals($name, $customer->name);
         foreach ($customer->bills as $bill) {
@@ -828,13 +829,13 @@ class BaseFactoryTest extends TestCase
      */
     public static function feedTestSetTimes()
     {
-        return [[rand(1, 10)], [rand(1, 10)], [rand(1, 10)], ];
+        return [[rand(1, 10)], [rand(1, 10)], [rand(1, 10)]];
     }
 
     /**
      * @dataProvider feedTestSetTimes
+     *
      * @param int $times
-     * @throws \Exception
      */
     public function testSetTimes(int $times): void
     {

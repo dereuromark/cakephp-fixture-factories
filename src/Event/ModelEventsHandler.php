@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -6,10 +7,10 @@ declare(strict_types=1);
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
- * @link          https://webrider.de/
- * @since         1.0.0
- * @license       http://www.opensource.org/licenses/mit-license.php MIT License
+ * @copyright Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
+ * @link https://webrider.de/
+ * @since 1.0.0
+ * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
 
 namespace CakephpFixtureFactories\Event;
@@ -61,11 +62,8 @@ class ModelEventsHandler
     ];
 
     /**
-     * ModelEventsHandler constructor.
-     *
      * @param array $listeningModelEvents Model events listened to from instanciation
      * @param array $listeningBehaviors Behaviors listened to from instanciation
-     * @return void
      */
     final public function __construct(array $listeningModelEvents, array $listeningBehaviors)
     {
@@ -77,6 +75,7 @@ class ModelEventsHandler
      * @param \Cake\ORM\Table $table Table
      * @param array $listeningModelEvents Events listened to
      * @param array $listeningBehaviors Behaviors listened to
+     *
      * @return void
      */
     public static function handle(Table $table, array $listeningModelEvents = [], array $listeningBehaviors = []): void
@@ -86,6 +85,7 @@ class ModelEventsHandler
 
     /**
      * @param \Cake\ORM\Table $table Table
+     *
      * @return void
      */
     private function ignoreModelEvents(Table $table): void
@@ -103,6 +103,7 @@ class ModelEventsHandler
      * @param \Cake\ORM\Table $table Table
      * @param mixed $listener Listener
      * @param string $ormEvent Event name
+     *
      * @return void
      */
     private function processListener(Table $table, mixed $listener, string $ormEvent): void
@@ -110,11 +111,11 @@ class ModelEventsHandler
         try {
             $reflection = new ReflectionFunction($listener);
             $obj = $reflection->getClosureThis();
-        } catch (ReflectionException $e) {
-            // Do something?
+        } catch (ReflectionException) {
+            $obj = null;
         }
 
-        if (isset($obj)) {
+        if ($obj !== null) {
             if ($obj instanceof Table) {
                 $this->processModelListener($table, $obj, $ormEvent);
             } elseif ($obj instanceof Behavior) {
@@ -129,6 +130,7 @@ class ModelEventsHandler
      * @param \Cake\ORM\Table $table Table
      * @param mixed $listener Listener
      * @param string $ormEvent Event Name
+     *
      * @return void
      */
     private function processModelListener(Table $table, mixed $listener, string $ormEvent): void
@@ -147,6 +149,7 @@ class ModelEventsHandler
      * @param \Cake\ORM\Table $table Table
      * @param mixed $listener Listener
      * @param string $ormEvent Event name
+     *
      * @return void
      */
     private function processBehaviorListener(Table $table, mixed $listener, string $ormEvent): void
@@ -173,6 +176,7 @@ class ModelEventsHandler
      *
      * @param \Cake\ORM\Table $table Table
      * @param string $behavior Behavior name
+     *
      * @return bool
      */
     private function skipBehavior(Table $table, string $behavior): bool

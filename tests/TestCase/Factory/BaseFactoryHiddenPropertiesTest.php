@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -6,10 +7,10 @@ declare(strict_types=1);
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
- * @link          https://webrider.de/
- * @since         1.0.0
- * @license       http://www.opensource.org/licenses/mit-license.php MIT License
+ * @copyright Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
+ * @link https://webrider.de/
+ * @since 1.0.0
+ * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
 
 namespace CakephpFixtureFactories\Test\TestCase\Factory;
@@ -23,13 +24,16 @@ use TestApp\Model\Entity\Article;
 
 class BaseFactoryHiddenPropertiesTest extends TestCase
 {
+    /**
+     * @var string
+     */
     public const DUMMY_HIDDEN_PARAGRAPH = 'Foo!';
 
     /**
      * Assert that the hidden paragraph property in articles is well persisted
      * but remains invisible when toArray is called.
      *
-     * @param Article|Article[] $articles
+     * @param \TestApp\Model\Entity\Article|array<\TestApp\Model\Entity\Article> $articles
      * @param bool $persisted
      */
     private function assertHiddenParagraphIsVisible($articles, bool $persisted): void
@@ -43,7 +47,7 @@ class BaseFactoryHiddenPropertiesTest extends TestCase
                     Article::HIDDEN_PARAGRAPH_PROPERTY_NAME => self::DUMMY_HIDDEN_PARAGRAPH,
                 ])->firstOrFail();
                 $this->assertSame(self::DUMMY_HIDDEN_PARAGRAPH, $article->get(Article::HIDDEN_PARAGRAPH_PROPERTY_NAME));
-                $this->assertSame(null, $article->toArray()[Article::HIDDEN_PARAGRAPH_PROPERTY_NAME] ?? null);
+                $this->assertNull($article->toArray()[Article::HIDDEN_PARAGRAPH_PROPERTY_NAME] ?? null);
             }
         }
     }
@@ -60,12 +64,15 @@ class BaseFactoryHiddenPropertiesTest extends TestCase
 
     /**
      * @Given a property is hidden
+     *
      * @When a factory is persisted
+     *
      * @Then the field is accessible and persisted.
+     *
+     * @dataProvider iterate
+     *
      * @param int $n
      * @param bool $persist
-     * @throws \Exception
-     * @dataProvider iterate
      */
     public function testHiddenPropertyInMainBuild(int $n, bool $persist): void
     {
@@ -81,12 +88,15 @@ class BaseFactoryHiddenPropertiesTest extends TestCase
 
     /**
      * @Given a property in a belongs to many association is hidden
+     *
      * @When a factory is persisted
+     *
      * @Then the field is accessible and persisted.
+     *
+     * @dataProvider iterate
+     *
      * @param int $n
      * @param bool $persist
-     * @throws \Exception
-     * @dataProvider iterate
      */
     public function testHiddenPropertyInBelongsToManyAssociation(int $n, bool $persist): void
     {
@@ -101,12 +111,15 @@ class BaseFactoryHiddenPropertiesTest extends TestCase
 
     /**
      * @Given a property in a has many association is hidden
+     *
      * @When a factory is persisted
+     *
      * @Then the field is accessible and persisted.
+     *
+     * @dataProvider iterate
+     *
      * @param int $n
      * @param bool $persist
-     * @throws \Exception
-     * @dataProvider iterate
      */
     public function testHiddenPropertyInBelongsToAssociation(int $n, bool $persist): void
     {

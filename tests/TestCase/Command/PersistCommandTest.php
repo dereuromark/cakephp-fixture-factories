@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -6,11 +7,12 @@ declare(strict_types=1);
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
- * @link          https://webrider.de/
- * @since         2.3
- * @license       http://www.opensource.org/licenses/mit-license.php MIT License
+ * @copyright Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
+ * @link https://webrider.de/
+ * @since 2.3
+ * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
+
 namespace CakephpFixtureFactories\Test\TestCase\Command;
 
 use Cake\Console\Arguments;
@@ -33,11 +35,12 @@ class PersistCommandTest extends TestCase
     use TruncateDirtyTables;
 
     /**
-     * @var PersistCommand
+     * @var \CakephpFixtureFactories\Command\PersistCommand
      */
     public $command;
+
     /**
-     * @var ConsoleIo
+     * @var \Cake\Console\ConsoleIo
      */
     public $io;
 

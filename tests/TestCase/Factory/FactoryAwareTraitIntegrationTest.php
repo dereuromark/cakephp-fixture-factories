@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace CakephpFixtureFactories\Test\TestCase\Factory;
@@ -36,7 +37,9 @@ class FactoryAwareTraitIntegrationTest extends TestCase
         ];
     }
 
-    /** @dataProvider factoryFoundData */
+    /**
+     * @dataProvider factoryFoundData
+     */
     public function testGetFactoryFound(string $name, string $expected): void
     {
         $trait = $this->getObjectForTrait(FactoryAwareTrait::class);

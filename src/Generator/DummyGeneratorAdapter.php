@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -6,11 +7,12 @@ declare(strict_types=1);
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
- * @link          https://webrider.de/
- * @since         3.1.0
- * @license       http://www.opensource.org/licenses/mit-license.php MIT License
+ * @copyright Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
+ * @link https://webrider.de/
+ * @since 3.1.0
+ * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
+
 namespace CakephpFixtureFactories\Generator;
 
 use BadMethodCallException;
@@ -53,8 +55,9 @@ class DummyGeneratorAdapter implements GeneratorInterface
     /**
      * Constructor
      *
-     * @param string|null $locale The locale to use
      * @phpstan-ignore-next-line
+     *
+     * @param string|null $locale The locale to use
      */
     public function __construct(?string $locale = null)
     {
@@ -88,6 +91,8 @@ class DummyGeneratorAdapter implements GeneratorInterface
 
     /**
      * @inheritDoc
+     *
+     * @throws \BadMethodCallException
      */
     public function __get(string $property): mixed
     {
@@ -118,9 +123,11 @@ class DummyGeneratorAdapter implements GeneratorInterface
      *
      * @param string $method The method name to call
      * @param array $arguments The arguments to pass
-     * @return mixed The result of the method call
+     *
      * @throws \OverflowException If unable to generate unique value
      * @throws \BadMethodCallException If method not found
+     *
+     * @return mixed The result of the method call
      */
     private function handleUniqueCall(string $method, array $arguments): mixed
     {

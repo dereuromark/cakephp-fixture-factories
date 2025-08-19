@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -6,10 +7,10 @@ declare(strict_types=1);
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
- * @link          https://webrider.de/
- * @since         1.0.0
- * @license       http://www.opensource.org/licenses/mit-license.php MIT License
+ * @copyright Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
+ * @link https://webrider.de/
+ * @since 1.0.0
+ * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
 
 namespace CakephpFixtureFactories\Factory;
@@ -33,19 +34,33 @@ use InvalidArgumentException;
  */
 class DataCompiler
 {
+    /**
+     * @var string
+     */
     public const MODIFIED_UNIQUE_PROPERTIES = '___data_compiler__modified_unique_properties';
+
+    /**
+     * @var string
+     */
     public const IS_ASSOCIATED = '___data_compiler__is_associated';
 
     private array|Closure $dataFromDefaultTemplate = [];
+
     /**
      * @var \Cake\Datasource\EntityInterface|callable|array|array<\Cake\Datasource\EntityInterface>
      */
     private $dataFromInstantiation = [];
+
     private array $dataFromPatch = [];
+
     private array $dataFromAssociations = [];
+
     private array $dataFromDefaultAssociations = [];
+
     private ?array $primaryKeyOffset = [];
+
     private array $enforcedFields = [];
+
     private array $skippedSetters = [];
 
     private static bool $inPersistMode = false;
@@ -61,8 +76,6 @@ class DataCompiler
     private bool $setPrimaryKey = true;
 
     /**
-     * DataCompiler constructor.
-     *
      * @param \CakephpFixtureFactories\Factory\BaseFactory $factory Master factory
      */
     public function __construct(BaseFactory $factory)
@@ -73,7 +86,8 @@ class DataCompiler
     /**
      * Data passed in the instantiation by array
      *
-     * @param \Cake\Datasource\EntityInterface|array|array<\Cake\Datasource\EntityInterface>|string $data Injected data.
+     * @param \Cake\Datasource\EntityInterface|array<\Cake\Datasource\EntityInterface>|string $data Injected data.
+     *
      * @return void
      */
     public function collectFromInstantiation(EntityInterface|array|string $data): void
@@ -85,6 +99,7 @@ class DataCompiler
      * Data passed in the instantiation by callable
      *
      * @param callable $fn Injected callable
+     *
      * @return void
      */
     public function collectArrayFromCallable(callable $fn): void
@@ -98,6 +113,7 @@ class DataCompiler
 
     /**
      * @param array $data Collected data
+     *
      * @return void
      */
     public function collectFromPatch(array $data): void
@@ -107,6 +123,7 @@ class DataCompiler
 
     /**
      * @param callable $fn Collected data from default template
+     *
      * @return void
      */
     public function collectFromDefaultTemplate(callable $fn): void
@@ -118,6 +135,7 @@ class DataCompiler
      * @param string $associationName Association name
      * @param \CakephpFixtureFactories\Factory\BaseFactory $factory Collected factory
      * @param bool $isToOne is the association a toOne
+     *
      * @return void
      */
     public function collectAssociation(string $associationName, BaseFactory $factory, bool $isToOne): void
@@ -147,6 +165,7 @@ class DataCompiler
      * Scan for the data stored in the $association path provided and drop it
      *
      * @param string $associationName Association name
+     *
      * @return void
      */
     public function dropAssociation(string $associationName): void
@@ -188,6 +207,7 @@ class DataCompiler
     /**
      * @param \Cake\Datasource\EntityInterface|callable|array|string $injectedData Data from the injection.
      * @param bool $setPrimaryKey Set the primary key if this entity is alone or the first of an array.
+     *
      * @return \Cake\Datasource\EntityInterface
      */
     public function compileEntity(
@@ -208,7 +228,7 @@ class DataCompiler
 
         $this->mergeWithPatchedData($entity)->mergeWithAssociatedData($entity, $isEntityInjected);
 
-        if ($this->isInPersistMode() && !empty($this->getModifiedUniqueFields())) {
+        if ($this->isInPersistMode() && $this->getModifiedUniqueFields()) {
             $entity->set(self::MODIFIED_UNIQUE_PROPERTIES, $this->getModifiedUniqueFields());
         }
 
@@ -224,12 +244,13 @@ class DataCompiler
      *
      * @param \Cake\Datasource\EntityInterface $entity Entity to patch.
      * @param array $data Data to patch.
+     *
      * @return \Cake\Datasource\EntityInterface
      */
     private function patchEntity(EntityInterface $entity, array $data): EntityInterface
     {
         $data = $this->setDataWithoutSetters($entity, $data);
-        if (empty($data)) {
+        if (!$data) {
             return $entity;
         }
 
@@ -248,8 +269,10 @@ class DataCompiler
      *
      * @param \Cake\Datasource\EntityInterface $entity entity to patch
      * @param array $data data to patch
-     * @return array
+     *
      * @throws \CakephpFixtureFactories\Error\FixtureFactoryException if an array notation is merged with a string, or a non array
+     *
+     * @return array
      */
     private function castArrayNotation(EntityInterface $entity, array $data): array
     {
@@ -277,8 +300,10 @@ class DataCompiler
      * should be assigned to the display field of the table.
      *
      * @param string $data data injected
-     * @return array<string>
+     *
      * @throws \CakephpFixtureFactories\Error\FixtureFactoryException if the display field of the factory's table is not a string
+     *
+     * @return array<string>
      */
     private function setDisplayFieldToInjectedString(string $data): array
     {
@@ -289,6 +314,7 @@ class DataCompiler
 
         $factory = get_class($this->getFactory());
         $table = get_class($this->getFactory()->getTable());
+
         throw new FixtureFactoryException(
             'The display field of a table must be a string when injecting a string into its factory. ' .
             "You injected '$data' in $factory but $table's display field is not a string.",
@@ -303,7 +329,8 @@ class DataCompiler
      *
      * @param \Cake\Datasource\EntityInterface $entity entity build
      * @param array $data data to set
-     * @return array $data without the fields for which the setters are ignored
+     *
+     * @return array Data without the fields for which the setters are ignored
      */
     private function setDataWithoutSetters(EntityInterface $entity, array $data): array
     {
@@ -340,9 +367,10 @@ class DataCompiler
      *
      * @param \Cake\Datasource\EntityInterface $entity Entity to manipulate.
      * @param \Cake\Datasource\EntityInterface|callable|array $data Data from the instantiation.
-     * @return self
+     *
+     * @return $this
      */
-    private function mergeWithInjectedData(EntityInterface $entity, array|callable|EntityInterface $data): self
+    private function mergeWithInjectedData(EntityInterface $entity, array|callable|EntityInterface $data)
     {
         if (is_callable($data)) {
             $data = $data(
@@ -367,9 +395,10 @@ class DataCompiler
      * beforeFind in order to handle the uniqueness of its fields.
      *
      * @param \Cake\Datasource\EntityInterface $entity Entity to manipulate.
-     * @return self
+     *
+     * @return $this
      */
-    private function mergeWithPatchedData(EntityInterface $entity): self
+    private function mergeWithPatchedData(EntityInterface $entity)
     {
         $this->patchEntity($entity, $this->dataFromPatch);
         $this->addEnforcedFields($this->dataFromPatch);
@@ -383,9 +412,10 @@ class DataCompiler
      *
      * @param \Cake\Datasource\EntityInterface $entity Entity produced by the factory.
      * @param bool $isEntityInjected Whether \Cake\Datasource\EntityInterface is injected or not.
-     * @return self
+     *
+     * @return $this
      */
-    private function mergeWithAssociatedData(EntityInterface $entity, bool $isEntityInjected): self
+    private function mergeWithAssociatedData(EntityInterface $entity, bool $isEntityInjected)
     {
         if ($isEntityInjected) {
             $associatedData = $this->dataFromAssociations;
@@ -416,6 +446,7 @@ class DataCompiler
      * @param \Cake\Datasource\EntityInterface $entity Entity produced by the factory.
      * @param string $associationName Association
      * @param array $data Data to inject
+     *
      * @return void
      */
     private function mergeWithToOne(EntityInterface $entity, string $associationName, array $data): void
@@ -436,13 +467,14 @@ class DataCompiler
      * @param \Cake\Datasource\EntityInterface $entity Entity produced by the factory.
      * @param string $associationName Association
      * @param array $data Data to inject
+     *
      * @return void
      */
     private function mergeWithToMany(EntityInterface $entity, string $associationName, array $data): void
     {
         $associationData = $entity->get($associationName);
         foreach ($data as $factory) {
-            if (empty($associationData)) {
+            if (!$associationData) {
                 $associationData = $this->getManyEntities($factory);
             } else {
                 $associationData = array_merge($associationData, $this->getManyEntities($factory));
@@ -453,6 +485,7 @@ class DataCompiler
 
     /**
      * @param \CakephpFixtureFactories\Factory\BaseFactory $factory Factory
+     *
      * @return array<\Cake\Datasource\EntityInterface>
      */
     private function getManyEntities(BaseFactory $factory): array
@@ -484,8 +517,8 @@ class DataCompiler
      * Throws an exception if the association name does not exist on the rootTable of the factory
      *
      * @param string $associationName Association
+     *
      * @return string underscore_version of the input string
-     * @throws \InvalidArgumentException
      */
     public function getMarshallerAssociationName(string $associationName): string
     {
@@ -503,6 +536,7 @@ class DataCompiler
 
     /**
      * @param string $propertyName Property
+     *
      * @return \Cake\ORM\Association|bool
      */
     public function getAssociationByPropertyName(string $propertyName): bool|Association
@@ -516,6 +550,7 @@ class DataCompiler
 
     /**
      * @param \Cake\Datasource\EntityInterface $entity Entity to manipulate.
+     *
      * @return \Cake\Datasource\EntityInterface
      */
     public function setPrimaryKey(EntityInterface $entity): EntityInterface
@@ -535,6 +570,8 @@ class DataCompiler
     }
 
     /**
+     * @throws \CakephpFixtureFactories\Error\PersistenceException
+     *
      * @return array
      */
     public function createPrimaryKeyOffset(): array
@@ -573,6 +610,7 @@ class DataCompiler
      * https://github.com/fzaninotto/Faker/blob/master/src/Faker/ORM/CakePHP/ColumnTypeGuesser.php
      *
      * @param string $columnType Column type
+     *
      * @return string|int
      */
     public function generateRandomPrimaryKey(string $columnType): int|string
@@ -581,19 +619,24 @@ class DataCompiler
             case 'uuid':
             case 'string':
                 $res = $this->getFactory()->getGenerator()->uuid();
+
                 break;
             case 'tinyinteger':
-                $res = mt_rand(0, intval('127'));
+                $res = mt_rand(0, (int)('127'));
+
                 break;
             case 'smallinteger':
-                $res = mt_rand(0, intval('32767'));
+                $res = mt_rand(0, (int)('32767'));
+
                 break;
             case 'biginteger':
-                $res = mt_rand(0, intval('9223372036854775807'));
+                $res = mt_rand(0, (int)('9223372036854775807'));
+
                 break;
             case 'integer':
             default:
-                $res = mt_rand(0, intval('2147483647'));
+                $res = mt_rand(0, (int)('2147483647'));
+
                 break;
         }
 
@@ -610,6 +653,9 @@ class DataCompiler
 
     /**
      * @param mixed $primaryKeyOffset Name of the primary key
+     *
+     * @throws \CakephpFixtureFactories\Error\FixtureFactoryException
+     *
      * @return void
      */
     public function setPrimaryKeyOffset(mixed $primaryKeyOffset): void
@@ -643,6 +689,7 @@ class DataCompiler
 
     /**
      * @param array $primaryKeys Set of primary keys
+     *
      * @return void
      */
     private function updatePostgresSequence(array $primaryKeys): void
@@ -721,6 +768,7 @@ class DataCompiler
      * uniqueness of the fields.
      *
      * @param array $fields Fields to be marked as enforced.
+     *
      * @return void
      */
     public function addEnforcedFields(array $fields): void
@@ -735,6 +783,7 @@ class DataCompiler
      * Sets the fields which setters should be skipped
      *
      * @param array $skippedSetters setters to skip
+     *
      * @return void
      */
     public function setSkippedSetters(array $skippedSetters): void

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -6,11 +7,12 @@ declare(strict_types=1);
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
- * @link          https://webrider.de/
- * @since         3.1.0
- * @license       http://www.opensource.org/licenses/mit-license.php MIT License
+ * @copyright Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
+ * @link https://webrider.de/
+ * @since 3.1.0
+ * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
+
 namespace CakephpFixtureFactories\Generator;
 
 /**
@@ -98,6 +100,7 @@ interface GeneratorInterface
      * Seed the random number generator
      *
      * @param int|null $seed The seed value
+     *
      * @return void
      */
     public function seed(?int $seed = null): void;
@@ -106,6 +109,7 @@ interface GeneratorInterface
      * Magic method to handle dynamic property access
      *
      * @param string $property Property name
+     *
      * @return mixed
      */
     public function __get(string $property): mixed;
@@ -115,6 +119,7 @@ interface GeneratorInterface
      *
      * @param string $name Method name
      * @param array<mixed> $arguments Method arguments
+     *
      * @return mixed
      */
     public function __call(string $name, array $arguments): mixed;
@@ -130,6 +135,7 @@ interface GeneratorInterface
      * Get an optional instance of the generator
      *
      * @param float $weight Weight between 0 and 1
+     *
      * @return \CakephpFixtureFactories\Generator\OptionalGeneratorInterface
      */
     public function optional(float $weight = 0.5): OptionalGeneratorInterface;

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -6,10 +7,10 @@ declare(strict_types=1);
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
- * @link          https://webrider.de/
- * @since         1.0.0
- * @license       http://www.opensource.org/licenses/mit-license.php MIT License
+ * @copyright Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
+ * @link https://webrider.de/
+ * @since 1.0.0
+ * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
 
 namespace CakephpFixtureFactories\Factory;
@@ -31,12 +32,14 @@ class UniquenessJanitor
      * @param \CakephpFixtureFactories\Factory\BaseFactory $factory Factory on which the entity will be built.
      * @param array<\Cake\Datasource\EntityInterface> $entities Array of data meant to be patched into entities.
      * @param bool $isStrict Throw an exception if unique fields in $entities collide.
-     * @return array<\Cake\Datasource\EntityInterface>
+     *
      * @throws \CakephpFixtureFactories\Error\UniquenessException
+     *
+     * @return array<\Cake\Datasource\EntityInterface>
      */
     public static function sanitizeEntityArray(BaseFactory $factory, array $entities, bool $isStrict = true): array
     {
-        if (empty($factory->getUniqueProperties())) {
+        if (!$factory->getUniqueProperties()) {
             return $entities;
         }
 
@@ -51,7 +54,7 @@ class UniquenessJanitor
                 }
             }
         }
-        if (empty($entities)) {
+        if (!$entities) {
             return $originalEntities;
         }
 
@@ -77,7 +80,7 @@ class UniquenessJanitor
         $indexesToRemove = [];
         foreach ($entities as $k1 => &$v1) {
             unset($entities[$k1]);
-            if (empty($v1)) {
+            if (!$v1) {
                 continue;
             }
             $property = $getPropertyName($k1);
@@ -85,6 +88,7 @@ class UniquenessJanitor
                 if ($v1 == $v2 && $property === $getPropertyName($k2) && $propertyIsUnique($property)) {
                     if ($isStrict) {
                         $factoryName = get_class($factory);
+
                         throw new UniquenessException(
                             "Error in {$factoryName}. The uniqueness of {$property} was not respected.",
                         );

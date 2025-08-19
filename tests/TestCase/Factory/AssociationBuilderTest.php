@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -6,10 +7,10 @@ declare(strict_types=1);
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
- * @link          https://webrider.de/
- * @since         1.0.0
- * @license       http://www.opensource.org/licenses/mit-license.php MIT License
+ * @copyright Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
+ * @link https://webrider.de/
+ * @since 1.0.0
+ * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
 
 namespace CakephpFixtureFactories\Test\TestCase\Factory;
@@ -68,7 +69,7 @@ class AssociationBuilderTest extends TestCase
         $AssociationBuilder = new AssociationBuilder(AuthorFactory::make());
 
         $street = 'Foo';
-        /** @var AddressFactory $factory */
+        /** @var \CakephpFixtureFactories\Test\Factory\AddressFactory $factory */
         $factory = $AssociationBuilder->getFactoryFromTableName('Address', compact('street'));
         $this->assertInstanceOf(AddressFactory::class, $factory);
 
@@ -98,7 +99,7 @@ class AssociationBuilderTest extends TestCase
         $AssociationBuilder = new AssociationBuilder(ArticleFactory::make());
 
         $amount = 123;
-        /** @var BillFactory $factory */
+        /** @var \CakephpFixtureFactories\Test\Factory\BillFactory $factory */
         $factory = $AssociationBuilder->getAssociatedFactory('Bills', compact('amount'));
         $this->assertInstanceOf(BillFactory::class, $factory);
 
@@ -265,10 +266,11 @@ class AssociationBuilderTest extends TestCase
         $AddressFactory = AddressFactory::make()->without('City.Country');
 
         $this->assertSame(
-            ['City' => [
+            [
+            'City' => [
                 'validate' => false,
                 'forceNew' => true,
-                'accessibleFields' => ['*' => true,],
+                'accessibleFields' => ['*' => true],
             ]],
             $AddressFactory->getAssociated(),
         );
@@ -341,7 +343,8 @@ class AssociationBuilderTest extends TestCase
             CityFactory::make(['name' => $cityName])->withCountry(),
         );
 
-        $this->assertSame(['Cities' => [
+        $this->assertSame([
+        'Cities' => [
             'validate' => false,
             'forceNew' => true,
             'accessibleFields' => ['*' => true],

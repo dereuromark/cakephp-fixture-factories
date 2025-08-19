@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -6,11 +7,12 @@ declare(strict_types=1);
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
- * @link          https://webrider.de/
- * @since         1.0.0
- * @license       http://www.opensource.org/licenses/mit-license.php MIT License
+ * @copyright Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
+ * @link https://webrider.de/
+ * @since 1.0.0
+ * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
+
 namespace CakephpFixtureFactories\Test\TestCase\Factory;
 
 use Cake\Core\Configure;
@@ -150,7 +152,7 @@ class BaseFactoryAssociationsTest extends TestCase
         $this->assertEquals($amount1, $customer->bills[0]->amount);
         $this->assertEquals($amount2, $customer->bills[1]->amount);
 
-        /** @var Customer $customer */
+        /** @var \TestPlugin\Model\Entity\Customer $customer */
         $customer = CustomerFactory::get($customer->id, ['contain' => 'Bills']);
         $this->assertEquals($amount1, $customer->bills[0]->amount);
         $this->assertEquals($amount2, $customer->bills[1]->amount);
@@ -372,7 +374,7 @@ class BaseFactoryAssociationsTest extends TestCase
             ->persist();
 
         $this->assertSame(1, CityFactory::count());
-        /** @var City $city */
+        /** @var \TestApp\Model\Entity\City $city */
         $city = CityFactory::find()->contain('Country')->firstOrFail();
         $this->assertSame($countryExpected, $city->country->name);
     }
@@ -611,11 +613,11 @@ class BaseFactoryAssociationsTest extends TestCase
 
         $country = $factory->getEntity();
         $this->assertIsString($country->cities[0]->name);
-        $this->assertSame(false, $country->virtual_cities);
+        $this->assertFalse($country->virtual_cities);
 
         $country = $factory->persist();
         $this->assertIsString($country->cities[0]->name);
-        $this->assertSame(false, $country->virtual_cities);
+        $this->assertFalse($country->virtual_cities);
 
         // Only the non virtual Cities will be saved
         $this->assertSame(1, CityFactory::count());
@@ -687,14 +689,14 @@ class BaseFactoryAssociationsTest extends TestCase
         foreach ($factories as $factory) {
             $entity = $factory->getEntity();
             $this->assertSame($name, $entity->country->name);
-            $this->assertSame(null, $entity->get('countries'));
+            $this->assertNull($entity->get('countries'));
         }
 
         FactoryTableRegistry::getTableLocator()->clear();
-        $this->assertSame(false, CityFactory::make()->getTable()->hasAssociation('Countries'));
+        $this->assertFalse(CityFactory::make()->getTable()->hasAssociation('Countries'));
     }
 
-    public function testDoNotRecreateHasOneAssociationWhenInjectingEntity_OneLevelDepth(): void
+    public function testDoNotRecreateHasOneAssociationWhenInjectingEntityOneLevelDepth(): void
     {
         $city = CityFactory::make()->with('Country')->persist();
         $cityCountryId = $city->country_id;
@@ -708,7 +710,7 @@ class BaseFactoryAssociationsTest extends TestCase
         $this->assertSame(1, CityFactory::count());
     }
 
-    public function testDoNotRecreateHasOneAssociationWhenInjectingEntity_TwoLevelDepth(): void
+    public function testDoNotRecreateHasOneAssociationWhenInjectingEntityTwoLevelDepth(): void
     {
         $city = CityFactory::make()->with('Country')->persist();
         $cityCountryId = $city->country_id;
@@ -723,7 +725,7 @@ class BaseFactoryAssociationsTest extends TestCase
         $this->assertSame(1, AddressFactory::count());
     }
 
-    public function testDoNotRecreateHasOneAssociationWhenInjectingEntity_ThreeLevelDepth(): void
+    public function testDoNotRecreateHasOneAssociationWhenInjectingEntityThreeLevelDepth(): void
     {
         $address = AddressFactory::make()->with('City.Country')->persist();
 
@@ -735,7 +737,7 @@ class BaseFactoryAssociationsTest extends TestCase
         $this->assertSame(1, AuthorFactory::count());
     }
 
-    public function testDoNotRecreateHasManyAssociationWhenInjectingEntity_OneLevelDepth(): void
+    public function testDoNotRecreateHasManyAssociationWhenInjectingEntityOneLevelDepth(): void
     {
         $country = CountryFactory::make()->with('Cities')->persist();
         $cityId = $country->cities[0]->id;

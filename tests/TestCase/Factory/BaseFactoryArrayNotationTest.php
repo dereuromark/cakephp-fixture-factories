@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -6,10 +7,10 @@ declare(strict_types=1);
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
- * @link          https://webrider.de/
- * @since         1.0.0
- * @license       http://www.opensource.org/licenses/mit-license.php MIT License
+ * @copyright Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
+ * @link https://webrider.de/
+ * @since 1.0.0
+ * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
 
 namespace CakephpFixtureFactories\Test\TestCase\Factory;
@@ -35,7 +36,7 @@ class BaseFactoryArrayNotationTest extends TestCase
         Configure::delete('FixtureFactories.testFixtureNamespace');
     }
 
-    public function testBaseFactoryArrayNotation_default_value(): void
+    public function testBaseFactoryArrayNotationDefaultValue(): void
     {
         AuthorFactory::make()->persist();
 
@@ -43,7 +44,7 @@ class BaseFactoryArrayNotationTest extends TestCase
         $this->assertSame(AuthorFactory::JSON_FIELD_DEFAULT_VALUE, $author->json_field);
     }
 
-    public function testBaseFactoryArrayNotation_overwrite_default_value(): void
+    public function testBaseFactoryArrayNotationOverwriteDefaultValue(): void
     {
         $value = ['c' => 'd'];
         AuthorFactory::make(['json_field' => $value])->persist();
@@ -52,7 +53,7 @@ class BaseFactoryArrayNotationTest extends TestCase
         $this->assertSame($value, $author->json_field);
     }
 
-    public function testBaseFactoryArrayNotation_overwrite_one_field(): void
+    public function testBaseFactoryArrayNotationOverwriteOneField(): void
     {
         $author = AuthorFactory::make(['json_field.subField1' => 'newValue'])->getEntity();
 
@@ -63,7 +64,7 @@ class BaseFactoryArrayNotationTest extends TestCase
         $this->assertNull($author->get('json_field.subField1'));
     }
 
-    public function testBaseFactoryArrayNotation_OverwriteMultipleSelectedNestedFields(): void
+    public function testBaseFactoryArrayNotationOverwriteMultipleSelectedNestedFields(): void
     {
         $author = AuthorFactory::make([
             'json_field.subField1' => 'newVal1',
@@ -78,7 +79,7 @@ class BaseFactoryArrayNotationTest extends TestCase
         $this->assertNull($author->get('json_field.subField1'));
     }
 
-    public function testBaseFactoryArrayNotation_OverwriteMultipleSelected_MultiplesNestedFields(): void
+    public function testBaseFactoryArrayNotationOverwriteMultipleSelectedMultiplesNestedFields(): void
     {
         $author = AuthorFactory::make([
             'json_field.subField1' => 'newVal11',
@@ -96,7 +97,7 @@ class BaseFactoryArrayNotationTest extends TestCase
         $this->assertNull($author->get('json_field2.subField2'));
     }
 
-    public function testBaseFactoryArrayNotation_OverwriteMultipleSelectedNestedFields_On_Mae_And_SetField(): void
+    public function testBaseFactoryArrayNotationOverwriteMultipleSelectedNestedFieldsOnMaeAndSetField(): void
     {
         $author = AuthorFactory::make(['json_field.subField1' => 'newVal1'])
             ->setField('json_field.subField2', 'newVal2')
@@ -110,7 +111,7 @@ class BaseFactoryArrayNotationTest extends TestCase
         $this->assertNull($author->get('json_field.subField1'));
     }
 
-    public function testBaseFactoryArrayNotation_overwrite_one_field_with_set_field(): void
+    public function testBaseFactoryArrayNotationOverwriteOneFieldWithSetField(): void
     {
         $author = AuthorFactory::make()
             ->setField('json_field.subField1', 'newValue')
@@ -123,9 +124,10 @@ class BaseFactoryArrayNotationTest extends TestCase
         $this->assertNull($author->get('json_field.subField1'));
     }
 
-    public function testBaseFactoryArrayNotation_overwrite_one_field_with_deep_association(): void
+    public function testBaseFactoryArrayNotationOverwriteOneFieldWithDeepAssociation(): void
     {
-        $author = AuthorFactory::make(['json_field.subField1' => [
+        $author = AuthorFactory::make([
+        'json_field.subField1' => [
                 'subSubField1' => 'subSubValue1',
                 'subSubField2' => 'subSubValue2',
             ]])
@@ -143,7 +145,7 @@ class BaseFactoryArrayNotationTest extends TestCase
         $this->assertSame($expectedValue, $author->json_field);
     }
 
-    public function testBaseFactoryArrayNotation_overwrite_one_field_with_deep_association_inline(): void
+    public function testBaseFactoryArrayNotationOverwriteOneFieldWithDeepAssociationInline(): void
     {
         $author = AuthorFactory::make([
             'json_field.subField1.subSubField1' => 'subSubValue1',
@@ -163,7 +165,7 @@ class BaseFactoryArrayNotationTest extends TestCase
         $this->assertSame($expectedValue, $author->json_field);
     }
 
-    public function testBaseFactoryArrayNotation_overwrite_one_field_with_set_field_on_association(): void
+    public function testBaseFactoryArrayNotationOverwriteOneFieldWithSetFieldOnAssociation(): void
     {
         $article = ArticleFactory::make()->withAuthors(
             AuthorFactory::make(2)
@@ -179,7 +181,7 @@ class BaseFactoryArrayNotationTest extends TestCase
         $this->assertNull($article->authors[1]->get('json_field.subField1'));
     }
 
-    public function testBaseFactoryArrayNotation_with_undefined_value(): void
+    public function testBaseFactoryArrayNotationWithUndefinedValue(): void
     {
         $author = AuthorFactory::make()
             ->setField('non-existing_json_field.subField1', 'newValue')
@@ -191,7 +193,7 @@ class BaseFactoryArrayNotationTest extends TestCase
         $this->assertSame($expectedValue, $author->json_field);
     }
 
-    public function testBaseFactoryArrayNotation_with_non_array_value(): void
+    public function testBaseFactoryArrayNotationWithNonArrayValue(): void
     {
         $this->expectException(FixtureFactoryException::class);
         $this->expectExceptionMessage('Value foo cannot be merged with array notation json_field.subField1 => newValue');

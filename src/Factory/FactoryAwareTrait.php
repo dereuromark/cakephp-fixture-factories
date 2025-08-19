@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -6,10 +7,10 @@ declare(strict_types=1);
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
- * @link          https://webrider.de/
- * @since         2.3.0
- * @license       http://www.opensource.org/licenses/mit-license.php MIT License
+ * @copyright Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
+ * @link https://webrider.de/
+ * @since 2.3.0
+ * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
 
 namespace CakephpFixtureFactories\Factory;
@@ -27,12 +28,15 @@ trait FactoryAwareTrait
      *
      * Additionnal arguments are passed *as is* to `BaseFactory::make`
      *
-     * @param string           $name          Factory or model name
-     * @param \Cake\Datasource\EntityInterface|callable|array|string|int|null $makeParameter Injected data
-     * @param int               $times         Number of entities created
-     * @return \CakephpFixtureFactories\Factory\BaseFactory
-     * @throws \CakephpFixtureFactories\Error\FactoryNotFoundException if the factory could not be found
      * @see \CakephpFixtureFactories\Factory\BaseFactory::make
+     *
+     * @param string $name Factory or model name
+     * @param \Cake\Datasource\EntityInterface|callable|array|string|int|null $makeParameter Injected data
+     * @param int $times Number of entities created
+     *
+     * @throws \CakephpFixtureFactories\Error\FactoryNotFoundException if the factory could not be found
+     *
+     * @return \CakephpFixtureFactories\Factory\BaseFactory
      */
     public function getFactory(
         string $name,
@@ -52,7 +56,8 @@ trait FactoryAwareTrait
      * Converts factory or model name to a fully qualified factory class name
      *
      * @param string $name Factory or model name
-     * @return string       Fully qualified class name
+     *
+     * @return string Fully qualified class name
      */
     public function getFactoryClassName(string $name): string
     {
@@ -68,7 +73,8 @@ trait FactoryAwareTrait
      * Converts factory or model name to a simple factory class name
      *
      * @param string $name Factory or model name
-     * @return string       Fully qualified class name
+     *
+     * @return string Fully qualified class name
      */
     public function getFactorySimpleClassName(string $name): string
     {
@@ -81,7 +87,8 @@ trait FactoryAwareTrait
      * Returns the factory file name
      *
      * @param string $name Name of the model or table
-     * @return string       [description]
+     *
+     * @return string [description]
      */
     public function getFactoryFileName(string $name): string
     {
@@ -92,6 +99,7 @@ trait FactoryAwareTrait
      * Return the name of the factory from a model name
      *
      * @param string $modelName Name of the model or table
+     *
      * @return string
      */
     public static function getFactoryNameFromModelName(string $modelName): string
@@ -108,6 +116,7 @@ trait FactoryAwareTrait
      * Namespace where the factory belongs
      *
      * @param string|null $plugin name of the plugin, or null if no plugin
+     *
      * @return string
      */
     public function getFactoryNamespace(?string $plugin = null): string

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -6,11 +7,12 @@ declare(strict_types=1);
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
- * @link          https://webrider.de/
- * @since         2.6.0
- * @license       http://www.opensource.org/licenses/mit-license.php MIT License
+ * @copyright Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
+ * @link https://webrider.de/
+ * @since 2.6.0
+ * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
+
 namespace CakephpFixtureFactories\Test\TestCase\Factory;
 
 use Cake\Core\Configure;
@@ -41,7 +43,7 @@ class BaseFactoryDisplayFieldTest extends TestCase
         $this->assertSame($title, $article->title);
     }
 
-    public function testUseDisplayFieldIfFieldIsNotSpecified_Multiple(): void
+    public function testUseDisplayFieldIfFieldIsNotSpecifiedMultiple(): void
     {
         $titles = ['Some title 1', 'Some title 2'];
         $articles = ArticleFactory::make($titles)->getEntities();
@@ -59,7 +61,7 @@ class BaseFactoryDisplayFieldTest extends TestCase
         $this->assertSame($country, $address->city->country->name);
     }
 
-    public function testUseDisplayFieldInAssociationIfFieldIsNotSpecified_Multiple(): void
+    public function testUseDisplayFieldInAssociationIfFieldIsNotSpecifiedMultiple(): void
     {
         $cities = ['Chennai', 'Jodhpur', 'Kolkata'];
         $country = CountryFactory::make()->with('Cities', $cities)->getEntity();

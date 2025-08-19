@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace CakephpFixtureFactories\View\Helper;
@@ -9,6 +10,7 @@ class FactoryBakeHelper extends Helper
 {
     /**
      * @param array $defaultData
+     *
      * @return string
      */
     public function defaultData(array $defaultData): string

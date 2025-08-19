@@ -28,7 +28,7 @@
         "fakerphp/faker": "^1.23",
         "cakephp/bake": "^3.0.0",
         "cakephp/twig-view": "^2.0.2",
-        "cakephp/cakephp-codesniffer": "^5.1",
+        "php-collective/code-sniffer": "^0.2.0",
         "cakephp/migrations": "^4.7.0",
         "josegonzalez/dotenv": "^4.0.0",
         "phpstan/phpstan": "^1.0",

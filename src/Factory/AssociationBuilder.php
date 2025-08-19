@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -6,10 +7,10 @@ declare(strict_types=1);
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
- * @link          https://webrider.de/
- * @since         1.0.0
- * @license       http://www.opensource.org/licenses/mit-license.php MIT License
+ * @copyright Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
+ * @link https://webrider.de/
+ * @since 1.0.0
+ * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
 
 namespace CakephpFixtureFactories\Factory;
@@ -52,8 +53,6 @@ class AssociationBuilder
     private BaseFactory $factory;
 
     /**
-     * AssociationBuilder constructor.
-     *
      * @param \CakephpFixtureFactories\Factory\BaseFactory $factory Associated factory
      */
     public function __construct(BaseFactory $factory)
@@ -66,6 +65,7 @@ class AssociationBuilder
      * builder's factory's table
      *
      * @param string $associationName Name of the association
+     *
      * @return \Cake\ORM\Association
      */
     public function getAssociation(string $associationName): Association
@@ -81,6 +81,7 @@ class AssociationBuilder
             return $association;
         } else {
             $associationType = get_class($association);
+
             throw new AssociationBuilderException(
                 "Unknown association type $associationType on table {$this->getTable()->getAlias()}",
             );
@@ -88,8 +89,9 @@ class AssociationBuilder
     }
 
     /**
-     * @param string      $associationName Name of the association
+     * @param string $associationName Name of the association
      * @param \CakephpFixtureFactories\Factory\BaseFactory $associationFactory Factory
+     *
      * @return bool
      */
     public function processToOneAssociation(string $associationName, BaseFactory $associationFactory): bool
@@ -105,6 +107,9 @@ class AssociationBuilder
      *
      * @param string $associationName Name of the association
      * @param \CakephpFixtureFactories\Factory\BaseFactory $associationFactory Factory
+     *
+     * @throws \CakephpFixtureFactories\Error\AssociationBuilderException
+     *
      * @return bool
      */
     public function validateToOneAssociation(string $associationName, BaseFactory $associationFactory): bool
@@ -119,8 +124,9 @@ class AssociationBuilder
     }
 
     /**
-     * @param string      $associationName Association name
+     * @param string $associationName Association name
      * @param \CakephpFixtureFactories\Factory\BaseFactory $associatedFactory Factory
+     *
      * @return void
      */
     public function removeAssociationForToOneFactory(string $associationName, BaseFactory $associatedFactory): void
@@ -138,6 +144,7 @@ class AssociationBuilder
      *
      * @param string $associationName Association name
      * @param mixed $data Injected data
+     *
      * @return \CakephpFixtureFactories\Factory\BaseFactory
      */
     public function getAssociatedFactory(
@@ -152,7 +159,7 @@ class AssociationBuilder
 
         $table = $this->getTable()->getAssociation($firstAssociation)->getClassName();
 
-        if (!empty($associations)) {
+        if ($associations) {
             $factory = $this->getFactoryFromTableName($table);
             $factory->with(implode('.', $associations), $data);
         } else {
@@ -170,6 +177,7 @@ class AssociationBuilder
      *
      * @param string $modelName Model Name
      * @param mixed $data Injected data
+     *
      * @return \CakephpFixtureFactories\Factory\BaseFactory
      */
     public function getFactoryFromTableName(string $modelName, mixed $data = []): BaseFactory
@@ -185,6 +193,7 @@ class AssociationBuilder
      * Remove the brackets and their content in an 'Association1[i].Association2[j]' formatted string
      *
      * @param string $string String
+     *
      * @return string|null
      */
     public function removeBrackets(string $string): ?string
@@ -196,13 +205,16 @@ class AssociationBuilder
      * Return the integer i between brackets in an 'Association[i]' formatted string
      *
      * @param string $string String
+     *
+     * @throws \CakephpFixtureFactories\Error\AssociationBuilderException
+     *
      * @return int|null
      */
     public function getTimeBetweenBrackets(string $string): ?int
     {
         preg_match_all("/\[([^\]]*)\]/", $string, $matches);
         $res = $matches[1];
-        if (empty($res)) {
+        if (!$res) {
             return null;
         } elseif (count($res) === 1 && !empty($res[0])) {
             return (int)$res[0];
@@ -221,6 +233,7 @@ class AssociationBuilder
 
     /**
      * @param \Cake\ORM\Association $association Association
+     *
      * @return bool
      */
     public function associationIsToOne(Association $association): bool
@@ -230,6 +243,7 @@ class AssociationBuilder
 
     /**
      * @param \Cake\ORM\Association $association Association
+     *
      * @return bool
      */
     public function associationIsToMany(Association $association): bool
@@ -241,6 +255,7 @@ class AssociationBuilder
      * Scan for all associations starting by the $association path provided and drop them
      *
      * @param string $associationName Association name
+     *
      * @return void
      */
     public function dropAssociation(string $associationName): void
@@ -283,6 +298,7 @@ class AssociationBuilder
      *
      * @param string $associationName Association
      * @param \CakephpFixtureFactories\Factory\BaseFactory $factory Factory
+     *
      * @return void
      */
     public function addAssociation(string $associationName, BaseFactory $factory): void
@@ -300,6 +316,7 @@ class AssociationBuilder
 
     /**
      * @param array $associations
+     *
      * @return void
      */
     public function addManualAssociations(array $associations): void

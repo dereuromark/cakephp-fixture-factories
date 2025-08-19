@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -6,10 +7,10 @@ declare(strict_types=1);
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
- * @link          https://webrider.de/
- * @since         1.0.0
- * @license       http://www.opensource.org/licenses/mit-license.php MIT License
+ * @copyright Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
+ * @link https://webrider.de/
+ * @since 1.0.0
+ * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
 
 namespace CakephpFixtureFactories\Test\TestCase\Factory;
@@ -98,7 +99,9 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
 
     /**
      * @Given an author is created
+     *
      * @When an article with that same author is created
+     *
      * @Then the author is not created again, but updated.
      */
     public function testDetectDuplicatePrimaryKeyInAssociation(): void
@@ -125,7 +128,9 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
     /**
      * @Given we instantiate a factory with a unique field
      * with two entries.
+     *
      * @When we get entities
+     *
      * @Then An Exception is thrown
      */
     public function testDetectDuplicateInInstantiation(): void
@@ -145,9 +150,10 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
     /**
      * @Given we instantiate a factory with a unique field
      * with two entries.
+     *
      * @When we get entities
+     *
      * @Then An Exception is thrown
-     * @throws \Exception
      */
     public function testDetectDuplicateInInstantiationWithTimes(): void
     {
@@ -163,7 +169,9 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
     /**
      * @Given we instantiate a factory with a unique field
      * with two entries.
+     *
      * @When we get entities
+     *
      * @Then An Exception is thrown.
      */
     public function testDetectDuplicateInPatchWithTimes(): void
@@ -180,7 +188,9 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
     /**
      * @Given we instantiate a factory with a unique field
      * with two entries.
+     *
      * @When we persist
+     *
      * @Then An Exception is thrown.
      */
     public function testDetectDuplicateInInstantiationPersist(): void
@@ -200,9 +210,10 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
     /**
      * @Given we instantiate an associated factory with a unique field
      * with two entries
+     *
      * @When we get entities
+     *
      * @Then An exception is thrown.
-     * @throws \Exception
      */
     public function testDetectDuplicateInInstantiationWithTimesInAssociation(): void
     {
@@ -221,9 +232,10 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
     /**
      * @Given we instantiate an associated factory with a unique field
      * with two entries provided by numerically
+     *
      * @When we get entities
+     *
      * @Then An exception is thrown.
-     * @throws \Exception
      */
     public function testDetectDuplicateInInstantiationWithTimesInAssociationNumeric(): void
     {
@@ -238,7 +250,9 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
 
     /**
      * @Given we create n countries with a common cities (imagine...)
+     *
      * @When we persist
+     *
      * @Then only on single city should be persisted and be associated
      * to all n countries.
      */
@@ -265,7 +279,9 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
 
     /**
      * @Given we create n cities within a country
+     *
      * @When we persist
+     *
      * @Then only on single country should be persisted and be associated
      * to all n cities.
      */
@@ -290,7 +306,9 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
 
     /**
      * @Given we create n cities within a country
+     *
      * @When we persist
+     *
      * @Then only on single country should be persisted and be associated
      * to all n cities.
      */

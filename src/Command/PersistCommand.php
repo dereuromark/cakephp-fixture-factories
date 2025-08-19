@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -6,11 +7,12 @@ declare(strict_types=1);
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
- * @link          https://webrider.de/
- * @since         2.3
- * @license       http://www.opensource.org/licenses/mit-license.php MIT License
+ * @copyright Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
+ * @link https://webrider.de/
+ * @since 2.3
+ * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
+
 namespace CakephpFixtureFactories\Command;
 
 use Cake\Command\Command;
@@ -28,6 +30,9 @@ class PersistCommand extends Command
 {
     use FactoryAwareTrait;
 
+    /**
+     * @var string
+     */
     public const ARG_NAME = 'model';
 
     /**
@@ -107,8 +112,8 @@ class PersistCommand extends Command
 
     /**
      * @param \Cake\Console\Arguments $args The command arguments
+     *
      * @return \CakephpFixtureFactories\Factory\BaseFactory
-     * @throws \CakephpFixtureFactories\Error\FactoryNotFoundException if the factory could not be found
      */
     public function parseFactory(Arguments $args): BaseFactory
     {
@@ -129,11 +134,12 @@ class PersistCommand extends Command
     /**
      * @param \Cake\Console\Arguments $args Arguments
      * @param \CakephpFixtureFactories\Factory\BaseFactory $factory Factory
+     *
      * @return \CakephpFixtureFactories\Factory\BaseFactory
      */
     public function setTimes(Arguments $args, BaseFactory $factory): BaseFactory
     {
-        if (!empty($args->getOption('number'))) {
+        if ($args->getOption('number')) {
             $times = (int)$args->getOption('number');
         } else {
             $times = 1;
@@ -146,8 +152,10 @@ class PersistCommand extends Command
      * @param \Cake\Console\Arguments $args Arguments
      * @param \CakephpFixtureFactories\Factory\BaseFactory $factory Factory
      * @param \Cake\Console\ConsoleIo $io Console
-     * @return \CakephpFixtureFactories\Factory\BaseFactory
+     *
      * @throws \CakephpFixtureFactories\Error\FactoryNotFoundException if the method is not found in the factory
+     *
+     * @return \CakephpFixtureFactories\Factory\BaseFactory
      */
     public function attachMethod(Arguments $args, BaseFactory $factory, ConsoleIo $io): BaseFactory
     {
@@ -159,6 +167,7 @@ class PersistCommand extends Command
         if (!method_exists($factory, $method)) {
             $className = get_class($factory);
             $io->error("The method {$method} was not found in {$className}.");
+
             throw new FactoryNotFoundException();
         }
 
@@ -168,6 +177,7 @@ class PersistCommand extends Command
     /**
      * @param \Cake\Console\Arguments $args Arguments
      * @param \CakephpFixtureFactories\Factory\BaseFactory $factory Factory
+     *
      * @return \CakephpFixtureFactories\Factory\BaseFactory
      */
     public function with(Arguments $args, BaseFactory $factory): BaseFactory
@@ -187,6 +197,7 @@ class PersistCommand extends Command
      *
      * @param string $connection Connection name
      * @param \CakephpFixtureFactories\Factory\BaseFactory $factory Factory
+     *
      * @return void
      */
     public function aliasConnection(string $connection, BaseFactory $factory): void
@@ -201,6 +212,7 @@ class PersistCommand extends Command
      * @param \CakephpFixtureFactories\Factory\BaseFactory $factory Factory
      * @param \Cake\Console\Arguments $args Arguments
      * @param \Cake\Console\ConsoleIo $io Console
+     *
      * @return void
      */
     public function persist(BaseFactory $factory, Arguments $args, ConsoleIo $io): void
@@ -224,6 +236,7 @@ class PersistCommand extends Command
     /**
      * @param \CakephpFixtureFactories\Factory\BaseFactory $factory Factory
      * @param \Cake\Console\ConsoleIo $io Console
+     *
      * @return void
      */
     public function dryRun(BaseFactory $factory, ConsoleIo $io): void
