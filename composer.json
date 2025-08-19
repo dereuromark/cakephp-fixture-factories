@@ -20,10 +20,10 @@
     "license": "MIT",
     "require": {
         "php": ">=8.2",
-        "cakephp/orm": "^5.0",
-        "vierge-noire/cakephp-test-suite-light": "^3.0"
+        "cakephp/orm": "^5.0"
     },
     "require-dev": {
+        "vierge-noire/cakephp-test-suite-light": "^3.0",
         "johnykvsky/dummygenerator": "^0.0.7",
         "fakerphp/faker": "^1.23",
         "cakephp/bake": "^3.0.0",
