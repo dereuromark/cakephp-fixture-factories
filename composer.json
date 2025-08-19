@@ -40,7 +40,9 @@
         "psr-4": {
             "CakephpFixtureFactories\\Test\\": "tests/",
             "TestApp\\": "tests/TestApp/src/",
-            "TestPlugin\\": "tests/TestApp/plugins/TestPlugin/src/"
+            "TestApp\\Test\\Factory\\": "tests/TestApp/tests/Factory/",
+            "TestPlugin\\": "tests/TestApp/plugins/TestPlugin/src/",
+            "TestPlugin\\Test\\Factory\\": "tests/TestApp/plugins/TestPlugin/tests/Factory/"
         }
     },
     "scripts": {
