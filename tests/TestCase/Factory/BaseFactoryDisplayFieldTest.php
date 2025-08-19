@@ -13,6 +13,7 @@ declare(strict_types=1);
  */
 namespace CakephpFixtureFactories\Test\TestCase\Factory;
 
+use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Error\FixtureFactoryException;
 use CakephpFixtureFactories\Test\Factory\AddressFactory;
@@ -22,6 +23,16 @@ use CakephpFixtureFactories\Test\Factory\CountryFactory;
 
 class BaseFactoryDisplayFieldTest extends TestCase
 {
+    public static function setUpBeforeClass(): void
+    {
+        Configure::write('FixtureFactories.testFixtureNamespace', 'CakephpFixtureFactories\Test\Factory');
+    }
+
+    public static function tearDownAfterClass(): void
+    {
+        Configure::delete('FixtureFactories.testFixtureNamespace');
+    }
+
     public function testUseDisplayFieldIfFieldIsNotSpecified(): void
     {
         $title = 'Some title';

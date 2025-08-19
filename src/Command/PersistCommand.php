@@ -23,7 +23,6 @@ use CakephpFixtureFactories\Error\FactoryNotFoundException;
 use CakephpFixtureFactories\Error\PersistenceException;
 use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\Factory\FactoryAwareTrait;
-use Override;
 
 class PersistCommand extends Command
 {
@@ -34,7 +33,6 @@ class PersistCommand extends Command
     /**
      * @inheritDoc
      */
-    #[Override]
     public static function defaultName(): string
     {
         return 'fixture_factories_persist';
@@ -43,7 +41,6 @@ class PersistCommand extends Command
     /**
      * @inheritDoc
      */
-    #[Override]
     protected function buildOptionParser(ConsoleOptionParser $parser): ConsoleOptionParser
     {
         $parser
@@ -86,7 +83,6 @@ class PersistCommand extends Command
     /**
      * @inheritDoc
      */
-    #[Override]
     public function execute(Arguments $args, ConsoleIo $io): int
     {
         $factory = null;
