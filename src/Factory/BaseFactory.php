@@ -624,7 +624,7 @@ abstract class BaseFactory
 
         // Remove the brackets in the association
         $associationNameAfterBrackets = $this->getAssociationBuilder()->removeBrackets($associationName);
-        if ($associationNameAfterBrackets !== false) {
+        if ($associationNameAfterBrackets !== null) {
             $associationName = $associationNameAfterBrackets;
         }
 
