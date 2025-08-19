@@ -14,20 +14,20 @@ declare(strict_types=1);
 namespace CakephpFixtureFactories\Test\TestCase;
 
 use Cake\TestSuite\TestCase;
+use CakephpFixtureFactories\Generator\GeneratorInterface;
 use CakephpFixtureFactories\Test\Factory\ArticleFactory;
 use CakephpFixtureFactories\Test\Factory\AuthorFactory;
-use Faker\Generator;
 use TestApp\Model\Entity\Article;
 
 class DocumentationExamplesTest extends TestCase
 {
-    public function testArticlesFindPublished()
+    public function testArticlesFindPublished(): void
     {
         $articles = ArticleFactory::make(['published' => 1], 3)->persist();
         ArticleFactory::make(['published' => 0], 2)->persist();
 
         $result = ArticleFactory::find('published')->find('list')->toArray();
-        
+
         $expected = [
             $articles[0]->id => $articles[0]->title,
             $articles[1]->id => $articles[1]->title,
@@ -37,7 +37,7 @@ class DocumentationExamplesTest extends TestCase
         $this->assertEquals($expected, $result);
     }
 
-    public function testExampleStaticData()
+    public function testExampleStaticData(): void
     {
         $article = ArticleFactory::make()->getEntity();
         $this->assertInstanceOf(Article::class, $article);
@@ -64,11 +64,11 @@ class DocumentationExamplesTest extends TestCase
         }
     }
 
-    public function testExampleDynamicData()
+    public function testExampleDynamicData(): void
     {
-        $articles = ArticleFactory::make(function (ArticleFactory $factory, Generator $faker) {
+        $articles = ArticleFactory::make(function (ArticleFactory $factory, GeneratorInterface $generator) {
             return [
-                'title' => $faker->text(100),
+                'title' => $generator->text(100),
             ];
         }, 3)->persist();
         $this->assertEquals(3, count($articles));
@@ -79,7 +79,7 @@ class DocumentationExamplesTest extends TestCase
         }
     }
 
-    public function testExampleChainable()
+    public function testExampleChainable(): void
     {
         $articleFactory = ArticleFactory::make(['title' => 'Foo']);
         $articleFoo = $articleFactory->getEntity();
@@ -89,7 +89,7 @@ class DocumentationExamplesTest extends TestCase
         $this->assertNotEquals('Foo', $articleJobOffer['title']);
     }
 
-    public function testExampleChainableWithPersist()
+    public function testExampleChainableWithPersist(): void
     {
         $articleFactory = ArticleFactory::make(['title' => 'Foo']);
         $articleFoo = $articleFactory->persist();
@@ -99,7 +99,7 @@ class DocumentationExamplesTest extends TestCase
         $this->assertNotEquals('Foo', $articleJobOffer['title']);
     }
 
-    public function testAssociationsMultiple()
+    public function testAssociationsMultiple(): void
     {
         $article = ArticleFactory::make()->with('Authors', AuthorFactory::make(10))->persist();
         $this->assertEquals(10, count($article['authors']));
@@ -118,11 +118,11 @@ class DocumentationExamplesTest extends TestCase
         }
     }
 
-    public function testAssociationsMultipleWithBiography()
+    public function testAssociationsMultipleWithBiography(): void
     {
-        $article = ArticleFactory::make()->withAuthors(function (AuthorFactory $factory, Generator $faker) {
+        $article = ArticleFactory::make()->withAuthors(function (AuthorFactory $factory, GeneratorInterface $generator) {
             return [
-                'biography' => $faker->realText(),
+                'biography' => $generator->realText(),
             ];
         }, 10)->persist();
         $this->assertEquals(10, count($article['authors']));

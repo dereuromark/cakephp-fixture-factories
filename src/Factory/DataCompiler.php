@@ -90,7 +90,7 @@ class DataCompiler
     public function collectArrayFromCallable(callable $fn): void
     {
         // if the callable returns an array, add it the the templateData array, so it will be compiled
-        $returnValue = $fn($this->getFactory(), $this->getFactory()->getFaker());
+        $returnValue = $fn($this->getFactory(), $this->getFactory()->getGenerator());
         if (is_array($returnValue)) {
             $this->dataFromInstantiation = $fn;
         }
@@ -326,7 +326,7 @@ class DataCompiler
     {
         $data = $this->dataFromDefaultTemplate;
         if (is_callable($data)) {
-            $data = $data($this->getFactory()->getFaker());
+            $data = $data($this->getFactory()->getGenerator());
         }
         $entityClassName = $this->getFactory()->getTable()->getEntityClass();
         $entity = new $entityClassName([], ['source' => $this->getFactory()->getTable()->getRegistryAlias()]);
@@ -347,7 +347,7 @@ class DataCompiler
         if (is_callable($data)) {
             $data = $data(
                 $this->getFactory(),
-                $this->getFactory()->getFaker(),
+                $this->getFactory()->getGenerator(),
             );
         } elseif (is_array($data)) {
             $this->addEnforcedFields($data);
@@ -580,7 +580,7 @@ class DataCompiler
         switch ($columnType) {
             case 'uuid':
             case 'string':
-                $res = $this->getFactory()->getFaker()->uuid();
+                $res = $this->getFactory()->getGenerator()->uuid();
                 break;
             case 'tinyinteger':
                 $res = mt_rand(0, intval('127'));

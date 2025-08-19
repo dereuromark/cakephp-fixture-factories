@@ -13,7 +13,9 @@ declare(strict_types=1);
  */
 namespace TestApp\Model\Table;
 
+use ArrayObject;
 use Cake\Event\Event;
+use Cake\Event\EventInterface;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
 
@@ -51,11 +53,11 @@ class CountriesTable extends Table
     }
 
     /**
-     * @param Event $event
+     * @param \Cake\Event\EventInterface $event
      * @param \ArrayObject $data
      * @param \ArrayObject $options
      */
-    public function beforeMarshal(Event $event, \ArrayObject $data, \ArrayObject $options)
+    public function beforeMarshal(EventInterface $event, ArrayObject $data, ArrayObject $options): void
     {
         $data['beforeMarshalTriggered'] = true;
     }

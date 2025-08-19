@@ -15,7 +15,6 @@ namespace CakephpFixtureFactories\ORM;
 
 use Cake\ORM\Locator\LocatorInterface;
 use Cake\ORM\TableRegistry;
-use Override;
 
 /**
  * Alternative TableRegistry to be used by fixture factories
@@ -53,7 +52,6 @@ class FactoryTableRegistry extends TableRegistry
      *
      * @return \Cake\ORM\Locator\LocatorInterface
      */
-    #[Override]
     public static function getTableLocator(): LocatorInterface
     {
         if (isset(self::$_locator)) {

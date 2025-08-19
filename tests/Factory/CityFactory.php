@@ -14,7 +14,7 @@ declare(strict_types=1);
 namespace CakephpFixtureFactories\Test\Factory;
 
 use CakephpFixtureFactories\Factory\BaseFactory;
-use Faker\Generator;
+use CakephpFixtureFactories\Generator\GeneratorInterface;
 
 /**
  * Class CityFactory
@@ -46,9 +46,9 @@ class CityFactory extends BaseFactory
 
     protected function setDefaultTemplate(): void
     {
-        $this->setDefaultData(function (Generator $faker) {
+        $this->setDefaultData(function (GeneratorInterface $generator) {
             return [
-                'name' => $faker->city,
+                'name' => $generator->city(),
             ];
         })
         ->withCountry();
@@ -58,7 +58,7 @@ class CityFactory extends BaseFactory
      * @param array|callable|null|int $parameter
      * @return $this
      */
-    public function withCountry($parameter = null)
+    public function withCountry(mixed $parameter = null): self
     {
         return $this->with('Country', CountryFactory::make($parameter));
     }

@@ -25,7 +25,7 @@ class SelectQueryMockerTest extends TestCase
 {
     use TruncateDirtyTables;
 
-    public function testSelectQueryMocker()
+    public function testSelectQueryMocker(): void
     {
         $names = ['Foo', 'Bar'];
         $countryFactory = CountryFactory::make([
@@ -44,7 +44,7 @@ class SelectQueryMockerTest extends TestCase
         $this->assertSame(0, CountryFactory::count());
     }
 
-    public function testSelectQueryMocker_With_Data_In_DB()
+    public function testSelectQueryMocker_With_Data_In_DB(): void
     {
         $names = ['Foo', 'Bar'];
         $countryFactory = CountryFactory::make([
@@ -65,7 +65,7 @@ class SelectQueryMockerTest extends TestCase
         $this->assertSame($nCountriesInDB, CountryFactory::count());
     }
 
-    public function testSelectQueryMocker_With_Associations()
+    public function testSelectQueryMocker_With_Associations(): void
     {
         $names = ['Foo', 'Bar'];
         $cityFactory = CityFactory::make([
@@ -73,7 +73,6 @@ class SelectQueryMockerTest extends TestCase
             ['name' => $names[1]],
         ])->withCountry();
         SelectQueryMocker::mock($this, $cityFactory);
-
 
         $CountriesTable = TableRegistry::getTableLocator()->get('Countries');
         $CitiesTable = TableRegistry::getTableLocator()->get('Cities');

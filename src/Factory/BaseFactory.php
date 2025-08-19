@@ -22,9 +22,9 @@ use Cake\ORM\ResultSet;
 use Cake\ORM\Table;
 use CakephpFixtureFactories\Error\FixtureFactoryException;
 use CakephpFixtureFactories\Error\PersistenceException;
+use CakephpFixtureFactories\Generator\CakeGeneratorFactory;
+use CakephpFixtureFactories\Generator\GeneratorInterface;
 use Closure;
-use Faker\Factory;
-use Faker\Generator;
 use InvalidArgumentException;
 use Psr\SimpleCache\CacheInterface;
 use Throwable;
@@ -39,9 +39,9 @@ use function is_array;
 abstract class BaseFactory
 {
     /**
-     * @var \Faker\Generator|null
+     * @var \CakephpFixtureFactories\Generator\GeneratorInterface|null
      */
-    private static ?Generator $faker = null;
+    private static ?GeneratorInterface $generator = null;
     /**
      * @var array
      */
@@ -198,26 +198,46 @@ abstract class BaseFactory
     }
 
     /**
-     * Faker's local is set as the I18n local.
-     * If not supported by Faker, take faker's default.
+     * Get the generator instance, using the locale from I18n
      *
-     * @return \Faker\Generator
+     * @return \CakephpFixtureFactories\Generator\GeneratorInterface
      */
-    public function getFaker(): Generator
+    public function getGenerator(): GeneratorInterface
     {
-        if (is_null(self::$faker)) {
-            try {
-                $fakerLocale = I18n::getLocale();
-                $faker = Factory::create($fakerLocale);
-            } catch (Throwable $e) {
-                $fakerLocale = Factory::DEFAULT_LOCALE;
-                $faker = Factory::create($fakerLocale);
-            }
-            $faker->seed(1234);
-            self::$faker = $faker;
+        if (is_null(self::$generator)) {
+            $locale = I18n::getLocale();
+            self::$generator = CakeGeneratorFactory::create($locale);
+            self::$generator->seed(1234);
         }
 
-        return self::$faker;
+        return self::$generator;
+    }
+
+    /**
+     * Get the generator instance, using the locale from I18n
+     *
+     * @return \CakephpFixtureFactories\Generator\GeneratorInterface
+     * @deprecated 3.1.0 Use getGenerator() instead. Will be removed in v4.0
+     */
+    public function getFaker(): GeneratorInterface
+    {
+        return $this->getGenerator();
+    }
+
+    /**
+     * Set the generator type to use for this factory
+     *
+     * @param string $type The generator type ('faker' or 'dummy')
+     * @param string|null $locale Optional locale override
+     * @return $this
+     */
+    public function setGenerator(string $type, ?string $locale = null)
+    {
+        $locale = $locale ?? I18n::getLocale();
+        self::$generator = CakeGeneratorFactory::create($locale, $type);
+        self::$generator->seed(1234);
+
+        return $this;
     }
 
     /**
@@ -654,6 +674,34 @@ abstract class BaseFactory
         Closure|string|null $cacheKey = null,
         mixed ...$args,
     ): EntityInterface {
+        // Handle backward compatibility for options array
+        if (is_array($finder)) {
+            $options = $finder;
+            $finder = 'all';
+
+            // Convert common options to named parameters
+            $table = (new static())->getTable();
+
+            // Extract contain option if present
+            if (isset($options['contain'])) {
+                // Use named parameters for contain
+                if (empty($args)) {
+                    return $table->get($primaryKey, finder: $finder, contain: $options['contain'], cache: $cache, cacheKey: $cacheKey);
+                } else {
+                    // If there are additional args, we need to use the old style
+                    return $table->get($primaryKey, $finder, $cache, $cacheKey, ...$options, ...$args);
+                }
+            }
+
+            // For other options, pass them through args (this will still trigger deprecation)
+            return $table->get($primaryKey, $finder, $cache, $cacheKey, ...$options, ...$args);
+        }
+
+        // Use named parameters for cleaner calls
+        if (empty($args)) {
+            return (new static())->getTable()->get($primaryKey, finder: $finder, cache: $cache, cacheKey: $cacheKey);
+        }
+
         return (new static())->getTable()->get($primaryKey, $finder, $cache, $cacheKey, ...$args);
     }
 

@@ -12,11 +12,11 @@ declare(strict_types=1);
  * @license       http://www.opensource.org/licenses/mit-license.php MIT License
  */
 
-use Migrations\AbstractMigration;
+use Migrations\BaseMigration;
 
-class SeedCountries extends AbstractMigration
+class SeedCountries extends BaseMigration
 {
-    public function up()
+    public function up(): void
     {
         $CountriesTable = \Cake\ORM\TableRegistry::getTableLocator()->get('Countries');
         $country = $CountriesTable->newEntity([
@@ -25,7 +25,7 @@ class SeedCountries extends AbstractMigration
         $CountriesTable->save($country);
     }
 
-    public function down()
+    public function down(): void
     {
     }
 }

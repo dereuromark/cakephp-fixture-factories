@@ -12,11 +12,11 @@ declare(strict_types=1);
  * @license       http://www.opensource.org/licenses/mit-license.php MIT License
  */
 
-use Migrations\AbstractMigration;
+use Migrations\BaseMigration;
 
-class TableWithoutModelMigration extends AbstractMigration
+class TableWithoutModelMigration extends BaseMigration
 {
-    public function up()
+    public function up(): void
     {
         $this->table('table_without_model', ['id' => false])
             ->addColumn('id', 'integer', [
@@ -45,7 +45,7 @@ class TableWithoutModelMigration extends AbstractMigration
             ->save();
     }
 
-    public function down()
+    public function down(): void
     {
         $this->table('table_without_model')->drop();
     }

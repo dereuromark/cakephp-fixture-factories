@@ -18,4 +18,10 @@
             <file name="vendor/cakephp/cakephp/src/ORM/Locator/TableLocator.php" />
         </ignoreFiles>
     </projectFiles>
+    
+    <issueHandlers>
+        <MissingOverrideAttribute errorLevel="suppress" />
+        <MoreSpecificImplementedParamType errorLevel="suppress" />
+        <InaccessibleMethod errorLevel="suppress" />
+    </issueHandlers>
 </psalm>

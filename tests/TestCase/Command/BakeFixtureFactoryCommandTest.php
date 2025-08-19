@@ -13,27 +13,26 @@ declare(strict_types=1);
  */
 namespace CakephpFixtureFactories\Test\TestCase\Command;
 
-use Cake\Core\Configure;
 use Cake\Console\Arguments;
+use Cake\Console\Exception\StopException;
+use Cake\Core\Configure;
+use CakephpFixtureFactories\Factory\BaseFactory;
+use CakephpFixtureFactories\Test\Util\TestCaseWithFixtureBaking;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
-use TestApp\Model\Entity\City;
-use TestApp\Model\Entity\Author;
 use TestApp\Model\Entity\Address;
 use TestApp\Model\Entity\Article;
+use TestApp\Model\Entity\Author;
+use TestApp\Model\Entity\City;
 use TestApp\Model\Entity\Country;
-use TestPlugin\Model\Entity\Bill;
-use TestApp\Test\Factory\CityFactory;
-use TestPlugin\Model\Entity\Customer;
-use TestApp\Test\Factory\AuthorFactory;
 use TestApp\Test\Factory\AddressFactory;
 use TestApp\Test\Factory\ArticleFactory;
+use TestApp\Test\Factory\AuthorFactory;
+use TestApp\Test\Factory\CityFactory;
 use TestApp\Test\Factory\CountryFactory;
+use TestPlugin\Model\Entity\Bill;
+use TestPlugin\Model\Entity\Customer;
 use TestPlugin\Test\Factory\BillFactory;
-use Cake\Console\Exception\StopException;
 use TestPlugin\Test\Factory\CustomerFactory;
-use CakephpFixtureFactories\Factory\BaseFactory;
-use CakephpFixtureFactories\Command\BakeFixtureFactoryCommand;
-use CakephpFixtureFactories\Test\Util\TestCaseWithFixtureBaking;
 
 /**
  * @see BakeFixtureFactoryCommand
@@ -47,7 +46,10 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
      */
     public $testPluginName = 'TestPlugin';
 
-    public $appTables = [
+    /**
+     * @var array<string>
+     */
+    public array $appTables = [
         'Addresses',
         'ArticlesAuthors',
         'Articles',
@@ -57,18 +59,21 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
         'PremiumAuthors',
     ];
 
-    public $pluginTables = [
+    /**
+     * @var array<string>
+     */
+    public array $pluginTables = [
         'Bills',
         'Customers',
     ];
 
-    public function testGetFileName()
+    public function testGetFileName(): void
     {
         $name = 'Model';
         $this->assertSame('ModelFactory.php', $this->FactoryCommand->getFactoryFileName($name));
     }
 
-    public function testGetPath()
+    public function testGetPath(): void
     {
         $args = new Arguments([], [], []);
 
@@ -80,18 +85,18 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
         $this->assertStringEndsWith('tests' . DS . 'TestApp' . DS . 'tests' . DS . 'my' . DS . 'custom' . DS . 'path' . DS, $customPath);
     }
 
-    public function testGetTableListInApp()
+    public function testGetTableListInApp(): void
     {
         $this->assertEquals($this->appTables, array_values($this->FactoryCommand->getTableList($this->io)));
     }
 
-    public function testGetTableListInPlugin()
+    public function testGetTableListInPlugin(): void
     {
         $this->FactoryCommand->plugin = $this->testPluginName;
         $this->assertEquals($this->pluginTables, array_values($this->FactoryCommand->getTableList($this->io)));
     }
 
-    public function testHandleAssociationsWithArticles()
+    public function testHandleAssociationsWithArticles(): void
     {
         $associations = $this->FactoryCommand->setTable('Articles', $this->io)->getAssociations();
         $expected = [
@@ -99,66 +104,66 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
             'oneToMany' => [
                 'Bills' => [
                     'fqcn' => 'TestPlugin\Test\Factory\BillFactory',
-                    'className' => 'BillFactory'
+                    'className' => 'BillFactory',
                 ],
                 'ArticlesAuthors' => [
                     'fqcn' => 'TestApp\Test\Factory\ArticlesAuthorFactory',
-                    'className' => 'ArticlesAuthorFactory'
+                    'className' => 'ArticlesAuthorFactory',
                 ],
             ],
             'manyToMany' => [
                 'Authors' => [
                     'fqcn' => 'TestApp\Test\Factory\AuthorFactory',
-                    'className' => 'AuthorFactory'
+                    'className' => 'AuthorFactory',
                 ],
                 'ExclusivePremiumAuthors' => [
                     'fqcn' => 'TestApp\Test\Factory\PremiumAuthorFactory',
-                    'className' => 'PremiumAuthorFactory'
+                    'className' => 'PremiumAuthorFactory',
                 ],
             ],
         ];
         $this->assertEquals($expected, $associations);
     }
 
-    public function testHandleAssociationsWithAuthors()
+    public function testHandleAssociationsWithAuthors(): void
     {
         $associations = $this->FactoryCommand->setTable('Authors', $this->io)->getAssociations();
         $expected = [
             'toOne' => [
                 'Address' => [
                     'fqcn' => 'TestApp\Test\Factory\AddressFactory',
-                    'className' => 'AddressFactory'
+                    'className' => 'AddressFactory',
                 ],
                 'BusinessAddress' => [
                     'fqcn' => 'TestApp\Test\Factory\AddressFactory',
-                    'className' => 'AddressFactory'
+                    'className' => 'AddressFactory',
                 ],
             ],
             'oneToMany' => [],
             'manyToMany' => [
                 'Articles' => [
                     'fqcn' => 'TestApp\Test\Factory\ArticleFactory',
-                    'className' => 'ArticleFactory'
-                ]
+                    'className' => 'ArticleFactory',
+                ],
             ],
         ];
         $this->assertEquals($expected, $associations);
     }
 
-    public function testHandleAssociationsWithAddresses()
+    public function testHandleAssociationsWithAddresses(): void
     {
         $associations = $this->FactoryCommand->setTable('Addresses', $this->io)->getAssociations();
         $expected = [
             'toOne' => [
                 'City' => [
                     'fqcn' => 'TestApp\Test\Factory\CityFactory',
-                    'className' => 'CityFactory'
+                    'className' => 'CityFactory',
                 ],
             ],
             'oneToMany' => [
                 'Authors' => [
                     'fqcn' => 'TestApp\Test\Factory\AuthorFactory',
-                    'className' => 'AuthorFactory'
+                    'className' => 'AuthorFactory',
                 ],
             ],
             'manyToMany' => [],
@@ -166,7 +171,7 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
         $this->assertEquals($expected, $associations);
     }
 
-    public function testHandleAssociationsWithBillsWithoutPlugin()
+    public function testHandleAssociationsWithBillsWithoutPlugin(): void
     {
         $associations = $this->FactoryCommand->setTable('Bills', $this->io)->getAssociations();
         $expected = [
@@ -177,7 +182,7 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
         $this->assertEquals($expected, $associations);
     }
 
-    public function testHandleAssociationsWithBills()
+    public function testHandleAssociationsWithBills(): void
     {
         $this->FactoryCommand->plugin = $this->testPluginName;
         $associations = $this->FactoryCommand->setTable('Bills', $this->io)->getAssociations();
@@ -186,12 +191,12 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
             'toOne' => [
                 'Article' => [
                     'fqcn' => 'TestApp\Test\Factory\ArticleFactory',
-                    'className' => 'ArticleFactory'
+                    'className' => 'ArticleFactory',
                 ],
                 'Customer' => [
                     'fqcn' => 'TestPlugin\Test\Factory\CustomerFactory',
-                    'className' => 'CustomerFactory'
-                ]
+                    'className' => 'CustomerFactory',
+                ],
             ],
             'oneToMany' => [],
             'manyToMany' => [],
@@ -199,23 +204,23 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
         $this->assertEquals($expected, $associations);
     }
 
-    public function testBakeUnexistingTable()
+    public function testBakeUnexistingTable(): void
     {
         $this->expectException(StopException::class);
         $this->assertFalse($this->FactoryCommand->setTable('ignore_that', $this->io));
     }
 
-    public function testRunBakeWithNoArguments()
+    public function testRunBakeWithNoArguments(): void
     {
         $this->bake();
     }
 
-    public function testRunBakeWithWrongModel()
+    public function testRunBakeWithWrongModel(): void
     {
         $this->bake(['model' => 'SomeModel']);
     }
 
-    public function testRunBakeAllWithMethods()
+    public function testRunBakeAllWithMethods(): void
     {
         $this->bake([], ['methods' => true, 'all' => true]);
 
@@ -232,7 +237,7 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
         }
     }
 
-    public function testRunBakeAllInTestAppWithMethods()
+    public function testRunBakeAllInTestAppWithMethods(): void
     {
         $this->bake([], ['all' => true, 'methods' => true,]);
 
@@ -260,7 +265,7 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
         $this->assertInstanceOf(Country::class, $country);
     }
 
-    public function testRunBakeWithModel()
+    public function testRunBakeWithModel(): void
     {
         $this->bake(['Articles']);
 
@@ -272,7 +277,7 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
         $this->assertEquals($title, $article['title']);
     }
 
-    public function testRunBakeAllInTestApp()
+    public function testRunBakeAllInTestApp(): void
     {
         $this->bake([], ['all' => true,]);
 
@@ -298,7 +303,7 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
         $this->assertInstanceOf(Country::class, $country);
     }
 
-    public function testRunBakeAllInTestPlugin()
+    public function testRunBakeAllInTestPlugin(): void
     {
         $this->bake(['Articles']);
 
@@ -319,7 +324,10 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
         $this->assertInstanceOf(Customer::class, $customer);
     }
 
-    public static function dataForTestThisTableShouldBeBaked()
+    /**
+     * @return array<array<mixed>>
+     */
+    public static function dataForTestThisTableShouldBeBaked(): array
     {
         return [
             ['Cities', null, true],
@@ -337,14 +345,14 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
      * @param mixed $plugin
      * @param bool $expected
      */
-    public function testThisTableShouldBeBaked(string $model, $plugin, bool $expected)
+    public function testThisTableShouldBeBaked(string $model, $plugin, bool $expected): void
     {
         $this->FactoryCommand->plugin = $plugin;
 
         $this->assertSame($expected, $this->FactoryCommand->thisTableShouldBeBaked($model, $this->io));
     }
 
-    public function testCommandHasCommonOptions()
+    public function testCommandHasCommonOptions(): void
     {
         $options = $this->FactoryCommand->getOptionParser()->toArray();
         $this->assertArrayHasKey('connection', $options['options']);

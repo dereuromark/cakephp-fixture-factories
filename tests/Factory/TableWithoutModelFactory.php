@@ -14,7 +14,7 @@ declare(strict_types=1);
 namespace CakephpFixtureFactories\Test\Factory;
 
 use CakephpFixtureFactories\Factory\BaseFactory;
-use Faker\Generator;
+use CakephpFixtureFactories\Generator\GeneratorInterface;
 
 /**
  * Class TableWithoutModelFactory
@@ -46,12 +46,14 @@ class TableWithoutModelFactory extends BaseFactory
      */
     protected function setDefaultTemplate(): void
     {
-        $this->setDefaultData(function (Generator $faker) {
+        $this->setDefaultData(function (GeneratorInterface $generator) {
             return [
-                'name' => $faker->text(120),
-                'foreign_key' => $faker->randomNumber(),
-                'binding_key' => $faker->randomNumber(),
-                'country_id' => $faker->randomNumber(),
+                'name' => $generator->text(120),
+                'foreign_key' => $generator->randomNumber(),
+                'binding_key' => $generator->randomNumber(),
+                'country_id' => $generator->randomNumber(),
+                'created' => $generator->dateTime(),
+                'modified' => $generator->dateTime(),
             ];
         });
     }

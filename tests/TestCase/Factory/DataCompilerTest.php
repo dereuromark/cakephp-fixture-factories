@@ -21,11 +21,11 @@ use CakephpFixtureFactories\Factory\DataCompiler;
 use CakephpFixtureFactories\Test\Factory\ArticleFactory;
 use CakephpFixtureFactories\Test\Factory\AuthorFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
+use InvalidArgumentException;
 use TestApp\Model\Table\PremiumAuthorsTable;
 
 class DataCompilerTest extends TestCase
 {
-
     /**
      * @var DataCompiler
      */
@@ -43,64 +43,64 @@ class DataCompilerTest extends TestCase
         parent::setUp();
     }
 
-    public function testGetMarshallerAssociationNameShouldThrowInvalidArgumentException()
+    public function testGetMarshallerAssociationNameShouldThrowInvalidArgumentException(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $this->authorDataCompiler->getMarshallerAssociationName('business_address');
     }
 
-    public function testGetMarshallerAssociationNameShouldReturnUnderscoredAssociationName()
+    public function testGetMarshallerAssociationNameShouldReturnUnderscoredAssociationName(): void
     {
         $marshallerAssociationName = $this->authorDataCompiler->getMarshallerAssociationName('BusinessAddress');
         $this->assertSame('business_address', $marshallerAssociationName);
     }
 
-    public function testGetMarshallerAssociationNameWithDottedAssociation()
+    public function testGetMarshallerAssociationNameWithDottedAssociation(): void
     {
         $marshallerAssociationName = $this->authorDataCompiler->getMarshallerAssociationName('BusinessAddress.City.Country');
         $this->assertSame('business_address.city.country', $marshallerAssociationName);
     }
 
-    public function testGetMarshallerAssociationNameWithAliasedAssociationName()
+    public function testGetMarshallerAssociationNameWithAliasedAssociationName(): void
     {
         $marshallerAssociationName = $this->articleDataCompiler->getMarshallerAssociationName('ExclusivePremiumAuthors');
         $this->assertSame(PremiumAuthorsTable::ASSOCIATION_ALIAS, $marshallerAssociationName);
     }
 
-    public function testGetMarshallerAssociationNameWithAliasedDeepAssociationName()
+    public function testGetMarshallerAssociationNameWithAliasedDeepAssociationName(): void
     {
         $marshallerAssociationName = $this->articleDataCompiler->getMarshallerAssociationName('ExclusivePremiumAuthors.Address');
         $this->assertSame(PremiumAuthorsTable::ASSOCIATION_ALIAS . '.address', $marshallerAssociationName);
     }
 
-    public function testGenerateRandomPrimaryKeyInteger()
+    public function testGenerateRandomPrimaryKeyInteger(): void
     {
         $this->assertTrue(is_int($this->articleDataCompiler->generateRandomPrimaryKey('integer')));
     }
 
-    public function testGenerateRandomPrimaryKeyBigInteger()
+    public function testGenerateRandomPrimaryKeyBigInteger(): void
     {
         $this->assertTrue(is_int($this->articleDataCompiler->generateRandomPrimaryKey('biginteger')));
     }
 
-    public function testGenerateRandomPrimaryKeyUuid()
+    public function testGenerateRandomPrimaryKeyUuid(): void
     {
         $this->assertTrue(is_string($this->articleDataCompiler->generateRandomPrimaryKey('uuid')));
     }
 
-    public function testGenerateRandomPrimaryKeyWhateverColumnType()
+    public function testGenerateRandomPrimaryKeyWhateverColumnType(): void
     {
         $this->assertTrue(is_int($this->articleDataCompiler->generateRandomPrimaryKey('foo')));
     }
 
-    public function testGenerateArrayOfRandomPrimaryKeys()
+    public function testGenerateArrayOfRandomPrimaryKeys(): void
     {
         $res = $this->articleDataCompiler->generateArrayOfRandomPrimaryKeys();
         $this->assertTrue(is_int($res['id']));
         $this->assertSame(1, count($res));
     }
 
-    public function testCreatePrimaryKeyOffset()
+    public function testCreatePrimaryKeyOffset(): void
     {
         $res = $this->articleDataCompiler->createPrimaryKeyOffset();
         $this->assertTrue(is_int($res['id']));
@@ -110,7 +110,7 @@ class DataCompilerTest extends TestCase
         $this->articleDataCompiler->createPrimaryKeyOffset();
     }
 
-    public function testSetPrimaryKey()
+    public function testSetPrimaryKey(): void
     {
         $data = CountryFactory::make()->getEntity();
 
@@ -124,7 +124,7 @@ class DataCompilerTest extends TestCase
      * If the id is set be the user, the primary key is set to this id
      * No random primary key is generated
      */
-    public function testSetPrimaryKeyWithIdSet()
+    public function testSetPrimaryKeyWithIdSet(): void
     {
         $id = rand(1, 10000);
         $entity = new Entity(compact('id'));
@@ -132,7 +132,7 @@ class DataCompilerTest extends TestCase
         $this->assertSame($id, $res['id']);
     }
 
-    public function testSetPrimaryKeyOnEntity()
+    public function testSetPrimaryKeyOnEntity(): void
     {
         $countries = CountryFactory::make(2)->getEntity();
 
@@ -159,14 +159,14 @@ class DataCompilerTest extends TestCase
      * @param array $injectedData
      * @param array $expected
      */
-    public function testGetModifiedUniqueFields(array $injectedData, array $expected)
+    public function testGetModifiedUniqueFields(array $injectedData, array $expected): void
     {
         $dataCompiler = new DataCompiler(CountryFactory::make($injectedData));
         $dataCompiler->compileEntity($injectedData);
         $this->assertSame($dataCompiler->getModifiedUniqueFields(), $expected);
     }
 
-    public function testCompileEntityWithoutSetters()
+    public function testCompileEntityWithoutSetters(): void
     {
         $value = 'Foo';
         $dataCompiler = new DataCompiler(AuthorFactory::make()->without('Address'));
@@ -178,12 +178,12 @@ class DataCompilerTest extends TestCase
             'field_with_setter_3' => $value,
         ]);
 
-        $this->assertSame($value, $author->get("field_with_setter_1"));
-        $this->assertSame($author->prependPrefixToField($value), $author->get("field_with_setter_2"));
-        $this->assertSame($author->prependPrefixToField($value), $author->get("field_with_setter_3"));
+        $this->assertSame($value, $author->get('field_with_setter_1'));
+        $this->assertSame($author->prependPrefixToField($value), $author->get('field_with_setter_2'));
+        $this->assertSame($author->prependPrefixToField($value), $author->get('field_with_setter_3'));
     }
 
-    public function testEntityHasRegistryAlias()
+    public function testEntityHasRegistryAlias(): void
     {
         $country = CountryFactory::make()->getEntity();
         $this->assertSame('Countries', $country->getSource());

@@ -26,7 +26,6 @@ use Cake\Utility\Hash;
 use Cake\Utility\Inflector;
 use CakephpFixtureFactories\Factory\FactoryAwareTrait;
 use Exception;
-use Override;
 use ReflectionClass;
 use ReflectionException;
 
@@ -64,17 +63,55 @@ class BakeFixtureFactoryCommand extends BakeCommand
             'postal_code' => 'postcode',
             'city' => 'city',
             'address' => 'address',
+            'street_name' => 'streetName',
+            'street_address' => 'streetAddress',
             'url' => 'url',
+            'website' => 'url',
+            'link' => 'url',
             'ip_address' => 'ipv4',
             'currency' => 'currencyCode',
             'phone_number' => 'phoneNumber',
             'timezone' => 'timezone',
+            'title' => 'sentence',
+            'bio' => 'realText',
+            'biography' => 'realText',
+            'country_code' => 'countryCode',
+            'language' => 'languageCode',
+            'language_code' => 'languageCode',
+            'locale' => 'locale',
+            'status' => "randomElement(['active', 'inactive', 'pending'])",
+            'gender' => "randomElement(['M', 'F', 'Other'])",
+            'company' => 'company',
+            'company_name' => 'company',
+            'job_title' => 'jobTitle',
+            'mime_type' => 'mimeType',
+            'file_extension' => 'fileExtension',
+            'color' => 'colorName',
+            'hex_color' => 'hexColor',
         ],
         'float' => [
             'latitude' => 'latitude',
             'longitude' => 'longitude',
+            'price' => 'randomFloat(2, 0, 1000)',
+            'cost' => 'randomFloat(2, 0, 1000)',
+            'amount' => 'randomFloat(2, 10, 5000)',
+            'total' => 'randomFloat(2, 10, 5000)',
+            'percentage' => 'randomFloat(2, 0, 100)',
+            'rate' => 'randomFloat(4, 0, 1)',
+            'discount' => 'randomFloat(2, 0, 50)',
+            'tax' => 'randomFloat(2, 0, 30)',
         ],
         'integer' => [
+            'age' => 'numberBetween(18, 80)',
+            'year' => 'year',
+            'quantity' => 'numberBetween(1, 100)',
+            'count' => 'numberBetween(0, 1000)',
+            'views' => 'numberBetween(0, 10000)',
+            'likes' => 'numberBetween(0, 5000)',
+            'rating' => 'numberBetween(1, 5)',
+            'score' => 'numberBetween(0, 100)',
+            'position' => 'numberBetween(1, 100)',
+            'order' => 'numberBetween(1, 100)',
         ],
     ];
 
@@ -97,7 +134,6 @@ class BakeFixtureFactoryCommand extends BakeCommand
     /**
      * @inheritDoc
      */
-    #[Override]
     public static function defaultName(): string
     {
         return 'bake fixture_factory';
@@ -114,7 +150,7 @@ class BakeFixtureFactoryCommand extends BakeCommand
     /**
      * @param string    $tableName Name of the table being baked
      * @param \Cake\Console\ConsoleIo $io Console
-     * @return $this|false
+     * @return $this
      */
     public function setTable(string $tableName, ConsoleIo $io)
     {
@@ -136,7 +172,6 @@ class BakeFixtureFactoryCommand extends BakeCommand
      * @param \Cake\Console\Arguments $args Arguments
      * @return string
      */
-    #[Override]
     public function getPath(Arguments $args): string
     {
         $outputDir = Configure::read('FixtureFactories.testFixtureOutputDir', 'Factory/');
@@ -247,7 +282,6 @@ class BakeFixtureFactoryCommand extends BakeCommand
      * @param \Cake\Console\ConsoleIo $io The console io
      * @return int|null The exit code or null for success
      */
-    #[Override]
     public function execute(Arguments $args, ConsoleIo $io): ?int
     {
         $this->extractCommonProperties($args);
@@ -299,10 +333,7 @@ class BakeFixtureFactoryCommand extends BakeCommand
     {
         $this->modelName = $modelName;
 
-        if (!$this->setTable($modelName, $io)) {
-            $io->abort("$modelName not found...");
-        }
-
+        $this->setTable($modelName, $io);
         $renderer = new TemplateRenderer('CakephpFixtureFactories');
         $renderer->set($this->templateData($args));
         $renderer->viewBuilder()->addHelper('CakephpFixtureFactories.FactoryBake');
@@ -451,7 +482,6 @@ class BakeFixtureFactoryCommand extends BakeCommand
      *
      * @return \Cake\Console\ConsoleOptionParser
      */
-    #[Override]
     public function getOptionParser(): ConsoleOptionParser
     {
         $name = ($this->plugin ? $this->plugin . '.' : '') . $this->name;
@@ -504,7 +534,7 @@ class BakeFixtureFactoryCommand extends BakeCommand
                 continue;
             }
 
-            if (!in_array($columnSchema['type'], ['integer', 'string', 'date', 'datetime', 'time', 'bool', 'float'])) {
+            if (!in_array($columnSchema['type'], ['integer', 'string', 'date', 'datetime', 'time', 'boolean', 'float', 'decimal', 'uuid', 'json', 'text'])) {
                 continue;
             }
 
@@ -525,7 +555,26 @@ class BakeFixtureFactoryCommand extends BakeCommand
      */
     protected function guessDefault(string $column, string $modelName, array $columnSchema): mixed
     {
+        // Merge default mappings with custom configuration
         $map = array_merge_recursive($this->map, (array)Configure::read('FixtureFactories.defaultDataMap'));
+
+        // Check custom column patterns from configuration first
+        $customPatterns = Configure::read('FixtureFactories.columnPatterns', []);
+        foreach ($customPatterns as $pattern => $generatorMethod) {
+            if (preg_match($pattern, $column)) {
+                return '$generator->' . $generatorMethod;
+            }
+        }
+
+        // Pattern-based detection for special cases
+        if (str_ends_with($column, '_at') && $columnSchema['type'] === 'datetime') {
+            return '$generator->optional(0.7)->dateTime()';
+        }
+
+        if (str_ends_with($column, '_count') && $columnSchema['type'] === 'integer') {
+            return '$generator->numberBetween(0, 100)';
+        }
+
         $map = $map[$columnSchema['type']] ?? [];
 
         $modelNameMap = [
@@ -533,54 +582,115 @@ class BakeFixtureFactoryCommand extends BakeCommand
             'Cities' => 'city',
         ];
 
+        // Handle string type with improved logic
         if ($columnSchema['type'] === 'string') {
             if ($column === 'name' && isset($modelNameMap[$modelName])) {
-                return '$faker->' . $modelNameMap[$modelName] . '()';
+                return '$generator->' . $modelNameMap[$modelName] . '()';
             }
             if (isset($map[$column])) {
-                return '$faker->' . $map[$column] . '()';
+                return '$generator->' . $map[$column] . '()';
             }
 
-            if ($columnSchema['length'] && $columnSchema['length'] < 5) {
-                return 'mb_substr($faker->text(5), 0, ' . $columnSchema['length'] . ')';
+            // Smart string length handling
+            $length = $columnSchema['length'] ?? 255;
+            if ($length <= 3) {
+                return '$generator->lexify("' . str_repeat('?', $length) . '")';
+            } elseif ($length <= 10) {
+                return '$generator->word()';
+            } elseif ($length <= 50) {
+                return 'implode(" ", $generator->words(3))';
+            } elseif ($length <= 100) {
+                return '$generator->sentence()';
             }
 
-            return '$faker->text(' . $columnSchema['length'] . ')';
+            return '$generator->text(' . $length . ')';
         }
+
+        // Handle integer type
         if ($columnSchema['type'] === 'integer') {
             if (isset($map[$column])) {
-                return '$faker->' . $map[$column] . '()';
+                return '$generator->' . $map[$column] . '()';
             }
 
-            return '$faker->randomNumber()';
+            return '$generator->randomNumber()';
         }
-        if ($columnSchema['type'] === 'boolean') {
+
+        // Handle boolean/bool type
+        if ($columnSchema['type'] === 'boolean' || $columnSchema['type'] === 'bool') {
             if (isset($map[$column])) {
-                return '$faker->' . $map[$column] . '()';
+                return '$generator->' . $map[$column] . '()';
             }
 
-            return '$faker->boolean()';
+            return '$generator->boolean()';
         }
+
+        // Handle float type with enhanced detection
+        if ($columnSchema['type'] === 'float') {
+            if (isset($map[$column])) {
+                return '$generator->' . $map[$column];
+            }
+
+            // Default float generation
+            return '$generator->randomFloat(2, 0, 100)';
+        }
+
+        // Handle decimal type (new)
+        if ($columnSchema['type'] === 'decimal') {
+            $precision = $columnSchema['precision'] ?? 10;
+            $scale = $columnSchema['scale'] ?? 2;
+            $max = (string)(pow(10, (int)$precision - (int)$scale) - 1);
+
+            if (str_contains($column, 'price') || str_contains($column, 'cost') || str_contains($column, 'amount')) {
+                return '$generator->randomFloat(' . $scale . ', 0, 1000)';
+            }
+
+            return '$generator->randomFloat(' . $scale . ', 0, ' . $max . ')';
+        }
+
+        // Handle uuid type (new)
+        if ($columnSchema['type'] === 'uuid') {
+            return '$generator->uuid()';
+        }
+
+        // Handle json type (new)
+        if ($columnSchema['type'] === 'json') {
+            return 'json_encode(["key" => $generator->word(), "value" => $generator->randomNumber()])';
+        }
+
+        // Handle text type (new) - different from string
+        if ($columnSchema['type'] === 'text') {
+            if (str_contains($column, 'bio') || str_contains($column, 'description') || str_contains($column, 'content')) {
+                return '$generator->realText(500)';
+            }
+
+            return '$generator->text(1000)';
+        }
+
+        // Handle date type
         if ($columnSchema['type'] === 'date') {
             if (isset($map[$column])) {
-                return '$faker->' . $map[$column] . '()';
+                return '$generator->' . $map[$column] . '()';
             }
 
-            return '$faker->date()';
+            return '$generator->date()';
         }
+
+        // Handle datetime type
         if ($columnSchema['type'] === 'datetime') {
             if (isset($map[$column])) {
-                return '$faker->' . $map[$column] . '()';
+                return '$generator->' . $map[$column] . '()';
             }
 
-            return '$faker->datetime()';
+            return '$generator->datetime()';
         }
+
+        // Handle time type
         if ($columnSchema['type'] === 'time') {
             if (isset($map[$column])) {
-                return '$faker->' . $map[$column] . '()';
+                return '$generator->' . $map[$column] . '()';
             }
 
-            return '$faker->time()';
+            return '$generator->time()';
         }
 
         return null;

@@ -17,10 +17,11 @@ ArticleFactory::make(5)->with('Authors[3].Address.City.Country')->persist();
 ---
 
 ## Installation
-CakePHP 5 and non-CakePHP applications 
+CakePHP 5 and non-CakePHP applications
 ```
 composer require --dev vierge-noire/cakephp-fixture-factories "^3.0"
 ```
+Note: 3.1+ requires PHP 8.3+.
 
 CakePHP 4
 ```
@@ -31,7 +32,6 @@ CakePHP 3
 ```
 composer require --dev vierge-noire/cakephp-fixture-factories "^1.0"
 ```
-PHP 7.0 is supported up to v1.1.* only.
 
 ---
 
@@ -46,6 +46,7 @@ PHP 7.0 is supported up to v1.1.* only.
 * ### [Queries](docs/queries.md)
 * ### [Bake command](docs/bake.md)
 * ### [Persist command](docs/commands.md)
+* ### [Generator Abstraction](docs/generator-differences.md)
 
 ---
 
@@ -53,7 +54,7 @@ PHP 7.0 is supported up to v1.1.* only.
 ## Resources
 
 [CakeFest 2021](https://www.youtube.com/watch?v=1WrWH2F_hWE) -
-[IPC-Berlin 2020](https://www.youtube.com/watch?v=yJ6EqAE2NEs) - 
+[IPC-Berlin 2020](https://www.youtube.com/watch?v=yJ6EqAE2NEs) -
 [CakeFest 2020](https://www.youtube.com/watch?v=PNA1Ck2-nVc&t=30s)
 
 ## Contribute

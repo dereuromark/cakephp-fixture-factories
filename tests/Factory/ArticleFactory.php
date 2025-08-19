@@ -14,7 +14,7 @@ declare(strict_types=1);
 namespace CakephpFixtureFactories\Test\Factory;
 
 use CakephpFixtureFactories\Factory\BaseFactory;
-use Faker\Generator;
+use CakephpFixtureFactories\Generator\GeneratorInterface;
 use TestApp\Model\Entity\Article;
 
 /**
@@ -50,15 +50,15 @@ class ArticleFactory extends BaseFactory
      */
     protected function setDefaultTemplate(): void
     {
-        $this->setDefaultData(function (Generator $faker) {
+        $this->setDefaultData(function (GeneratorInterface $generator) {
             return [
-                'title' => $faker->text(120),
+                'title' => $generator->text(120),
             ];
         })
         ->withAuthors(null, self::DEFAULT_NUMBER_OF_AUTHORS);
     }
 
-    public function withAuthors($parameter = null, int $n = 1): self
+    public function withAuthors(mixed $parameter = null, int $n = 1): self
     {
         return $this->with('Authors', AuthorFactory::make($parameter, $n));
     }
@@ -71,7 +71,7 @@ class ArticleFactory extends BaseFactory
      * @param int $n
      * @return ArticleFactory
      */
-    public function withBills($parameter = null, int $n = 1)
+    public function withBills(mixed $parameter = null, int $n = 1): self
     {
         return $this->with('Bills', BillFactory::make($parameter, $n)->without('Article'));
     }
@@ -84,7 +84,7 @@ class ArticleFactory extends BaseFactory
      * @param int $n
      * @return ArticleFactory
      */
-    public function withBillsWithArticle($parameter = null, int $n = 1)
+    public function withBillsWithArticle(mixed $parameter = null, int $n = 1): self
     {
         return $this->with('Bills', BillFactory::make($parameter, $n));
     }
@@ -95,7 +95,7 @@ class ArticleFactory extends BaseFactory
      * @param string $title
      * @return ArticleFactory
      */
-    public function withTitle(string $title)
+    public function withTitle(string $title): self
     {
         return $this->patchData(compact('title'));
     }
@@ -105,22 +105,22 @@ class ArticleFactory extends BaseFactory
      *
      * @return ArticleFactory
      */
-    public function setJobTitle()
+    public function setJobTitle(): self
     {
-        return $this->setField('title', $this->getFaker()->jobTitle());
+        return $this->setField('title', $this->getGenerator()->jobTitle());
     }
 
-    public function withHiddenBiography(string $text)
+    public function withHiddenBiography(string $text): self
     {
         return $this->setField(Article::HIDDEN_PARAGRAPH_PROPERTY_NAME, $text);
     }
 
-    public function published()
+    public function published(): self
     {
         return $this->setField('published', true);
     }
 
-    public function unpublished()
+    public function unpublished(): self
     {
         return $this->setField('published', 0);
     }

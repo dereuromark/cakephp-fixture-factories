@@ -20,13 +20,12 @@ use CakephpFixtureFactories\Test\Factory\BillFactory;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
-use TestApp\Model\Entity\Country;
 
 class BaseFactoryPrimaryKeyOffsetTest extends TestCase
 {
     use TruncateDirtyTables;
 
-    public static function dataForTestSetPrimaryKeyOffset()
+    public static function dataForTestSetPrimaryKeyOffset(): array
     {
         return [
             [rand(1, 1000000)],
@@ -39,7 +38,7 @@ class BaseFactoryPrimaryKeyOffsetTest extends TestCase
      * @dataProvider dataForTestSetPrimaryKeyOffset
      * @param int $cityOffset
      */
-    public function testSetPrimaryKeyOffset(int $cityOffset)
+    public function testSetPrimaryKeyOffset(int $cityOffset): void
     {
         $n = 10;
         $cities = CityFactory::make($n)
@@ -58,7 +57,7 @@ class BaseFactoryPrimaryKeyOffsetTest extends TestCase
      * @dataProvider dataForTestSetPrimaryKeyOffset
      * @param int $countryOffset
      */
-    public function testSetPrimaryKeyOffsetInAssociation($countryOffset)
+    public function testSetPrimaryKeyOffsetInAssociation(int $countryOffset): void
     {
         $n = 5;
         $cities = CityFactory::make($n)
@@ -73,7 +72,7 @@ class BaseFactoryPrimaryKeyOffsetTest extends TestCase
         }
     }
 
-    public function testSetPrimaryKeyOffsetInAssociationAndBase()
+    public function testSetPrimaryKeyOffsetInAssociationAndBase(): void
     {
         $nCities = rand(3, 5);
         $cityOffset = rand(1, 100000);
@@ -88,13 +87,13 @@ class BaseFactoryPrimaryKeyOffsetTest extends TestCase
         $this->assertSame($countryOffset + $nCities - 1, $cities[$nCities - 1]->country->id);
     }
 
-    public function testSetPrimaryKeyOffsetInMultipleAssociationAndBase()
+    public function testSetPrimaryKeyOffsetInMultipleAssociationAndBase(): void
     {
         $nCities = rand(3, 5);
         $cityOffset = rand(1, 100000);
         $countryOffset = rand(1, 100000);
 
-        /** @var Country $country */
+        /** @var \TestApp\Model\Entity\Country $country */
         $country = CountryFactory::make()
             ->with('Cities', CityFactory::make($nCities)->setPrimaryKeyOffset($cityOffset))
             ->setPrimaryKeyOffset($countryOffset)
@@ -111,7 +110,7 @@ class BaseFactoryPrimaryKeyOffsetTest extends TestCase
      *
      * @throws \Exception
      */
-    public function testSetPrimaryKeyOffsetConflict()
+    public function testSetPrimaryKeyOffsetConflict(): void
     {
         $country = CountryFactory::make()->persist();
         $offset = $country->id;
@@ -120,7 +119,7 @@ class BaseFactoryPrimaryKeyOffsetTest extends TestCase
         CountryFactory::make()->setPrimaryKeyOffset($offset)->persist();
     }
 
-    public function testPrimaryOffsetOnMultipleCalls()
+    public function testPrimaryOffsetOnMultipleCalls(): void
     {
         $n = rand(3, 5);
         $m = rand(3, 5);
@@ -136,7 +135,7 @@ class BaseFactoryPrimaryKeyOffsetTest extends TestCase
         $this->assertSame($expectedId, $lastCountryId);
     }
 
-    public function testPrimaryOffsetOnMultipleCallsInAssociations()
+    public function testPrimaryOffsetOnMultipleCallsInAssociations(): void
     {
         $nCitiesPerCountry = rand(3, 5);
         $nCountries = rand(3, 5);
@@ -162,7 +161,7 @@ class BaseFactoryPrimaryKeyOffsetTest extends TestCase
         $this->assertSame($expectedLastCityId, $lastCityId);
     }
 
-    public function testTargetKeyOffsetWithCollectedAssociation()
+    public function testTargetKeyOffsetWithCollectedAssociation(): void
     {
         $offset1 = rand(1, 100000);
         $offset2 = $offset1 + rand(1, 100);
@@ -176,7 +175,7 @@ class BaseFactoryPrimaryKeyOffsetTest extends TestCase
         $this->assertSame($offset2, $country->cities[1]->id);
     }
 
-    public function testSetPrimaryKeyManually()
+    public function testSetPrimaryKeyManually(): void
     {
         $id = 2;
         $country = CountryFactory::make()->patchData(compact('id'))->persist();
@@ -187,7 +186,7 @@ class BaseFactoryPrimaryKeyOffsetTest extends TestCase
         $this->assertSame($id, $country->id);
     }
 
-    public function testSetPrimaryKeyManuallyInPlugin()
+    public function testSetPrimaryKeyManuallyInPlugin(): void
     {
         $id = 2;
         $bill = BillFactory::make()->patchData(compact('id'))->persist();

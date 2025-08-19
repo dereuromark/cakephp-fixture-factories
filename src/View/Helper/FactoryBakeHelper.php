@@ -25,7 +25,7 @@ class FactoryBakeHelper extends Helper
         $default = <<<TXT
                 // set the model's default values
                 // For example:
-                // 'name' => \$faker->lastName()
+                // 'name' => \$generator->lastName()
 TXT;
 
         return ltrim($string ?: $default);

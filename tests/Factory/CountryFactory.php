@@ -14,7 +14,7 @@ declare(strict_types=1);
 namespace CakephpFixtureFactories\Test\Factory;
 
 use CakephpFixtureFactories\Factory\BaseFactory;
-use Faker\Generator;
+use CakephpFixtureFactories\Generator\GeneratorInterface;
 
 /**
  * Class CountryFactory
@@ -37,10 +37,10 @@ class CountryFactory extends BaseFactory
 
     protected function setDefaultTemplate(): void
     {
-        $this->setDefaultData(function (Generator $faker) {
+        $this->setDefaultData(function (GeneratorInterface $generator) {
             return [
-                'name' => $faker->country,
-                'unique_stamp' => $faker->uuid,
+                'name' => $generator->country(),
+                'unique_stamp' => $generator->uuid(),
             ];
         });
     }

@@ -28,7 +28,7 @@ class FixtureInjectorTest extends TestCase
      *
      * @return array
      */
-    public static function createWithOneFactoryInTheDataProvider()
+    public static function createWithOneFactoryInTheDataProvider(): array
     {
         $Factory = ArticleFactory::make();
 
@@ -61,7 +61,7 @@ class FixtureInjectorTest extends TestCase
      * @dataProvider createWithOneFactoryInTheDataProvider
      * @param ArticleFactory $factory
      */
-    public function testCreateFactoryInTheDataProvider(ArticleFactory $factory)
+    public function testCreateFactoryInTheDataProvider(ArticleFactory $factory): void
     {
         $factory->persist();
         $this->assertSame(10, ArticleFactory::count());
@@ -75,7 +75,7 @@ class FixtureInjectorTest extends TestCase
      * @param int $n
      * @param ArticleFactory $factory
      */
-    public function testCreateFactoryInTheDataProvider2(int $n, ArticleFactory $factory)
+    public function testCreateFactoryInTheDataProvider2(int $n, ArticleFactory $factory): void
     {
         $factory->persist();
         $this->assertSame($n, ArticleFactory::count());

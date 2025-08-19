@@ -18,7 +18,6 @@ use Cake\ORM\Locator\TableLocator;
 use Cake\ORM\Table;
 use CakephpFixtureFactories\Event\ModelEventsHandler;
 use CakephpFixtureFactories\Factory\EventCollector;
-use Override;
 
 /**
  * Class FactoryTableLocator
@@ -30,7 +29,6 @@ class FactoryTableLocator extends TableLocator
     /**
      * @inheritDoc
      */
-    #[Override]
     protected function _create(array $options): Table
     {
         $table = parent::_create($options);

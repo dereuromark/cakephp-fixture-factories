@@ -51,7 +51,7 @@ class PersistCommandTest extends TestCase
         parent::setUp();
 
         $this->command = new PersistCommand();
-        $this->io  = new ConsoleIo();
+        $this->io = new ConsoleIo();
         $this->io->level(ConsoleIo::QUIET);
     }
 
@@ -75,7 +75,7 @@ class PersistCommandTest extends TestCase
     /**
      * @dataProvider dataProviderForStringFactories
      */
-    public function testPersistOnOneFactory(string $factoryString)
+    public function testPersistOnOneFactory(string $factoryString): void
     {
         $args = new Arguments([$factoryString], [], [PersistCommand::ARG_NAME]);
 
@@ -97,7 +97,7 @@ class PersistCommandTest extends TestCase
     /**
      * @dataProvider dataProviderForStringPluginFactories
      */
-    public function testPersistOnOnePluginFactory(string $factoryString)
+    public function testPersistOnOnePluginFactory(string $factoryString): void
     {
         $args = new Arguments([$factoryString], [], [PersistCommand::ARG_NAME]);
 
@@ -110,7 +110,7 @@ class PersistCommandTest extends TestCase
     /**
      * @dataProvider dataProviderForStringFactories
      */
-    public function testPersistOnNFactories(string $factoryString)
+    public function testPersistOnNFactories(string $factoryString): void
     {
         $number = '3';
         $args = new Arguments([$factoryString], compact('number'), [PersistCommand::ARG_NAME]);
@@ -121,7 +121,7 @@ class PersistCommandTest extends TestCase
         $this->assertEquals($number, ArticleFactory::count());
     }
 
-    public function testPersistWithMethodAndNumber()
+    public function testPersistWithMethodAndNumber(): void
     {
         $number = '3';
         $args = new Arguments(['Article'], ['method' => 'withBills', 'number' => $number], [PersistCommand::ARG_NAME]);
@@ -133,7 +133,7 @@ class PersistCommandTest extends TestCase
         $this->assertEquals($number, BillFactory::count());
     }
 
-    public function testPersistWithAssociation()
+    public function testPersistWithAssociation(): void
     {
         $numberOfCities = 3;
         $numberOfAddresses = 4;
@@ -147,7 +147,7 @@ class PersistCommandTest extends TestCase
         $this->assertEquals($numberOfCities * $numberOfAddresses, AddressFactory::count());
     }
 
-    public function testPersistWithMethodAndNumberDryRun()
+    public function testPersistWithMethodAndNumberDryRun(): void
     {
         $number = '3';
         $args = new Arguments(['Article'], ['method' => 'withBills', 'number' => $number, 'dry-run' => true], [PersistCommand::ARG_NAME]);
@@ -159,7 +159,7 @@ class PersistCommandTest extends TestCase
         $this->assertSame(0, BillFactory::count());
     }
 
-    public function testPersistWithWrongFactory()
+    public function testPersistWithWrongFactory(): void
     {
         $className = 'foo';
         $args = new Arguments([$className], [], [PersistCommand::ARG_NAME]);
@@ -168,7 +168,7 @@ class PersistCommandTest extends TestCase
         $this->command->execute($args, $this->io);
     }
 
-    public function testPersistWithWrongMethod()
+    public function testPersistWithWrongMethod(): void
     {
         $className = ArticleFactory::class;
         $method = 'foo';
@@ -181,7 +181,7 @@ class PersistCommandTest extends TestCase
     /**
      * @see /tests/bootstrap.php
      */
-    public function testAliasedConnection()
+    public function testAliasedConnection(): void
     {
         $output = $this->command->execute(new Arguments([ArticleFactory::class], [], [PersistCommand::ARG_NAME]), $this->io);
         $this->assertSame(PersistCommand::CODE_SUCCESS, $output);

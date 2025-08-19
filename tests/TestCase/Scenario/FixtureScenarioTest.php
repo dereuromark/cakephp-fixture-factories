@@ -56,7 +56,7 @@ class FixtureScenarioTest extends TestCase
     /**
      * @dataProvider scenarioNames
      */
-    public function testLoadScenario($scenario, int $expectedAuthors)
+    public function testLoadScenario(mixed $scenario, int $expectedAuthors): void
     {
         /** @var Author[] $authors */
         $authors = $this->loadFixtureScenario($scenario, $expectedAuthors) ?? [];
@@ -65,7 +65,7 @@ class FixtureScenarioTest extends TestCase
             $this->assertInstanceOf(Author::class, $author);
             $this->assertSame(
                 NAustralianAuthorsScenario::COUNTRY_NAME,
-                $author->address->city->country->name
+                $author->address->city->country->name,
             );
         }
     }
@@ -73,7 +73,7 @@ class FixtureScenarioTest extends TestCase
     /**
      * Throw an exception because this is not implementing the FixtureScenarioInterface
      */
-    public function testLoadScenarioException()
+    public function testLoadScenarioException(): void
     {
         $this->expectException(FixtureScenarioException::class);
         $this->loadFixtureScenario(self::class);

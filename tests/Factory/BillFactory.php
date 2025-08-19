@@ -14,7 +14,7 @@ declare(strict_types=1);
 namespace CakephpFixtureFactories\Test\Factory;
 
 use CakephpFixtureFactories\Factory\BaseFactory;
-use Faker\Generator;
+use CakephpFixtureFactories\Generator\GeneratorInterface;
 
 /**
  * Class BillFactory
@@ -32,9 +32,9 @@ class BillFactory extends BaseFactory
 
     protected function setDefaultTemplate(): void
     {
-        $this->setDefaultData(function (Generator $faker) {
+        $this->setDefaultData(function (GeneratorInterface $generator) {
             return [
-                'amount' => $faker->numberBetween(0, 1000),
+                'amount' => $generator->numberBetween(0, 1000),
             ];
         })
         ->withArticle()
@@ -45,12 +45,12 @@ class BillFactory extends BaseFactory
         ]);
     }
 
-    public function withArticle($parameter = null)
+    public function withArticle(mixed $parameter = null): self
     {
         return $this->with('Article', ArticleFactory::make($parameter));
     }
 
-    public function withCustomer($parameter = null)
+    public function withCustomer(mixed $parameter = null): self
     {
         return $this->with('Customer', CustomerFactory::make($parameter));
     }

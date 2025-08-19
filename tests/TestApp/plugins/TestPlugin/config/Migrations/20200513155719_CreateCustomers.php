@@ -41,7 +41,7 @@ class CreateCustomers extends AbstractMigration
             ->create();
     }
 
-    public function down()
+    public function down(): void
     {
         $this->table('customers')->drop();
     }

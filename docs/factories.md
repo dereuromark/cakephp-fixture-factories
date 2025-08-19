@@ -4,9 +4,7 @@ A factory is a class that extends the `CakephpFixtureFactories\Factory\BaseFacto
 * `getRootTableRegistryName()`  which indicates the model, or the table name in PascalCase, where the factory will insert its fixtures;
 * `setDefaultTemplate()`  which sets the default configuration of each entity created by the factory.
 
-The `Faker\Generator` is used in order to randomly populate fields, and is anytime available using `$this->getFaker()`.
-
-[Here is further documentation on Fake](https://github.com/fzaninotto/Faker). 
+The generator is used in order to randomly populate fields, and is anytime available using `$this->getGenerator()`.
 
 Let us consider for example a model `Articles`, related to multiple `Authors`.
 
@@ -15,7 +13,7 @@ This could be for example the `ArticleFactory`. Per default the fields `title` a
 namespace App\Test\Factory;
 
 use CakephpFixtureFactories\Factory\BaseFactory;
-use Faker\Generator;
+use CakephpFixtureFactories\Generator\GeneratorInterface;
 
 class ArticleFactory extends BaseFactory
 {
@@ -25,7 +23,7 @@ class ArticleFactory extends BaseFactory
      */
     protected function getRootTableRegistryName(): string
     {
-        return "Articles"; // PascalCase of the factory's table. 
+        return "Articles"; // PascalCase of the factory's table.
     }
 
     /**
@@ -37,10 +35,10 @@ class ArticleFactory extends BaseFactory
      */
     protected function setDefaultTemplate(): void
     {
-          $this->setDefaultData(function(Generator $faker) {
+          $this->setDefaultData(function(GeneratorInterface $generator) {
                return [
-                    'title' => $faker->text(30),
-                    'body'  => $faker->text(1000),
+                    'title' => $generator->text(30),
+                    'body'  => $generator->text(1000),
                ];
           })
           ->withAuthors(2);
@@ -52,12 +50,12 @@ class ArticleFactory extends BaseFactory
     }
 
     /**
-     * Set the Article's title as a random job title     
+     * Set the Article's title as a random job title
      * @return ArticleFactory
      */
     public function setJobTitle()
     {
-        return $this->setField('title', $this->getFaker()->jobTitle());
+        return $this->setField('title', $this->getGenerator()->jobTitle());
     }
 }
 ```
@@ -70,12 +68,12 @@ If a field is required in the database, it will have to be populated in the `set
 ## Locale
 
 The factories will generate data in the locale of your application, if the latter is supported by faker.
- 
+
 ## Namespace
- 
+
 Assuming your application namespace in `App`, factories should be placed in the `App\Test\Factory` namespace of your application.
 Or for a plugin Foo, in `Foo\Test\Factory`.
- 
+
 You may change that by setting in your configuration the key `FixtureFactories.testFixtureNamespace` to the desired namespace. E.g.
 in `tests\bootstrap.php` or in the `setUp()` method of a test case:
 ```php
@@ -92,7 +90,7 @@ with the public method `skipSettersFor`.
 
 ```php
 namespace App\Test\Factory;
-... 
+...
 class UserFactory extends BaseFactory
 {
     protected $skippedSetters = [
@@ -102,7 +100,7 @@ class UserFactory extends BaseFactory
 }
 ```
 
-or 
+or
 
 ```php
 UserFactory::make([
@@ -111,21 +109,21 @@ UserFactory::make([
 ])->skipSetterFor('password')->getEntity();
 ```
 
-This can be useful for setters with heavy computation costs, such as hashing. 
+This can be useful for setters with heavy computation costs, such as hashing.
 
 ## Property uniqueness
 
 It is not rare to have to create entities associated with an entity that should remain
 constant and should not be recreated once it was already persisted. For example, if you create
-5 cities within a country, you will not want to have 5 countries created. This might 
-collide with the constrains of your schema. The same goes of course with primary keys.
+5 cities within a country, you will not want to have 5 countries created. This might
+collide with the constraints of your schema. The same goes of course with primary keys.
 
 The fixture factories offer to define unique properties, under the protected property
-$uniqueProperties. For example given a country factory. 
+$uniqueProperties. For example given a country factory.
 
 ```php
 namespace App\Test\Factory;
-... 
+...
 class CountryFactory extends BaseFactory
 {
     protected $uniqueProperties = [
@@ -216,3 +214,63 @@ Configure::write('FixtureFactories.testFixtureGlobalBehaviors', [
 ```
 
 Note that even if the behavior is located in a plugin, you should, according to CakePHP conventions, provide the name of the behavior only. Provide `BehaviorName` and not `SomeVendor/WithPluginName.BehaviorName`.
+
+## Generator Configuration
+
+### Switching Data Generators
+
+By default, the factories use the [Faker](https://github.com/FakerPHP/Faker) library for generating random data. However, you can switch to alternative generators like [DummyGenerator](https://github.com/johnykvsky/dummygenerator) for leaner API and active support.
+
+#### Global Configuration
+
+To change the generator globally, set the configuration key in your test bootstrap:
+
+```php
+use Cake\Core\Configure;
+
+// Switch to DummyGenerator
+Configure::write('FixtureFactories.generatorType', 'dummy');
+
+// Switch back to Faker (default)
+Configure::write('FixtureFactories.generatorType', 'faker');
+```
+
+#### Per-Factory Configuration
+
+You can also switch generators on a per-factory basis:
+
+```php
+$article = ArticleFactory::make()
+    ->setGenerator('dummy')
+    ->getEntity();
+```
+
+#### Available Generators
+
+The following generators are available out of the box:
+- **faker** (default): [FakerPHP/Faker](https://github.com/FakerPHP/Faker) - Full-featured data generation
+- **dummy**: [johnykvsky/dummygenerator](https://github.com/johnykvsky/dummygenerator) - Modern and lean PHP 8.3+ generator, supports enums.
+
+Both are included as "require-dev" dependencies in this plugin.
+Choose the one you want to use and "require" it.
+
+> **Note**: For a detailed comparison of available methods and migration guide, see [Generator Differences](generator-differences.md).
+
+#### Custom Generators
+
+You can create custom generators by:
+
+1. Implementing the `CakephpFixtureFactories\Generator\GeneratorInterface`
+2. Registering your adapter:
+
+```php
+use CakephpFixtureFactories\Generator\CakeGeneratorFactory;
+
+CakeGeneratorFactory::registerAdapter('custom', MyCustomAdapter::class);
+```
+
+3. Using it in your factories:
+
+```php
+Configure::write('FixtureFactories.generatorType', 'custom');
+```

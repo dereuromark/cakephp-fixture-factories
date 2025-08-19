@@ -14,7 +14,7 @@ declare(strict_types=1);
 namespace CakephpFixtureFactories\Test\Factory;
 
 use CakephpFixtureFactories\Factory\BaseFactory;
-use Faker\Generator;
+use CakephpFixtureFactories\Generator\GeneratorInterface;
 
 /**
  * Class AuthorFactory
@@ -43,29 +43,29 @@ class AuthorFactory extends BaseFactory
     protected function setDefaultTemplate(): void
     {
         $this
-            ->setDefaultData(function (Generator $faker) {
+            ->setDefaultData(function (GeneratorInterface $generator) {
                 return [
-                    'name' => $faker->name,
-                    'field_with_setter_1' => $faker->word,
-                    'field_with_setter_2' => $faker->word,
-                    'field_with_setter_3' => $faker->word,
+                    'name' => $generator->name(),
+                    'field_with_setter_1' => $generator->word(),
+                    'field_with_setter_2' => $generator->word(),
+                    'field_with_setter_3' => $generator->word(),
                     'json_field' => self::JSON_FIELD_DEFAULT_VALUE,
                 ];
             })
             ->withAddress();
     }
 
-    public function withArticles($parameter = null, int $n = 1)
+    public function withArticles(mixed $parameter = null, int $n = 1): self
     {
         return $this->with('Articles', ArticleFactory::make($parameter, $n)->without('Authors'));
     }
 
-    public function withAddress($parameter = null)
+    public function withAddress(mixed $parameter = null): self
     {
         return $this->with('Address', AddressFactory::make($parameter));
     }
 
-    public function fromCountry(string $name)
+    public function fromCountry(string $name): self
     {
         return $this->with('Address.City.Country', CountryFactory::make(compact('name')));
     }

@@ -23,7 +23,7 @@ class BaseFactoryTimestampBehaviorTest extends TestCase
      * The countries and cities tables do not have default timestamp.
      * We test here that the TimestampBehavior is well activated.
      */
-    public function testBaseFactoryTimeStampBehavior()
+    public function testBaseFactoryTimeStampBehavior(): void
     {
         $city = CityFactory::make()->withCountry()->getEntity();
         $this->assertNull($city->created);

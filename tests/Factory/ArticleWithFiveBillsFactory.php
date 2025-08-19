@@ -13,14 +13,14 @@ declare(strict_types=1);
  */
 namespace CakephpFixtureFactories\Test\Factory;
 
-use Faker\Generator;
+use CakephpFixtureFactories\Generator\GeneratorInterface;
 
 class ArticleWithFiveBillsFactory extends ArticleFactory
 {
     protected function setDefaultTemplate(): void
     {
         $this
-            ->setDefaultData(function (Generator $faker) {
+            ->setDefaultData(function (GeneratorInterface $generator) {
                 return [
                     'title' => 'Article with 5 bills',
                 ];

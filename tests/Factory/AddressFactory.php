@@ -14,7 +14,7 @@ declare(strict_types=1);
 namespace CakephpFixtureFactories\Test\Factory;
 
 use CakephpFixtureFactories\Factory\BaseFactory;
-use Faker\Generator;
+use CakephpFixtureFactories\Generator\GeneratorInterface;
 
 /**
  * Class AddressFactory
@@ -33,15 +33,15 @@ class AddressFactory extends BaseFactory
     protected function setDefaultTemplate(): void
     {
         $this
-            ->setDefaultData(function (Generator $faker) {
+            ->setDefaultData(function (GeneratorInterface $generator) {
                 return [
-                    'street' => $faker->streetAddress,
+                    'street' => $generator->streetAddress(),
                 ];
             })
             ->withCity();
     }
 
-    public function withCity($parameter = null)
+    public function withCity(mixed $parameter = null): self
     {
         return $this->with('City', CityFactory::make($parameter));
     }

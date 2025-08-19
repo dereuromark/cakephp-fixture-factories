@@ -14,8 +14,6 @@ declare(strict_types=1);
 
 namespace CakephpFixtureFactories\Test\TestCase\Factory;
 
-
-use Cake\Datasource\EntityInterface;
 use Cake\ORM\Entity;
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Error\UniquenessException;
@@ -24,7 +22,7 @@ use CakephpFixtureFactories\Factory\UniquenessJanitor;
 
 class UniquenessJanitorTest extends TestCase
 {
-    public static function dataForSanitizeEntityArrayOnPrimary()
+    public static function dataForSanitizeEntityArrayOnPrimary(): array
     {
         return [
             [[], false],
@@ -41,12 +39,11 @@ class UniquenessJanitorTest extends TestCase
      * @And two entities have given properties
      * @When they share a unique property
      * @Then an exception should be triggered
-     *
      * @dataProvider dataForSanitizeEntityArrayOnPrimary
      * @param array $uniqueProperties
      * @param bool $expectException
      */
-    public function testSanitizeEntityArrayOnPrimary(array $uniqueProperties, bool $expectException)
+    public function testSanitizeEntityArrayOnPrimary(array $uniqueProperties, bool $expectException): void
     {
         $factoryStub = $this->getMockBuilder(BaseFactory::class)->disableOriginalConstructor()->getMock();
         $factoryStub->method('getUniqueProperties')->willReturn($uniqueProperties);
@@ -67,12 +64,13 @@ class UniquenessJanitorTest extends TestCase
         UniquenessJanitor::sanitizeEntityArray($factoryStub, $entities, true);
     }
 
-    public static function dataForSanitizeEntityArrayOnAssociation()
+    public static function dataForSanitizeEntityArrayOnAssociation(): array
     {
         $associatedData = [
             ['property_1' => 'foo', 'property_2' => 'foo'],
-            ['property_1' => 'foo', 'property_2' => 'dah']
+            ['property_1' => 'foo', 'property_2' => 'dah'],
         ];
+
         return [
             [[], $associatedData],
             [['property_1'], [$associatedData[0]]],
@@ -87,12 +85,11 @@ class UniquenessJanitorTest extends TestCase
      * @And two entities have given properties
      * @When they share a unique property
      * @Then the second one will be ignored.
-     *
      * @dataProvider dataForSanitizeEntityArrayOnAssociation
-     * @param EntityInterface[] $uniqueProperties
+     * @param \Cake\Datasource\EntityInterface[] $uniqueProperties
      * @param array $expectOutput
      */
-    public function testSanitizeEntityArrayOnAssociation(array $uniqueProperties, array $expectOutput)
+    public function testSanitizeEntityArrayOnAssociation(array $uniqueProperties, array $expectOutput): void
     {
         $factoryStub = $this->getMockBuilder(BaseFactory::class)->disableOriginalConstructor()->getMock();
         $factoryStub->method('getUniqueProperties')->willReturn($uniqueProperties);

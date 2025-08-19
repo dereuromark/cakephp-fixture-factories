@@ -114,11 +114,11 @@ will be identical. The following
 generates three articles with different random titles:
 ```php
 use App\Test\Factory\ArticleFactory;
-use Faker\Generator;
+use CakephpFixtureFactories\Generator\GeneratorInterface;
 ...
-$articles = ArticleFactory::make(function(ArticleFactory $factory, Generator $faker) {
+$articles = ArticleFactory::make(function(ArticleFactory $factory, GeneratorInterface $generator) {
    return [
-       'title' => $faker->text,
+       'title' => $generator->text(),
    ];
 }, 3)->persist();
 ```

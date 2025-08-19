@@ -42,7 +42,7 @@ class BaseFactoryGetResultSetTest extends TestCase
     /**
      * @dataProvider isPersisted
      */
-    public function testBaseFactoryGetResultSet(bool $isPersisted)
+    public function testBaseFactoryGetResultSet(bool $isPersisted): void
     {
         $name1 = 'Name 1';
         $name2 = 'Name 2';
@@ -51,7 +51,7 @@ class BaseFactoryGetResultSetTest extends TestCase
             ['name' => $name1],
             ['name' => $name2],
         ])
-        ->with("Authors.Address", compact('street'));
+        ->with('Authors.Address', compact('street'));
 
         $articles = $isPersisted ? $factory->getPersistedResultSet() : $factory->getResultSet();
         $this->assertSame(2, $articles->count());
@@ -64,7 +64,7 @@ class BaseFactoryGetResultSetTest extends TestCase
         $this->assertSame($isPersisted ? 2 : 0, ArticleFactory::count());
     }
 
-    public function testBaseFactoryGetResultSet_With_Ids()
+    public function testBaseFactoryGetResultSet_With_Ids(): void
     {
         $id1 = 5;
         $id2 = 10;

@@ -14,7 +14,6 @@ declare(strict_types=1);
 
 namespace CakephpFixtureFactories\Test\TestCase\ORM;
 
-
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Factory\DataCompiler;
 use CakephpFixtureFactories\ORM\FactoryTableBeforeSave;
@@ -22,7 +21,7 @@ use CakephpFixtureFactories\Test\Factory\CountryFactory;
 
 class FactoryTableBeforeSaveTest extends TestCase
 {
-    public function testFindDuplicate()
+    public function testFindDuplicate(): void
     {
         $persistedCountry = CountryFactory::make()->persist();
 
@@ -55,7 +54,7 @@ class FactoryTableBeforeSaveTest extends TestCase
         $this->assertSame($expect, $res);
     }
 
-    public function testHandleUniqueFields()
+    public function testHandleUniqueFields(): void
     {
         $persistedCountry = CountryFactory::make()->persist();
 
