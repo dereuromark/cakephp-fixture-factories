@@ -1,4 +1,5 @@
-name: CI
+<<<<<<<< HEAD:.github/workflows/tests_composer2.yml
+name: PHP Unit Tests
 
 on:
   push:
@@ -17,12 +18,138 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php-version: ['8.3']
+        php-version: ['8.3', '8.4']
+        db-type: [sqlite, mysql, pgsql]
+        composer-type: [lowest, stable, dev]
 
-    name: PHP ${{ matrix.php-version }}
+
+    name: PHP ${{ matrix.php-version }} & ${{ matrix.db-type }} & ${{ matrix.composer-type }}
+
+    services:
+      postgres:
+        image: postgres
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_DB: test_fixture_factories
+          POSTGRES_PASSWORD: root
+          POSTGRES_USER: root
 
     steps:
       - uses: actions/checkout@v2
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: mbstring, intl, apcu, pdo_${{ matrix.db-type }}
+          ini-values: apc.enable_cli = 1
+          coverage: pcov
+
+      - name: Update composer
+        run: composer self-update --snapshot
+
+      - name: Validate composer.json
+        run: composer validate
+
+      - name: Install dependencies
+        run: |
+          if [[ ${{ matrix.composer-type }} == 'lowest' ]]; then
+            composer update --prefer-dist --no-progress --no-suggest --prefer-stable --prefer-lowest
+          elif [[ ${{ matrix.composer-type }} == 'stable' ]]; then
+            composer update --prefer-dist --no-progress --no-suggest --prefer-stable
+          else
+            composer update --prefer-dist --no-progress --no-suggest
+          fi
+
+      - name: Run tests
+        run: |
+          if [ ${{ matrix.db-type }} == 'mysql' ]; then
+            sudo service mysql start && mysql -h 127.0.0.1 -u root -proot -e 'CREATE DATABASE IF NOT EXISTS test_fixture_factories;';
+          fi
+          composer ${{ matrix.db-type }}
+========
+name: CI
+
+on:
+  push:
+    branches:
+      - '*'
+  pull_request:
+    branches:
+      - '*'
+  schedule:
+    - cron:  '0 0 * * 0'
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.1', '8.2', '8.3']
+        db-type: [sqlite, mysql, pgsql]
+        composer-type: [lowest, stable, dev]
+
+    name: Tests - PHP ${{ matrix.php-version }} & ${{ matrix.db-type }} & ${{ matrix.composer-type }}
+
+    services:
+      postgres:
+        image: postgres
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_DB: test_fixture_factories
+          POSTGRES_PASSWORD: root
+          POSTGRES_USER: root
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: mbstring, intl, apcu, pdo_${{ matrix.db-type }}
+          ini-values: apc.enable_cli = 1
+          coverage: pcov
+
+      - name: Update composer
+        run: composer self-update --snapshot
+
+      - name: Validate composer.json
+        run: composer validate
+
+      - name: Install dependencies
+        run: |
+          if [[ ${{ matrix.composer-type }} == 'lowest' ]]; then
+            composer update --prefer-dist --no-progress --no-suggest --prefer-stable --prefer-lowest
+          elif [[ ${{ matrix.composer-type }} == 'stable' ]]; then
+            composer update --prefer-dist --no-progress --no-suggest --prefer-stable
+          else
+            composer update --prefer-dist --no-progress --no-suggest
+          fi
+
+      - name: Run tests
+        run: |
+          if [ ${{ matrix.db-type }} == 'mysql' ]; then
+            sudo service mysql start && mysql -h 127.0.0.1 -u root -proot -e 'CREATE DATABASE IF NOT EXISTS test_fixture_factories;';
+          fi
+          composer ${{ matrix.db-type }}
+
+  checks:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.1']
+
+    name: PHPStan / Code Standards - PHP ${{ matrix.php-version }}
+
+    steps:
+      - uses: actions/checkout@v4
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -41,7 +168,7 @@ jobs:
         run: composer update --prefer-dist --no-progress --no-suggest --prefer-stable
 
       - name: Bake factories to perform analysis in the following steps
-        run : vendor/bin/phpunit tests/TestCase/Command/BakeFixtureFactoryCommandTest.php
+        run: vendor/bin/phpunit tests/TestCase/Command/BakeFixtureFactoryCommandTest.php
 
       - name: Run phpstan
         run: composer stan
@@ -51,3 +178,4 @@ jobs:
 
       - name: Run phpcs
         run: composer cs-check
+>>>>>>>> 9794282 (Start split off.):.github/workflows/ci.yml

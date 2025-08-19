@@ -8,32 +8,33 @@ CakePHP Fixture Factories
 Write and run your tests faster. On any PHP application.
 </h3>
 
+<p align="center">
+    <a href="https://github.com/dereuromark/cakephp-fixture-factories/actions/workflows/ci.yml?query=branch%3Amain"><img src="https://github.com/dereuromark/cakephp-fixture-factories/actions/workflows/ci.yml/badge.svg?branch=main" alt="Build Status"></a>
+    <a href="https://codecov.io/gh/dereuromark/cakephp-fixture-factories"><img src="https://codecov.io/gh/dereuromark/cakephp-fixture-factories/branch/main/graph/badge.svg" alt="Coverage Status"></a>
+    <a href="https://packagist.org/packages/dereuromark/cakephp-fixture-factories"><img src="https://poser.pugx.org/dereuromark/cakephp-fixture-factories/v/stable.svg" alt="Latest Stable Version"></a>
+    <a href="https://php.net/"><img src="https://img.shields.io/badge/php-%3E%3D%208.1-8892BF.svg" alt="Minimum PHP Version"></a>
+    <a href="LICENSE"><img src="https://poser.pugx.org/dereuromark/cakephp-fixture-factories/license.svg" alt="License"></a>
+    <a href="https://packagist.org/packages/dereuromark/cakephp-fixture-factories"><img src="https://poser.pugx.org/dereuromark/cakephp-fixture-factories/d/total.svg" alt="Total Downloads"></a>
+    <a href="https://github.com/cakephp/cakephp-codesniffer"><img src="https://img.shields.io/badge/cs-CakePHP-yellow.svg" alt="Coding Standards"></a>
+</p>
+
+Note: This is a maintained fork of the original [CakePHPFixtureFactories](https://github.com/vierge-noire/cakephp-fixture-factories).
+
 ---
 
 ```php
-ArticleFactory::make(5)->with('Authors[3].Address.City.Country')->persist();
+ArticleFactory::make(5)
+    ->with('Authors[3].Address.City.Country')
+    ->persist();
 ```
 
 ---
 
 ## Installation
-CakePHP 5 and non-CakePHP applications
 ```
-composer require --dev vierge-noire/cakephp-fixture-factories "^3.0"
-```
-Note: 3.1+ requires PHP 8.3+.
-
-CakePHP 4
-```
-composer require --dev vierge-noire/cakephp-fixture-factories "^2.5"
+composer require --dev dereuromark/cakephp-fixture-factories
 ```
 
-CakePHP 3
-```
-composer require --dev vierge-noire/cakephp-fixture-factories "^1.0"
-```
-
----
 
 ## Content
 
@@ -59,15 +60,11 @@ composer require --dev vierge-noire/cakephp-fixture-factories "^1.0"
 
 ## Contribute
 
-The development branch is named `next` (CakePHP 4.x based). Send us your pull requests!
-
-## Support
-Contact us at vierge.noire.info@gmail.com for professional assistance.
-
-You like our work? [![ko-fi](https://www.ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/L3L52P9JA)
+Send PRs or tickets in GitHub.
 
 ## Authors
-Juan Pablo Ramirez and Nicolas Masson
+previously, Juan Pablo Ramirez and Nicolas Masson.
+This fork is maintained by Mark Scherer (dereuromark)
 
 ## License
 

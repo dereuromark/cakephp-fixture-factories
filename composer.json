@@ -1,9 +1,13 @@
 {
-    "name": "vierge-noire/cakephp-fixture-factories",
+    "name": "dereuromark/cakephp-fixture-factories",
     "description": "CakePHP Dynamic Fixtures",
     "type": "cakephp-plugin",
     "keywords": ["cakephp", "tests", "dynamic", "fixtures", "dev", "cli"],
     "authors": [
+        {
+            "name": "Mark Scherer",
+            "email": "euromark@web.de"
+        },
         {
             "name": "Nicolas Masson",
             "email": "nicolas@b-projects.tech"
