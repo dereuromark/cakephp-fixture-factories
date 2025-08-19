@@ -67,7 +67,12 @@ class UniquenessJanitor
 
         // Extract the key before the dot
         $getIndex = function (string $str): int {
-            return (int)substr($str, 0, strrpos($str, '.'));
+            $pos = strrpos($str, '.');
+            if ($pos === false) {
+                return 0;
+            }
+
+            return (int)substr($str, 0, $pos);
         };
 
         $propertyIsUnique = function (string $property) use ($factory): bool {

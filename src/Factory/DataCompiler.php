@@ -47,7 +47,7 @@ class DataCompiler
     private array|Closure $dataFromDefaultTemplate = [];
 
     /**
-     * @var \Cake\Datasource\EntityInterface|callable|array|array<\Cake\Datasource\EntityInterface>
+     * @var \Cake\Datasource\EntityInterface|callable|array|array<\Cake\Datasource\EntityInterface>|string
      */
     private $dataFromInstantiation = [];
 
@@ -128,7 +128,9 @@ class DataCompiler
      */
     public function collectFromDefaultTemplate(callable $fn): void
     {
-        $this->dataFromDefaultTemplate = $fn;
+        /** @var \Closure|array $dataFromDefaultTemplate */
+        $dataFromDefaultTemplate = $fn;
+        $this->dataFromDefaultTemplate = $dataFromDefaultTemplate;
     }
 
     /**
@@ -282,7 +284,12 @@ class DataCompiler
             }
             $subData = Hash::expand([$key => $value]);
             $rootKey = array_key_first($subData);
-            $entityValue = $entityValue ?? ($entity->get($rootKey) ?? []);
+            /** @var string|int|null $rootKey */
+            $rootKey = array_key_first($subData);
+            if ($rootKey === null) {
+                continue;
+            }
+            $entityValue = $entityValue ?? ($entity->get((string)$rootKey) ?? []);
             if (!is_array($entityValue)) {
                 throw new FixtureFactoryException(
                     "Value $entityValue cannot be merged with array notation $key => $value",

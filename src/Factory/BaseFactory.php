@@ -151,7 +151,7 @@ abstract class BaseFactory
             ');
         }
 
-        $factory->setUp($factory, $times);
+        $factory->setUp($factory, (int)$times);
 
         return $factory;
     }
@@ -617,10 +617,16 @@ abstract class BaseFactory
         }
 
         // Extract the first Association in the string
-        $associationName = strtok($associationName, '.');
+        $associationNameToken = strtok($associationName, '.');
+        if ($associationNameToken !== false) {
+            $associationName = $associationNameToken;
+        }
 
         // Remove the brackets in the association
-        $associationName = $this->getAssociationBuilder()->removeBrackets($associationName);
+        $associationNameAfterBrackets = $this->getAssociationBuilder()->removeBrackets($associationName);
+        if ($associationNameAfterBrackets !== false) {
+            $associationName = $associationNameAfterBrackets;
+        }
 
         $isToOne = $this->getAssociationBuilder()->processToOneAssociation($associationName, $factory);
         $this->getDataCompiler()->collectAssociation($associationName, $factory, $isToOne);

@@ -20,7 +20,6 @@ use Cake\Console\Arguments;
 use Cake\Console\ConsoleIo;
 use Cake\Console\ConsoleOptionParser;
 use Cake\Datasource\ConnectionManager;
-use Cake\Datasource\EntityInterface;
 use CakephpFixtureFactories\Error\FactoryNotFoundException;
 use CakephpFixtureFactories\Error\PersistenceException;
 use CakephpFixtureFactories\Factory\BaseFactory;
@@ -159,6 +158,7 @@ class PersistCommand extends Command
      */
     public function attachMethod(Arguments $args, BaseFactory $factory, ConsoleIo $io): BaseFactory
     {
+        /** @var string|null $method */
         $method = $args->getOption('method');
 
         if ($method === null) {
@@ -185,6 +185,10 @@ class PersistCommand extends Command
         $with = $args->getOption('with');
 
         if ($with === null) {
+            return $factory;
+        }
+
+        if (!is_string($with)) {
             return $factory;
         }
 
@@ -218,6 +222,9 @@ class PersistCommand extends Command
     public function persist(BaseFactory $factory, Arguments $args, ConsoleIo $io): void
     {
         $connection = $args->getOption('connection') ?? 'test';
+        if (!is_string($connection)) {
+            $connection = 'test';
+        }
         $this->aliasConnection($connection, $factory);
 
         $entities = [];
@@ -228,7 +235,13 @@ class PersistCommand extends Command
             $this->abort();
         }
 
-        $times = is_subclass_of($entities, EntityInterface::class) ? 1 : count($entities);
+        if (!is_iterable($entities)) {
+            $times = 1;
+        } elseif (is_countable($entities)) {
+            $times = count($entities);
+        } else {
+            $times = iterator_count($entities);
+        }
         $factory = get_class($factory);
         $io->success("{$times} {$factory} persisted on '{$connection}' connection.");
     }
@@ -250,7 +263,9 @@ class PersistCommand extends Command
             $io->hr();
             $io->info("[$i]");
             $output = json_encode($entity->toArray(), JSON_PRETTY_PRINT);
-            $io->info($output);
+            if ($output !== false) {
+                $io->info($output);
+            }
         }
     }
 }
