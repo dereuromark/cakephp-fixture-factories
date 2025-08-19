@@ -344,6 +344,14 @@ abstract class BaseFactory
         }
         UniquenessJanitor::sanitizeEntityArray($this, $entities);
 
+        // Mark entities as clean so their current state becomes the "original" state
+        // Only do this when NOT in persist mode, as clean entities can't be saved
+        if (!$dataCompiler->isInPersistMode()) {
+            foreach ($entities as $entity) {
+                $entity->clean();
+            }
+        }
+
         return $entities;
     }
 
