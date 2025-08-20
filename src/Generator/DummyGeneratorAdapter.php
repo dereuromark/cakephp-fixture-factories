@@ -66,7 +66,7 @@ class DummyGeneratorAdapter implements GeneratorInterface
     {
         if (!class_exists(DummyGenerator::class)) {
             throw new FixtureFactoryException(
-                'DummyGenerator library is not installed. Please install it using: `composer require johnykvsky/dummygenerator`',
+                'DummyGenerator library is not installed. Please install it using: `composer require --dev johnykvsky/dummygenerator`',
             );
         }
 

@@ -45,7 +45,7 @@ class FakerAdapter implements GeneratorInterface
     {
         if (!class_exists(Factory::class)) {
             throw new FixtureFactoryException(
-                'Faker library is not installed. Please install it using: `composer require fakerphp/faker`',
+                'Faker library is not installed. Please install it using: `composer require --dev fakerphp/faker`',
             );
         }
 
