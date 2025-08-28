@@ -24,7 +24,7 @@
     },
     "require-dev": {
         "vierge-noire/cakephp-test-suite-light": "^3.0",
-        "johnykvsky/dummygenerator": "^0.0.7",
+        "johnykvsky/dummygenerator": "^0.0.9",
         "fakerphp/faker": "^1.23",
         "cakephp/bake": "^3.0.0",
         "cakephp/twig-view": "^2.0.2",
