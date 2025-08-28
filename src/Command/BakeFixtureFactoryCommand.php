@@ -547,6 +547,8 @@ class BakeFixtureFactoryCommand extends BakeCommand
         $schema = $this->getTable()->getSchema();
         $columns = $schema->columns();
         $foreignKeys = $this->foreignKeys($this->getTable()->associations());
+        $uniqueFields = $this->getUniqueFields();
+
         foreach ($columns as $column) {
             $keys = $schema->getPrimaryKey();
             if (in_array($column, $keys, true) || in_array($column, $foreignKeys, true)) {
@@ -563,6 +565,14 @@ class BakeFixtureFactoryCommand extends BakeCommand
             }
 
             $guessedDefault = $this->guessDefault($column, $modelName, $columnSchema);
+
+            // Add ->unique()-> wrapper for fields with unique constraints
+            if ($guessedDefault && in_array($column, $uniqueFields, true)) {
+                if (str_starts_with($guessedDefault, '$generator->')) {
+                    $guessedDefault = str_replace('$generator->', '$generator->unique()->', $guessedDefault);
+                }
+            }
+
             if ($guessedDefault) {
                 $defaultData[$column] = $guessedDefault;
             }
@@ -739,5 +749,34 @@ class BakeFixtureFactoryCommand extends BakeCommand
         }
 
         return $keys;
+    }
+
+    /**
+     * Get fields that have unique constraints or unique indexes
+     *
+     * @return array<string>
+     */
+    protected function getUniqueFields(): array
+    {
+        $schema = $this->getTable()->getSchema();
+        $uniqueFields = [];
+
+        // Check unique constraints
+        foreach ($schema->constraints() as $constraintName) {
+            $constraint = $schema->getConstraint($constraintName);
+            if ($constraint && $constraint['type'] === 'unique') {
+                $uniqueFields = array_merge($uniqueFields, $constraint['columns']);
+            }
+        }
+
+        // Check unique indexes
+        foreach ($schema->indexes() as $indexName) {
+            $index = $schema->getIndex($indexName);
+            if ($index && isset($index['type']) && $index['type'] === 'unique') {
+                $uniqueFields = array_merge($uniqueFields, $index['columns']);
+            }
+        }
+
+        return array_unique($uniqueFields);
     }
 }

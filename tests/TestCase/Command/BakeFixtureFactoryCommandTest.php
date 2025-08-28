@@ -15,12 +15,14 @@ declare(strict_types=1);
 
 namespace CakephpFixtureFactories\Test\TestCase\Command;
 
+use ArrayIterator;
 use Cake\Console\Arguments;
 use Cake\Console\Exception\StopException;
 use Cake\Core\Configure;
 use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\Test\Util\TestCaseWithFixtureBaking;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use ReflectionClass;
 use TestApp\Model\Entity\Address;
 use TestApp\Model\Entity\Article;
 use TestApp\Model\Entity\Author;
@@ -360,5 +362,140 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
     {
         $options = $this->FactoryCommand->getOptionParser()->toArray();
         $this->assertArrayHasKey('connection', $options['options']);
+    }
+
+    /**
+     * Test that unique fields are detected from database schema
+     */
+    public function testGetUniqueFieldsDetection(): void
+    {
+        // Create a mock table with schema containing unique constraints
+        $schema = $this->getMockBuilder('\Cake\Database\Schema\TableSchema')
+            ->onlyMethods(['constraints', 'getConstraint', 'indexes', 'getIndex'])
+            ->setConstructorArgs(['test_table'])
+            ->getMock();
+
+        // Mock unique constraint
+        $schema->method('constraints')
+            ->willReturn(['username_unique', 'other_constraint']);
+
+        $schema->method('getConstraint')
+            ->willReturnMap([
+                ['username_unique', ['type' => 'unique', 'columns' => ['username']]],
+                ['other_constraint', ['type' => 'foreign', 'columns' => ['user_id']]],
+            ]);
+
+        // Mock unique index
+        $schema->method('indexes')
+            ->willReturn(['email_idx', 'created_idx']);
+
+        $schema->method('getIndex')
+            ->willReturnMap([
+                ['email_idx', ['type' => 'unique', 'columns' => ['email']]],
+                ['created_idx', ['type' => 'index', 'columns' => ['created']]],
+            ]);
+
+        // Mock table
+        $table = $this->getMockBuilder('\Cake\ORM\Table')
+            ->onlyMethods(['getSchema'])
+            ->getMock();
+
+        $table->method('getSchema')
+            ->willReturn($schema);
+
+        // Use reflection to test protected method
+        $reflection = new ReflectionClass($this->FactoryCommand);
+        $method = $reflection->getMethod('getUniqueFields');
+        $method->setAccessible(true);
+
+        $property = $reflection->getProperty('table');
+        $property->setAccessible(true);
+        $property->setValue($this->FactoryCommand, $table);
+
+        $uniqueFields = $method->invoke($this->FactoryCommand);
+
+        $this->assertIsArray($uniqueFields);
+        $this->assertContains('username', $uniqueFields);
+        $this->assertContains('email', $uniqueFields);
+        $this->assertNotContains('user_id', $uniqueFields);
+        $this->assertNotContains('created', $uniqueFields);
+    }
+
+    /**
+     * Test that unique fields get wrapped with ->unique()-> in default data
+     */
+    public function testDefaultDataWithUniqueFields(): void
+    {
+        // Create a mock schema with unique constraint on username
+        $schema = $this->getMockBuilder('\Cake\Database\Schema\TableSchema')
+            ->onlyMethods(['constraints', 'getConstraint', 'indexes', 'getIndex', 'columns', 'getColumn', 'getPrimaryKey'])
+            ->setConstructorArgs(['test_users'])
+            ->getMock();
+
+        $schema->method('constraints')
+            ->willReturn(['username_unique']);
+
+        $schema->method('getConstraint')
+            ->willReturn(['type' => 'unique', 'columns' => ['username']]);
+
+        $schema->method('indexes')
+            ->willReturn([]);
+
+        $schema->method('columns')
+            ->willReturn(['id', 'username', 'email', 'slug']);
+
+        $schema->method('getPrimaryKey')
+            ->willReturn(['id']);
+
+        $schema->method('getColumn')
+            ->willReturnMap([
+                ['username', ['type' => 'string', 'null' => false, 'default' => null, 'length' => 50]],
+                ['email', ['type' => 'string', 'null' => false, 'default' => null, 'length' => 100]],
+                ['slug', ['type' => 'string', 'null' => false, 'default' => null, 'length' => 100]],
+            ]);
+
+        // Mock associations
+        $associations = $this->getMockBuilder('\Cake\ORM\AssociationCollection')
+            ->onlyMethods(['getIterator'])
+            ->getMock();
+
+        $associations->method('getIterator')
+            ->willReturn(new ArrayIterator([]));
+
+        // Mock table
+        $table = $this->getMockBuilder('\Cake\ORM\Table')
+            ->onlyMethods(['getSchema', 'getAlias', 'associations'])
+            ->getMock();
+
+        $table->method('getSchema')
+            ->willReturn($schema);
+
+        $table->method('getAlias')
+            ->willReturn('Users');
+
+        $table->method('associations')
+            ->willReturn($associations);
+
+        // Use reflection to test protected method
+        $reflection = new ReflectionClass($this->FactoryCommand);
+        $method = $reflection->getMethod('defaultData');
+        $method->setAccessible(true);
+
+        $property = $reflection->getProperty('table');
+        $property->setAccessible(true);
+        $property->setValue($this->FactoryCommand, $table);
+
+        $defaultData = $method->invoke($this->FactoryCommand);
+
+        // Check that username has ->unique()-> wrapper
+        $this->assertArrayHasKey('username', $defaultData);
+        $this->assertStringContainsString('$generator->unique()->', $defaultData['username']);
+
+        // Check that non-unique fields don't have ->unique()-> wrapper
+        $this->assertArrayHasKey('email', $defaultData);
+        $this->assertStringNotContainsString('->unique()->', $defaultData['email']);
+
+        $this->assertArrayHasKey('slug', $defaultData);
+        $this->assertStringNotContainsString('->unique()->', $defaultData['slug']);
     }
 }
