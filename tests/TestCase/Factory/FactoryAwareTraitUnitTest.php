@@ -20,13 +20,10 @@ class FactoryAwareTraitUnitTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider getFactoryNamespaceData
-     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('getFactoryNamespaceData')]
     public function testGetFactoryNamespace(?string $plugin, string $expected): void
     {
-        $trait = $this->getObjectForTrait(FactoryAwareTrait::class);
-        $this->assertEquals($expected, $trait->getFactoryNamespace($plugin));
+        $this->assertEquals($expected, $this->getFactoryNamespace($plugin));
     }
 
     public static function getFactoryClassNameData(): array
@@ -37,13 +34,10 @@ class FactoryAwareTraitUnitTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider getFactoryClassNameData
-     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('getFactoryClassNameData')]
     public function testGetFactoryClassName(string $name, string $expected): void
     {
-        $trait = $this->getObjectForTrait(FactoryAwareTrait::class);
-        $this->assertEquals($expected, $trait->getFactoryClassName($name));
+        $this->assertEquals($expected, $this->getFactoryClassName($name));
     }
 
     public static function getFactoryNameData(): array
@@ -63,9 +57,7 @@ class FactoryAwareTraitUnitTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider getFactoryNameData
-     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('getFactoryNameData')]
     public function testGetFactoryNameFromModelName(string $name, string $factoryName, string $factoryFileName): void
     {
         $this->assertEquals($factoryName, $this->getFactoryNameFromModelName($name));

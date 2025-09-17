@@ -48,9 +48,7 @@ class FactoryTableRegistryTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider tables
-     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('tables')]
     public function testReturnedTableShouldHaveSameAssociations(string $tableName, string $table): void
     {
         $FactoryTable = FactoryTableRegistry::getTableLocator()->get($tableName);

@@ -69,11 +69,10 @@ class BaseFactoryHiddenPropertiesTest extends TestCase
      *
      * @Then the field is accessible and persisted.
      *
-     * @dataProvider iterate
-     *
      * @param int $n
      * @param bool $persist
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('iterate')]
     public function testHiddenPropertyInMainBuild(int $n, bool $persist): void
     {
         $factory = ArticleFactory::make($n)->withHiddenBiography(self::DUMMY_HIDDEN_PARAGRAPH);
@@ -93,11 +92,10 @@ class BaseFactoryHiddenPropertiesTest extends TestCase
      *
      * @Then the field is accessible and persisted.
      *
-     * @dataProvider iterate
-     *
      * @param int $n
      * @param bool $persist
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('iterate')]
     public function testHiddenPropertyInBelongsToManyAssociation(int $n, bool $persist): void
     {
         $factory = AuthorFactory::make()->with(
@@ -116,11 +114,10 @@ class BaseFactoryHiddenPropertiesTest extends TestCase
      *
      * @Then the field is accessible and persisted.
      *
-     * @dataProvider iterate
-     *
      * @param int $n
      * @param bool $persist
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('iterate')]
     public function testHiddenPropertyInBelongsToAssociation(int $n, bool $persist): void
     {
         $factory = BillFactory::make($n)->with(

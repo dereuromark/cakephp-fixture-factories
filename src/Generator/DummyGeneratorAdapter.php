@@ -16,6 +16,7 @@ declare(strict_types=1);
 namespace CakephpFixtureFactories\Generator;
 
 use BadMethodCallException;
+use Cake\Core\Configure;
 use CakephpFixtureFactories\Error\FixtureFactoryException;
 use DummyGenerator\Container\DefinitionContainerBuilder;
 use DummyGenerator\Container\DefinitionContainerInterface;
@@ -30,6 +31,18 @@ use OverflowException;
  * Adapter for DummyGenerator library
  *
  * This adapter wraps the DummyGenerator library to implement the GeneratorInterface
+ *
+ * Compatibility notes:
+ * - uuid() is mapped to uuid4()
+ * - enumElement() is mapped to enumCase() for Faker compatibility (deprecated)
+ *
+ * For enum support, use:
+ * - enumCase(EnumClass::class) - returns a random enum case
+ * - enumValue(BackedEnumClass::class) - returns a random backed enum value
+ *
+ * @method \UnitEnum enumCase(string $enumClass) Get a random enum case
+ * @method string|int enumValue(string $enumClass) Get a random backed enum value
+ * @method \UnitEnum enumElement(string $enumClass) @deprecated Use enumCase() instead
  */
 class DummyGeneratorAdapter implements GeneratorInterface
 {
@@ -120,6 +133,32 @@ class DummyGeneratorAdapter implements GeneratorInterface
         // Map uuid() to uuid4() for compatibility
         if ($name === 'uuid') {
             return $this->handleUniqueCall('uuid4', []);
+        }
+
+        // Shim for randomAscii() - generate random ASCII character
+        if ($name === 'randomAscii') {
+            // ASCII printable characters range from 33 to 126
+            $asciiCode = $this->handleUniqueCall('numberBetween', [33, 126]);
+
+            return chr($asciiCode);
+        }
+
+        // Map enumElement() to enumCase() for compatibility with Faker
+        // @deprecated Use enumCase() instead - enumElement() is Faker-specific
+        if ($name === 'enumElement') {
+            // Soft deprecation - log warning if in debug mode and not in test environment
+            if (
+                class_exists('\Cake\Core\Configure') &&
+                Configure::read('debug') &&
+                !defined('PHPUNIT_COMPOSER_INSTALL') // Skip deprecation in PHPUnit tests
+            ) {
+                trigger_error(
+                    'DummyGeneratorAdapter::enumElement() is deprecated. Use enumCase() instead for DummyGenerator compatibility.',
+                    E_USER_DEPRECATED,
+                );
+            }
+
+            return $this->handleUniqueCall('enumCase', $arguments);
         }
 
         // DummyGenerator uses __call for all its methods, so we try to call it directly

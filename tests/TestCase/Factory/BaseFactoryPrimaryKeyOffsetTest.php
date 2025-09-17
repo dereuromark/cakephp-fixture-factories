@@ -36,10 +36,9 @@ class BaseFactoryPrimaryKeyOffsetTest extends TestCase
     }
 
     /**
-     * @dataProvider dataForTestSetPrimaryKeyOffset
-     *
      * @param int $cityOffset
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('dataForTestSetPrimaryKeyOffset')]
     public function testSetPrimaryKeyOffset(int $cityOffset): void
     {
         $n = 10;
@@ -56,10 +55,9 @@ class BaseFactoryPrimaryKeyOffsetTest extends TestCase
     }
 
     /**
-     * @dataProvider dataForTestSetPrimaryKeyOffset
-     *
      * @param int $countryOffset
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('dataForTestSetPrimaryKeyOffset')]
     public function testSetPrimaryKeyOffsetInAssociation(int $countryOffset): void
     {
         $n = 5;

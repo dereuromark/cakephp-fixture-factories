@@ -128,9 +128,7 @@ class BaseFactoryLoadAssociationsInInitializeTest extends TestCase
         return [['TableWithoutModel'], ['table_without_model']];
     }
 
-    /**
-     * @dataProvider dataForClassName
-     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('dataForClassName')]
     public function testLoadAssociationOnTheFlyHasManyWithMagicPersist(string $className): void
     {
         CityFactory::make()->getTable()->associations()->remove('Addresses');
@@ -152,9 +150,7 @@ class BaseFactoryLoadAssociationsInInitializeTest extends TestCase
         $this->assertSame($n, TableWithoutModelFactory::count());
     }
 
-    /**
-     * @dataProvider dataForClassName
-     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('dataForClassName')]
     public function testLoadAssociationOnTheFlyBelongsToWithMagicPersist(string $className): void
     {
         // Because of a foreign key constrain at the DB level, a country with id $city->country_id
@@ -178,9 +174,7 @@ class BaseFactoryLoadAssociationsInInitializeTest extends TestCase
         $this->assertSame(1, TableWithoutModelFactory::count());
     }
 
-    /**
-     * @dataProvider dataForClassName
-     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('dataForClassName')]
     public function testLoadAssociationOnTheFlyBelongsToManyWithMagicPersist(string $className): void
     {
         $factory = AuthorFactory::make();

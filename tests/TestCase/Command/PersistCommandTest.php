@@ -75,9 +75,7 @@ class PersistCommandTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider dataProviderForStringFactories
-     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('dataProviderForStringFactories')]
     public function testPersistOnOneFactory(string $factoryString): void
     {
         $args = new Arguments([$factoryString], [], [PersistCommand::ARG_NAME]);
@@ -97,9 +95,7 @@ class PersistCommandTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider dataProviderForStringPluginFactories
-     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('dataProviderForStringPluginFactories')]
     public function testPersistOnOnePluginFactory(string $factoryString): void
     {
         $args = new Arguments([$factoryString], [], [PersistCommand::ARG_NAME]);
@@ -110,9 +106,7 @@ class PersistCommandTest extends TestCase
         $this->assertSame(1, BillFactory::count());
     }
 
-    /**
-     * @dataProvider dataProviderForStringFactories
-     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('dataProviderForStringFactories')]
     public function testPersistOnNFactories(string $factoryString): void
     {
         $number = '3';

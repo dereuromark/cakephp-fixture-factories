@@ -345,12 +345,11 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
     }
 
     /**
-     * @dataProvider dataForTestThisTableShouldBeBaked
-     *
      * @param string $model
      * @param mixed $plugin
      * @param bool $expected
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('dataForTestThisTableShouldBeBaked')]
     public function testThisTableShouldBeBaked(string $model, $plugin, bool $expected): void
     {
         $this->FactoryCommand->plugin = $plugin;
