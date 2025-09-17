@@ -13,6 +13,8 @@ use CakephpFixtureFactories\Test\Factory\PremiumAuthorFactory;
 
 class FactoryAwareTraitIntegrationTest extends TestCase
 {
+    use FactoryAwareTrait;
+
     public static function setUpBeforeClass(): void
     {
         Configure::write('FixtureFactories.testFixtureNamespace', 'CakephpFixtureFactories\Test\Factory');
@@ -37,35 +39,27 @@ class FactoryAwareTraitIntegrationTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider factoryFoundData
-     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('factoryFoundData')]
     public function testGetFactoryFound(string $name, string $expected): void
     {
-        $trait = $this->getObjectForTrait(FactoryAwareTrait::class);
-
-        $this->assertInstanceOf($expected, $trait->getFactory($name));
+        $this->assertInstanceOf($expected, $this->getFactory($name));
     }
 
     public function testGetFactoryNotFound(): void
     {
-        $trait = $this->getObjectForTrait(FactoryAwareTrait::class);
-
         $this->expectException(FactoryNotFoundException::class);
-        $trait->getFactory('Nevermind');
+        $this->getFactory('Nevermind');
     }
 
     public function testGetFactoryWithArgs(): void
     {
-        $trait = $this->getObjectForTrait(FactoryAwareTrait::class);
-
-        $article = $trait->getFactory('articles', ['title' => 'Foo'])->getEntity();
+        $article = $this->getFactory('articles', ['title' => 'Foo'])->getEntity();
         $this->assertEquals('Foo', $article->title);
 
-        $articles = $trait->getFactory('articles', 3)->getEntities();
+        $articles = $this->getFactory('articles', 3)->getEntities();
         $this->assertEquals(3, count($articles));
 
-        $articles = $trait->getFactory('articles', ['title' => 'Foo'], 3)->getEntities();
+        $articles = $this->getFactory('articles', ['title' => 'Foo'], 3)->getEntities();
         $this->assertEquals(3, count($articles));
         foreach ($articles as $article) {
             $this->assertEquals('Foo', $article->title);

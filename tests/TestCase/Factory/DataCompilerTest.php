@@ -157,11 +157,10 @@ class DataCompilerTest extends TestCase
     }
 
     /**
-     * @dataProvider dataForGetModifiedUniqueFields
-     *
      * @param array $injectedData
      * @param array $expected
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('dataForGetModifiedUniqueFields')]
     public function testGetModifiedUniqueFields(array $injectedData, array $expected): void
     {
         $dataCompiler = new DataCompiler(CountryFactory::make($injectedData));

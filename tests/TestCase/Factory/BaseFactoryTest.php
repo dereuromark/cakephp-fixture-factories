@@ -57,10 +57,9 @@ class BaseFactoryTest extends TestCase
     }
 
     /**
-     * @dataProvider dataForTestConnectionInDataProvider
-     *
      * @param \CakephpFixtureFactories\Factory\BaseFactory $factory
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('dataForTestConnectionInDataProvider')]
     public function testConnectionInDataProvider(BaseFactory $factory): void
     {
         $connectionName = $factory->getTable()->getConnection()->configName();
@@ -833,10 +832,9 @@ class BaseFactoryTest extends TestCase
     }
 
     /**
-     * @dataProvider feedTestSetTimes
-     *
      * @param int $times
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('feedTestSetTimes')]
     public function testSetTimes(int $times): void
     {
         ArticleFactory::make()->setTimes($times)->persist();

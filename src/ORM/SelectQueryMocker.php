@@ -21,6 +21,7 @@ use Cake\ORM\Table;
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Factory\BaseFactory;
 use PHPUnit\Framework\MockObject\MockObject;
+use ReflectionMethod;
 
 /**
  * A class to mock select queries result set for a given table
@@ -45,8 +46,14 @@ class SelectQueryMocker
     ): Table|MockObject {
         $alias = $alias ?? $factory->getTable()->getAlias();
         $resultSet = $factory->getResultSet();
-        $selectQueryMocked = $testCase
-            ->getMockBuilder(SelectQuery::class)
+
+        // Use reflection to access the protected getMockBuilder method
+        $reflection = new ReflectionMethod($testCase, 'getMockBuilder');
+        $reflection->setAccessible(true);
+
+        /** @var \PHPUnit\Framework\MockObject\MockBuilder $selectQueryMockBuilder */
+        $selectQueryMockBuilder = $reflection->invoke($testCase, SelectQuery::class);
+        $selectQueryMocked = $selectQueryMockBuilder
             ->setConstructorArgs([$factory->getTable()])
             ->onlyMethods(['count', 'all'])
             ->getMock();
@@ -57,8 +64,9 @@ class SelectQueryMocker
             ->method('all')
             ->willReturn($resultSet);
 
-        $queryFactoryMocked = $testCase
-            ->getMockBuilder(QueryFactory::class)
+        /** @var \PHPUnit\Framework\MockObject\MockBuilder $queryFactoryMockBuilder */
+        $queryFactoryMockBuilder = $reflection->invoke($testCase, QueryFactory::class);
+        $queryFactoryMocked = $queryFactoryMockBuilder
             ->onlyMethods(['select'])
             ->getMock();
         $queryFactoryMocked
@@ -67,6 +75,10 @@ class SelectQueryMocker
 
         $options['queryFactory'] = $queryFactoryMocked;
 
-        return $testCase->getMockForModel($alias, $methods, $options);
+        // Use reflection to access the protected getMockForModel method
+        $getMockForModelReflection = new ReflectionMethod($testCase, 'getMockForModel');
+        $getMockForModelReflection->setAccessible(true);
+
+        return $getMockForModelReflection->invoke($testCase, $alias, $methods, $options);
     }
 }

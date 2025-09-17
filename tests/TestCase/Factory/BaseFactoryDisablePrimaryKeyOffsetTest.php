@@ -35,10 +35,9 @@ class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
     }
 
     /**
-     * @dataProvider dataForTestDisablePrimaryKeyOffset
-     *
      * @param int $cityOffset
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('dataForTestDisablePrimaryKeyOffset')]
     public function testDisablePrimaryKeyOffset(int $cityOffset): void
     {
         $n = 10;
@@ -58,10 +57,9 @@ class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
     }
 
     /**
-     * @dataProvider dataForTestDisablePrimaryKeyOffset
-     *
      * @param int $countryOffset
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('dataForTestDisablePrimaryKeyOffset')]
     public function testDisablePrimaryKeyOffsetInAssociation(int $countryOffset): void
     {
         $n = 5;

@@ -59,11 +59,10 @@ class FixtureInjectorTest extends TestCase
     /**
      * Since there is only one factory in this data provider,
      * the factories will always return 10
-     *
-     * @dataProvider createWithOneFactoryInTheDataProvider
-     *
+                 *
      * @param \CakephpFixtureFactories\Test\Factory\ArticleFactory $factory
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('createWithOneFactoryInTheDataProvider')]
     public function testCreateFactoryInTheDataProvider(ArticleFactory $factory): void
     {
         $factory->persist();
@@ -73,12 +72,11 @@ class FixtureInjectorTest extends TestCase
     /**
      * Since there are distinct factories in this data provider,
      * the factories will produce different set of data
-     *
-     * @dataProvider createWithDifferentFactoriesInTheDataProvider
-     *
+                 *
      * @param int $n
      * @param \CakephpFixtureFactories\Test\Factory\ArticleFactory $factory
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('createWithDifferentFactoriesInTheDataProvider')]
     public function testCreateFactoryInTheDataProvider2(int $n, ArticleFactory $factory): void
     {
         $factory->persist();

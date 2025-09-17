@@ -54,9 +54,7 @@ class FixtureScenarioTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider scenarioNames
-     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('scenarioNames')]
     public function testLoadScenario(mixed $scenario, int $expectedAuthors): void
     {
         /** @var array<\TestApp\Model\Entity\Author> $authors */

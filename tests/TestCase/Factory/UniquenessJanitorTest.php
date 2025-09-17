@@ -44,11 +44,10 @@ class UniquenessJanitorTest extends TestCase
      *
      * @Then an exception should be triggered
      *
-     * @dataProvider dataForSanitizeEntityArrayOnPrimary
-     *
      * @param array $uniqueProperties
      * @param bool $expectException
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('dataForSanitizeEntityArrayOnPrimary')]
     public function testSanitizeEntityArrayOnPrimary(array $uniqueProperties, bool $expectException): void
     {
         $factoryStub = $this->getMockBuilder(BaseFactory::class)->disableOriginalConstructor()->getMock();
@@ -95,11 +94,10 @@ class UniquenessJanitorTest extends TestCase
      *
      * @Then the second one will be ignored.
      *
-     * @dataProvider dataForSanitizeEntityArrayOnAssociation
-     *
      * @param array<\Cake\Datasource\EntityInterface> $uniqueProperties
      * @param array $expectOutput
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('dataForSanitizeEntityArrayOnAssociation')]
     public function testSanitizeEntityArrayOnAssociation(array $uniqueProperties, array $expectOutput): void
     {
         $factoryStub = $this->getMockBuilder(BaseFactory::class)->disableOriginalConstructor()->getMock();

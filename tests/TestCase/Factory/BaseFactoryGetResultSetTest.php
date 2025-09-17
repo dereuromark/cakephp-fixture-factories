@@ -41,9 +41,7 @@ class BaseFactoryGetResultSetTest extends TestCase
         return [[false], [true]];
     }
 
-    /**
-     * @dataProvider isPersisted
-     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('isPersisted')]
     public function testBaseFactoryGetResultSet(bool $isPersisted): void
     {
         $name1 = 'Name 1';

@@ -23,9 +23,17 @@ namespace CakephpFixtureFactories\Generator;
  *
  * @method string name() Generate a random name
  * @method string firstName() Generate a random first name
+ * @method string firstNameMale() Generate a male first name
+ * @method string firstNameFemale() Generate a female first name
  * @method string lastName() Generate a random last name
+ * @method string title() Generate a random title
+ * @method string titleMale() Generate a male title
+ * @method string titleFemale() Generate a female title
  * @method string email() Generate a random email address
  * @method string safeEmail() Generate a random safe email address
+ * @method string freeEmail() Generate a free email address
+ * @method string companyEmail() Generate a company email address
+ * @method string freeEmailDomain() Generate free email domain
  * @method string phoneNumber() Generate a random phone number
  * @method string address() Generate a random address
  * @method string city() Generate a random city name
@@ -43,33 +51,64 @@ namespace CakephpFixtureFactories\Generator;
  * @method array<string> words(int $nb = 3) Generate random words
  * @method int randomNumber(int|null $nbDigits = null) Generate a random number
  * @method int randomDigit() Generate a random digit
+ * @method int randomDigitNot(int $except) Generate random digit excluding specified value
  * @method int randomDigitNotNull() Generate a random digit not null
+ * @method string randomLetter() Generate a random letter
+ * @method string randomAscii() Generate a random ASCII character
  * @method float randomFloat(int $nbMaxDecimals = null, float $min = 0, float $max = null) Generate a random float
  * @method int numberBetween(int $min = 0, int $max = 2147483647) Generate a number between
  * @method bool boolean(int $chanceOfGettingTrue = 50) Generate a random boolean
  * @method \DateTime dateTime(string $max = 'now') Generate a random DateTime
  * @method \DateTime dateTimeBetween(string $startDate = '-30 years', string $endDate = 'now') Generate a random DateTime between dates
+ * @method \DateTime dateTimeInInterval(string $startDate = '-30 years', string $interval = '+5 days') Generate DateTime within an interval
+ * @method \DateTime dateTimeThisCentury(string $max = 'now') Generate DateTime from this century
+ * @method \DateTime dateTimeThisDecade(string $max = 'now') Generate DateTime from this decade
+ * @method \DateTime dateTimeThisYear(string $max = 'now') Generate DateTime from this year
+ * @method \DateTime dateTimeThisMonth(string $max = 'now') Generate DateTime from this month
  * @method string date(string $format = 'Y-m-d', string $max = 'now') Generate a random date
  * @method string time(string $format = 'H:i:s', string $max = 'now') Generate a random time
+ * @method int unixTime(string $max = 'now') Generate a Unix timestamp
+ * @method string iso8601(string $max = 'now') Generate ISO 8601 formatted date
+ * @method string amPm(string $max = 'now') Generate AM/PM indicator
+ * @method string dayOfMonth(string $max = 'now') Generate day of month
+ * @method string dayOfWeek(string $max = 'now') Generate day of week
+ * @method string month(string $max = 'now') Generate month number
+ * @method string monthName(string $max = 'now') Generate month name
+ * @method int year(string $max = 'now') Generate year
+ * @method string century() Generate century
+ * @method string timezone() Generate timezone
  * @method string url() Generate a random URL
+ * @method string slug(int $nbWords = 6, bool $variableNbWords = true) Generate a URL-friendly slug
+ * @method string domainName() Generate a domain name
+ * @method string domainWord() Generate a domain word
+ * @method string tld() Generate a top-level domain
  * @method string userName() Generate a random username
  * @method string password(int $minLength = 6, int $maxLength = 20) Generate a random password
  * @method string uuid() Generate a random UUID
  * @method string ipv4() Generate a random IPv4
  * @method string ipv6() Generate a random IPv6
+ * @method string localIpv4() Generate a local IPv4 address
  * @method string macAddress() Generate a random MAC address
  * @method string userAgent() Generate a random user agent
  * @method string creditCardNumber() Generate a random credit card number
  * @method string creditCardType() Generate a random credit card type
+ * @method \DateTime creditCardExpirationDate() Generate credit card expiration date
+ * @method array creditCardDetails() Generate complete credit card details
  * @method string iban() Generate a random IBAN
  * @method string swiftBicNumber() Generate a random SWIFT BIC number
+ * @method string ean13() Generate EAN-13 barcode
+ * @method string ean8() Generate EAN-8 barcode
+ * @method string isbn10() Generate ISBN-10
+ * @method string isbn13() Generate ISBN-13
  * @method string hexColor() Generate a random hex color
  * @method string safeHexColor() Generate a random safe hex color
  * @method string rgbColor() Generate a random RGB color
  * @method array<int> rgbColorAsArray() Generate a random RGB color as array
+ * @method string rgbCssColor() Generate RGB color in CSS format
  * @method string hslColor() Generate a random HSL color
  * @method array<int> hslColorAsArray() Generate a random HSL color as array
  * @method string colorName() Generate a random color name
+ * @method string safeColorName() Generate a safe color name
  * @method string mimeType() Generate a random MIME type
  * @method string fileExtension() Generate a random file extension
  * @method string file(string $sourceDir = '/tmp', string $targetDir = '/tmp') Copy a random file
@@ -80,6 +119,7 @@ namespace CakephpFixtureFactories\Generator;
  * @method string sha256() Generate a random SHA256
  * @method string locale() Generate a random locale
  * @method string countryCode() Generate a random country code
+ * @method string countryISOAlpha3() Generate 3-letter country code
  * @method string languageCode() Generate a random language code
  * @method string currencyCode() Generate a random currency code
  * @method mixed randomElement(array<mixed> $array = ['a', 'b', 'c']) Get a random element from array
