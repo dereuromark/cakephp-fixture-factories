@@ -8,11 +8,10 @@ on:
 jobs:
   tests:
     runs-on: ubuntu-latest
-
     strategy:
       fail-fast: false
       matrix:
-        php-version: ['8.3', '8.4']
+        php-version: ['8.3', '8.5']
         db-type: [sqlite, mysql, pgsql]
         composer-type: [lowest, stable, dev]
 
@@ -29,7 +28,7 @@ jobs:
           POSTGRES_USER: root
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -62,6 +61,12 @@ jobs:
           fi
           composer ${{ matrix.db-type }}
 
+      - name: Upload coverage reports to Codecov
+        if: success() && matrix.php-version == '8.3'
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
   checks:
     runs-on: ubuntu-latest
 
@@ -73,7 +78,7 @@ jobs:
     name: PHPStan / Code Standards - PHP ${{ matrix.php-version }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
