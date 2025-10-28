@@ -72,7 +72,6 @@ class FakerOptionalAdapter implements OptionalGeneratorInterface
             // ChanceGenerator doesn't have unique method, get the underlying generator
             $reflection = new ReflectionObject($this->generator);
             $generatorProperty = $reflection->getProperty('generator');
-            $generatorProperty->setAccessible(true);
             $generator = $generatorProperty->getValue($this->generator);
             /** @var \Faker\UniqueGenerator $uniqueGenerator */
             $uniqueGenerator = $generator->unique();

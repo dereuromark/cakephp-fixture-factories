@@ -48,7 +48,6 @@ class FakerUniqueAdapter implements UniqueGeneratorInterface
         // We need to access the protected $uniques property via reflection
         $reflection = new ReflectionObject($this->generator);
         $uniquesProperty = $reflection->getProperty('uniques');
-        $uniquesProperty->setAccessible(true);
         $uniquesProperty->setValue($this->generator, []);
     }
 
@@ -82,7 +81,6 @@ class FakerUniqueAdapter implements UniqueGeneratorInterface
 
             // Get unique values array
             $uniquesProperty = $reflection->getProperty('uniques');
-            $uniquesProperty->setAccessible(true);
             $uniques = $uniquesProperty->getValue($this->generator);
 
             $maxRetries = 10000;
@@ -110,7 +108,6 @@ class FakerUniqueAdapter implements UniqueGeneratorInterface
 
             // Get unique values array
             $uniquesProperty = $reflection->getProperty('uniques');
-            $uniquesProperty->setAccessible(true);
             $uniques = $uniquesProperty->getValue($this->generator);
 
             $maxRetries = 10000;
@@ -153,7 +150,6 @@ class FakerUniqueAdapter implements UniqueGeneratorInterface
         // We need to get the underlying generator from UniqueGenerator
         $reflection = new ReflectionObject($this->generator);
         $generatorProperty = $reflection->getProperty('generator');
-        $generatorProperty->setAccessible(true);
         /** @var \Faker\Generator $generator */
         $generator = $generatorProperty->getValue($this->generator);
 

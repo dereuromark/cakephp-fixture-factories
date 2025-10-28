@@ -49,7 +49,6 @@ class SelectQueryMocker
 
         // Use reflection to access the protected getMockBuilder method
         $reflection = new ReflectionMethod($testCase, 'getMockBuilder');
-        $reflection->setAccessible(true);
 
         /** @var \PHPUnit\Framework\MockObject\MockBuilder $selectQueryMockBuilder */
         $selectQueryMockBuilder = $reflection->invoke($testCase, SelectQuery::class);
@@ -77,7 +76,6 @@ class SelectQueryMocker
 
         // Use reflection to access the protected getMockForModel method
         $getMockForModelReflection = new ReflectionMethod($testCase, 'getMockForModel');
-        $getMockForModelReflection->setAccessible(true);
 
         return $getMockForModelReflection->invoke($testCase, $alias, $methods, $options);
     }

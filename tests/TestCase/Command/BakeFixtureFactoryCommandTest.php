@@ -405,10 +405,8 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
         // Use reflection to test protected method
         $reflection = new ReflectionClass($this->FactoryCommand);
         $method = $reflection->getMethod('getUniqueFields');
-        $method->setAccessible(true);
 
         $property = $reflection->getProperty('table');
-        $property->setAccessible(true);
         $property->setValue($this->FactoryCommand, $table);
 
         $uniqueFields = $method->invoke($this->FactoryCommand);
@@ -478,10 +476,8 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
         // Use reflection to test protected method
         $reflection = new ReflectionClass($this->FactoryCommand);
         $method = $reflection->getMethod('defaultData');
-        $method->setAccessible(true);
 
         $property = $reflection->getProperty('table');
-        $property->setAccessible(true);
         $property->setValue($this->FactoryCommand, $table);
 
         $defaultData = $method->invoke($this->FactoryCommand);
