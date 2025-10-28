@@ -51,9 +51,9 @@
     },
     "scripts": {
         "test": "phpunit --colors=always",
-        "mysql": "bash run_tests.sh Mysql",
-        "pgsql": "bash run_tests.sh Postgres",
-        "sqlite": "bash run_tests.sh Sqlite",
+        "mysql": "bash run_tests.sh Mysql \"$@\"",
+        "pgsql": "bash run_tests.sh Postgres \"$@\"",
+        "sqlite": "bash run_tests.sh Sqlite \"$@\"",
         "stan": "vendor/bin/phpstan analyse --memory-limit=-1",
         "psalm": "vendor/bin/psalm",
         "cs-check": "vendor/bin/phpcs --colors --extensions=php",
