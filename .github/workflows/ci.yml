@@ -59,7 +59,11 @@ jobs:
           if [ ${{ matrix.db-type }} == 'mysql' ]; then
             sudo service mysql start && mysql -h 127.0.0.1 -u root -proot -e 'CREATE DATABASE IF NOT EXISTS test_fixture_factories;';
           fi
-          composer ${{ matrix.db-type }}
+          if [[ '${{ matrix.php-version }}' == '8.3' && '${{ matrix.composer-type }}' == 'stable' ]]; then
+            composer ${{ matrix.db-type }} -- --with-coverage
+          else
+            composer ${{ matrix.db-type }}
+          fi
 
       - name: Upload coverage reports to Codecov
         if: success() && matrix.php-version == '8.3'
