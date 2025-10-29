@@ -79,13 +79,13 @@ class AssociationBuilder
         }
         if ($this->associationIsToOne($association) || $this->associationIsToMany($association)) {
             return $association;
-        } else {
-            $associationType = get_class($association);
-
-            throw new AssociationBuilderException(
-                "Unknown association type $associationType on table {$this->getTable()->getAlias()}",
-            );
         }
+
+        $associationType = get_class($association);
+
+        throw new AssociationBuilderException(
+            "Unknown association type $associationType on table {$this->getTable()->getAlias()}",
+        );
     }
 
     /**
@@ -216,11 +216,12 @@ class AssociationBuilder
         $res = $matches[1];
         if (!$res) {
             return null;
-        } elseif (count($res) === 1 && !empty($res[0])) {
-            return (int)$res[0];
-        } else {
-            throw new AssociationBuilderException("Error parsing $string.");
         }
+        if (count($res) === 1 && !empty($res[0])) {
+            return (int)$res[0];
+        }
+
+        throw new AssociationBuilderException("Error parsing $string.");
     }
 
     /**

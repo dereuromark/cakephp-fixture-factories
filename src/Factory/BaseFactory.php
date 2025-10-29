@@ -307,9 +307,9 @@ abstract class BaseFactory
         $associated = $this->getAssociationBuilder()->getAssociated();
         if ($associated) {
             return array_merge($this->marshallerOptions, compact('associated'));
-        } else {
-            return $this->marshallerOptions;
         }
+
+        return $this->marshallerOptions;
     }
 
     /**
@@ -384,9 +384,9 @@ abstract class BaseFactory
         try {
             if (count($entities) === 1) {
                 return $this->getTable()->saveOrFail($entities[0], $this->getSaveOptions());
-            } else {
-                return $this->getTable()->saveManyOrFail($entities, $this->getSaveOptions());
             }
+
+            return $this->getTable()->saveManyOrFail($entities, $this->getSaveOptions());
         } catch (Throwable $exception) {
             $factory = static::class;
             $message = $exception->getMessage();
@@ -744,10 +744,10 @@ abstract class BaseFactory
                 // Use named parameters for contain
                 if (!$args) {
                     return $table->get($primaryKey, finder: $finder, contain: $options['contain'], cache: $cache, cacheKey: $cacheKey);
-                } else {
-                    // If there are additional args, we need to use the old style
-                    return $table->get($primaryKey, $finder, $cache, $cacheKey, ...$options, ...$args);
                 }
+
+                // If there are additional args, we need to use the old style
+                return $table->get($primaryKey, $finder, $cache, $cacheKey, ...$options, ...$args);
             }
 
             // For other options, pass them through args (this will still trigger deprecation)

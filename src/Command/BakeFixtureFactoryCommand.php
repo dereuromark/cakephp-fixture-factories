@@ -630,11 +630,14 @@ class BakeFixtureFactoryCommand extends BakeCommand
             $length = $columnSchema['length'] ?? 255;
             if ($length <= 3) {
                 return '$generator->lexify("' . str_repeat('?', $length) . '")';
-            } elseif ($length <= 10) {
+            }
+            if ($length <= 10) {
                 return '$generator->word()';
-            } elseif ($length <= 50) {
+            }
+            if ($length <= 50) {
                 return 'implode(" ", $generator->words(3))';
-            } elseif ($length <= 100) {
+            }
+            if ($length <= 100) {
                 return '$generator->sentence()';
             }
 

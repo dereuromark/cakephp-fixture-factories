@@ -123,11 +123,11 @@ trait FactoryAwareTrait
     {
         if (Configure::check('FixtureFactories.testFixtureNamespace')) {
             return Configure::read('FixtureFactories.testFixtureNamespace');
-        } else {
-            return ($plugin ? str_replace('/', '\\', $plugin) : Configure::read(
-                'App.namespace',
-                'App',
-            )) . '\Test\Factory';
         }
+
+        return ($plugin ? str_replace('/', '\\', $plugin) : Configure::read(
+            'App.namespace',
+            'App',
+        )) . '\Test\Factory';
     }
 }

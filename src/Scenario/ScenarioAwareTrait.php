@@ -49,9 +49,9 @@ trait ScenarioAwareTrait
             $scenarioClass = new $scenario();
             if ($scenarioClass instanceof FixtureScenarioInterface) {
                 return $scenarioClass->load(...$args);
-            } else {
-                throw new Exception("{$scenario} must implement " . FixtureScenarioInterface::class);
             }
+
+            throw new Exception("{$scenario} must implement " . FixtureScenarioInterface::class);
         } catch (Throwable $e) {
             throw new FixtureScenarioException($e->getMessage());
         }

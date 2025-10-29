@@ -97,9 +97,9 @@ class UniquenessJanitor
                         throw new UniquenessException(
                             "Error in {$factoryName}. The uniqueness of {$property} was not respected.",
                         );
-                    } else {
-                        $indexesToRemove[] = $getIndex($k2);
                     }
+
+                    $indexesToRemove[] = $getIndex($k2);
                 }
             }
         }
