@@ -1,7 +1,5 @@
 <?xml version="1.0"?>
 <ruleset name="App">
-    <config name="installed_paths" value="../../php-collective/code-sniffer"/>
-
     <arg name="tab-width" value="4"/>
     <arg value="nps"/>
 
