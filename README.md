@@ -15,7 +15,6 @@ Write and run your tests faster. On any PHP application.
     <a href="https://php.net/"><img src="https://img.shields.io/badge/php-%3E%3D%208.2-8892BF.svg" alt="Minimum PHP Version"></a>
     <a href="LICENSE"><img src="https://poser.pugx.org/dereuromark/cakephp-fixture-factories/license.svg" alt="License"></a>
     <a href="https://packagist.org/packages/dereuromark/cakephp-fixture-factories"><img src="https://poser.pugx.org/dereuromark/cakephp-fixture-factories/d/total.svg" alt="Total Downloads"></a>
-    <a href="https://github.com/cakephp/cakephp-codesniffer"><img src="https://img.shields.io/badge/cs-CakePHP-yellow.svg" alt="Coding Standards"></a>
 </p>
 
 Note: This is a maintained fork of the original [CakePHPFixtureFactories](https://github.com/vierge-noire/cakephp-fixture-factories).
