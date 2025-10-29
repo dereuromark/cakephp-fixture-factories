@@ -102,8 +102,5 @@ jobs:
       - name: Run phpstan
         run: composer stan
 
-      - name: Run psalm
-        run: composer psalm
-
       - name: Run phpcs
         run: composer cs-check

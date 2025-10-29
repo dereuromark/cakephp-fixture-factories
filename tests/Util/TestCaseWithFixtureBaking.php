@@ -77,7 +77,6 @@ class TestCaseWithFixtureBaking extends TestCase
      */
     public static function tearDownAfterClass(): void
     {
-        /** @psalm-suppress InternalMethod */
         $test = new self('SomeTest');
         $test->setUp();
         $test->bake([], ['methods' => true, 'all' => true]);

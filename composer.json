@@ -32,8 +32,7 @@
         "cakephp/migrations": "^4.7.0",
         "josegonzalez/dotenv": "^4.0.0",
         "phpstan/phpstan": "^1.0",
-        "phpunit/phpunit": "^11.5 || ^12.3",
-        "vimeo/psalm": "^6.0"
+        "phpunit/phpunit": "^12.3"
     },
     "autoload": {
         "psr-4": {
@@ -55,7 +54,6 @@
         "pgsql": "bash run_tests.sh Postgres",
         "sqlite": "bash run_tests.sh Sqlite",
         "stan": "vendor/bin/phpstan analyse --memory-limit=-1",
-        "psalm": "vendor/bin/psalm",
         "cs-check": "vendor/bin/phpcs --colors --extensions=php",
         "cs-fix": "vendor/bin/phpcbf --colors --extensions=php"
     },
