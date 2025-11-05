@@ -282,6 +282,60 @@ class GeneratorAdapterTest extends TestCase
     }
 
     /**
+     * Test enumCase() method works with both adapters
+     *
+     * @return void
+     */
+    public function testEnumCaseGeneration(): void
+    {
+        // Test with Faker
+        $fakerGenerator = CakeGeneratorFactory::create();
+        $fakerCase = $fakerGenerator->enumCase(TestStatus::class);
+        $this->assertInstanceOf(TestStatus::class, $fakerCase);
+        $this->assertContains($fakerCase, TestStatus::cases());
+
+        // Test with DummyGenerator
+        Configure::write('FixtureFactories.generatorType', 'dummy');
+        CakeGeneratorFactory::clearInstances();
+
+        $dummyGenerator = CakeGeneratorFactory::create();
+        $dummyCase = $dummyGenerator->enumCase(TestStatus::class);
+        $this->assertInstanceOf(TestStatus::class, $dummyCase);
+        $this->assertContains($dummyCase, TestStatus::cases());
+
+        // Reset config
+        Configure::delete('FixtureFactories.generatorType');
+        CakeGeneratorFactory::clearInstances();
+    }
+
+    /**
+     * Test realText() method works with both adapters
+     *
+     * @return void
+     */
+    public function testRealTextGeneration(): void
+    {
+        // Test with Faker
+        $fakerGenerator = CakeGeneratorFactory::create();
+        $fakerText = $fakerGenerator->realText(100);
+        $this->assertIsString($fakerText);
+        $this->assertLessThanOrEqual(100, strlen($fakerText));
+
+        // Test with DummyGenerator
+        Configure::write('FixtureFactories.generatorType', 'dummy');
+        CakeGeneratorFactory::clearInstances();
+
+        $dummyGenerator = CakeGeneratorFactory::create();
+        $dummyText = $dummyGenerator->realText(100);
+        $this->assertIsString($dummyText);
+        $this->assertLessThanOrEqual(100, strlen($dummyText));
+
+        // Reset config
+        Configure::delete('FixtureFactories.generatorType');
+        CakeGeneratorFactory::clearInstances();
+    }
+
+    /**
      * Test UUID generation differences between adapters
      *
      * @return void

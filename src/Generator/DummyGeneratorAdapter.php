@@ -34,7 +34,7 @@ use OverflowException;
  *
  * Compatibility notes:
  * - uuid() is mapped to uuid4()
- * - enumElement() is mapped to enumCase() for Faker compatibility (deprecated)
+ * - enumElement() is mapped to enumCase() for Faker compatibility (deprecated, kept for backward compatibility)
  *
  * For enum support, use:
  * - enumCase(EnumClass::class) - returns a random enum case
@@ -42,7 +42,6 @@ use OverflowException;
  *
  * @method \UnitEnum enumCase(string $enumClass) Get a random enum case
  * @method string|int enumValue(string $enumClass) Get a random backed enum value
- * @method \UnitEnum enumElement(string $enumClass) @deprecated Use enumCase() instead
  */
 class DummyGeneratorAdapter implements GeneratorInterface
 {
@@ -141,6 +140,15 @@ class DummyGeneratorAdapter implements GeneratorInterface
             $asciiCode = $this->handleUniqueCall('numberBetween', [33, 126]);
 
             return chr($asciiCode);
+        }
+
+        // Map realText() to text() for compatibility with Faker
+        // DummyGenerator only has text(), not realText()
+        if ($name === 'realText') {
+            // Use same parameter as text() (maxCharacters)
+            $maxNbChars = $arguments[0] ?? 200;
+
+            return $this->handleUniqueCall('text', [$maxNbChars]);
         }
 
         // Map enumElement() to enumCase() for compatibility with Faker

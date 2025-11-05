@@ -131,8 +131,8 @@ namespace CakephpFixtureFactories\Generator;
  * @method string bothify(string $string = '## ??') Generate random numbers and letters in string
  * @method string asciify(string $string = '****') Generate random ASCII characters in string
  * @method string regexify(string $regex = '') Generate string matching regex
+ * @method \UnitEnum enumCase(string $enumClass) Get a random enum case
  * @method string|int enumValue(string $enumClass) Get a random value from a BackedEnum
- * @method \BackedEnum enumElement(string $enumClass) Get a random enum element
  */
 interface GeneratorInterface
 {

@@ -102,8 +102,8 @@ class FakerUniqueAdapter implements UniqueGeneratorInterface
             throw new OverflowException("Unable to generate unique value for 'enumValue'");
         }
 
-        if ($name === 'enumElement' && count($arguments) === 1) {
-            // Similar handling for enumElement
+        if ($name === 'enumCase' && count($arguments) === 1) {
+            // Handle enumCase with unique tracking
             $reflection = new ReflectionObject($this->generator);
 
             // Get unique values array
@@ -111,12 +111,12 @@ class FakerUniqueAdapter implements UniqueGeneratorInterface
             $uniques = $uniquesProperty->getValue($this->generator);
 
             $maxRetries = 10000;
-            $key = 'enumElement';
+            $key = 'enumCase';
 
             for ($i = 0; $i < $maxRetries; $i++) {
-                // Manually call enumElement on the FakerAdapter
+                // Manually call enumCase on the FakerAdapter
                 $adapter = new FakerAdapter();
-                $element = $adapter->enumElement($arguments[0]);
+                $element = $adapter->enumCase($arguments[0]);
 
                 if (!isset($uniques[$key]) || !in_array($element, $uniques[$key], true)) {
                     $uniques[$key][] = $element;
@@ -126,7 +126,12 @@ class FakerUniqueAdapter implements UniqueGeneratorInterface
                 }
             }
 
-            throw new OverflowException("Unable to generate unique value for 'enumElement'");
+            throw new OverflowException("Unable to generate unique value for 'enumCase'");
+        }
+
+        // Backward compatibility: map enumElement to enumCase
+        if ($name === 'enumElement' && count($arguments) === 1) {
+            return $this->__call('enumCase', $arguments);
         }
 
         return $this->generator->$name(...$arguments);

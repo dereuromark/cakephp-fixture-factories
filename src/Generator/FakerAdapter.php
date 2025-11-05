@@ -26,6 +26,9 @@ use Throwable;
  * Adapter for Faker library
  *
  * This adapter wraps the Faker library to implement the GeneratorInterface
+ *
+ * @method \UnitEnum enumCase(string $enumClass) Get a random enum case
+ * @method string|int enumValue(string $enumClass) Get a random backed enum value
  */
 class FakerAdapter implements GeneratorInterface
 {
@@ -79,6 +82,22 @@ class FakerAdapter implements GeneratorInterface
      */
     public function __call(string $name, array $arguments): mixed
     {
+        // Handle enumCase method - returns the enum case itself (alias for enumElement)
+        if ($name === 'enumCase' && count($arguments) === 1) {
+            /** @var class-string<\UnitEnum> $enumClass */
+            $enumClass = $arguments[0];
+            if (!is_string($enumClass) || !enum_exists($enumClass)) {
+                throw new InvalidArgumentException("Invalid enum class: $enumClass");
+            }
+
+            $cases = $enumClass::cases();
+            if (!$cases) {
+                throw new InvalidArgumentException("Enum has no cases: $enumClass");
+            }
+
+            return $this->generator->randomElement($cases);
+        }
+
         // Handle enumValue method - returns the value of a backed enum
         if ($name === 'enumValue' && count($arguments) === 1) {
             /** @var class-string<\BackedEnum> $enumClass */
