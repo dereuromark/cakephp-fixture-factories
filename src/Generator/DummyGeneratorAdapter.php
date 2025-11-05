@@ -227,10 +227,19 @@ class DummyGeneratorAdapter implements GeneratorInterface
     /**
      * Reset unique values tracking
      *
+     * This resets both the adapter's unique values tracking and
+     * recreates the DummyGenerator with a fresh UniqueStrategy.
+     *
      * @return void
      */
     public function resetUnique(): void
     {
         $this->uniqueValues = [];
+
+        // Recreate the generator with a fresh UniqueStrategy
+        // This is necessary because DummyGenerator's UniqueStrategy
+        // maintains its own internal state
+        $strategy = new UniqueStrategy(retries: 1000);
+        $this->generator = new DummyGenerator($this->container, $strategy);
     }
 }

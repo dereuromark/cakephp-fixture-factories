@@ -357,4 +357,83 @@ class GeneratorAdapterTest extends TestCase
         Configure::delete('FixtureFactories.generatorType');
         CakeGeneratorFactory::clearInstances();
     }
+
+    /**
+     * Test that unique state is reset when clearing instances
+     *
+     * @return void
+     */
+    public function testUniqueStateResetWithClearInstances(): void
+    {
+        // Test with DummyGenerator
+        Configure::write('FixtureFactories.generatorType', 'dummy');
+        CakeGeneratorFactory::clearInstances();
+
+        $generator = CakeGeneratorFactory::create();
+        $unique = $generator->unique();
+
+        // Generate some unique digits (0-9, so we have limited values)
+        $values1 = [];
+        for ($i = 0; $i < 10; $i++) {
+            $values1[] = $unique->randomDigit();
+        }
+        $this->assertCount(10, array_unique($values1));
+
+        // Now clear instances with reset
+        CakeGeneratorFactory::clearInstances();
+
+        // Get a fresh generator and unique adapter
+        $generator2 = CakeGeneratorFactory::create();
+        $unique2 = $generator2->unique();
+
+        // Should be able to generate the same values again since state was reset
+        $values2 = [];
+        for ($i = 0; $i < 10; $i++) {
+            $values2[] = $unique2->randomDigit();
+        }
+        $this->assertCount(10, array_unique($values2));
+
+        // Reset config
+        Configure::delete('FixtureFactories.generatorType');
+        CakeGeneratorFactory::clearInstances();
+    }
+
+    /**
+     * Test that resetUniqueState() method works correctly
+     *
+     * @return void
+     */
+    public function testResetUniqueState(): void
+    {
+        Configure::write('FixtureFactories.generatorType', 'dummy');
+        CakeGeneratorFactory::clearInstances();
+
+        $generator = CakeGeneratorFactory::create();
+        $unique = $generator->unique();
+
+        // Generate 10 unique digits
+        $values = [];
+        for ($i = 0; $i < 10; $i++) {
+            $values[] = $unique->randomDigit();
+        }
+        $this->assertCount(10, array_unique($values));
+
+        // Reset unique state only (don't clear instances)
+        CakeGeneratorFactory::resetUniqueState();
+
+        // Get the same cached generator
+        $generator2 = CakeGeneratorFactory::create();
+        $unique2 = $generator2->unique();
+
+        // Should be able to generate digits again after reset
+        $values2 = [];
+        for ($i = 0; $i < 10; $i++) {
+            $values2[] = $unique2->randomDigit();
+        }
+        $this->assertCount(10, array_unique($values2));
+
+        // Reset config
+        Configure::delete('FixtureFactories.generatorType');
+        CakeGeneratorFactory::clearInstances();
+    }
 }

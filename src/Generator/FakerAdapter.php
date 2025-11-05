@@ -140,4 +140,24 @@ class FakerAdapter implements GeneratorInterface
     {
         return new FakerOptionalAdapter($this->generator->optional($weight));
     }
+
+    /**
+     * Reset unique values tracking
+     *
+     * This resets Faker's internal unique generator state by accessing
+     * the generator's unique property and clearing it.
+     *
+     * @return void
+     */
+    public function resetUnique(): void
+    {
+        // Access Faker's unique generator property
+        $reflection = new \ReflectionObject($this->generator);
+        if ($reflection->hasProperty('unique')) {
+            $uniqueProperty = $reflection->getProperty('unique');
+            // Reset the unique generator by setting it to null
+            // Next time unique() is called, a fresh one will be created
+            $uniqueProperty->setValue($this->generator, null);
+        }
+    }
 }

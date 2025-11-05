@@ -116,12 +116,38 @@ class CakeGeneratorFactory
     }
 
     /**
-     * Clear all cached instances
+     * Reset unique state on all cached generator instances
+     *
+     * This resets the unique value tracking for all cached generators,
+     * allowing unique values to be regenerated in subsequent tests.
      *
      * @return void
      */
-    public static function clearInstances(): void
+    public static function resetUniqueState(): void
     {
+        foreach (self::$instances as $instance) {
+            if (method_exists($instance, 'resetUnique')) {
+                $instance->resetUnique();
+            }
+        }
+    }
+
+    /**
+     * Clear all cached instances
+     *
+     * This will reset unique state before clearing the cache to prevent
+     * unique value accumulation across test runs.
+     *
+     * @param bool $resetUnique Whether to reset unique state before clearing (default: true)
+     *
+     * @return void
+     */
+    public static function clearInstances(bool $resetUnique = true): void
+    {
+        if ($resetUnique) {
+            self::resetUniqueState();
+        }
+
         self::$instances = [];
     }
 }

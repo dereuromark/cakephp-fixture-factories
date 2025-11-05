@@ -280,3 +280,52 @@ CakeGeneratorFactory::registerAdapter('custom', MyCustomAdapter::class);
 ```php
 Configure::write('FixtureFactories.generatorType', 'custom');
 ```
+
+### Unique Value Generation
+
+Both Faker and DummyGenerator support generating unique values through the `unique()` modifier:
+
+```php
+$generator = $this->getGenerator();
+$email = $generator->unique()->email(); // Guaranteed to be unique
+```
+
+#### Resetting Unique State in Tests
+
+When using `unique()`, the generator maintains an internal state of previously generated values to ensure uniqueness.
+In test environments where data is truncated between tests, this state can accumulate and eventually cause `OverflowException` when the generator runs out of unique values.
+
+To prevent this, **always reset the generator state** between tests by calling:
+
+```php
+use CakephpFixtureFactories\Generator\CakeGeneratorFactory;
+
+// In your test's tearDown() method or test listener:
+CakeGeneratorFactory::clearInstances();
+```
+
+This method automatically resets the unique state before clearing the cached generator instances.
+
+If you only want to reset the unique state without clearing the cache:
+
+```php
+CakeGeneratorFactory::resetUniqueState();
+```
+
+**Best Practice**: Add this to a test listener or base test case to automatically reset between tests:
+
+```php
+namespace App\Test;
+
+use Cake\TestSuite\TestCase;
+use CakephpFixtureFactories\Generator\CakeGeneratorFactory;
+
+abstract class AppTestCase extends TestCase
+{
+    protected function tearDown(): void
+    {
+        CakeGeneratorFactory::clearInstances();
+        parent::tearDown();
+    }
+}
+```
