@@ -26,6 +26,7 @@ use CakephpFixtureFactories\Error\FixtureFactoryException;
 use CakephpFixtureFactories\Error\PersistenceException;
 use CakephpFixtureFactories\Generator\CakeGeneratorFactory;
 use CakephpFixtureFactories\Generator\GeneratorInterface;
+use CakephpFixtureFactories\TestSuite\FactoryTableTracker;
 use Closure;
 use InvalidArgumentException;
 use Psr\SimpleCache\CacheInterface;
@@ -381,12 +382,16 @@ abstract class BaseFactory
             $this->getDataCompiler()->endPersistMode();
         }
 
+        // Track this table for transaction/cleanup strategies
+        $table = $this->getTable();
+        FactoryTableTracker::getInstance()->trackTable($table);
+
         try {
             if (count($entities) === 1) {
-                return $this->getTable()->saveOrFail($entities[0], $this->getSaveOptions());
+                return $table->saveOrFail($entities[0], $this->getSaveOptions());
             }
 
-            return $this->getTable()->saveManyOrFail($entities, $this->getSaveOptions());
+            return $table->saveManyOrFail($entities, $this->getSaveOptions());
         } catch (Throwable $exception) {
             $factory = static::class;
             $message = $exception->getMessage();
