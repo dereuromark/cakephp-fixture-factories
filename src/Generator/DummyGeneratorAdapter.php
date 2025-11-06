@@ -218,9 +218,10 @@ class DummyGeneratorAdapter implements GeneratorInterface
      */
     public function unique(): UniqueGeneratorInterface
     {
-        // Create a fresh adapter instance to avoid shared state (similar to Faker's approach)
-        $adapter = new self();
+        // Clone to share the same generator/container but have separate unique tracking
+        $adapter = clone $this;
         $adapter->isUnique = true;
+        $adapter->uniqueValues = []; // Reset unique tracking for this instance
 
         return new DummyUniqueAdapter($adapter);
     }
