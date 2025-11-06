@@ -9,7 +9,7 @@ Make sure to add:
 $this->addPlugin('CakephpFixtureFactories');
 ```
 
-in the `bootstrap` method of your `Application.php`. See here for more details on [how to load a Plugin](https://book.cakephp.org/4/en/plugins.html#loading-a-plugin).
+in the `bootstrap` method of your `Application.php`. See here for more details on [how to load a Plugin](https://book.cakephp.org/5/en/plugins.html#loading-a-plugin).
 
 The command
 ```css

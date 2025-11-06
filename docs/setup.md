@@ -6,12 +6,12 @@ to manage the test database, or opt for the universal
 [test database cleaner](https://github.com/vierge-noire/test-database-cleaner).
 
 You should define your DB connections in your test `bootstrap.php` file as described
-in the [cookbook](https://book.cakephp.org/4/en/orm/database-basics.html#configuration).
+in the [cookbook](https://book.cakephp.org/5/en/orm/database-basics.html#configuration).
 
 ## CakePHP apps
 
 To be able to bake your factories,
-load the CakephpFixtureFactories plugin in your `src/Application.php` file:
+load the CakephpFixtureFactories plugin in your `plugins.php` file or your `src/Application.php` file:
 ```php
 protected function bootstrapCli(): void
 {

@@ -9,15 +9,15 @@ These methods are meant to help performing assertions in the "Assert" part of yo
 
 ## ArticleFactory::find()
 This method will return a query on the table related to the given factory. It takes as input the same parameters as the classic table `find()` method.
-More documentation on the `find` method [here](https://book.cakephp.org/4/en/orm/query-builder.html#namespace-Cake\ORM).
+More documentation on the `find` method [here](https://book.cakephp.org/5/en/orm/query-builder.html#namespace-Cake\ORM).
 
 ## ArticleFactory::count()
 This method will return the number of entries in the table of the given factory.
 
 ## ArticleFactory::get()
 This method will return an entity based on its primary key.
-More documentation on the `get` method [here](https://book.cakephp.org/4/en/orm/retrieving-data-and-resultsets.html#getting-a-single-entity-by-primary-key).
+More documentation on the `get` method [here](https://book.cakephp.org/5/en/orm/retrieving-data-and-resultsets.html#getting-a-single-entity-by-primary-key).
 
 ## ArticleFactory::firstOrFail($condition)
 This method will return an entity based on the optional conditions passed as parameter.
-More documentation on the `firstOrFail` method [here](https://book.cakephp.org/4/en/orm/query-builder.html#getting-results).
+More documentation on the `firstOrFail` method [here](https://book.cakephp.org/5/en/orm/query-builder.html#getting-results).

@@ -188,7 +188,7 @@ protected function initialize(): void
 }
 ```
 
-Note that you can provide either a single event, or an array of events. You will find a list of all model events [here](https://book.cakephp.org/4/en/orm/table-objects.html#event-list).
+Note that you can provide either a single event, or an array of events. You will find a list of all model events [here](https://book.cakephp.org/5/en/orm/table-objects.html#event-list).
 
 ### Behavior events
 

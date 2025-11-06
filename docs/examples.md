@@ -40,7 +40,7 @@ $articles = ArticleFactory::make([
 ```
 
 When injecting a single string in the factory, the latter will assign the injected string to the
-[display field](https://book.cakephp.org/4/en/orm/retrieving-data-and-resultsets.html#finding-key-value-pairs) of the factory's table:
+[display field](https://book.cakephp.org/5/en/orm/retrieving-data-and-resultsets.html#finding-key-value-pairs) of the factory's table:
 ```php
 $articles = ArticleFactory::make('Foo')->getEntity();
 $articles = ArticleFactory::make('Foo', 3)->getEntities();
@@ -129,7 +129,7 @@ You might come across fields storing data in array format, with a given default 
 It is possible to overwrite only a part of the array using the dot notation.
 
 Considering for example that the field `array_field` stores an array with keys `key1`and `key2`, you can
-overwrite the value of `key2` only and keep the default value of `key1` as follows: 
+overwrite the value of `key2` only and keep the default value of `key1` as follows:
 
 ```php
 use App\Test\Factory\ArticleFactory;
@@ -152,7 +152,7 @@ with the database, and yet you would need to simulate the output of a select que
 For example in a `ArticlesIndexController` you want to emulate a query returning
 10 articles and want to test that the rendering is made properly.
 
-In your test, where `$this` is the TestCase extending [CakePHP's TestCase](https://book.cakephp.org/4/en/development/testing.html#mocking-model-methods):
+In your test, where `$this` is the TestCase extending [CakePHP's TestCase](https://book.cakephp.org/5/en/development/testing.html#mocking-model-methods):
 ```php
 $articleFactory = ArticleFactory::make(10)->withAuthors();
 \CakephpFixtureFactories\ORM\SelectQueryMocker::mock($this, $articleFactory);

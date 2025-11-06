@@ -32,12 +32,12 @@ class CityFactory extends BaseFactory
             ->belongsTo('Country')
             ->hasMany('Addresses');
     }
-    
+
     protected function getRootTableRegistryName(): string
     {
         return "Cities";
-    }   
-    
+    }
+
     protected function setDefaultTemplate(): void
     {
         $this->setDefaultData(function (GeneratorInterface $generator) {
@@ -59,5 +59,5 @@ $city = CityFactory::make()
 ```
 which will set the city's country, and provide 4 random addresses.
 
-You will find described in the cookbook [HERE](https://book.cakephp.org/4/en/orm/associations.html) how to define your associations.
+You will find described in the cookbook [HERE](https://book.cakephp.org/5/en/orm/associations.html) how to define your associations.
 Non CakePHP applications will not need to create any table objects, but rather use the `getTable()` public method.
