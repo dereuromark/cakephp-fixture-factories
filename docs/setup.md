@@ -51,6 +51,7 @@ This plugin provides the `FactoryTransactionStrategy` which automatically:
 - Tracks which tables are written to by fixture factories
 
 Unlike the standard `TransactionStrategy`, this doesn't require manually listing fixtures.
+In fact: This strategy works best if you do not use fixtures, at all.
 
 ##### CakePHP 5.2+ (Global Configuration)
 
