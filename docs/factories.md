@@ -255,12 +255,14 @@ $article = ArticleFactory::make()
 
 The following generators are available out of the box:
 - **faker** (default): [FakerPHP/Faker](https://github.com/FakerPHP/Faker) - Full-featured data generation
-- **dummy**: [johnykvsky/dummygenerator](https://github.com/johnykvsky/dummygenerator) - Modern and lean PHP 8.3+ generator, supports enums.
+- **dummy**: [johnykvsky/dummygenerator](https://github.com/johnykvsky/dummygenerator) - Modern and lean PHP 8.3+ generator, supports enums natively.
 
 Both are included as "require-dev" dependencies in this plugin.
 Choose the one you want to use and "require" it.
 
 > **Note**: For a detailed comparison of available methods and migration guide, see [Generator Differences](generator-differences.md).
+
+Both should offer the same generator methods as we shim the extra ones respectively.
 
 #### Custom Generators
 
