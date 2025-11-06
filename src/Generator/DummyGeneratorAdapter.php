@@ -23,7 +23,6 @@ use DummyGenerator\Container\DefinitionContainerInterface;
 use DummyGenerator\Core\Randomizer\XoshiroRandomizer;
 use DummyGenerator\Definitions\Randomizer\RandomizerInterface;
 use DummyGenerator\DummyGenerator;
-use DummyGenerator\Strategy\UniqueStrategy;
 use InvalidArgumentException;
 use OverflowException;
 
@@ -86,9 +85,9 @@ class DummyGeneratorAdapter implements GeneratorInterface
         // The $locale parameter is kept for interface compatibility
         $this->container = DefinitionContainerBuilder::all();
 
-        $strategy = new UniqueStrategy(retries: 1000);
-
-        $this->generator = new DummyGenerator($this->container, $strategy);
+        // Do NOT use UniqueStrategy by default - uniqueness is handled in handleUniqueCall when isUnique=true
+        // This prevents the accumulation of unique values across all factory calls which hits the 1000 retry limit
+        $this->generator = new DummyGenerator($this->container);
     }
 
     /**
@@ -104,8 +103,8 @@ class DummyGeneratorAdapter implements GeneratorInterface
             );
 
             // Recreate the generator with the updated container
-            $strategy = new UniqueStrategy(retries: 1000);
-            $this->generator = new DummyGenerator($this->container, $strategy);
+            // Do NOT use UniqueStrategy - uniqueness is handled in handleUniqueCall when isUnique=true
+            $this->generator = new DummyGenerator($this->container);
         }
     }
 
@@ -218,8 +217,10 @@ class DummyGeneratorAdapter implements GeneratorInterface
      */
     public function unique(): UniqueGeneratorInterface
     {
+        // Clone to share the same generator/container but have separate unique tracking
         $adapter = clone $this;
         $adapter->isUnique = true;
+        $adapter->uniqueValues = []; // Reset unique tracking for this instance
 
         return new DummyUniqueAdapter($adapter);
     }
