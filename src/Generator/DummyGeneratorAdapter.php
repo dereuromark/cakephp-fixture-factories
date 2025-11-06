@@ -86,9 +86,9 @@ class DummyGeneratorAdapter implements GeneratorInterface
         // The $locale parameter is kept for interface compatibility
         $this->container = DefinitionContainerBuilder::all();
 
-        $strategy = new UniqueStrategy(retries: 1000);
-
-        $this->generator = new DummyGenerator($this->container, $strategy);
+        // Do NOT use UniqueStrategy by default - uniqueness is handled in handleUniqueCall when isUnique=true
+        // This prevents the accumulation of unique values across all factory calls which hits the 1000 retry limit
+        $this->generator = new DummyGenerator($this->container);
     }
 
     /**
@@ -104,8 +104,8 @@ class DummyGeneratorAdapter implements GeneratorInterface
             );
 
             // Recreate the generator with the updated container
-            $strategy = new UniqueStrategy(retries: 1000);
-            $this->generator = new DummyGenerator($this->container, $strategy);
+            // Do NOT use UniqueStrategy - uniqueness is handled in handleUniqueCall when isUnique=true
+            $this->generator = new DummyGenerator($this->container);
         }
     }
 
