@@ -23,7 +23,6 @@ use DummyGenerator\Container\DefinitionContainerInterface;
 use DummyGenerator\Core\Randomizer\XoshiroRandomizer;
 use DummyGenerator\Definitions\Randomizer\RandomizerInterface;
 use DummyGenerator\DummyGenerator;
-use DummyGenerator\Strategy\UniqueStrategy;
 use InvalidArgumentException;
 use OverflowException;
 
