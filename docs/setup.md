@@ -55,10 +55,9 @@ In fact: This strategy works best if you do not use fixtures, at all.
 
 ##### CakePHP 5.2+ (Global Configuration)
 
-In CakePHP 5.2+, you can configure the fixture strategy globally in your `config/app_local.php` or `tests/bootstrap.php`:
+In CakePHP 5.2+, you can configure the fixture strategy globally in your `config/app.php`:
 
 ```php
-// In config/app.php
     'TestSuite' => [
         'fixtureStrategy' => \CakephpFixtureFactories\TestSuite\FactoryTransactionStrategy::class,
     ],

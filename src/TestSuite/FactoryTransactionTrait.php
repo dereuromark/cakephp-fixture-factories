@@ -16,11 +16,11 @@ use Cake\TestSuite\Fixture\FixtureStrategyInterface;
  * - Reset unique generator state
  *
  * CakePHP 5.2+ Note:
- * This trait is only needed for CakePHP 4.3 - 5.1. In CakePHP 5.2+, you can configure
+ * This trait is only needed for CakePHP 5.0 - 5.1. In CakePHP 5.2+, you can configure
  * the strategy globally instead:
  *
  * ```php
- * // config/app_local.php or tests/bootstrap.php
+ * // config/app.php or tests/bootstrap.php
  * return [
  *     'TestSuite' => [
  *         'fixtureStrategy' => \CakephpFixtureFactories\TestSuite\FactoryTransactionStrategy::class,
