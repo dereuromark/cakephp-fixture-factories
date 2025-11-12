@@ -43,7 +43,7 @@ This test provides an example on how to use scenarios:
 
 namespace CakephpFixtureFactories\Test\TestCase\Scenario;
 
-use Cake\ORM\Query;
+use Cake\ORM\Query\SelectQuery;
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Scenario\ScenarioAwareTrait;
 use CakephpFixtureFactories\Test\Factory\AuthorFactory;
@@ -58,9 +58,9 @@ class FixtureScenarioTest extends TestCase
     {
         /** @var Author[] $authors */
         $authors = $this->loadFixtureScenario(NAustralianAuthorsScenario::class, 3) ?? [];
-        
+
         $this->assertSame(3, $this->countAustralianAuthors());
-        
+
         foreach ($authors as $author) {
             $this->assertInstanceOf(Author::class, $author);
             $this->assertSame(
@@ -73,7 +73,7 @@ class FixtureScenarioTest extends TestCase
     private function countAustralianAuthors(): int
     {
         return AuthorFactory::find()
-            ->innerJoinWith('Address.City.Country', function (Query $q) {
+            ->innerJoinWith('Address.City.Country', function (SelectQuery $q) {
                 return $q->where(['Country.name' => NAustralianAuthorsScenario::COUNTRY_NAME]);
             })
             ->count();
