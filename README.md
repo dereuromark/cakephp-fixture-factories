@@ -21,7 +21,7 @@ Note: This is a maintained fork of the original [CakePHPFixtureFactories](https:
 
 Main differences:
 - Supports multiple generators via adapters (chose your generator library).
-- Modern configurable generator type guessing per field name/type.
+- Modern configurable generator type guessing per field name/type when baking.
 
 ---
 
