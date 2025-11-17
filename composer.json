@@ -53,9 +53,9 @@
         "mysql": "bash run_tests.sh Mysql \"$@\"",
         "pgsql": "bash run_tests.sh Postgres \"$@\"",
         "sqlite": "bash run_tests.sh Sqlite \"$@\"",
-        "stan": "vendor/bin/phpstan analyse --memory-limit=-1",
-        "cs-check": "vendor/bin/phpcs --colors --extensions=php",
-        "cs-fix": "vendor/bin/phpcbf --colors --extensions=php"
+        "stan": "phpstan analyze --memory-limit=-1",
+        "cs-check": "phpcs --colors --parallel=16",
+        "cs-fix": "phpcbf --colors --parallel=16"
     },
     "config": {
         "sort-packages": true,
