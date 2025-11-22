@@ -137,6 +137,7 @@ $dbConnection = [
 ConnectionManager::setConfig('test', $dbConnection);
 $dbConnection['dummy_key'] = 'DummyKeyValue';
 ConnectionManager::setConfig('dummy', $dbConnection);
+ConnectionManager::setConfig('test_dummy', $dbConnection);
 ConnectionManager::alias('test', 'default');
 
 Inflector::rules('singular', ['/(ss)$/i' => '\1']);
