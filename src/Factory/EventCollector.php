@@ -16,6 +16,7 @@ declare(strict_types=1);
 namespace CakephpFixtureFactories\Factory;
 
 use Cake\Core\Configure;
+use Cake\Datasource\ConnectionManager;
 use Cake\ORM\Table;
 use CakephpFixtureFactories\ORM\FactoryTableRegistry;
 use RuntimeException;
@@ -63,6 +64,11 @@ class EventCollector
     private string $rootTableRegistryName;
 
     /**
+     * @var string|null
+     */
+    private ?string $connectionName = null;
+
+    /**
      * @param string $rootTableRegistryName Name of the model of the master factory
      */
     public function __construct(string $rootTableRegistryName)
@@ -79,7 +85,7 @@ class EventCollector
      */
     public function getTable(): Table
     {
-        if (isset($this->table)) {
+        if ($this->table !== null) {
             return $this->table;
         }
 
@@ -87,6 +93,10 @@ class EventCollector
             self::MODEL_EVENTS => $this->getListeningModelEvents(),
             self::MODEL_BEHAVIORS => $this->getListeningBehaviors(),
         ];
+
+        if ($this->connectionName !== null) {
+            $options['connection'] = ConnectionManager::get($this->connectionName);
+        }
 
         try {
             $table = FactoryTableRegistry::getTableLocator()->get($this->rootTableRegistryName, $options);
@@ -107,13 +117,28 @@ class EventCollector
     }
 
     /**
+     * Set the database connection to use for the table.
+     *
+     * @param string $connectionName Name of the database connection
+     *
+     * @return $this
+     */
+    public function setConnection(string $connectionName)
+    {
+        $this->table = null;
+        $this->connectionName = $connectionName;
+
+        return $this;
+    }
+
+    /**
      * @param array $activeBehaviors Behaviors the factory will listen to
      *
      * @return array
      */
     public function listeningToBehaviors(array $activeBehaviors): array
     {
-        unset($this->table);
+        $this->table = null;
 
         return $this->listeningBehaviors = array_merge($this->defaultListeningBehaviors, $activeBehaviors);
     }
@@ -125,7 +150,7 @@ class EventCollector
      */
     public function listeningToModelEvents(array $activeModelEvents): array
     {
-        unset($this->table);
+        $this->table = null;
 
         return $this->listeningModelEvents = $activeModelEvents;
     }

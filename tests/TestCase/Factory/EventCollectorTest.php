@@ -328,4 +328,33 @@ class EventCollectorTest extends TestCase
         $bill = CustomerFactory::make()->withBills()->persist()->bills[0];
         $this->assertTrue($bill->get('afterSaveTriggeredPerDefault'));
     }
+
+    public function testSetConnection(): void
+    {
+        $factory = ArticleFactory::make();
+        $originalConnectionName = $factory->getTable()->getConnection()->configName();
+
+        // Set a different connection and verify it's applied
+        // Note: CakePHP prefixes connection names with 'test_' during testing
+        $factory->setConnection('dummy');
+        $newConnectionName = $factory->getTable()->getConnection()->configName();
+
+        $this->assertNotSame($originalConnectionName, $newConnectionName);
+        $this->assertSame('test_dummy', $newConnectionName);
+    }
+
+    public function testSetConnectionChaining(): void
+    {
+        $article = ArticleFactory::make()
+            ->setConnection('dummy')
+            ->listeningToBehaviors('Sluggable')
+            ->getEntity();
+
+        $this->assertInstanceOf(Article::class, $article);
+
+        // Verify the connection was set correctly
+        // Note: CakePHP prefixes connection names with 'test_' during testing
+        $factory = ArticleFactory::make()->setConnection('dummy');
+        $this->assertSame('test_dummy', $factory->getTable()->getConnection()->configName());
+    }
 }
