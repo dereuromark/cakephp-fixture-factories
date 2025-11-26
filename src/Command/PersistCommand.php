@@ -39,7 +39,7 @@ class PersistCommand extends Command
      */
     public static function defaultName(): string
     {
-        return 'fixture_factories_persist';
+        return 'fixture_factories persist';
     }
 
     /**
