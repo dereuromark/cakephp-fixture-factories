@@ -82,6 +82,13 @@ abstract class BaseFactory
     private int $times = 1;
 
     /**
+     * Keep entities dirty so they can be saved manually.
+     *
+     * @var bool
+     */
+    private bool $keepDirty = false;
+
+    /**
      * The data compiler gathers the data from the
      * default template, the injection and patched data
      * and compiles it to produce the data feeding the
@@ -347,7 +354,7 @@ abstract class BaseFactory
 
         // Mark entities as clean so their current state becomes the "original" state
         // Only do this when NOT in persist mode, as clean entities can't be saved
-        if (!$dataCompiler->isInPersistMode()) {
+        if (!$dataCompiler->isInPersistMode() && !$this->keepDirty) {
             foreach ($entities as $entity) {
                 $entity->clean();
             }
@@ -497,6 +504,25 @@ abstract class BaseFactory
     }
 
     /**
+     * Keep the resulting entities dirty for manual saves.
+     *
+     * @param bool $keepDirty Whether to keep entities dirty.
+     *
+     * @return $this
+     */
+    public function keepDirty(bool $keepDirty = true)
+    {
+        $this->keepDirty = $keepDirty;
+        if ($keepDirty) {
+            foreach ($this->getAssociationBuilder()->getAssociations() as $associationFactory) {
+                $associationFactory->keepDirty();
+            }
+        }
+
+        return $this;
+    }
+
+    /**
      * @param array<string>|string $activeBehaviors Behaviors listened to by the factory
      *
      * @throws \CakephpFixtureFactories\Error\FixtureFactoryException on argument passed error
@@ -641,6 +667,9 @@ abstract class BaseFactory
             $factory = $data;
         } else {
             $factory = $this->getAssociationBuilder()->getAssociatedFactory($associationName, $data);
+        }
+        if ($this->keepDirty) {
+            $factory->keepDirty();
         }
 
         // Extract the first Association in the string

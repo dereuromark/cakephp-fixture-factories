@@ -752,6 +752,62 @@ class BaseFactoryTest extends TestCase
         $this->assertNull($article->bills);
     }
 
+    public function testKeepDirtyWithGetEntity(): void
+    {
+        $article = ArticleFactory::make()->getEntity();
+        $this->assertFalse($article->isDirty('title'));
+
+        $dirtyArticle = ArticleFactory::make()->keepDirty()->getEntity();
+        $this->assertTrue($dirtyArticle->isDirty('title'));
+        $this->assertTrue($dirtyArticle->authors[0]->isDirty('name'));
+    }
+
+    public function testKeepDirtyPropagatesToToOneAssociations(): void
+    {
+        $author = AuthorFactory::make()->keepDirty()->getEntity();
+
+        $this->assertTrue($author->isDirty('name'));
+        $this->assertTrue($author->address->isDirty('street'));
+        $this->assertTrue($author->address->city->isDirty('name'));
+        $this->assertTrue($author->address->city->country->isDirty('name'));
+    }
+
+    public function testKeepDirtyPropagatesToToManyAssociations(): void
+    {
+        $article = ArticleFactory::make()->keepDirty()->getEntity();
+
+        $this->assertTrue($article->authors[0]->isDirty('name'));
+        $this->assertTrue($article->authors[0]->address->isDirty('street'));
+    }
+
+    public function testKeepDirtyPropagatesToAssociationsAddedAfter(): void
+    {
+        $article = ArticleFactory::make()->keepDirty()->withBills()->getEntity();
+
+        $this->assertTrue($article->bills[0]->isDirty('amount'));
+        $this->assertTrue($article->bills[0]->customer->isDirty('name'));
+    }
+
+    public function testKeepDirtyPropagatesToAssociationsAddedBefore(): void
+    {
+        $factory = ArticleFactory::make()->withBills();
+        $factory->keepDirty();
+
+        $article = $factory->getEntity();
+
+        $this->assertTrue($article->bills[0]->isDirty('amount'));
+        $this->assertTrue($article->bills[0]->customer->isDirty('name'));
+    }
+
+    public function testKeepDirtyPropagatesToProvidedAssociationFactory(): void
+    {
+        $authorsFactory = AuthorFactory::make(2);
+        $article = ArticleFactory::make()->keepDirty()->with('Authors', $authorsFactory)->getEntity();
+
+        $this->assertTrue($article->authors[0]->isDirty('name'));
+        $this->assertTrue($article->authors[1]->isDirty('name'));
+    }
+
     public function testHandlingOfMultipleIdenticalWith(): void
     {
         AuthorFactory::make()->withAddress()->withAddress()->persist();
