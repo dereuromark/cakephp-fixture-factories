@@ -10,6 +10,7 @@ use CakephpFixtureFactories\Error\FactoryNotFoundException;
 use CakephpFixtureFactories\Factory\FactoryAwareTrait;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpFixtureFactories\Test\Factory\PremiumAuthorFactory;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class FactoryAwareTraitIntegrationTest extends TestCase
 {
@@ -39,7 +40,7 @@ class FactoryAwareTraitIntegrationTest extends TestCase
         ];
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('factoryFoundData')]
+    #[DataProvider('factoryFoundData')]
     public function testGetFactoryFound(string $name, string $expected): void
     {
         $this->assertInstanceOf($expected, $this->getFactory($name));

@@ -6,6 +6,7 @@ namespace CakephpFixtureFactories\Test\TestCase\Factory;
 
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Factory\FactoryAwareTrait;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class FactoryAwareTraitUnitTest extends TestCase
 {
@@ -20,7 +21,7 @@ class FactoryAwareTraitUnitTest extends TestCase
         ];
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('getFactoryNamespaceData')]
+    #[DataProvider('getFactoryNamespaceData')]
     public function testGetFactoryNamespace(?string $plugin, string $expected): void
     {
         $this->assertEquals($expected, $this->getFactoryNamespace($plugin));
@@ -34,7 +35,7 @@ class FactoryAwareTraitUnitTest extends TestCase
         ];
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('getFactoryClassNameData')]
+    #[DataProvider('getFactoryClassNameData')]
     public function testGetFactoryClassName(string $name, string $expected): void
     {
         $this->assertEquals($expected, $this->getFactoryClassName($name));
@@ -57,7 +58,7 @@ class FactoryAwareTraitUnitTest extends TestCase
         ];
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('getFactoryNameData')]
+    #[DataProvider('getFactoryNameData')]
     public function testGetFactoryNameFromModelName(string $name, string $factoryName, string $factoryFileName): void
     {
         $this->assertEquals($factoryName, $this->getFactoryNameFromModelName($name));

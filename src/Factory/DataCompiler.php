@@ -516,6 +516,7 @@ class DataCompiler
      * Ensure new associated entities are marked dirty so CakePHP will save them.
      *
      * @param \Cake\Datasource\EntityInterface $entity Entity to mark.
+     * @param array $visited
      *
      * @return void
      */
@@ -542,6 +543,7 @@ class DataCompiler
             $value = $entity->get($field);
             if ($value instanceof EntityInterface) {
                 $this->markEntityDirtyIfNew($value, $visited);
+
                 continue;
             }
             if (!is_array($value)) {

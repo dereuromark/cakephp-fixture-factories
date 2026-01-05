@@ -20,6 +20,7 @@ use CakephpFixtureFactories\Test\Factory\BillFactory;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
 {
@@ -37,7 +38,7 @@ class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
     /**
      * @param int $cityOffset
      */
-    #[\PHPUnit\Framework\Attributes\DataProvider('dataForTestDisablePrimaryKeyOffset')]
+    #[DataProvider('dataForTestDisablePrimaryKeyOffset')]
     public function testDisablePrimaryKeyOffset(int $cityOffset): void
     {
         $n = 10;
@@ -59,7 +60,7 @@ class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
     /**
      * @param int $countryOffset
      */
-    #[\PHPUnit\Framework\Attributes\DataProvider('dataForTestDisablePrimaryKeyOffset')]
+    #[DataProvider('dataForTestDisablePrimaryKeyOffset')]
     public function testDisablePrimaryKeyOffsetInAssociation(int $countryOffset): void
     {
         $n = 5;

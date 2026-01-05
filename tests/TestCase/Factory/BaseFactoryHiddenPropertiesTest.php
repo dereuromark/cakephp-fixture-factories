@@ -20,6 +20,7 @@ use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Test\Factory\ArticleFactory;
 use CakephpFixtureFactories\Test\Factory\AuthorFactory;
 use CakephpFixtureFactories\Test\Factory\BillFactory;
+use PHPUnit\Framework\Attributes\DataProvider;
 use TestApp\Model\Entity\Article;
 
 class BaseFactoryHiddenPropertiesTest extends TestCase
@@ -72,7 +73,7 @@ class BaseFactoryHiddenPropertiesTest extends TestCase
      * @param int $n
      * @param bool $persist
      */
-    #[\PHPUnit\Framework\Attributes\DataProvider('iterate')]
+    #[DataProvider('iterate')]
     public function testHiddenPropertyInMainBuild(int $n, bool $persist): void
     {
         $factory = ArticleFactory::make($n)->withHiddenBiography(self::DUMMY_HIDDEN_PARAGRAPH);
@@ -95,7 +96,7 @@ class BaseFactoryHiddenPropertiesTest extends TestCase
      * @param int $n
      * @param bool $persist
      */
-    #[\PHPUnit\Framework\Attributes\DataProvider('iterate')]
+    #[DataProvider('iterate')]
     public function testHiddenPropertyInBelongsToManyAssociation(int $n, bool $persist): void
     {
         $factory = AuthorFactory::make()->with(
@@ -117,7 +118,7 @@ class BaseFactoryHiddenPropertiesTest extends TestCase
      * @param int $n
      * @param bool $persist
      */
-    #[\PHPUnit\Framework\Attributes\DataProvider('iterate')]
+    #[DataProvider('iterate')]
     public function testHiddenPropertyInBelongsToAssociation(int $n, bool $persist): void
     {
         $factory = BillFactory::make($n)->with(

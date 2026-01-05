@@ -23,6 +23,7 @@ use CakephpFixtureFactories\Test\Factory\ArticleFactory;
 use CakephpFixtureFactories\Test\Factory\AuthorFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use InvalidArgumentException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use TestApp\Model\Table\PremiumAuthorsTable;
 
 class DataCompilerTest extends TestCase
@@ -160,7 +161,7 @@ class DataCompilerTest extends TestCase
      * @param array $injectedData
      * @param array $expected
      */
-    #[\PHPUnit\Framework\Attributes\DataProvider('dataForGetModifiedUniqueFields')]
+    #[DataProvider('dataForGetModifiedUniqueFields')]
     public function testGetModifiedUniqueFields(array $injectedData, array $expected): void
     {
         $dataCompiler = new DataCompiler(CountryFactory::make($injectedData));

@@ -18,6 +18,7 @@ namespace CakephpFixtureFactories\Test\TestCase\Factory;
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Test\Factory\ArticleFactory;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class FixtureInjectorTest extends TestCase
 {
@@ -62,7 +63,7 @@ class FixtureInjectorTest extends TestCase
                  *
      * @param \CakephpFixtureFactories\Test\Factory\ArticleFactory $factory
      */
-    #[\PHPUnit\Framework\Attributes\DataProvider('createWithOneFactoryInTheDataProvider')]
+    #[DataProvider('createWithOneFactoryInTheDataProvider')]
     public function testCreateFactoryInTheDataProvider(ArticleFactory $factory): void
     {
         $factory->persist();
@@ -76,7 +77,7 @@ class FixtureInjectorTest extends TestCase
      * @param int $n
      * @param \CakephpFixtureFactories\Test\Factory\ArticleFactory $factory
      */
-    #[\PHPUnit\Framework\Attributes\DataProvider('createWithDifferentFactoriesInTheDataProvider')]
+    #[DataProvider('createWithDifferentFactoriesInTheDataProvider')]
     public function testCreateFactoryInTheDataProvider2(int $n, ArticleFactory $factory): void
     {
         $factory->persist();

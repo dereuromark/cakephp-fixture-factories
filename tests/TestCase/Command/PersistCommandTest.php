@@ -29,6 +29,7 @@ use CakephpFixtureFactories\Test\Factory\BillFactory;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class PersistCommandTest extends TestCase
 {
@@ -75,7 +76,7 @@ class PersistCommandTest extends TestCase
         ];
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('dataProviderForStringFactories')]
+    #[DataProvider('dataProviderForStringFactories')]
     public function testPersistOnOneFactory(string $factoryString): void
     {
         $args = new Arguments([$factoryString], [], [PersistCommand::ARG_NAME]);
@@ -95,7 +96,7 @@ class PersistCommandTest extends TestCase
         ];
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('dataProviderForStringPluginFactories')]
+    #[DataProvider('dataProviderForStringPluginFactories')]
     public function testPersistOnOnePluginFactory(string $factoryString): void
     {
         $args = new Arguments([$factoryString], [], [PersistCommand::ARG_NAME]);
@@ -106,7 +107,7 @@ class PersistCommandTest extends TestCase
         $this->assertSame(1, BillFactory::count());
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('dataProviderForStringFactories')]
+    #[DataProvider('dataProviderForStringFactories')]
     public function testPersistOnNFactories(string $factoryString): void
     {
         $number = '3';

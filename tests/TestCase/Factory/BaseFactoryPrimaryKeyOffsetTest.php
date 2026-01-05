@@ -21,6 +21,7 @@ use CakephpFixtureFactories\Test\Factory\BillFactory;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class BaseFactoryPrimaryKeyOffsetTest extends TestCase
 {
@@ -38,7 +39,7 @@ class BaseFactoryPrimaryKeyOffsetTest extends TestCase
     /**
      * @param int $cityOffset
      */
-    #[\PHPUnit\Framework\Attributes\DataProvider('dataForTestSetPrimaryKeyOffset')]
+    #[DataProvider('dataForTestSetPrimaryKeyOffset')]
     public function testSetPrimaryKeyOffset(int $cityOffset): void
     {
         $n = 10;
@@ -57,7 +58,7 @@ class BaseFactoryPrimaryKeyOffsetTest extends TestCase
     /**
      * @param int $countryOffset
      */
-    #[\PHPUnit\Framework\Attributes\DataProvider('dataForTestSetPrimaryKeyOffset')]
+    #[DataProvider('dataForTestSetPrimaryKeyOffset')]
     public function testSetPrimaryKeyOffsetInAssociation(int $countryOffset): void
     {
         $n = 5;

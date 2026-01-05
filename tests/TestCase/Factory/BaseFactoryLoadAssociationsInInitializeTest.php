@@ -26,6 +26,7 @@ use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpFixtureFactories\Test\Factory\TableWithoutModelFactory;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use PHPUnit\Framework\Attributes\DataProvider;
 use TestApp\Model\Entity\Address;
 use TestApp\Model\Entity\Country;
 use function count;
@@ -128,7 +129,7 @@ class BaseFactoryLoadAssociationsInInitializeTest extends TestCase
         return [['TableWithoutModel'], ['table_without_model']];
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('dataForClassName')]
+    #[DataProvider('dataForClassName')]
     public function testLoadAssociationOnTheFlyHasManyWithMagicPersist(string $className): void
     {
         CityFactory::make()->getTable()->associations()->remove('Addresses');
@@ -150,7 +151,7 @@ class BaseFactoryLoadAssociationsInInitializeTest extends TestCase
         $this->assertSame($n, TableWithoutModelFactory::count());
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('dataForClassName')]
+    #[DataProvider('dataForClassName')]
     public function testLoadAssociationOnTheFlyBelongsToWithMagicPersist(string $className): void
     {
         // Because of a foreign key constrain at the DB level, a country with id $city->country_id
@@ -174,7 +175,7 @@ class BaseFactoryLoadAssociationsInInitializeTest extends TestCase
         $this->assertSame(1, TableWithoutModelFactory::count());
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('dataForClassName')]
+    #[DataProvider('dataForClassName')]
     public function testLoadAssociationOnTheFlyBelongsToManyWithMagicPersist(string $className): void
     {
         $factory = AuthorFactory::make();
