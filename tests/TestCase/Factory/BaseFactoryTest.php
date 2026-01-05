@@ -752,6 +752,15 @@ class BaseFactoryTest extends TestCase
         $this->assertNull($article->bills);
     }
 
+    public function testKeepDirtyWithGetEntity(): void
+    {
+        $article = ArticleFactory::make()->getEntity();
+        $this->assertFalse($article->isDirty('title'));
+
+        $dirtyArticle = ArticleFactory::make()->keepDirty()->getEntity();
+        $this->assertTrue($dirtyArticle->isDirty('title'));
+    }
+
     public function testHandlingOfMultipleIdenticalWith(): void
     {
         AuthorFactory::make()->withAddress()->withAddress()->persist();
