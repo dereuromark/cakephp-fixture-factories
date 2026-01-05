@@ -137,7 +137,7 @@ class DataCompilerTest extends TestCase
 
     public function testSetPrimaryKeyOnEntity(): void
     {
-        $countries = CountryFactory::make()->setTimes(2)->getEntity();
+        $countries = CountryFactory::make()->times(2)->getEntity();
 
         $this->articleDataCompiler->startPersistMode();
         $res = $this->articleDataCompiler->setPrimaryKey($countries);

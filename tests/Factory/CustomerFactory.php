@@ -48,13 +48,13 @@ class CustomerFactory extends BaseFactory
     public function withBills($parameter = null, int $n = 1): self
     {
         if (is_numeric($parameter)) {
-            $billsFactory = BillFactory::make()->setTimes((int)$parameter)->without('Customer');
+            $billsFactory = BillFactory::make()->times((int)$parameter)->without('Customer');
         } elseif ($parameter instanceof EntityInterface) {
-            $billsFactory = BillFactory::makeFrom($parameter)->setTimes($n)->without('Customer');
+            $billsFactory = BillFactory::makeFrom($parameter)->times($n)->without('Customer');
         } elseif (is_callable($parameter)) {
-            $billsFactory = BillFactory::makeWith($parameter)->setTimes($n)->without('Customer');
+            $billsFactory = BillFactory::makeWith($parameter)->times($n)->without('Customer');
         } else {
-            $billsFactory = BillFactory::make($parameter)->setTimes($n)->without('Customer');
+            $billsFactory = BillFactory::make($parameter)->times($n)->without('Customer');
         }
 
         return $this->with('Bills', $billsFactory);
@@ -67,7 +67,7 @@ class CustomerFactory extends BaseFactory
     public function withAddress($parameter = null): self
     {
         if (is_numeric($parameter)) {
-            $addressFactory = AddressFactory::make()->setTimes((int)$parameter);
+            $addressFactory = AddressFactory::make()->times((int)$parameter);
         } elseif ($parameter instanceof EntityInterface) {
             $addressFactory = AddressFactory::makeFrom($parameter);
         } elseif (is_callable($parameter)) {

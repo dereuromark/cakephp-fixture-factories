@@ -124,7 +124,7 @@ class BaseFactoryAssociationsTest extends TestCase
         $countries = CountryFactory::make([
             ['name' => $name1],
             ['name' => $name2],
-        ])->setTimes($times)->persist();
+        ])->times($times)->persist();
 
         $this->assertSame($times * 2, CountryFactory::count());
 
@@ -235,7 +235,7 @@ class BaseFactoryAssociationsTest extends TestCase
         $n = 10;
         $country = 'Foo';
         $path = 'BusinessAddress.City.Country';
-        $authors = AuthorFactory::make()->setTimes($n)->with($path, [
+        $authors = AuthorFactory::make()->times($n)->with($path, [
             'name' => $country,
         ])->persist();
 
@@ -281,7 +281,7 @@ class BaseFactoryAssociationsTest extends TestCase
     public function testGetAssociatedFactoryInPluginWithMultipleConstructs(): void
     {
         $n = 10;
-        $article = ArticleFactory::make()->with('Bills', BillFactory::make()->setTimes($n)->with('Customer'))->persist();
+        $article = ArticleFactory::make()->with('Bills', BillFactory::make()->times($n)->with('Customer'))->persist();
 
         $this->assertInstanceOf(Bill::class, $article->bills[0]);
         $this->assertInstanceOf(Customer::class, $article->bills[0]->customer);
@@ -629,7 +629,7 @@ class BaseFactoryAssociationsTest extends TestCase
      */
     public function testReproduceIssue84(): void
     {
-        $articles = ArticleFactory::make()->setTimes(2)
+        $articles = ArticleFactory::make()->times(2)
             ->with('Authors[5]', ['biography' => 'Foo'])
             ->with('Bills')
             ->persist();
@@ -653,7 +653,7 @@ class BaseFactoryAssociationsTest extends TestCase
      */
     public function testReproduceIssue84WithArticlesAuthors(): void
     {
-        $articles = ArticleFactory::make()->setTimes(2)
+        $articles = ArticleFactory::make()->times(2)
             ->with('ArticlesAuthors[5].Authors', ['biography' => 'Foo'])
             ->with('Bills')
             ->without('Authors') // do not create the default authors

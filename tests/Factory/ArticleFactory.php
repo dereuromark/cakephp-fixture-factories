@@ -62,13 +62,13 @@ class ArticleFactory extends BaseFactory
     public function withAuthors(mixed $parameter = null, int $n = 1): self
     {
         if (is_numeric($parameter)) {
-            $authorsFactory = AuthorFactory::make()->setTimes((int)$parameter);
+            $authorsFactory = AuthorFactory::make()->times((int)$parameter);
         } elseif ($parameter instanceof EntityInterface) {
-            $authorsFactory = AuthorFactory::makeFrom($parameter)->setTimes($n);
+            $authorsFactory = AuthorFactory::makeFrom($parameter)->times($n);
         } elseif (is_callable($parameter)) {
-            $authorsFactory = AuthorFactory::makeWith($parameter)->setTimes($n);
+            $authorsFactory = AuthorFactory::makeWith($parameter)->times($n);
         } else {
-            $authorsFactory = AuthorFactory::make($parameter)->setTimes($n);
+            $authorsFactory = AuthorFactory::make($parameter)->times($n);
         }
 
         return $this->with('Authors', $authorsFactory);
@@ -85,13 +85,13 @@ class ArticleFactory extends BaseFactory
     public function withBills(mixed $parameter = null, int $n = 1): self
     {
         if (is_numeric($parameter)) {
-            $billsFactory = BillFactory::make()->setTimes((int)$parameter)->without('Article');
+            $billsFactory = BillFactory::make()->times((int)$parameter)->without('Article');
         } elseif ($parameter instanceof EntityInterface) {
-            $billsFactory = BillFactory::makeFrom($parameter)->setTimes($n)->without('Article');
+            $billsFactory = BillFactory::makeFrom($parameter)->times($n)->without('Article');
         } elseif (is_callable($parameter)) {
-            $billsFactory = BillFactory::makeWith($parameter)->setTimes($n)->without('Article');
+            $billsFactory = BillFactory::makeWith($parameter)->times($n)->without('Article');
         } else {
-            $billsFactory = BillFactory::make($parameter)->setTimes($n)->without('Article');
+            $billsFactory = BillFactory::make($parameter)->times($n)->without('Article');
         }
 
         return $this->with('Bills', $billsFactory);
@@ -108,13 +108,13 @@ class ArticleFactory extends BaseFactory
     public function withBillsWithArticle(mixed $parameter = null, int $n = 1): self
     {
         if (is_numeric($parameter)) {
-            $billsFactory = BillFactory::make()->setTimes((int)$parameter);
+            $billsFactory = BillFactory::make()->times((int)$parameter);
         } elseif ($parameter instanceof EntityInterface) {
-            $billsFactory = BillFactory::makeFrom($parameter)->setTimes($n);
+            $billsFactory = BillFactory::makeFrom($parameter)->times($n);
         } elseif (is_callable($parameter)) {
-            $billsFactory = BillFactory::makeWith($parameter)->setTimes($n);
+            $billsFactory = BillFactory::makeWith($parameter)->times($n);
         } else {
-            $billsFactory = BillFactory::make($parameter)->setTimes($n);
+            $billsFactory = BillFactory::make($parameter)->times($n);
         }
 
         return $this->with('Bills', $billsFactory);

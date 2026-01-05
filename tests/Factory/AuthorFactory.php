@@ -59,13 +59,13 @@ class AuthorFactory extends BaseFactory
     public function withArticles(mixed $parameter = null, int $n = 1): self
     {
         if (is_numeric($parameter)) {
-            $articlesFactory = ArticleFactory::make()->setTimes((int)$parameter)->without('Authors');
+            $articlesFactory = ArticleFactory::make()->times((int)$parameter)->without('Authors');
         } elseif ($parameter instanceof EntityInterface) {
-            $articlesFactory = ArticleFactory::makeFrom($parameter)->setTimes($n)->without('Authors');
+            $articlesFactory = ArticleFactory::makeFrom($parameter)->times($n)->without('Authors');
         } elseif (is_callable($parameter)) {
-            $articlesFactory = ArticleFactory::makeWith($parameter)->setTimes($n)->without('Authors');
+            $articlesFactory = ArticleFactory::makeWith($parameter)->times($n)->without('Authors');
         } else {
-            $articlesFactory = ArticleFactory::make($parameter)->setTimes($n)->without('Authors');
+            $articlesFactory = ArticleFactory::make($parameter)->times($n)->without('Authors');
         }
 
         return $this->with('Articles', $articlesFactory);
@@ -74,7 +74,7 @@ class AuthorFactory extends BaseFactory
     public function withAddress(mixed $parameter = null): self
     {
         if (is_numeric($parameter)) {
-            $addressFactory = AddressFactory::make()->setTimes((int)$parameter);
+            $addressFactory = AddressFactory::make()->times((int)$parameter);
         } elseif ($parameter instanceof EntityInterface) {
             $addressFactory = AddressFactory::makeFrom($parameter);
         } elseif (is_callable($parameter)) {

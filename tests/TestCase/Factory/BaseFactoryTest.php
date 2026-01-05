@@ -91,7 +91,7 @@ class BaseFactoryTest extends TestCase
     public function testGetEntitiesWithArray(): void
     {
         $n = 3;
-        $entities = ArticleFactory::make(['title' => 'blah'])->setTimes($n)->getEntities();
+        $entities = ArticleFactory::make(['title' => 'blah'])->times($n)->getEntities();
 
         $this->assertSame($n, count($entities));
         foreach ($entities as $entity) {
@@ -108,7 +108,7 @@ class BaseFactoryTest extends TestCase
             return [
                 'title' => $generator->word(),
             ];
-        })->setTimes($n)->getEntities();
+        })->times($n)->getEntities();
 
         $this->assertSame($n, count($entities));
         foreach ($entities as $entity) {
@@ -151,7 +151,7 @@ class BaseFactoryTest extends TestCase
             return [
                 'title' => $generator->sentence(),
             ];
-        })->setTimes($n)->persist();
+        })->times($n)->persist();
 
         $this->assertSame($n, count($entities));
         $previousName = '';
@@ -167,7 +167,7 @@ class BaseFactoryTest extends TestCase
         $n = 3;
         $entities = ArticleFactory::make([
             'title' => 'test title',
-        ])->setTimes($n)->persist();
+        ])->times($n)->persist();
 
         $this->assertSame($n, count($entities));
         $previousName = '';
@@ -184,7 +184,7 @@ class BaseFactoryTest extends TestCase
         $m = 2;
         $articles = ArticleFactory::make([
             'title' => 'test title',
-        ])->setTimes($n)
+        ])->times($n)
             ->withAuthors([
                 'name' => 'blah',
             ], $m)
@@ -209,7 +209,7 @@ class BaseFactoryTest extends TestCase
         $m = 2;
         $articles = ArticleFactory::make([
             'title' => 'test title',
-        ])->setTimes($n)
+        ])->times($n)
             ->withAuthors(function (AuthorFactory $factory, GeneratorInterface $generator) {
                 return [
                     'name' => $generator->lastName(),
@@ -270,7 +270,7 @@ class BaseFactoryTest extends TestCase
                 return ['title' => $generator->sentence()];
             },
         )
-        ->setTimes($n)
+        ->times($n)
         ->withAuthors(
             function (AuthorFactory $factory, GeneratorInterface $generator) {
                 return ['name' => $generator->lastName()];
@@ -294,7 +294,7 @@ class BaseFactoryTest extends TestCase
     {
         $n = 3;
         $m = 2;
-        $articles = ArticleFactory::make(['title' => 'test title'])->setTimes($n)
+        $articles = ArticleFactory::make(['title' => 'test title'])->times($n)
             ->withAuthors(function (AuthorFactory $factory, GeneratorInterface $generator) {
                 $factory->withAddress(function (AddressFactory $factory, GeneratorInterface $generator) {
                     $factory->withCity(function (CityFactory $factory, GeneratorInterface $generator) {
@@ -519,7 +519,7 @@ class BaseFactoryTest extends TestCase
             $factory->with('Address', AddressFactory::make(['street' => $generator->streetAddress()]));
 
             return ['name' => $generator->lastName()];
-        })->setTimes($n)->persist();
+        })->times($n)->persist();
 
         $this->assertSame($n, count($entities));
         foreach ($entities as $entity) {
@@ -533,7 +533,7 @@ class BaseFactoryTest extends TestCase
     public function testGetEntityAfterMakingMultipleShouldReturnTheFirstOfAll(): void
     {
         $title = 'Foo';
-        $article = ArticleFactory::make(compact('title'))->setTimes(2)->getEntity();
+        $article = ArticleFactory::make(compact('title'))->times(2)->getEntity();
         $this->assertSame($title, $article->title);
     }
 
@@ -543,7 +543,7 @@ class BaseFactoryTest extends TestCase
         $article = ArticleFactory::make([
             ['title' => $title],
             ['title' => 'Bar'],
-        ])->setTimes(2)->getEntity();
+        ])->times(2)->getEntity();
         $this->assertSame($title, $article->title);
     }
 
@@ -801,7 +801,7 @@ class BaseFactoryTest extends TestCase
 
     public function testKeepDirtyPropagatesToProvidedAssociationFactory(): void
     {
-        $authorsFactory = AuthorFactory::make()->setTimes(2);
+        $authorsFactory = AuthorFactory::make()->times(2);
         $article = ArticleFactory::make()->keepDirty()->with('Authors', $authorsFactory)->getEntity();
 
         $this->assertTrue($article->authors[0]->isDirty('name'));
@@ -837,7 +837,7 @@ class BaseFactoryTest extends TestCase
         $countries = CountryFactory::make([
             ['name' => $name1],
             ['name' => $name2],
-        ])->setTimes($times)->persist();
+        ])->times($times)->persist();
 
         $this->assertSame($times * 2, CountryFactory::count());
 
@@ -894,7 +894,7 @@ class BaseFactoryTest extends TestCase
     #[DataProvider('feedTestSetTimes')]
     public function testSetTimes(int $times): void
     {
-        ArticleFactory::make()->setTimes($times)->persist();
+        ArticleFactory::make()->times($times)->persist();
 
         $this->assertSame($times, ArticleFactory::count());
     }
@@ -923,21 +923,21 @@ class BaseFactoryTest extends TestCase
     public function testMakeEntityWithNumber(): void
     {
         $n = 2;
-        $country = CountryFactory::make()->setTimes($n)->getEntity();
+        $country = CountryFactory::make()->times($n)->getEntity();
         $this->assertInstanceOf(Country::class, $country);
     }
 
     public function testMakeEntitiesWithNumber(): void
     {
         $n = 2;
-        $country = CountryFactory::make()->setTimes($n)->getEntities();
+        $country = CountryFactory::make()->times($n)->getEntities();
         $this->assertSame($n, count($country));
     }
 
     public function testMakeAliases(): void
     {
         $title = 'Foo';
-        $articles = ArticleFactory::make()->setTimes(2)->getEntities();
+        $articles = ArticleFactory::make()->times(2)->getEntities();
         $this->assertCount(2, $articles);
 
         $fromCallable = ArticleFactory::makeWith(function (ArticleFactory $factory, GeneratorInterface $generator) {
@@ -952,7 +952,7 @@ class BaseFactoryTest extends TestCase
 
     public function testPersistWithNonCreatedSubEntities(): void
     {
-        $authors = AuthorFactory::make()->setTimes(5)->getEntities();
+        $authors = AuthorFactory::make()->times(5)->getEntities();
         $article = ArticleFactory::make()
             ->withAuthors($authors)
             ->persist();

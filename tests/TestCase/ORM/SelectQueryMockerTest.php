@@ -54,7 +54,7 @@ class SelectQueryMockerTest extends TestCase
             ['name' => $names[1]],
         ]);
         $nCountriesInDB = rand(2, 5);
-        CountryFactory::make()->setTimes($nCountriesInDB)->persist();
+        CountryFactory::make()->times($nCountriesInDB)->persist();
         SelectQueryMocker::mock($this, $countryFactory);
 
         $CountriesTable = TableRegistry::getTableLocator()->get('Countries');

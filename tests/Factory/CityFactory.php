@@ -62,7 +62,7 @@ class CityFactory extends BaseFactory
     public function withCountry(mixed $parameter = null): self
     {
         if (is_numeric($parameter)) {
-            $countryFactory = CountryFactory::make()->setTimes((int)$parameter);
+            $countryFactory = CountryFactory::make()->times((int)$parameter);
         } elseif ($parameter instanceof EntityInterface) {
             $countryFactory = CountryFactory::makeFrom($parameter);
         } elseif (is_callable($parameter)) {

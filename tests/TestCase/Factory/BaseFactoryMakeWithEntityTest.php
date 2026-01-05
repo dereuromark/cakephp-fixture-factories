@@ -66,7 +66,7 @@ class BaseFactoryMakeWithEntityTest extends TestCase
     public function testMakeWithEntities(): void
     {
         $n = 2;
-        $authors = AuthorFactory::make()->setTimes($n)->persist();
+        $authors = AuthorFactory::make()->times($n)->persist();
         $authors2 = AuthorFactory::make($authors)->persist();
         $this->assertSame($n, count($authors2));
         $this->assertSame($authors, $authors2);
@@ -86,7 +86,7 @@ class BaseFactoryMakeWithEntityTest extends TestCase
     public function testWithToOneWithEntities(): void
     {
         $n = 2;
-        $addresses = AddressFactory::make()->setTimes($n)->persist();
+        $addresses = AddressFactory::make()->times($n)->persist();
         $author = AuthorFactory::make()->with('Address', $addresses)->persist();
         $this->assertSame($addresses[0], $author->get('address'));
         $this->assertSame($author->get('address_id'), $addresses[0]->get('id'));
@@ -97,7 +97,7 @@ class BaseFactoryMakeWithEntityTest extends TestCase
     public function testWithToManyWithEntities(): void
     {
         $n = 2;
-        $articles = ArticleFactory::make()->setTimes($n)->persist();
+        $articles = ArticleFactory::make()->times($n)->persist();
         $author = AuthorFactory::make()->withArticles($articles)->persist();
 
         $this->assertSame($articles, $author->get('articles'));
@@ -109,7 +109,7 @@ class BaseFactoryMakeWithEntityTest extends TestCase
     {
         $n = 2;
         $author1 = AuthorFactory::make()->persist();
-        $authors = AuthorFactory::makeFrom($author1)->setTimes($n)->persist();
+        $authors = AuthorFactory::makeFrom($author1)->times($n)->persist();
         foreach ($authors as $author) {
             $this->assertSame($author1, $author);
         }
@@ -120,8 +120,8 @@ class BaseFactoryMakeWithEntityTest extends TestCase
     {
         $n = 2;
         $m = 3;
-        $authors1 = AuthorFactory::make()->setTimes($n)->persist();
-        $authors = AuthorFactory::make($authors1)->setTimes($m)->persist();
+        $authors1 = AuthorFactory::make()->times($n)->persist();
+        $authors = AuthorFactory::make($authors1)->times($m)->persist();
 
         $count = 0;
         for ($i = 0; $i < $m; $i++) {

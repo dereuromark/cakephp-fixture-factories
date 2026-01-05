@@ -37,8 +37,8 @@ class FixtureInjectorTest extends TestCase
 
         return [
             [$Factory],
-            [$Factory->setTimes(2)],
-            [$Factory->setTimes(10)],
+            [$Factory->times(2)],
+            [$Factory->times(10)],
         ];
     }
 
@@ -52,8 +52,8 @@ class FixtureInjectorTest extends TestCase
     {
         return [
             [1, ArticleFactory::make()],
-            [2, ArticleFactory::make()->setTimes(2)],
-            [10, ArticleFactory::make()->setTimes(10)],
+            [2, ArticleFactory::make()->times(2)],
+            [10, ArticleFactory::make()->times(10)],
         ];
     }
 

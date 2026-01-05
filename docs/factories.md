@@ -47,13 +47,13 @@ class ArticleFactory extends BaseFactory
     public function withAuthors($parameter = null, int $n = 1): self
     {
         if (is_numeric($parameter)) {
-            $authorsFactory = AuthorFactory::make()->setTimes((int)$parameter);
+            $authorsFactory = AuthorFactory::make()->times((int)$parameter);
         } elseif ($parameter instanceof \Cake\Datasource\EntityInterface) {
-            $authorsFactory = AuthorFactory::makeFrom($parameter)->setTimes($n);
+            $authorsFactory = AuthorFactory::makeFrom($parameter)->times($n);
         } elseif (is_callable($parameter)) {
-            $authorsFactory = AuthorFactory::makeWith($parameter)->setTimes($n);
+            $authorsFactory = AuthorFactory::makeWith($parameter)->times($n);
         } else {
-            $authorsFactory = AuthorFactory::make($parameter)->setTimes($n);
+            $authorsFactory = AuthorFactory::make($parameter)->times($n);
         }
 
         return $this->with('Authors', $authorsFactory);
@@ -148,7 +148,7 @@ will be cautious whenever the property `name` is set by the developer.
 
 Running
 ```php
-CityFactory::make()->setTimes(5)->with('Country', 'Foo')->persist();
+CityFactory::make()->times(5)->with('Country', 'Foo')->persist();
 ```
 will create 5 cities all associated to one unique country. If you perform that same operation again,
 you will have 10 cities, all associated to one single country.
@@ -160,7 +160,7 @@ with the particularity that you do not have to define them as unique. The factor
 cannot read the uniqueness of a property in the schema, but it knows which properties
 are primary keys. Therefore, running:
 ```php
-CityFactory::make()->setTimes(5)->with('Country', ['myPrimaryKey' => 1])->persist();
+CityFactory::make()->times(5)->with('Country', ['myPrimaryKey' => 1])->persist();
 ```
 will behave the  same as if the primary key `myPrimaryKey` had been defined unique. In short, the factories
 do the job for you.

@@ -76,7 +76,7 @@ class BaseFactoryHiddenPropertiesTest extends TestCase
     #[DataProvider('iterate')]
     public function testHiddenPropertyInMainBuild(int $n, bool $persist): void
     {
-        $factory = ArticleFactory::make()->setTimes($n)->withHiddenBiography(self::DUMMY_HIDDEN_PARAGRAPH);
+        $factory = ArticleFactory::make()->times($n)->withHiddenBiography(self::DUMMY_HIDDEN_PARAGRAPH);
 
         if ($n > 1) {
             $articles = $persist ? $factory->persist() : $factory->getEntities();
@@ -101,7 +101,7 @@ class BaseFactoryHiddenPropertiesTest extends TestCase
     {
         $factory = AuthorFactory::make()->with(
             'Articles',
-            ArticleFactory::make()->setTimes($n)->withHiddenBiography(self::DUMMY_HIDDEN_PARAGRAPH),
+            ArticleFactory::make()->times($n)->withHiddenBiography(self::DUMMY_HIDDEN_PARAGRAPH),
         );
 
         $articles = $persist ? $factory->persist()->get('articles') : $factory->getEntity()->get('articles');
@@ -121,7 +121,7 @@ class BaseFactoryHiddenPropertiesTest extends TestCase
     #[DataProvider('iterate')]
     public function testHiddenPropertyInBelongsToAssociation(int $n, bool $persist): void
     {
-        $factory = BillFactory::make()->setTimes($n)->with(
+        $factory = BillFactory::make()->times($n)->with(
             'Article',
             ArticleFactory::make()->withHiddenBiography(self::DUMMY_HIDDEN_PARAGRAPH),
         );

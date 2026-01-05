@@ -49,7 +49,7 @@ class BillFactory extends BaseFactory
     public function withArticle(mixed $parameter = null): self
     {
         if (is_numeric($parameter)) {
-            $articleFactory = ArticleFactory::make()->setTimes((int)$parameter);
+            $articleFactory = ArticleFactory::make()->times((int)$parameter);
         } elseif ($parameter instanceof EntityInterface) {
             $articleFactory = ArticleFactory::makeFrom($parameter);
         } elseif (is_callable($parameter)) {
@@ -64,7 +64,7 @@ class BillFactory extends BaseFactory
     public function withCustomer(mixed $parameter = null): self
     {
         if (is_numeric($parameter)) {
-            $customerFactory = CustomerFactory::make()->setTimes((int)$parameter);
+            $customerFactory = CustomerFactory::make()->times((int)$parameter);
         } elseif ($parameter instanceof EntityInterface) {
             $customerFactory = CustomerFactory::makeFrom($parameter);
         } elseif (is_callable($parameter)) {

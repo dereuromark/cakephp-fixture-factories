@@ -93,7 +93,7 @@ class PersistCommand extends Command
         try {
             $factory = $this->parseFactory($args);
             // The following order is important, as methods may overwrite $times
-            $this->setTimes($args, $factory);
+            $this->times($args, $factory);
             $this->with($args, $factory);
             $this->attachMethod($args, $factory, $io);
         } catch (FactoryNotFoundException $e) {
@@ -136,7 +136,7 @@ class PersistCommand extends Command
      *
      * @return \CakephpFixtureFactories\Factory\BaseFactory
      */
-    public function setTimes(Arguments $args, BaseFactory $factory): BaseFactory
+    public function times(Arguments $args, BaseFactory $factory): BaseFactory
     {
         if ($args->getOption('number')) {
             $times = (int)$args->getOption('number');
@@ -144,7 +144,20 @@ class PersistCommand extends Command
             $times = 1;
         }
 
-        return $factory->setTimes($times);
+        return $factory->times($times);
+    }
+
+    /**
+     * @deprecated Use times() instead.
+     *
+     * @param \Cake\Console\Arguments $args Arguments
+     * @param \CakephpFixtureFactories\Factory\BaseFactory $factory Factory
+     *
+     * @return \CakephpFixtureFactories\Factory\BaseFactory
+     */
+    public function setTimes(Arguments $args, BaseFactory $factory): BaseFactory
+    {
+        return $this->times($args, $factory);
     }
 
     /**

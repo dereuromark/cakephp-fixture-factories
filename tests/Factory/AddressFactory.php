@@ -45,7 +45,7 @@ class AddressFactory extends BaseFactory
     public function withCity(mixed $parameter = null): self
     {
         if (is_numeric($parameter)) {
-            $cityFactory = CityFactory::make()->setTimes((int)$parameter);
+            $cityFactory = CityFactory::make()->times((int)$parameter);
         } elseif ($parameter instanceof EntityInterface) {
             $cityFactory = CityFactory::makeFrom($parameter);
         } elseif (is_callable($parameter)) {

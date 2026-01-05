@@ -49,7 +49,7 @@ class BaseFactoryUseSettersTest extends TestCase
             'field_with_setter_1' => $value,
             'field_with_setter_2' => $value,
             'field_with_setter_3' => $value,
-        ])->setTimes(2)->skipSetterFor([])->getEntities();
+        ])->times(2)->skipSetterFor([])->getEntities();
 
         foreach ($authors as $author) {
             for ($i = 1; $i < 4; $i++) {
@@ -61,7 +61,7 @@ class BaseFactoryUseSettersTest extends TestCase
     public function testSettersAreDefinedOnAssociatedAuthor(): void
     {
         $value = 'Foo';
-        $authorFactory = AuthorFactory::make()->setTimes(4)
+        $authorFactory = AuthorFactory::make()->times(4)
             ->patchData([
                 'field_with_setter_1' => $value,
                 'field_with_setter_2' => $value,
@@ -98,7 +98,7 @@ class BaseFactoryUseSettersTest extends TestCase
             'field_with_setter_1' => $value,
             'field_with_setter_2' => $value,
             'field_with_setter_3' => $value,
-        ])->setTimes(2)->skipSetterFor('field_with_setter_2')->getEntities();
+        ])->times(2)->skipSetterFor('field_with_setter_2')->getEntities();
 
         foreach ($authors as $author) {
             $this->assertSame($author->prependPrefixToField($value), $author->get('field_with_setter_1'));
@@ -114,7 +114,7 @@ class BaseFactoryUseSettersTest extends TestCase
             'field_with_setter_1' => $value,
             'field_with_setter_2' => $value,
             'field_with_setter_3' => $value,
-        ])->setTimes(2)->skipSetterFor('field_with_setter_2', true)->getEntities();
+        ])->times(2)->skipSetterFor('field_with_setter_2', true)->getEntities();
 
         foreach ($authors as $author) {
             $this->assertSame($value, $author->get('field_with_setter_1'));
@@ -126,7 +126,7 @@ class BaseFactoryUseSettersTest extends TestCase
     public function testSettersAreSkippedOnAssociatedAuthor(): void
     {
         $value = 'Foo';
-        $authorFactory = AuthorFactory::make()->setTimes(4)
+        $authorFactory = AuthorFactory::make()->times(4)
             ->patchData([
                 'field_with_setter_1' => $value,
                 'field_with_setter_2' => $value,

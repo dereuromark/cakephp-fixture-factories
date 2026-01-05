@@ -9,7 +9,7 @@ $article = ArticleFactory::make()->getEntity();
 
 Two articles with different random titles:
 ```php
-$articles = ArticleFactory::make()->setTimes(2)->getEntities();
+$articles = ArticleFactory::make()->times(2)->getEntities();
 ```
 
 One article with title set to 'Foo':
@@ -19,19 +19,19 @@ $article = ArticleFactory::make(['title' => 'Foo'])->getEntity();
 
 Three articles with the title set to 'Foo':
 ```php
-$articles = ArticleFactory::make(['title' => 'Foo'])->setTimes(3)->getEntities();
+$articles = ArticleFactory::make(['title' => 'Foo'])->times(3)->getEntities();
 ```
 or
 ```php
-$articles = ArticleFactory::make()->setTimes(3)->patchData(['title' => 'Foo'])->getEntities();
+$articles = ArticleFactory::make()->times(3)->patchData(['title' => 'Foo'])->getEntities();
 ```
 or
 ```php
-$articles = ArticleFactory::make()->setTimes(3)->setField('title', 'Foo')->getEntities();
+$articles = ArticleFactory::make()->times(3)->setField('title', 'Foo')->getEntities();
 ```
 or
 ```php
-$articles = ArticleFactory::make()->setField('title', 'Foo')->setTimes(3)->getEntities();
+$articles = ArticleFactory::make()->setField('title', 'Foo')->times(3)->getEntities();
 ```
 or
 ```php
@@ -46,14 +46,14 @@ When injecting a single string in the factory, the latter will assign the inject
 [display field](https://book.cakephp.org/5/en/orm/retrieving-data-and-resultsets.html#finding-key-value-pairs) of the factory's table:
 ```php
 $articles = ArticleFactory::make('Foo')->getEntity();
-$articles = ArticleFactory::make('Foo')->setTimes(3)->getEntities();
+$articles = ArticleFactory::make('Foo')->times(3)->getEntities();
 $articles = ArticleFactory::make(['Foo', 'Bar', 'Baz'])->getEntities();
 ```
 
 
 In order to persist the data generated, use the method `persist` instead of `getEntity` resp. `getEntities`:
 ```php
-$articles = ArticleFactory::make()->setTimes(3)->persist();
+$articles = ArticleFactory::make()->times(3)->persist();
 ```
 You can also build data using an explicit callable:
 ```php
@@ -81,8 +81,8 @@ $this->Articles->save($article, ['associated' => ['Authors']]);
 
 You may want to retrieve your entities as a result set, allowing you conveniently query the entities created:
 ```php
-$articles = ArticleFactory::make()->setTimes(3)->getResultSet(); // Will not persist in the DB
-$articles = ArticleFactory::make()->setTimes(3)->getPersistedResultSet(); // Will persist in the DB
+$articles = ArticleFactory::make()->times(3)->getResultSet(); // Will not persist in the DB
+$articles = ArticleFactory::make()->times(3)->getPersistedResultSet(); // Will persist in the DB
 ```
 
 Do not forget to check the [plugin's tests](../tests) for
@@ -106,8 +106,8 @@ class MyTest extends TestCase
         // Static getter style
         $article = ArticleFactory::make()->getEntity();
         $article = ArticleFactory::make(['title' => 'Foo'])->getEntity();
-        $articles = ArticleFactory::make()->setTimes(3)->getEntities();
-        $articles = ArticleFactory::make(['title' => 'Foo'])->setTimes(3)->getEntities();
+        $articles = ArticleFactory::make()->times(3)->getEntities();
+        $articles = ArticleFactory::make(['title' => 'Foo'])->times(3)->getEntities();
 
         // Exactly the same in FactoryAwareTrait style
         $article = $this->getFactory('Article')->getEntity();
@@ -180,7 +180,7 @@ For example in a `ArticlesIndexController` you want to emulate a query returning
 
 In your test, where `$this` is the TestCase extending [CakePHP's TestCase](https://book.cakephp.org/5/en/development/testing.html#mocking-model-methods):
 ```php
-$articleFactory = ArticleFactory::make()->setTimes(10)->withAuthors();
+$articleFactory = ArticleFactory::make()->times(10)->withAuthors();
 \CakephpFixtureFactories\ORM\SelectQueryMocker::mock($this, $articleFactory);
 ```
 

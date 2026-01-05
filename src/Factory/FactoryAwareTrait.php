@@ -47,7 +47,7 @@ trait FactoryAwareTrait
 
         if (class_exists($factoryClassName)) {
             if (is_numeric($makeParameter)) {
-                $factory = $factoryClassName::make()->setTimes((int)$makeParameter);
+                $factory = $factoryClassName::make()->times((int)$makeParameter);
             } elseif ($makeParameter instanceof EntityInterface) {
                 $factory = $factoryClassName::makeFrom($makeParameter);
             } elseif (is_callable($makeParameter)) {
@@ -57,7 +57,7 @@ trait FactoryAwareTrait
             }
 
             if (!is_numeric($makeParameter) && $times !== 1) {
-                $factory->setTimes($times);
+                $factory->times($times);
             }
 
             return $factory;

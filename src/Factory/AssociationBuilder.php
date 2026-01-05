@@ -166,7 +166,7 @@ class AssociationBuilder
             $factory = $this->getFactoryFromTableName($table, $data);
         }
         if ($times) {
-            $factory->setTimes($times);
+            $factory->times($times);
         }
 
         return $factory;
