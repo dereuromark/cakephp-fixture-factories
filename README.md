@@ -26,7 +26,7 @@ Main differences:
 ---
 
 ```php
-ArticleFactory::makeMany(5)
+ArticleFactory::make()->setTimes(5)
     ->with('Authors[3].Address.City.Country')
     ->persist();
 ```

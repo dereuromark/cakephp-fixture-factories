@@ -113,7 +113,7 @@ class AssociationBuilderTest extends TestCase
         $AssociationBuilder = new AssociationBuilder(AuthorFactory::make());
 
         $this->assertTrue(
-            $AssociationBuilder->validateToOneAssociation('Articles', ArticleFactory::make(2)),
+            $AssociationBuilder->validateToOneAssociation('Articles', ArticleFactory::make()->setTimes(2)),
         );
     }
 
@@ -122,7 +122,7 @@ class AssociationBuilderTest extends TestCase
         $AssociationBuilder = new AssociationBuilder(AuthorFactory::make());
 
         $this->expectException(AssociationBuilderException::class);
-        $AssociationBuilder->validateToOneAssociation('Address', AddressFactory::make(2));
+        $AssociationBuilder->validateToOneAssociation('Address', AddressFactory::make()->setTimes(2));
     }
 
     public function testRemoveBrackets(): void

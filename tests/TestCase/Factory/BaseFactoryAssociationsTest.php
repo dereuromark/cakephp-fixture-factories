@@ -124,7 +124,7 @@ class BaseFactoryAssociationsTest extends TestCase
         $countries = CountryFactory::make([
             ['name' => $name1],
             ['name' => $name2],
-        ], $times)->persist();
+        ])->setTimes($times)->persist();
 
         $this->assertSame($times * 2, CountryFactory::count());
 
@@ -235,7 +235,7 @@ class BaseFactoryAssociationsTest extends TestCase
         $n = 10;
         $country = 'Foo';
         $path = 'BusinessAddress.City.Country';
-        $authors = AuthorFactory::make($n)->with($path, [
+        $authors = AuthorFactory::make()->setTimes($n)->with($path, [
             'name' => $country,
         ])->persist();
 
@@ -281,7 +281,7 @@ class BaseFactoryAssociationsTest extends TestCase
     public function testGetAssociatedFactoryInPluginWithMultipleConstructs(): void
     {
         $n = 10;
-        $article = ArticleFactory::make()->with('Bills', BillFactory::make($n)->with('Customer'))->persist();
+        $article = ArticleFactory::make()->with('Bills', BillFactory::make()->setTimes($n)->with('Customer'))->persist();
 
         $this->assertInstanceOf(Bill::class, $article->bills[0]);
         $this->assertInstanceOf(Customer::class, $article->bills[0]->customer);
@@ -629,7 +629,7 @@ class BaseFactoryAssociationsTest extends TestCase
      */
     public function testReproduceIssue84(): void
     {
-        $articles = ArticleFactory::make(2)
+        $articles = ArticleFactory::make()->setTimes(2)
             ->with('Authors[5]', ['biography' => 'Foo'])
             ->with('Bills')
             ->persist();
@@ -653,7 +653,7 @@ class BaseFactoryAssociationsTest extends TestCase
      */
     public function testReproduceIssue84WithArticlesAuthors(): void
     {
-        $articles = ArticleFactory::make(2)
+        $articles = ArticleFactory::make()->setTimes(2)
             ->with('ArticlesAuthors[5].Authors', ['biography' => 'Foo'])
             ->with('Bills')
             ->without('Authors') // do not create the default authors
@@ -702,7 +702,7 @@ class BaseFactoryAssociationsTest extends TestCase
         $cityCountryId = $city->country_id;
         $cityCountryName = $city->country->name;
 
-        CityFactory::make($city)->persist();
+        CityFactory::makeFrom($city)->persist();
 
         $this->assertSame($cityCountryId, $city->country_id);
         $this->assertSame($cityCountryName, $city->country->name);
@@ -743,7 +743,7 @@ class BaseFactoryAssociationsTest extends TestCase
         $cityId = $country->cities[0]->id;
         $cityName = $country->cities[0]->name;
 
-        CountryFactory::make($country)->persist();
+        CountryFactory::makeFrom($country)->persist();
 
         $this->assertSame($cityId, $country->cities[0]->id);
         $this->assertSame($cityName, $country->cities[0]->name);

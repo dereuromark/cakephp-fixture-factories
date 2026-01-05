@@ -70,7 +70,7 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
     public function testNoUniquenessCreatesMultipleEntities(): void
     {
         $nCities = 3;
-        CityFactory::make($nCities)->with('Country')->persist();
+        CityFactory::make()->setTimes($nCities)->with('Country')->persist();
         $this->assertSame($nCities, CityFactory::count());
         $this->assertSame($nCities, CountryFactory::count());
     }
@@ -163,7 +163,7 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
 
         $unique_stamp = 'Foo';
 
-        CountryFactory::make(compact('unique_stamp'), 2)->getEntities();
+        CountryFactory::make(compact('unique_stamp'))->setTimes(2)->getEntities();
     }
 
     /**
@@ -182,7 +182,7 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
 
         $unique_stamp = 'Foo';
 
-        CountryFactory::make(2)->patchData(compact('unique_stamp'))->getEntities();
+        CountryFactory::make()->setTimes(2)->patchData(compact('unique_stamp'))->getEntities();
     }
 
     /**
@@ -262,7 +262,7 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
 
         // HasMany
         $nCountries = 3;
-        $countries = CountryFactory::make($nCountries)
+        $countries = CountryFactory::make()->setTimes($nCountries)
             ->with('Cities', compact('virtual_unique_stamp'))
             ->persist();
 
@@ -291,7 +291,7 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
 
         // BelongsTo
         $nCities = 3;
-        $cities = CityFactory::make($nCities)
+        $cities = CityFactory::make()->setTimes($nCities)
             ->with('Country', compact('unique_stamp'))
             ->persist();
 
@@ -319,7 +319,7 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
         // BelongsTo
         $nCities = 3;
         $countryName = 'Foo';
-        $cities = CityFactory::make($nCities)
+        $cities = CityFactory::make()->setTimes($nCities)
             ->with('Country', compact('unique_stamp'))
             ->with('Country', compact('unique_stamp') + ['name' => $countryName])
             ->persist();

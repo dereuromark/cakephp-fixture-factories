@@ -72,7 +72,7 @@ class BaseFactoryDefaultValuesTest extends TestCase
     {
         $n = 2;
         $title = 'Some title';
-        $articles = ArticleFactory::make(function (ArticleFactory $factory, GeneratorInterface $generator) {
+        $articles = ArticleFactory::makeWith(function (ArticleFactory $factory, GeneratorInterface $generator) {
             return [
                 'title' => $generator->jobTitle(),
                 'body' => $generator->realText(100),
@@ -100,11 +100,11 @@ class BaseFactoryDefaultValuesTest extends TestCase
     public function testTitleModifiedInMultipleCreationWithCallback(): void
     {
         $n = 3;
-        $articles = ArticleFactory::make(function (ArticleFactory $factory, GeneratorInterface $generator) {
+        $articles = ArticleFactory::makeWith(function (ArticleFactory $factory, GeneratorInterface $generator) {
             return [
                 'body' => $generator->realText(100),
             ];
-        }, $n)->persist();
+        })->setTimes($n)->persist();
         $firstTitle = $articles[0]->title;
         $firstBody = $articles[0]->body;
         unset($articles[0]);
@@ -117,7 +117,7 @@ class BaseFactoryDefaultValuesTest extends TestCase
     public function testDefaultValuesOfArticleDifferent(): void
     {
         $n = 5;
-        $articles = ArticleFactory::make($n)->getEntities();
+        $articles = ArticleFactory::make()->setTimes($n)->getEntities();
         $titles = Hash::extract($articles, '{n}.title');
         $this->assertEquals($n, count(array_unique($titles)));
     }

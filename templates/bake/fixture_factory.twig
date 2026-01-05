@@ -55,9 +55,19 @@ class {{ factory }} extends CakephpBaseFactory
      */
     public function with{{ association }}($parameter = null): static
     {
+        if (is_numeric($parameter)) {
+            $factory = {{ associationData.className }}::make()->setTimes((int)$parameter);
+        } elseif ($parameter instanceof \Cake\Datasource\EntityInterface) {
+            $factory = {{ associationData.className }}::makeFrom($parameter);
+        } elseif (is_callable($parameter)) {
+            $factory = {{ associationData.className }}::makeWith($parameter);
+        } else {
+            $factory = {{ associationData.className }}::make($parameter);
+        }
+
         return $this->with(
             '{{ association }}',
-            {{ associationData.className }}::make($parameter),
+            $factory,
         );
     }
 {% endfor %}
@@ -71,9 +81,19 @@ class {{ factory }} extends CakephpBaseFactory
      */
     public function with{{ association }}($parameter = null, int $n = 1): static
     {
+        if (is_numeric($parameter)) {
+            $factory = {{ associationData.className }}::make()->setTimes((int)$parameter);
+        } elseif ($parameter instanceof \Cake\Datasource\EntityInterface) {
+            $factory = {{ associationData.className }}::makeFrom($parameter)->setTimes($n);
+        } elseif (is_callable($parameter)) {
+            $factory = {{ associationData.className }}::makeWith($parameter)->setTimes($n);
+        } else {
+            $factory = {{ associationData.className }}::make($parameter)->setTimes($n);
+        }
+
         return $this->with(
             '{{ association }}',
-            {{ associationData.className }}::make($parameter, $n),
+            $factory,
         );
     }
 {% endfor %}
@@ -87,9 +107,21 @@ class {{ factory }} extends CakephpBaseFactory
      */
     public function with{{ association }}($parameter = null, int $n = 1): static
     {
+        if (is_numeric($parameter)) {
+            $factory = {{ associationData.className }}::make()->setTimes((int)$parameter);
+        } elseif ($parameter instanceof \Cake\Datasource\EntityInterface) {
+            $factory = {{ associationData.className }}::makeFrom($parameter)->setTimes($n);
+        } elseif (is_callable($parameter)) {
+            $factory = {{ associationData.className }}::makeWith($parameter)->setTimes($n);
+        } else {
+            $factory = {{ associationData.className }}::make($parameter)->setTimes($n);
+        }
+
+        $factory = $factory->without('{{ modelName }}');
+
         return $this->with(
             '{{ association }}',
-            {{ associationData.className }}::make($parameter, $n)->without('{{ modelName }}'),
+            $factory,
         );
     }
 {% endfor %}

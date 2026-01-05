@@ -46,7 +46,21 @@ trait FactoryAwareTrait
         $factoryClassName = $this->getFactoryClassName($name);
 
         if (class_exists($factoryClassName)) {
-            return $factoryClassName::make($makeParameter, $times);
+            if (is_numeric($makeParameter)) {
+                $factory = $factoryClassName::make()->setTimes((int)$makeParameter);
+            } elseif ($makeParameter instanceof EntityInterface) {
+                $factory = $factoryClassName::makeFrom($makeParameter);
+            } elseif (is_callable($makeParameter)) {
+                $factory = $factoryClassName::makeWith($makeParameter);
+            } else {
+                $factory = $factoryClassName::make($makeParameter);
+            }
+
+            if (!is_numeric($makeParameter) && $times !== 1) {
+                $factory->setTimes($times);
+            }
+
+            return $factory;
         }
 
         throw new FactoryNotFoundException("Unable to locate factory class $factoryClassName");

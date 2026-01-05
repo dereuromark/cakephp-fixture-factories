@@ -13,6 +13,7 @@ declare(strict_types=1);
  */
 namespace CakephpFixtureFactories\Test\Factory;
 
+use Cake\Datasource\EntityInterface;
 use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\Generator\GeneratorInterface;
 
@@ -43,6 +44,16 @@ class AddressFactory extends BaseFactory
 
     public function withCity(mixed $parameter = null): self
     {
-        return $this->with('City', CityFactory::make($parameter));
+        if (is_numeric($parameter)) {
+            $cityFactory = CityFactory::make()->setTimes((int)$parameter);
+        } elseif ($parameter instanceof EntityInterface) {
+            $cityFactory = CityFactory::makeFrom($parameter);
+        } elseif (is_callable($parameter)) {
+            $cityFactory = CityFactory::makeWith($parameter);
+        } else {
+            $cityFactory = CityFactory::make($parameter);
+        }
+
+        return $this->with('City', $cityFactory);
     }
 }

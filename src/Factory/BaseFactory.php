@@ -146,7 +146,7 @@ abstract class BaseFactory
     ): self {
         if (is_numeric($makeParameter)) {
             trigger_error(
-                static::class . '::make($times) is deprecated. Use ::makeMany($times) instead.',
+                static::class . '::make($times) is deprecated. Use ::make()->setTimes($times) instead.',
                 E_USER_DEPRECATED,
             );
             $factory = self::makeFromNonCallable();
@@ -173,21 +173,16 @@ abstract class BaseFactory
             ');
         }
 
+        if ($times !== 1 && !is_numeric($makeParameter)) {
+            trigger_error(
+                static::class . '::make($data, $times) is deprecated. Use ::make($data)->setTimes($times) instead.',
+                E_USER_DEPRECATED,
+            );
+        }
+
         $factory->setUp($factory, (int)$times);
 
         return $factory;
-    }
-
-    /**
-     * Create a factory that will generate many entities.
-     *
-     * @param int $times Number of entities.
-     *
-     * @return static
-     */
-    public static function makeMany(int $times): self
-    {
-        return static::make($times);
     }
 
     /**
@@ -199,7 +194,10 @@ abstract class BaseFactory
      */
     public static function makeWith(callable $fn): self
     {
-        return static::make($fn);
+        $factory = static::makeFromCallable($fn);
+        $factory->setUp($factory, 1);
+
+        return $factory;
     }
 
     /**
@@ -211,7 +209,10 @@ abstract class BaseFactory
      */
     public static function makeFrom(EntityInterface $entity): self
     {
-        return static::make($entity);
+        $factory = static::makeFromNonCallable($entity);
+        $factory->setUp($factory, 1);
+
+        return $factory;
     }
 
     /**

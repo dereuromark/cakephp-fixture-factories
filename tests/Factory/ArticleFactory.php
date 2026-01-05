@@ -13,6 +13,7 @@ declare(strict_types=1);
  */
 namespace CakephpFixtureFactories\Test\Factory;
 
+use Cake\Datasource\EntityInterface;
 use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\Generator\GeneratorInterface;
 use TestApp\Model\Entity\Article;
@@ -60,7 +61,17 @@ class ArticleFactory extends BaseFactory
 
     public function withAuthors(mixed $parameter = null, int $n = 1): self
     {
-        return $this->with('Authors', AuthorFactory::make($parameter, $n));
+        if (is_numeric($parameter)) {
+            $authorsFactory = AuthorFactory::make()->setTimes((int)$parameter);
+        } elseif ($parameter instanceof EntityInterface) {
+            $authorsFactory = AuthorFactory::makeFrom($parameter)->setTimes($n);
+        } elseif (is_callable($parameter)) {
+            $authorsFactory = AuthorFactory::makeWith($parameter)->setTimes($n);
+        } else {
+            $authorsFactory = AuthorFactory::make($parameter)->setTimes($n);
+        }
+
+        return $this->with('Authors', $authorsFactory);
     }
 
     /**
@@ -73,7 +84,17 @@ class ArticleFactory extends BaseFactory
      */
     public function withBills(mixed $parameter = null, int $n = 1): self
     {
-        return $this->with('Bills', BillFactory::make($parameter, $n)->without('Article'));
+        if (is_numeric($parameter)) {
+            $billsFactory = BillFactory::make()->setTimes((int)$parameter)->without('Article');
+        } elseif ($parameter instanceof EntityInterface) {
+            $billsFactory = BillFactory::makeFrom($parameter)->setTimes($n)->without('Article');
+        } elseif (is_callable($parameter)) {
+            $billsFactory = BillFactory::makeWith($parameter)->setTimes($n)->without('Article');
+        } else {
+            $billsFactory = BillFactory::make($parameter)->setTimes($n)->without('Article');
+        }
+
+        return $this->with('Bills', $billsFactory);
     }
 
     /**
@@ -86,7 +107,17 @@ class ArticleFactory extends BaseFactory
      */
     public function withBillsWithArticle(mixed $parameter = null, int $n = 1): self
     {
-        return $this->with('Bills', BillFactory::make($parameter, $n));
+        if (is_numeric($parameter)) {
+            $billsFactory = BillFactory::make()->setTimes((int)$parameter);
+        } elseif ($parameter instanceof EntityInterface) {
+            $billsFactory = BillFactory::makeFrom($parameter)->setTimes($n);
+        } elseif (is_callable($parameter)) {
+            $billsFactory = BillFactory::makeWith($parameter)->setTimes($n);
+        } else {
+            $billsFactory = BillFactory::make($parameter)->setTimes($n);
+        }
+
+        return $this->with('Bills', $billsFactory);
     }
 
     /**

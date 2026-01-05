@@ -13,6 +13,7 @@ declare(strict_types=1);
  */
 namespace CakephpFixtureFactories\Test\Factory;
 
+use Cake\Datasource\EntityInterface;
 use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\Generator\GeneratorInterface;
 
@@ -46,7 +47,17 @@ class CustomerFactory extends BaseFactory
      */
     public function withBills($parameter = null, int $n = 1): self
     {
-        return $this->with('Bills', BillFactory::make($parameter, $n)->without('Customer'));
+        if (is_numeric($parameter)) {
+            $billsFactory = BillFactory::make()->setTimes((int)$parameter)->without('Customer');
+        } elseif ($parameter instanceof EntityInterface) {
+            $billsFactory = BillFactory::makeFrom($parameter)->setTimes($n)->without('Customer');
+        } elseif (is_callable($parameter)) {
+            $billsFactory = BillFactory::makeWith($parameter)->setTimes($n)->without('Customer');
+        } else {
+            $billsFactory = BillFactory::make($parameter)->setTimes($n)->without('Customer');
+        }
+
+        return $this->with('Bills', $billsFactory);
     }
 
     /**
@@ -55,6 +66,16 @@ class CustomerFactory extends BaseFactory
      */
     public function withAddress($parameter = null): self
     {
-        return $this->with('Address', AddressFactory::make($parameter));
+        if (is_numeric($parameter)) {
+            $addressFactory = AddressFactory::make()->setTimes((int)$parameter);
+        } elseif ($parameter instanceof EntityInterface) {
+            $addressFactory = AddressFactory::makeFrom($parameter);
+        } elseif (is_callable($parameter)) {
+            $addressFactory = AddressFactory::makeWith($parameter);
+        } else {
+            $addressFactory = AddressFactory::make($parameter);
+        }
+
+        return $this->with('Address', $addressFactory);
     }
 }

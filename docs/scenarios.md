@@ -30,7 +30,7 @@ class NAustralianAuthorsScenario implements FixtureScenarioInterface
      */
     public function load($n = 1, ...$args)
     {
-        return AuthorFactory::make($n)->fromCountry(self::COUNTRY_NAME)->persist();
+        return AuthorFactory::make()->setTimes($n)->fromCountry(self::COUNTRY_NAME)->persist();
     }
 }
 

@@ -10,7 +10,7 @@ If you have baked your factories with the option `-m` or `--methods`, you will h
 has been inserted in the factories. This will assist you creating fixtures for the associated models. For example, we can
 create an article with 10 authors as follows:
 ```php
-$article = ArticleFactory::make()->with('Authors', AuthorFactory::makeMany(10))->persist();
+$article = ArticleFactory::make()->with('Authors', AuthorFactory::make()->setTimes(10))->persist();
 ```
 or using the method defined in our `ArticleFactory`:
 ```php
@@ -40,7 +40,7 @@ The second parameter of the method with can be:
 Ultimately, the square bracket notation provides a mean to specify the number of associated
 data created:
 ```php
-$article = ArticleFactory::makeMany(5)->with('Authors[3].Address.City.Country', ['name' => 'Kenya'])->persist();
+$article = ArticleFactory::make()->setTimes(5)->with('Authors[3].Address.City.Country', ['name' => 'Kenya'])->persist();
 ```
 will create 5 articles, having themselves each 3 different associated authors, all located in Kenya.
 
