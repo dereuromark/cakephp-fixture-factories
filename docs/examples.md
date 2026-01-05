@@ -53,6 +53,23 @@ In order to persist the data generated, use the method `persist` instead of `get
 $articles = ArticleFactory::make(3)->persist();
 ```
 
+If you want to manually save an entity using a table instance, keep it dirty so required fields are written:
+```php
+$article = ArticleFactory::make()
+    ->keepDirty()
+    ->getEntity();
+$this->Articles->save($article);
+```
+
+When you add associations, `keepDirty()` also propagates to them:
+```php
+$article = ArticleFactory::make()
+    ->keepDirty()
+    ->withAuthors()
+    ->getEntity();
+$this->Articles->save($article, ['associated' => ['Authors']]);
+```
+
 You may want to retrieve your entities as a result set, allowing you conveniently query the entities created:
 ```php
 $articles = ArticleFactory::make(3)->getResultSet(); // Will not persist in the DB
