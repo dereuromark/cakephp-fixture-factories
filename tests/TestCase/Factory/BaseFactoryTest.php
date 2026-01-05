@@ -29,6 +29,7 @@ use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpFixtureFactories\Test\Factory\CustomerFactory;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use PHPUnit\Framework\Attributes\DataProvider;
 use TestApp\Model\Entity\Address;
 use TestApp\Model\Entity\Article;
 use TestApp\Model\Entity\Author;
@@ -59,7 +60,7 @@ class BaseFactoryTest extends TestCase
     /**
      * @param \CakephpFixtureFactories\Factory\BaseFactory $factory
      */
-    #[\PHPUnit\Framework\Attributes\DataProvider('dataForTestConnectionInDataProvider')]
+    #[DataProvider('dataForTestConnectionInDataProvider')]
     public function testConnectionInDataProvider(BaseFactory $factory): void
     {
         $connectionName = $factory->getTable()->getConnection()->configName();
@@ -834,7 +835,7 @@ class BaseFactoryTest extends TestCase
     /**
      * @param int $times
      */
-    #[\PHPUnit\Framework\Attributes\DataProvider('feedTestSetTimes')]
+    #[DataProvider('feedTestSetTimes')]
     public function testSetTimes(int $times): void
     {
         ArticleFactory::make()->setTimes($times)->persist();
@@ -875,5 +876,15 @@ class BaseFactoryTest extends TestCase
         $n = 2;
         $country = CountryFactory::make($n)->getEntities();
         $this->assertSame($n, count($country));
+    }
+
+    public function testPersistWithNonCreatedSubEntities(): void
+    {
+        $authors = AuthorFactory::make(5)->getEntities();
+        $article = ArticleFactory::make()
+            ->withAuthors($authors)
+            ->persist();
+
+        $this->assertCount(5, $article->authors);
     }
 }

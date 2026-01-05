@@ -8,6 +8,7 @@ use Cake\Database\Connection;
 use Cake\Datasource\ConnectionManager;
 use Cake\TestSuite\Fixture\FixtureStrategyInterface;
 use CakephpFixtureFactories\Generator\CakeGeneratorFactory;
+use Exception;
 
 /**
  * Fixture strategy that uses transactions with automatic table tracking
@@ -110,7 +111,7 @@ class FactoryTransactionStrategy implements FixtureStrategyInterface
                 $connection->createSavePoint('__fixture_factories__');
 
                 $this->connections[$name] = $connection;
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // Skip connections that can't be accessed or don't support transactions
                 continue;
             }

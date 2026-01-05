@@ -22,6 +22,7 @@ use Cake\Core\Configure;
 use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\Test\Util\TestCaseWithFixtureBaking;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use PHPUnit\Framework\Attributes\DataProvider;
 use ReflectionClass;
 use TestApp\Model\Entity\Address;
 use TestApp\Model\Entity\Article;
@@ -349,7 +350,7 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
      * @param mixed $plugin
      * @param bool $expected
      */
-    #[\PHPUnit\Framework\Attributes\DataProvider('dataForTestThisTableShouldBeBaked')]
+    #[DataProvider('dataForTestThisTableShouldBeBaked')]
     public function testThisTableShouldBeBaked(string $model, $plugin, bool $expected): void
     {
         $this->FactoryCommand->plugin = $plugin;

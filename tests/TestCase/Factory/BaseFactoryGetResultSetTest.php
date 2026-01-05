@@ -20,6 +20,7 @@ use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Test\Factory\ArticleFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use PHPUnit\Framework\Attributes\DataProvider;
 use TestApp\Model\Entity\Address;
 
 class BaseFactoryGetResultSetTest extends TestCase
@@ -41,7 +42,7 @@ class BaseFactoryGetResultSetTest extends TestCase
         return [[false], [true]];
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('isPersisted')]
+    #[DataProvider('isPersisted')]
     public function testBaseFactoryGetResultSet(bool $isPersisted): void
     {
         $name1 = 'Name 1';

@@ -20,6 +20,7 @@ use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Error\UniquenessException;
 use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\Factory\UniquenessJanitor;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class UniquenessJanitorTest extends TestCase
 {
@@ -47,7 +48,7 @@ class UniquenessJanitorTest extends TestCase
      * @param array $uniqueProperties
      * @param bool $expectException
      */
-    #[\PHPUnit\Framework\Attributes\DataProvider('dataForSanitizeEntityArrayOnPrimary')]
+    #[DataProvider('dataForSanitizeEntityArrayOnPrimary')]
     public function testSanitizeEntityArrayOnPrimary(array $uniqueProperties, bool $expectException): void
     {
         $factoryStub = $this->getMockBuilder(BaseFactory::class)->disableOriginalConstructor()->getMock();
@@ -97,7 +98,7 @@ class UniquenessJanitorTest extends TestCase
      * @param array<\Cake\Datasource\EntityInterface> $uniqueProperties
      * @param array $expectOutput
      */
-    #[\PHPUnit\Framework\Attributes\DataProvider('dataForSanitizeEntityArrayOnAssociation')]
+    #[DataProvider('dataForSanitizeEntityArrayOnAssociation')]
     public function testSanitizeEntityArrayOnAssociation(array $uniqueProperties, array $expectOutput): void
     {
         $factoryStub = $this->getMockBuilder(BaseFactory::class)->disableOriginalConstructor()->getMock();

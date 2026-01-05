@@ -31,6 +31,7 @@ use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpFixtureFactories\Test\Factory\CustomerFactory;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use PHPUnit\Framework\Attributes\DataProvider;
 use TestApp\Model\Entity\Address;
 use TestApp\Model\Entity\Article;
 use TestApp\Model\Entity\City;
@@ -119,7 +120,7 @@ class EventCollectorTest extends TestCase
     /**
      * @param \CakephpFixtureFactories\Factory\BaseFactory $factory
      */
-    #[\PHPUnit\Framework\Attributes\DataProvider('provideFactories')]
+    #[DataProvider('provideFactories')]
     public function testTimestamp(BaseFactory $factory): void
     {
         $entity = $factory->persist();
@@ -136,7 +137,7 @@ class EventCollectorTest extends TestCase
     /**
      * @param bool $applyEvent Bind the event once to the model
      */
-    #[\PHPUnit\Framework\Attributes\DataProvider('runSeveralTimesWithOrWithoutEvents')]
+    #[DataProvider('runSeveralTimesWithOrWithoutEvents')]
     public function testApplyOrIgnoreBeforeMarshalSetOnTheFly(bool $applyEvent): void
     {
         $name = 'Foo';
@@ -165,7 +166,7 @@ class EventCollectorTest extends TestCase
         $this->assertNull($country->get('eventApplied'));
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('runSeveralTimesWithOrWithoutEvents')]
+    #[DataProvider('runSeveralTimesWithOrWithoutEvents')]
     public function testApplyOrIgnoreBeforeMarshalSetInTable(bool $applyEvent): void
     {
         $name = 'Foo';
@@ -182,7 +183,7 @@ class EventCollectorTest extends TestCase
         $this->assertTrue($country->get('beforeMarshalTriggered'));
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('runSeveralTimesWithOrWithoutEvents')]
+    #[DataProvider('runSeveralTimesWithOrWithoutEvents')]
     public function testApplyOrIgnoreEventInBehaviors(bool $applyEvent): void
     {
         $title = 'This Article';
@@ -219,7 +220,7 @@ class EventCollectorTest extends TestCase
         $this->assertInstanceOf(Article::class, $article);
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('runSeveralTimesWithOrWithoutEvents')]
+    #[DataProvider('runSeveralTimesWithOrWithoutEvents')]
     public function testApplyOrIgnoreEventInBehaviorsOnTheFlyWithCountries(bool $applyEvent): void
     {
         $name = 'Some Country';
@@ -234,7 +235,7 @@ class EventCollectorTest extends TestCase
         $this->assertEquals($slug, $country->get('slug'));
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('runSeveralTimesWithOrWithoutEvents')]
+    #[DataProvider('runSeveralTimesWithOrWithoutEvents')]
     public function testApplyOrIgnoreEventInPluginBehaviorsOnTheFlyWithCountries(bool $applyEvent): void
     {
         $field = SomePluginBehavior::BEFORE_SAVE_FIELD;

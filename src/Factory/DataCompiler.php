@@ -233,6 +233,9 @@ class DataCompiler
         if ($this->isInPersistMode() && $this->getModifiedUniqueFields()) {
             $entity->set(self::MODIFIED_UNIQUE_PROPERTIES, $this->getModifiedUniqueFields());
         }
+        if ($isEntityInjected && $this->isInPersistMode()) {
+            $this->markEntityDirtyIfNew($entity);
+        }
 
         if ($setPrimaryKey && $this->setPrimaryKey) {
             $this->setPrimaryKey($entity);
@@ -465,6 +468,7 @@ class DataCompiler
         $associatedEntity = $factory->getEntity();
         if ($this->isInPersistMode()) {
             $associatedEntity->set(self::IS_ASSOCIATED, true);
+            $this->markEntityDirtyIfNew($associatedEntity);
         }
 
         $entity->set($associationName, $associatedEntity);
@@ -501,10 +505,56 @@ class DataCompiler
         if ($this->isInPersistMode()) {
             foreach ($entities as $entity) {
                 $entity->set(self::IS_ASSOCIATED, true);
+                $this->markEntityDirtyIfNew($entity);
             }
         }
 
         return $entities;
+    }
+
+    /**
+     * Ensure new associated entities are marked dirty so CakePHP will save them.
+     *
+     * @param \Cake\Datasource\EntityInterface $entity Entity to mark.
+     * @param array $visited
+     *
+     * @return void
+     */
+    private function markEntityDirtyIfNew(EntityInterface $entity, array &$visited = []): void
+    {
+        $entityId = spl_object_id($entity);
+        if (isset($visited[$entityId])) {
+            return;
+        }
+        $visited[$entityId] = true;
+
+        if (!$entity->isNew()) {
+            return;
+        }
+
+        $fields = array_keys($entity->toArray());
+        if (!$entity->isDirty()) {
+            foreach ($fields as $field) {
+                $entity->setDirty($field, true);
+            }
+        }
+
+        foreach ($fields as $field) {
+            $value = $entity->get($field);
+            if ($value instanceof EntityInterface) {
+                $this->markEntityDirtyIfNew($value, $visited);
+
+                continue;
+            }
+            if (!is_array($value)) {
+                continue;
+            }
+            foreach ($value as $item) {
+                if ($item instanceof EntityInterface) {
+                    $this->markEntityDirtyIfNew($item, $visited);
+                }
+            }
+        }
     }
 
     /**

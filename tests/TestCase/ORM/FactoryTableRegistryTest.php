@@ -20,6 +20,7 @@ use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\ORM\FactoryTableRegistry;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
+use PHPUnit\Framework\Attributes\DataProvider;
 use TestApp\Model\Table\AddressesTable;
 use TestApp\Model\Table\ArticlesTable;
 use TestApp\Model\Table\AuthorsTable;
@@ -48,7 +49,7 @@ class FactoryTableRegistryTest extends TestCase
         ];
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('tables')]
+    #[DataProvider('tables')]
     public function testReturnedTableShouldHaveSameAssociations(string $tableName, string $table): void
     {
         $FactoryTable = FactoryTableRegistry::getTableLocator()->get($tableName);

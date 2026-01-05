@@ -25,6 +25,7 @@ use CakephpFixtureFactories\Test\Scenario\NAustralianAuthorsScenario;
 use CakephpFixtureFactories\Test\Scenario\SubFolder\SubFolderScenario;
 use CakephpFixtureFactories\Test\Scenario\TenAustralianAuthorsScenario;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use PHPUnit\Framework\Attributes\DataProvider;
 use TestApp\Model\Entity\Author;
 
 class FixtureScenarioTest extends TestCase
@@ -54,7 +55,7 @@ class FixtureScenarioTest extends TestCase
         ];
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('scenarioNames')]
+    #[DataProvider('scenarioNames')]
     public function testLoadScenario(mixed $scenario, int $expectedAuthors): void
     {
         /** @var array<\TestApp\Model\Entity\Author> $authors */
