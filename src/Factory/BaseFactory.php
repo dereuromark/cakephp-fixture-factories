@@ -194,7 +194,7 @@ abstract class BaseFactory
      */
     public static function makeWith(callable $fn): self
     {
-        $factory = static::makeFromCallable($fn);
+        $factory = self::makeFromCallable($fn);
         $factory->setUp($factory, 1);
 
         return $factory;
@@ -209,7 +209,7 @@ abstract class BaseFactory
      */
     public static function makeFrom(EntityInterface $entity): self
     {
-        $factory = static::makeFromNonCallable($entity);
+        $factory = self::makeFromNonCallable($entity);
         $factory->setUp($factory, 1);
 
         return $factory;
