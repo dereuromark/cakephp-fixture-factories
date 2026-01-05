@@ -876,4 +876,13 @@ class BaseFactoryTest extends TestCase
         $country = CountryFactory::make($n)->getEntities();
         $this->assertSame($n, count($country));
     }
+
+    public function testPersistWithNonCreatedSubEntities(): void
+    {
+        $authors = AuthorFactory::make(5)->getEntities();
+        $article = ArticleFactory::make()
+            ->withAuthors($authors)
+            ->persist();
+        $this->assertCount(5, $article->authors);
+    }
 }
