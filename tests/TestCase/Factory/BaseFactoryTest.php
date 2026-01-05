@@ -937,9 +937,6 @@ class BaseFactoryTest extends TestCase
     public function testMakeAliases(): void
     {
         $title = 'Foo';
-        $article = ArticleFactory::makeData(compact('title'))->getEntity();
-        $this->assertSame($title, $article->title);
-
         $articles = ArticleFactory::makeMany(2)->getEntities();
         $this->assertCount(2, $articles);
 

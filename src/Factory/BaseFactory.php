@@ -165,18 +165,6 @@ abstract class BaseFactory
     }
 
     /**
-     * Create a factory with injected data.
-     *
-     * @param array $data Injected data.
-     *
-     * @return static
-     */
-    public static function makeData(array $data): self
-    {
-        return static::make($data);
-    }
-
-    /**
      * Create a factory that will generate many entities.
      *
      * @param int $times Number of entities.

@@ -18,10 +18,6 @@ One article with title set to 'Foo':
 ```php
 $article = ArticleFactory::make(['title' => 'Foo'])->getEntity();
 ```
-Or using the explicit data alias:
-```php
-$article = ArticleFactory::makeData(['title' => 'Foo'])->getEntity();
-```
 Three articles with the title set to 'Foo':
 ```php
 $articles = ArticleFactory::make(['title' => 'Foo'], 3)->getEntities();
