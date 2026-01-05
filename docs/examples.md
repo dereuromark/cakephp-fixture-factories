@@ -14,6 +14,7 @@ Two articles using the explicit make-many alias:
 ```php
 $articles = ArticleFactory::makeMany(2)->getEntities();
 ```
+Note: passing an integer/callable/entity to `make()` is deprecated. Prefer `makeMany()`, `makeWith()`, or `makeFrom()`.
 One article with title set to 'Foo':
 ```php
 $article = ArticleFactory::make(['title' => 'Foo'])->getEntity();

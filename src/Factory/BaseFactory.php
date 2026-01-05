@@ -145,13 +145,27 @@ abstract class BaseFactory
         int $times = 1,
     ): self {
         if (is_numeric($makeParameter)) {
+            trigger_error(
+                static::class . '::make($times) is deprecated. Use ::makeMany($times) instead.',
+                E_USER_DEPRECATED,
+            );
             $factory = self::makeFromNonCallable();
             $times = $makeParameter;
         } elseif ($makeParameter === null) {
             $factory = self::makeFromNonCallable();
         } elseif (is_array($makeParameter) || $makeParameter instanceof EntityInterface || is_string($makeParameter)) {
+            if ($makeParameter instanceof EntityInterface) {
+                trigger_error(
+                    static::class . '::make($entity) is deprecated. Use ::makeFrom($entity) instead.',
+                    E_USER_DEPRECATED,
+                );
+            }
             $factory = self::makeFromNonCallable($makeParameter);
         } elseif (is_callable($makeParameter)) {
+            trigger_error(
+                static::class . '::make($callable) is deprecated. Use ::makeWith($callable) instead.',
+                E_USER_DEPRECATED,
+            );
             $factory = self::makeFromCallable($makeParameter);
         } else {
             throw new InvalidArgumentException('
