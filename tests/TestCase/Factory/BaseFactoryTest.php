@@ -759,6 +759,7 @@ class BaseFactoryTest extends TestCase
 
         $dirtyArticle = ArticleFactory::make()->keepDirty()->getEntity();
         $this->assertTrue($dirtyArticle->isDirty('title'));
+        $this->assertTrue($dirtyArticle->authors[0]->isDirty('name'));
     }
 
     public function testHandlingOfMultipleIdenticalWith(): void

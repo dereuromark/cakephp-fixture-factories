@@ -513,6 +513,11 @@ abstract class BaseFactory
     public function keepDirty(bool $keepDirty = true)
     {
         $this->keepDirty = $keepDirty;
+        if ($keepDirty) {
+            foreach ($this->getAssociationBuilder()->getAssociations() as $associationFactory) {
+                $associationFactory->keepDirty();
+            }
+        }
 
         return $this;
     }
@@ -662,6 +667,9 @@ abstract class BaseFactory
             $factory = $data;
         } else {
             $factory = $this->getAssociationBuilder()->getAssociatedFactory($associationName, $data);
+        }
+        if ($this->keepDirty) {
+            $factory->keepDirty();
         }
 
         // Extract the first Association in the string
