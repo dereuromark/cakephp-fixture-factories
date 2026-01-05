@@ -10,9 +10,17 @@ Two articles with different random titles:
 ```php
 $articles = ArticleFactory::make(2)->getEntities();
 ```
+Two articles using the explicit make-many alias:
+```php
+$articles = ArticleFactory::makeMany(2)->getEntities();
+```
 One article with title set to 'Foo':
 ```php
 $article = ArticleFactory::make(['title' => 'Foo'])->getEntity();
+```
+Or using the explicit data alias:
+```php
+$article = ArticleFactory::makeData(['title' => 'Foo'])->getEntity();
 ```
 Three articles with the title set to 'Foo':
 ```php
@@ -51,6 +59,12 @@ $articles = ArticleFactory::make(['Foo', 'Bar', 'Baz'])->getEntities();
 In order to persist the data generated, use the method `persist` instead of `getEntity` resp. `getEntities`:
 ```php
 $articles = ArticleFactory::make(3)->persist();
+```
+You can also build data using an explicit callable:
+```php
+$article = ArticleFactory::makeWith(function (ArticleFactory $factory, GeneratorInterface $generator) {
+    return ['title' => $generator->jobTitle()];
+})->getEntity();
 ```
 
 If you want to manually save an entity using a table instance, keep it dirty so required fields are written:

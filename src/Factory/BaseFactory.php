@@ -165,6 +165,54 @@ abstract class BaseFactory
     }
 
     /**
+     * Create a factory with injected data.
+     *
+     * @param array $data Injected data.
+     *
+     * @return static
+     */
+    public static function makeData(array $data): self
+    {
+        return static::make($data);
+    }
+
+    /**
+     * Create a factory that will generate many entities.
+     *
+     * @param int $times Number of entities.
+     *
+     * @return static
+     */
+    public static function makeMany(int $times): self
+    {
+        return static::make($times);
+    }
+
+    /**
+     * Create a factory with a callable data provider.
+     *
+     * @param callable $fn Callable returning array data.
+     *
+     * @return static
+     */
+    public static function makeWith(callable $fn): self
+    {
+        return static::make($fn);
+    }
+
+    /**
+     * Create a factory from an existing entity.
+     *
+     * @param \Cake\Datasource\EntityInterface $entity Injected entity.
+     *
+     * @return static
+     */
+    public static function makeFrom(EntityInterface $entity): self
+    {
+        return static::make($entity);
+    }
+
+    /**
      * Collect the number of entities to be created
      * Apply the default template in the factory
      *

@@ -934,6 +934,25 @@ class BaseFactoryTest extends TestCase
         $this->assertSame($n, count($country));
     }
 
+    public function testMakeAliases(): void
+    {
+        $title = 'Foo';
+        $article = ArticleFactory::makeData(compact('title'))->getEntity();
+        $this->assertSame($title, $article->title);
+
+        $articles = ArticleFactory::makeMany(2)->getEntities();
+        $this->assertCount(2, $articles);
+
+        $fromCallable = ArticleFactory::makeWith(function (ArticleFactory $factory, GeneratorInterface $generator) {
+            return ['title' => $generator->jobTitle()];
+        })->getEntity();
+        $this->assertNotEmpty($fromCallable->title);
+
+        $base = ArticleFactory::make(['title' => $title])->getEntity();
+        $wrapped = ArticleFactory::makeFrom($base)->getEntity();
+        $this->assertSame($base, $wrapped);
+    }
+
     public function testPersistWithNonCreatedSubEntities(): void
     {
         $authors = AuthorFactory::make(5)->getEntities();
