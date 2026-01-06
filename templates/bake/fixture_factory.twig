@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace {{ namespace }};
 
+use Cake\Datasource\EntityInterface;
 use CakephpFixtureFactories\Factory\BaseFactory as CakephpBaseFactory;
 use CakephpFixtureFactories\Generator\GeneratorInterface;
 {% if useStatements %}
@@ -57,7 +58,7 @@ class {{ factory }} extends CakephpBaseFactory
     {
         if (is_numeric($parameter)) {
             $factory = {{ associationData.className }}::make()->times((int)$parameter);
-        } elseif ($parameter instanceof \Cake\Datasource\EntityInterface) {
+        } elseif ($parameter instanceof EntityInterface) {
             $factory = {{ associationData.className }}::makeFrom($parameter);
         } elseif (is_callable($parameter)) {
             $factory = {{ associationData.className }}::makeWith($parameter);
@@ -83,7 +84,7 @@ class {{ factory }} extends CakephpBaseFactory
     {
         if (is_numeric($parameter)) {
             $factory = {{ associationData.className }}::make()->times((int)$parameter);
-        } elseif ($parameter instanceof \Cake\Datasource\EntityInterface) {
+        } elseif ($parameter instanceof EntityInterface) {
             $factory = {{ associationData.className }}::makeFrom($parameter)->times($n);
         } elseif (is_callable($parameter)) {
             $factory = {{ associationData.className }}::makeWith($parameter)->times($n);
@@ -109,7 +110,7 @@ class {{ factory }} extends CakephpBaseFactory
     {
         if (is_numeric($parameter)) {
             $factory = {{ associationData.className }}::make()->times((int)$parameter);
-        } elseif ($parameter instanceof \Cake\Datasource\EntityInterface) {
+        } elseif ($parameter instanceof EntityInterface) {
             $factory = {{ associationData.className }}::makeFrom($parameter)->times($n);
         } elseif (is_callable($parameter)) {
             $factory = {{ associationData.className }}::makeWith($parameter)->times($n);
