@@ -31,8 +31,6 @@ ArticleFactory::make()->times(5)
     ->persist();
 ```
 
-Note: `times()` is preferred for setting the number of entities. `setTimes()` is deprecated.
-
 ---
 
 ## Installation
