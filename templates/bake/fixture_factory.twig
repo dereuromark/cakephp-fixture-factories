@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace {{ namespace }};
 
+use Cake\Datasource\EntityInterface;
 use CakephpFixtureFactories\Factory\BaseFactory as CakephpBaseFactory;
 use CakephpFixtureFactories\Generator\GeneratorInterface;
 {% if useStatements %}
@@ -55,9 +56,19 @@ class {{ factory }} extends CakephpBaseFactory
      */
     public function with{{ association }}($parameter = null): static
     {
+        if (is_numeric($parameter)) {
+            $factory = {{ associationData.className }}::make()->times((int)$parameter);
+        } elseif ($parameter instanceof EntityInterface) {
+            $factory = {{ associationData.className }}::makeFrom($parameter);
+        } elseif (is_callable($parameter)) {
+            $factory = {{ associationData.className }}::makeWith($parameter);
+        } else {
+            $factory = {{ associationData.className }}::make($parameter);
+        }
+
         return $this->with(
             '{{ association }}',
-            {{ associationData.className }}::make($parameter),
+            $factory,
         );
     }
 {% endfor %}
@@ -71,9 +82,19 @@ class {{ factory }} extends CakephpBaseFactory
      */
     public function with{{ association }}($parameter = null, int $n = 1): static
     {
+        if (is_numeric($parameter)) {
+            $factory = {{ associationData.className }}::make()->times((int)$parameter);
+        } elseif ($parameter instanceof EntityInterface) {
+            $factory = {{ associationData.className }}::makeFrom($parameter)->times($n);
+        } elseif (is_callable($parameter)) {
+            $factory = {{ associationData.className }}::makeWith($parameter)->times($n);
+        } else {
+            $factory = {{ associationData.className }}::make($parameter)->times($n);
+        }
+
         return $this->with(
             '{{ association }}',
-            {{ associationData.className }}::make($parameter, $n),
+            $factory,
         );
     }
 {% endfor %}
@@ -87,9 +108,21 @@ class {{ factory }} extends CakephpBaseFactory
      */
     public function with{{ association }}($parameter = null, int $n = 1): static
     {
+        if (is_numeric($parameter)) {
+            $factory = {{ associationData.className }}::make()->times((int)$parameter);
+        } elseif ($parameter instanceof EntityInterface) {
+            $factory = {{ associationData.className }}::makeFrom($parameter)->times($n);
+        } elseif (is_callable($parameter)) {
+            $factory = {{ associationData.className }}::makeWith($parameter)->times($n);
+        } else {
+            $factory = {{ associationData.className }}::make($parameter)->times($n);
+        }
+
+        $factory = $factory->without('{{ modelName }}');
+
         return $this->with(
             '{{ association }}',
-            {{ associationData.className }}::make($parameter, $n)->without('{{ modelName }}'),
+            $factory,
         );
     }
 {% endfor %}

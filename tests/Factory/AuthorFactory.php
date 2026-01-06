@@ -13,6 +13,7 @@ declare(strict_types=1);
  */
 namespace CakephpFixtureFactories\Test\Factory;
 
+use Cake\Datasource\EntityInterface;
 use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\Generator\GeneratorInterface;
 
@@ -57,12 +58,32 @@ class AuthorFactory extends BaseFactory
 
     public function withArticles(mixed $parameter = null, int $n = 1): self
     {
-        return $this->with('Articles', ArticleFactory::make($parameter, $n)->without('Authors'));
+        if (is_numeric($parameter)) {
+            $articlesFactory = ArticleFactory::make()->times((int)$parameter)->without('Authors');
+        } elseif ($parameter instanceof EntityInterface) {
+            $articlesFactory = ArticleFactory::makeFrom($parameter)->times($n)->without('Authors');
+        } elseif (is_callable($parameter)) {
+            $articlesFactory = ArticleFactory::makeWith($parameter)->times($n)->without('Authors');
+        } else {
+            $articlesFactory = ArticleFactory::make($parameter)->times($n)->without('Authors');
+        }
+
+        return $this->with('Articles', $articlesFactory);
     }
 
     public function withAddress(mixed $parameter = null): self
     {
-        return $this->with('Address', AddressFactory::make($parameter));
+        if (is_numeric($parameter)) {
+            $addressFactory = AddressFactory::make()->times((int)$parameter);
+        } elseif ($parameter instanceof EntityInterface) {
+            $addressFactory = AddressFactory::makeFrom($parameter);
+        } elseif (is_callable($parameter)) {
+            $addressFactory = AddressFactory::makeWith($parameter);
+        } else {
+            $addressFactory = AddressFactory::make($parameter);
+        }
+
+        return $this->with('Address', $addressFactory);
     }
 
     public function fromCountry(string $name): self
