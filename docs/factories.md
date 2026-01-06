@@ -153,6 +153,8 @@ CityFactory::make()->times(5)->with('Country', 'Foo')->persist();
 will create 5 cities all associated to one unique country. If you perform that same operation again,
 you will have 10 cities, all associated to one single country.
 
+Note: `times()` is the preferred way to set the amount of entities. `setTimes()` is deprecated.
+
 ## Primary keys uniqueness
 
 The uniqueness of the primary keys is handled exactely the same way as described above,
