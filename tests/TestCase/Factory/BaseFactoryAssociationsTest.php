@@ -201,14 +201,14 @@ class BaseFactoryAssociationsTest extends TestCase
     public function testGetAssociatedFactoryWithMultipleDepth(): void
     {
         $country = 'Foo';
-        $path = 'BusinessAddress.City.Country';
+        $path = 'BusinessAddress.City.Countries';
         $author = AuthorFactory::make()->with($path, [
             'name' => $country,
         ])->persist();
 
         $this->assertInstanceOf(Country::class, $author->business_address->city->country);
 
-        $author = AuthorFactory::get($author->id, ['contain' => ['BusinessAddress.City.Country']]);
+        $author = AuthorFactory::get($author->id, ['contain' => ['BusinessAddress.City.Countries']]);
         $this->assertSame($country, $author->business_address->city->country->name);
 
         // There should now be two addresses in the DB
@@ -234,7 +234,7 @@ class BaseFactoryAssociationsTest extends TestCase
     {
         $n = 10;
         $country = 'Foo';
-        $path = 'BusinessAddress.City.Country';
+        $path = 'BusinessAddress.City.Countries';
         $authors = AuthorFactory::make($n)->with($path, [
             'name' => $country,
         ])->persist();
@@ -334,7 +334,7 @@ class BaseFactoryAssociationsTest extends TestCase
     public function testGetAssociatedFactoryWithMultipleDepthAndWithout(): void
     {
         $author = AuthorFactory::make()
-            ->with('BusinessAddress.City.Country')
+            ->with('BusinessAddress.City.Countries')
             ->with('BusinessAddress.City')
             ->without('BusinessAddress')
             ->persist();
@@ -350,14 +350,14 @@ class BaseFactoryAssociationsTest extends TestCase
 
     public function testSaveMultiplesToOneAssociationShouldSaveOnlyOne(): void
     {
-        $city = CityFactory::make()->with('Country', [
+        $city = CityFactory::make()->with('Countries', [
             ['name' => 'Foo1'],
             ['name' => 'Foo2'],
             ['name' => 'Foo3'],
             ['name' => 'Foo4'],
         ])->persist();
 
-        $city = CityFactory::get($city->id, ['contain' => 'Country']);
+        $city = CityFactory::get($city->id, ['contain' => 'Countries']);
 
         $this->assertSame('Foo1', $city->country->name);
         $this->assertSame(1, CountryFactory::count());
@@ -370,12 +370,12 @@ class BaseFactoryAssociationsTest extends TestCase
         $countryNotExpected = 'Bar';
         CountryFactory::make(['name' => $countryExpected])
             ->with('Cities', CityFactory::make()
-            ->with('Country', ['name' => $countryNotExpected]))
+            ->with('Countries', ['name' => $countryNotExpected]))
             ->persist();
 
         $this->assertSame(1, CityFactory::count());
         /** @var \TestApp\Model\Entity\City $city */
-        $city = CityFactory::find()->contain('Country')->firstOrFail();
+        $city = CityFactory::find()->contain('Countries')->firstOrFail();
         $this->assertSame($countryExpected, $city->country->name);
     }
 
@@ -389,7 +389,7 @@ class BaseFactoryAssociationsTest extends TestCase
     {
         $nCities = rand(3, 10);
         $city = CityFactory::make()
-            ->with('Country', CountryFactory::make()->with('Cities', $nCities))
+            ->with('Countries', CountryFactory::make()->with('Cities', $nCities))
             ->persist();
 
         $citiesAssociatedToCountry = CountryFactory::get($city->country_id, ['contain' => 'Cities'])->cities;
@@ -680,10 +680,10 @@ class BaseFactoryAssociationsTest extends TestCase
         CityFactory::make()->getTable()->belongsTo('Countries');
         $name = 'FooCountry';
         $factories = [
-            CityFactory::make()->with('Country', compact('name')),
             CityFactory::make()->with('Countries', compact('name')),
-            CityFactory::make()->with('Country')->with('Countries', compact('name')),
-            CityFactory::make()->with('Country', ['name' => 'Foo'])->with('Countries', compact('name')),
+            CityFactory::make()->with('Countries', compact('name')),
+            CityFactory::make()->with('Countries')->with('Countries', compact('name')),
+            CityFactory::make()->with('Countries', ['name' => 'Foo'])->with('Countries', compact('name')),
         ];
 
         foreach ($factories as $factory) {
@@ -698,7 +698,7 @@ class BaseFactoryAssociationsTest extends TestCase
 
     public function testDoNotRecreateHasOneAssociationWhenInjectingEntityOneLevelDepth(): void
     {
-        $city = CityFactory::make()->with('Country')->persist();
+        $city = CityFactory::make()->with('Countries')->persist();
         $cityCountryId = $city->country_id;
         $cityCountryName = $city->country->name;
 
@@ -712,7 +712,7 @@ class BaseFactoryAssociationsTest extends TestCase
 
     public function testDoNotRecreateHasOneAssociationWhenInjectingEntityTwoLevelDepth(): void
     {
-        $city = CityFactory::make()->with('Country')->persist();
+        $city = CityFactory::make()->with('Countries')->persist();
         $cityCountryId = $city->country_id;
         $cityCountryName = $city->country->name;
 

@@ -51,15 +51,15 @@ class CityFactory extends BaseFactory
                 'name' => $generator->city(),
             ];
         })
-        ->withCountry();
+        ->withCountries();
     }
 
     /**
      * @param array|callable|null|int $parameter
      * @return $this
      */
-    public function withCountry(mixed $parameter = null): self
+    public function withCountries(mixed $parameter = null): self
     {
-        return $this->with('Country', CountryFactory::make($parameter));
+        return $this->with('Countries', CountryFactory::make($parameter));
     }
 }

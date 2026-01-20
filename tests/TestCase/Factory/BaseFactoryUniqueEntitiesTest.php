@@ -70,7 +70,7 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
     public function testNoUniquenessCreatesMultipleEntities(): void
     {
         $nCities = 3;
-        CityFactory::make($nCities)->with('Country')->persist();
+        CityFactory::make($nCities)->with('Countries')->persist();
         $this->assertSame($nCities, CityFactory::count());
         $this->assertSame($nCities, CountryFactory::count());
     }
@@ -292,7 +292,7 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
         // BelongsTo
         $nCities = 3;
         $cities = CityFactory::make($nCities)
-            ->with('Country', compact('unique_stamp'))
+            ->with('Countries', compact('unique_stamp'))
             ->persist();
 
         $this->assertSame(1, CountryFactory::count());
@@ -320,8 +320,8 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
         $nCities = 3;
         $countryName = 'Foo';
         $cities = CityFactory::make($nCities)
-            ->with('Country', compact('unique_stamp'))
-            ->with('Country', compact('unique_stamp') + ['name' => $countryName])
+            ->with('Countries', compact('unique_stamp'))
+            ->with('Countries', compact('unique_stamp') + ['name' => $countryName])
             ->persist();
 
         $this->assertSame(1, CountryFactory::count());

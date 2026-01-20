@@ -247,8 +247,8 @@ class AssociationBuilderTest extends TestCase
     public function testDropAssociationDeep2(): void
     {
         $AssociationBuilder = new AssociationBuilder(AddressFactory::make());
-        $AssociationBuilder->addAssociation('City', CityFactory::make()->with('Country'));
-        $AssociationBuilder->dropAssociation('City.Country');
+        $AssociationBuilder->addAssociation('City', CityFactory::make()->with('Countries'));
+        $AssociationBuilder->dropAssociation('City.Countries');
         $associatedFactory = $AssociationBuilder->getAssociated();
         $this->assertSame(1, count($associatedFactory));
         $this->assertArrayNotHasKey('associated', $associatedFactory);
@@ -263,7 +263,7 @@ class AssociationBuilderTest extends TestCase
 
     public function testGetAssociatedFactoryWithoutAssociationDeep2(): void
     {
-        $AddressFactory = AddressFactory::make()->without('City.Country');
+        $AddressFactory = AddressFactory::make()->without('City.Countries');
 
         $this->assertSame(
             [

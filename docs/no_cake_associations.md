@@ -54,7 +54,7 @@ Once this is defined, you may then call:
 ```php
 $city = CityFactory::make()
     ->with('Addresses', 4)
-    ->with('Country', ['name' => 'India'])
+    ->with('Countries', ['name' => 'India'])
     ->getEntity();
 ```
 which will set the city's country, and provide 4 random addresses.

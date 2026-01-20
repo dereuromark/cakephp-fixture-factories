@@ -159,7 +159,7 @@ class BaseFactoryLoadAssociationsInInitializeTest extends TestCase
         $country = CountryFactory::make()->persist();
 
         $factory = CityFactory::make();
-        $factory->getTable()->associations()->remove('Country');
+        $factory->getTable()->associations()->remove('Countries');
         $factory->getTable()->belongsTo('Country', compact('className'));
 
         $name = 'Foo';
