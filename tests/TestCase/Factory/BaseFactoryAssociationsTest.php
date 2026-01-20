@@ -677,7 +677,6 @@ class BaseFactoryAssociationsTest extends TestCase
 
     public function testCompileEntityForToOneAssociation(): void
     {
-        CityFactory::make()->getTable()->belongsTo('Countries');
         $name = 'FooCountry';
         $factories = [
             CityFactory::make()->with('Countries', compact('name')),
