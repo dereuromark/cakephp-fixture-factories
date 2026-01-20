@@ -26,7 +26,7 @@ class CitiesTable extends Table
     {
         $this->addBehavior('Timestamp');
 
-        $this->belongsTo('Country', [
+        $this->belongsTo('Countries', [
             'className' => 'Countries',
         ]);
 
