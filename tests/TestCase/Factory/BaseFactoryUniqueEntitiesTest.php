@@ -83,7 +83,7 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
             'name' => 'First save',
         ])->persist();
 
-        $city = CityFactory::make()->withCountry([
+        $city = CityFactory::make()->withCountries([
             'unique_stamp' => $unique_stamp,
             'name' => 'Second save',
         ])->persist();

@@ -244,7 +244,7 @@ class BaseFactoryTest extends TestCase
     public function testMakeSingleWithArrayWithSubFactory(): void
     {
         $city = CityFactory::make(function (CityFactory $factory, GeneratorInterface $generator) {
-            $factory->withCountry(function (CountryFactory $factory, GeneratorInterface $generator) {
+            $factory->withCountries(function (CountryFactory $factory, GeneratorInterface $generator) {
                 return [
                     'name' => $generator->country(),
                 ];
@@ -298,7 +298,7 @@ class BaseFactoryTest extends TestCase
             ->withAuthors(function (AuthorFactory $factory, GeneratorInterface $generator) {
                 $factory->withAddress(function (AddressFactory $factory, GeneratorInterface $generator) {
                     $factory->withCity(function (CityFactory $factory, GeneratorInterface $generator) {
-                        $factory->withCountry(function (CountryFactory $factory, GeneratorInterface $generator) {
+                        $factory->withCountries(function (CountryFactory $factory, GeneratorInterface $generator) {
                             return [
                                 'name' => $generator->country(),
                             ];
@@ -340,7 +340,7 @@ class BaseFactoryTest extends TestCase
         $author = AuthorFactory::make(['name' => 'test author'])
             ->withAddress(function (AddressFactory $factory, GeneratorInterface $generator) {
                 $factory->withCity(function (CityFactory $factory, GeneratorInterface $generator) {
-                    $factory->withCountry(['name' => 'Wonderland']);
+                    $factory->withCountries(['name' => 'Wonderland']);
 
                     return [
                         'name' => $generator->city(),
