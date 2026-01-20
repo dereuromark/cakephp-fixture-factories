@@ -27,7 +27,7 @@ class BaseFactoryTimestampBehaviorTest extends TestCase
      */
     public function testBaseFactoryTimeStampBehavior(): void
     {
-        $city = CityFactory::make()->withCountry()->getEntity();
+        $city = CityFactory::make()->withCountries()->getEntity();
         $this->assertNull($city->created);
         $this->assertNull($city->modified);
         $this->assertNull($city->country->created);

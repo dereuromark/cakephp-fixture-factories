@@ -45,7 +45,7 @@ class CityFactory extends BaseFactory
                 'name' => $generator->city(),
             ];
         })
-        ->withCountry();
+        ->withCountries();
     }
 }
 ```

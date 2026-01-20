@@ -73,7 +73,7 @@ class SelectQueryMockerTest extends TestCase
         $cityFactory = CityFactory::make([
             ['name' => $names[0]],
             ['name' => $names[1]],
-        ])->withCountry();
+        ])->withCountries();
         SelectQueryMocker::mock($this, $cityFactory);
 
         $CountriesTable = TableRegistry::getTableLocator()->get('Countries');
