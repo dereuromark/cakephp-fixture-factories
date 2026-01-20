@@ -42,7 +42,7 @@ class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
     public function testDisablePrimaryKeyOffset(int $cityOffset): void
     {
         $n = 10;
-        $cities = CityFactory::make($n)
+        $cities = CityFactory::make()->times($n)
             ->setPrimaryKeyOffset($cityOffset)
             ->disablePrimaryKeyOffset()
             ->persist();
@@ -64,7 +64,7 @@ class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
     public function testDisablePrimaryKeyOffsetInAssociation(int $countryOffset): void
     {
         $n = 5;
-        $cities = CityFactory::make($n)
+        $cities = CityFactory::make()->times($n)
             ->with(
                 'Country',
                 CountryFactory::make()->setPrimaryKeyOffset($countryOffset)->disablePrimaryKeyOffset(),
@@ -86,7 +86,7 @@ class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
         $cityOffset = rand(1, 100000);
         $countryOffset = rand(1, 100000);
 
-        $cities = CityFactory::make($nCities)
+        $cities = CityFactory::make()->times($nCities)
             ->with(
                 'Country',
                 CountryFactory::make()->setPrimaryKeyOffset($countryOffset)->disablePrimaryKeyOffset(),
@@ -111,7 +111,7 @@ class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
         $country = CountryFactory::make()
             ->with(
                 'Cities',
-                CityFactory::make($nCities)->setPrimaryKeyOffset($cityOffset)->disablePrimaryKeyOffset(),
+                CityFactory::make()->times($nCities)->setPrimaryKeyOffset($cityOffset)->disablePrimaryKeyOffset(),
             )
             ->setPrimaryKeyOffset($countryOffset)
             ->disablePrimaryKeyOffset()
@@ -146,8 +146,8 @@ class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
         $nCountries = rand(3, 5);
         $iterations = rand(3, 5);
 
-        $factory = CountryFactory::make($nCountries)
-            ->with('Cities', CityFactory::make($nCitiesPerCountry)->disablePrimaryKeyOffset())
+        $factory = CountryFactory::make()->times($nCountries)
+            ->with('Cities', CityFactory::make()->times($nCitiesPerCountry)->disablePrimaryKeyOffset())
             ->disablePrimaryKeyOffset();
 
         $countries = [];
