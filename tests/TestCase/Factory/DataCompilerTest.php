@@ -61,7 +61,7 @@ class DataCompilerTest extends TestCase
     public function testGetMarshallerAssociationNameWithDottedAssociation(): void
     {
         $marshallerAssociationName = $this->authorDataCompiler->getMarshallerAssociationName('BusinessAddress.City.Countries');
-        $this->assertSame('business_address.city.countries', $marshallerAssociationName);
+        $this->assertSame('business_address.city.country', $marshallerAssociationName);
     }
 
     public function testGetMarshallerAssociationNameWithAliasedAssociationName(): void

@@ -218,6 +218,13 @@ class AssociationBuilderTest extends TestCase
                                 'validate' => false,
                                 'forceNew' => true,
                                 'accessibleFields' => ['*' => true],
+                                'associated' => [
+                                    'Countries' => [
+                                        'validate' => false,
+                                        'forceNew' => true,
+                                        'accessibleFields' => ['*' => true],
+                                    ],
+                                ],
                             ],
                         ],
                     ],
@@ -349,6 +356,13 @@ class AssociationBuilderTest extends TestCase
                 'validate' => false,
                 'forceNew' => true,
                 'accessibleFields' => ['*' => true],
+                'associated' => [
+                    'Countries' => [
+                        'validate' => false,
+                        'forceNew' => true,
+                        'accessibleFields' => ['*' => true],
+                    ],
+                ],
             ],
         ], $CountryFactory->getAssociated());
 
