@@ -56,7 +56,7 @@ class BaseFactoryDisplayFieldTest extends TestCase
     public function testUseDisplayFieldInAssociationIfFieldIsNotSpecified(): void
     {
         $country = 'India';
-        $address = AddressFactory::make()->with('City.Country', $country)->getEntity();
+        $address = AddressFactory::make()->with('City.Countries', $country)->getEntity();
 
         $this->assertSame($country, $address->city->country->name);
     }

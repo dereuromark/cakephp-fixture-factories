@@ -52,7 +52,7 @@ class AssociationBuilderTest extends TestCase
         );
         $this->assertInstanceOf(
             Association::class,
-            $AssociationBuilder->getAssociation('Address.City.Country'),
+            $AssociationBuilder->getAssociation('Address.City.Countries'),
         );
     }
 
@@ -180,13 +180,13 @@ class AssociationBuilderTest extends TestCase
     {
         $AddressFactory = AddressFactory::make()->with(
             'City',
-            CityFactory::make()->withCountry(),
+            CityFactory::make()->withCountries(),
         );
 
         $expected = [
             'City' => CityFactory::make()->getMarshallerOptions() + [
                 'associated' => [
-                    'Country' => CountryFactory::make()->getMarshallerOptions(),
+                    'Countries' => CountryFactory::make()->getMarshallerOptions(),
                 ],
             ],
         ];
@@ -198,7 +198,7 @@ class AssociationBuilderTest extends TestCase
         $AddressFactory = AddressFactory::make()->with(
             'City',
             CityFactory::make()->with(
-                'Country',
+                'Countries',
                 CountryFactory::make()->with('Cities'),
             ),
         );
@@ -209,7 +209,7 @@ class AssociationBuilderTest extends TestCase
                 'forceNew' => true,
                 'accessibleFields' => ['*' => true],
                 'associated' => [
-                    'Country' => [
+                    'Countries' => [
                         'validate' => false,
                         'forceNew' => true,
                         'accessibleFields' => ['*' => true],
@@ -282,7 +282,7 @@ class AssociationBuilderTest extends TestCase
         $CityFactory = CityFactory::make()->with('Addresses[5]');
 
         $expected = [
-            'Country' => [
+            'Countries' => [
                 'validate' => false,
                 'forceNew' => true,
                 'accessibleFields' => ['*' => true],
@@ -318,7 +318,7 @@ class AssociationBuilderTest extends TestCase
                                 'forceNew' => true,
                                 'accessibleFields' => ['*' => true],
                                 'associated' => [
-                                    'Country' => [
+                                    'Countries' => [
                                         'validate' => false,
                                         'forceNew' => true,
                                         'accessibleFields' => ['*' => true],
@@ -341,7 +341,7 @@ class AssociationBuilderTest extends TestCase
         $cityName = 'Foo';
         $CountryFactory = CountryFactory::make()->with(
             'Cities',
-            CityFactory::make(['name' => $cityName])->withCountry(),
+            CityFactory::make(['name' => $cityName])->withCountries(),
         );
 
         $this->assertSame([

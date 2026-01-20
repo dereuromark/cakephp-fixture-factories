@@ -66,7 +66,7 @@ class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
         $n = 5;
         $cities = CityFactory::make($n)
             ->with(
-                'Country',
+                'Countries',
                 CountryFactory::make()->setPrimaryKeyOffset($countryOffset)->disablePrimaryKeyOffset(),
             )
             ->persist();
@@ -88,7 +88,7 @@ class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
 
         $cities = CityFactory::make($nCities)
             ->with(
-                'Country',
+                'Countries',
                 CountryFactory::make()->setPrimaryKeyOffset($countryOffset)->disablePrimaryKeyOffset(),
             )
             ->setPrimaryKeyOffset($cityOffset)

@@ -470,7 +470,7 @@ class BaseFactoryAssociationsTest extends TestCase
         AddressFactory::make([
             ['street' => $street1],
             ['street' => $street2],
-        ])->with('City', CityFactory::make(['country_id' => $country->id])->without('Country'))
+        ])->with('City', CityFactory::make(['country_id' => $country->id])->without('Countries'))
         ->persist();
 
         $country = CountryFactory::get($country->id, [
@@ -504,8 +504,8 @@ class BaseFactoryAssociationsTest extends TestCase
 
         // Make sure that all was correctly persisted
         $addresses = AddressFactory::find()
-            ->innerJoinWith('City.Country', function (SelectQuery $q) use ($country) {
-                return $q->where(['Country.id' => $country->id]);
+            ->innerJoinWith('City.Countries', function (SelectQuery $q) use ($country) {
+                return $q->where(['Countries.id' => $country->id]);
             })
             ->orderByAsc('street')
             ->toArray();
@@ -549,8 +549,8 @@ class BaseFactoryAssociationsTest extends TestCase
 
         $country = CountryFactory::make()
             ->with('Cities', [
-                CityFactory::make([['name' => $city1], ['name' => $city3]])->without('Country'),
-                CityFactory::make()->setField('name', $city2)->without('Country'),
+                CityFactory::make([['name' => $city1], ['name' => $city3]])->without('Countries'),
+                CityFactory::make()->setField('name', $city2)->without('Countries'),
             ])
             ->persist();
 
@@ -727,7 +727,7 @@ class BaseFactoryAssociationsTest extends TestCase
 
     public function testDoNotRecreateHasOneAssociationWhenInjectingEntityThreeLevelDepth(): void
     {
-        $address = AddressFactory::make()->with('City.Country')->persist();
+        $address = AddressFactory::make()->with('City.Countries')->persist();
 
         AuthorFactory::make()->with('Address', $address)->persist();
 
