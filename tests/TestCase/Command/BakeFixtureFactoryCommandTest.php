@@ -255,7 +255,7 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
 
         $country = CountryFactory::make(['name' => 'Foo'])->persist();
         unset($country['id']);
-        $city = CityFactory::make(['name' => 'Foo'])->withCountry($country->toArray())->persist();
+        $city = CityFactory::make(['name' => 'Foo'])->withCountries($country->toArray())->persist();
         unset($city['id']);
         $address = AddressFactory::make(['street' => 'Foo'])->withCity($city->toArray())->persist();
         unset($address['id']);
@@ -295,7 +295,7 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
 
         $country = CountryFactory::make(['name' => 'Foo'])->persist();
         unset($country['id']);
-        $city = CityFactory::make(['name' => 'Foo'])->with('Country', CountryFactory::make($country->toArray()))->persist();
+        $city = CityFactory::make(['name' => 'Foo'])->with('Countries', CountryFactory::make($country->toArray()))->persist();
         unset($city['id']);
         $address = AddressFactory::make(['street' => 'Foo'])->with('City', CityFactory::make($city->toArray()))->persist();
         unset($address['id']);
