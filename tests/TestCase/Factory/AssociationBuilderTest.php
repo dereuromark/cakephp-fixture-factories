@@ -203,6 +203,8 @@ class AssociationBuilderTest extends TestCase
             ),
         );
 
+        // Note: The deepest Cities doesn't have Countries because the circular
+        // reference is prevented by removeAssociationForToOneFactory
         $expected = [
             'City' => [
                 'validate' => false,
@@ -218,13 +220,6 @@ class AssociationBuilderTest extends TestCase
                                 'validate' => false,
                                 'forceNew' => true,
                                 'accessibleFields' => ['*' => true],
-                                'associated' => [
-                                    'Countries' => [
-                                        'validate' => false,
-                                        'forceNew' => true,
-                                        'accessibleFields' => ['*' => true],
-                                    ],
-                                ],
                             ],
                         ],
                     ],
@@ -341,7 +336,8 @@ class AssociationBuilderTest extends TestCase
 
     /**
      * The city associated to that primary country should belong to
-     * the primary country
+     * the primary country. The Countries association on Cities is removed
+     * to prevent circular reference (city creating its own country).
      */
     public function testRemoveAssociatedAssociationForToOneFactory(): void
     {
@@ -351,18 +347,12 @@ class AssociationBuilderTest extends TestCase
             CityFactory::make(['name' => $cityName])->withCountries(),
         );
 
+        // Countries is removed from Cities to prevent circular reference
         $this->assertSame([
             'Cities' => [
                 'validate' => false,
                 'forceNew' => true,
                 'accessibleFields' => ['*' => true],
-                'associated' => [
-                    'Countries' => [
-                        'validate' => false,
-                        'forceNew' => true,
-                        'accessibleFields' => ['*' => true],
-                    ],
-                ],
             ],
         ], $CountryFactory->getAssociated());
 

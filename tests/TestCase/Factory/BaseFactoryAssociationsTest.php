@@ -692,7 +692,8 @@ class BaseFactoryAssociationsTest extends TestCase
         }
 
         FactoryTableRegistry::getTableLocator()->clear();
-        $this->assertFalse(CityFactory::make()->getTable()->hasAssociation('Countries'));
+        // The CitiesTable has a belongsTo('Countries') association defined
+        $this->assertTrue(CityFactory::make()->getTable()->hasAssociation('Countries'));
     }
 
     public function testDoNotRecreateHasOneAssociationWhenInjectingEntityOneLevelDepth(): void

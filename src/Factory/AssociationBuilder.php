@@ -132,11 +132,52 @@ class AssociationBuilder
     public function removeAssociationForToOneFactory(string $associationName, BaseFactory $associatedFactory): void
     {
         if ($this->associationIsToMany($this->getAssociation($associationName))) {
-            $associatedAssociationName = Inflector::singularize($this->getTable()->getRegistryAlias());
-            if ($associatedFactory->getTable()->hasAssociation($associatedAssociationName)) {
-                $associatedFactory->without($associatedAssociationName);
+            $backAssociation = $this->findBackAssociation($associatedFactory->getTable());
+            if ($backAssociation !== null) {
+                $associatedFactory->without($backAssociation->getName());
             }
         }
+    }
+
+    /**
+     * Find a belongsTo association on the associated table that targets the current table.
+     *
+     * @param \Cake\ORM\Table $associatedTable The associated table
+     *
+     * @return \Cake\ORM\Association|null
+     */
+    private function findBackAssociation(Table $associatedTable): ?Association
+    {
+        $currentTableName = $this->getTable()->getRegistryAlias();
+
+        // First try the conventional singular name
+        $singularName = Inflector::singularize($currentTableName);
+        if ($associatedTable->hasAssociation($singularName)) {
+            $association = $associatedTable->getAssociation($singularName);
+            if ($association instanceof BelongsTo) {
+                return $association;
+            }
+        }
+
+        // Also try the plural name (for unconventional belongsTo naming)
+        if ($associatedTable->hasAssociation($currentTableName)) {
+            $association = $associatedTable->getAssociation($currentTableName);
+            if ($association instanceof BelongsTo) {
+                return $association;
+            }
+        }
+
+        // Search through all associations to find a belongsTo that targets this table
+        foreach ($associatedTable->associations() as $association) {
+            if (
+                $association instanceof BelongsTo &&
+                $association->getTarget()->getRegistryAlias() === $currentTableName
+            ) {
+                return $association;
+            }
+        }
+
+        return null;
     }
 
     /**
