@@ -32,7 +32,7 @@
         "cakephp/migrations": "^4.7.0",
         "josegonzalez/dotenv": "^4.0.0",
         "phpstan/phpstan": "^1.0",
-        "phpunit/phpunit": "^12.3"
+        "phpunit/phpunit": "^11.5 || ^12.3"
     },
     "autoload": {
         "psr-4": {
