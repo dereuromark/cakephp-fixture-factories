@@ -282,7 +282,7 @@ class DataCompiler
     private function castArrayNotation(EntityInterface $entity, array $data): array
     {
         foreach ($data as $key => $value) {
-            if (!strpos($key, '.')) {
+            if (!str_contains($key, '.')) {
                 continue;
             }
             $subData = Hash::expand([$key => $value]);

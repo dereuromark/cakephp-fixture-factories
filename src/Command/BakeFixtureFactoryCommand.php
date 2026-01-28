@@ -308,7 +308,7 @@ class BakeFixtureFactoryCommand extends BakeCommand
         if ($this->plugin) {
             $parts = explode('/', $this->plugin);
             $this->plugin = implode('/', array_map([$this, '_camelize'], $parts));
-            if (strpos($this->plugin, '\\')) {
+            if (str_contains($this->plugin, '\\')) {
                 $io->out('Invalid plugin namespace separator, please use / instead of \ for plugins.');
 
                 return self::CODE_SUCCESS;

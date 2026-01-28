@@ -6,7 +6,7 @@ This document provides a detailed comparison between the available fake data gen
 
 ### Faker (Default)
 - **Package**: [FakerPHP/Faker](https://github.com/FakerPHP/Faker)
-- **Minimum PHP**: 7.4+
+- **Minimum PHP**: 7.4+ (8.2+ in our scope)
 - **Install**: `composer require --dev fakerphp/faker`
 - **Best for**: Mature, feature-rich data generation with extensive locale support
 

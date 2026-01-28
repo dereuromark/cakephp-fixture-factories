@@ -699,7 +699,7 @@ abstract class BaseFactory
     {
         $this->getAssociationBuilder()->getAssociation($associationName);
 
-        if (strpos($associationName, '.') === false && $data instanceof BaseFactory) {
+        if (!str_contains($associationName, '.') && $data instanceof BaseFactory) {
             $factory = $data;
         } else {
             $factory = $this->getAssociationBuilder()->getAssociatedFactory($associationName, $data);

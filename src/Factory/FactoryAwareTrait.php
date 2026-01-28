@@ -104,7 +104,7 @@ trait FactoryAwareTrait
      */
     public static function getFactoryNameFromModelName(string $modelName): string
     {
-        if (strpos($modelName, '\\') !== false) {
+        if (str_contains($modelName, '\\')) {
             [, $modelName] = namespaceSplit($modelName);
             $modelName = str_replace('Table', '', $modelName);
         }
