@@ -4,8 +4,5 @@ parameters:
 		- tests/bootstrap.php
 	paths:
 		- src/
-	reportUnmatchedIgnoredErrors: false
 	ignoreErrors:
-		- identifier: missingType.generics
-		- identifier: missingType.iterableValue
 		- identifier: trait.unused

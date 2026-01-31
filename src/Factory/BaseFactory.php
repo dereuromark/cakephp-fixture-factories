@@ -47,7 +47,7 @@ abstract class BaseFactory
     private static ?GeneratorInterface $generator = null;
 
     /**
-     * @var array
+     * @var array<string, mixed>
      */
     protected array $marshallerOptions = [
         'validate' => false,
@@ -56,7 +56,7 @@ abstract class BaseFactory
     ];
 
     /**
-     * @var array
+     * @var array<string, mixed>
      */
     protected array $saveOptions = [
         'checkRules' => false,
@@ -65,12 +65,12 @@ abstract class BaseFactory
     ];
 
     /**
-     * @var array Unique fields. Uniqueness applies only to persisted entities.
+     * @var array<string> Unique fields. Uniqueness applies only to persisted entities.
      */
     protected array $uniqueProperties = [];
 
     /**
-     * @var array Fields on which the setters should be skipped.
+     * @var array<string> Fields on which the setters should be skipped.
      */
     protected array $skippedSetters = [];
 
@@ -326,7 +326,7 @@ abstract class BaseFactory
     /**
      * Creates a result set of non-persisted entities
      *
-     * @return \Cake\ORM\ResultSet
+     * @return \Cake\ORM\ResultSet<int, \Cake\Datasource\EntityInterface>
      */
     public function getResultSet(): ResultSet
     {
@@ -336,7 +336,7 @@ abstract class BaseFactory
     /**
      * Creates a result set of persisted entities
      *
-     * @return \Cake\ORM\ResultSet
+     * @return \Cake\ORM\ResultSet<int, \Cake\Datasource\EntityInterface>
      */
     public function getPersistedResultSet(): ResultSet
     {
@@ -344,7 +344,7 @@ abstract class BaseFactory
     }
 
     /**
-     * @return array
+     * @return array<string, mixed>
      */
     public function getMarshallerOptions(): array
     {
@@ -359,7 +359,7 @@ abstract class BaseFactory
     /**
      * @deprecated will be removed in v4
      *
-     * @return array
+     * @return array<string, mixed>
      */
     public function getAssociated(): array
     {
@@ -414,7 +414,7 @@ abstract class BaseFactory
      *
      * @throws \CakephpFixtureFactories\Error\PersistenceException if the entity/entities could not be saved.
      *
-     * @return \Cake\Datasource\EntityInterface|\Cake\Datasource\ResultSetInterface|iterable<\Cake\Datasource\EntityInterface>
+     * @return \Cake\Datasource\EntityInterface|\Cake\Datasource\ResultSetInterface<int, \Cake\Datasource\EntityInterface>|iterable<\Cake\Datasource\EntityInterface>
      */
     public function persist(): EntityInterface|iterable|ResultSetInterface
     {
@@ -444,7 +444,7 @@ abstract class BaseFactory
     }
 
     /**
-     * @return array
+     * @return array<string, mixed>
      */
     private function getSaveOptions(): array
     {
@@ -456,7 +456,7 @@ abstract class BaseFactory
     /**
      * Assigns the values of $data to the $keys of the entities generated
      *
-     * @param \Cake\Datasource\EntityInterface|array $data Data to inject
+     * @param \Cake\Datasource\EntityInterface|array<string, mixed> $data Data to inject
      *
      * @return $this
      */
@@ -618,7 +618,7 @@ abstract class BaseFactory
      * ]
      * If not set, the offset is set randomly
      *
-     * @param array|string|int $primaryKeyOffset Offset
+     * @param array<string, int|string>|string|int $primaryKeyOffset Offset
      *
      * @return $this
      */
@@ -645,7 +645,7 @@ abstract class BaseFactory
      * Get the fields that are declared are unique.
      * This should include the uniqueness of the fields in your schema.
      *
-     * @return array
+     * @return array<string>
      */
     public function getUniqueProperties(): array
     {
@@ -660,7 +660,7 @@ abstract class BaseFactory
      * entity will be created, but instead the
      * existing one will be considered.
      *
-     * @param array|string|null $fields Unique fields set on the fly.
+     * @param array<string>|string|null $fields Unique fields set on the fly.
      *
      * @return $this
      */
@@ -691,7 +691,7 @@ abstract class BaseFactory
      * The data can be an array, an integer, an entity interface, a callable or a factory
      *
      * @param string $associationName Association name
-     * @param \CakephpFixtureFactories\Factory\BaseFactory|\Cake\Datasource\EntityInterface|callable|array|string|int $data Injected data
+     * @param \CakephpFixtureFactories\Factory\BaseFactory|\Cake\Datasource\EntityInterface|callable|array<string, mixed>|string|int $data Injected data
      *
      * @return $this
      */
@@ -747,7 +747,7 @@ abstract class BaseFactory
     /**
      * @internal Not for normal use, only used for testing.
      *
-     * @param array $data Data to merge
+     * @param array<string, mixed> $data Data to merge
      *
      * @return $this
      */
@@ -786,7 +786,7 @@ abstract class BaseFactory
      * @param string $type the type of query to perform
      * @param mixed ...$options Options passed to the finder
      *
-     * @return \Cake\ORM\Query\SelectQuery The query builder
+     * @return \Cake\ORM\Query\SelectQuery<\Cake\Datasource\EntityInterface> The query builder
      */
     public static function find(string $type = 'all', mixed ...$options): SelectQuery
     {
@@ -799,7 +799,7 @@ abstract class BaseFactory
      * @see Table::get()
      *
      * @param mixed $primaryKey primary key value to find
-     * @param array|string $finder The finder to use. Passing an options array is deprecated.
+     * @param array<string, mixed>|string $finder The finder to use. Passing an options array is deprecated.
      * @param \Psr\SimpleCache\CacheInterface|string|null $cache The cache config to use.
      *   Defaults to `null`, i.e. no caching.
      * @param \Closure|string|null $cacheKey The cache key to use. If not provided
@@ -861,9 +861,9 @@ abstract class BaseFactory
     /**
      * Count the factory's related table entries without before find.
      *
-     * @param \Cake\Database\ExpressionInterface|\Closure|array|string|null $conditions The conditions to filter on.
+     * @param \Cake\Database\ExpressionInterface|\Closure|array<string, mixed>|string|null $conditions The conditions to filter on.
      *
-     * @return \Cake\Datasource\EntityInterface|array The first result from the ResultSet.
+     * @return \Cake\Datasource\EntityInterface|array<string, mixed> The first result from the ResultSet.
      */
     public static function firstOrFail(
         ExpressionInterface|Closure|array|string|null $conditions = null,

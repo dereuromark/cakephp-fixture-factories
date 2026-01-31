@@ -44,17 +44,17 @@ class EventCollector
     private ?Table $table = null;
 
     /**
-     * @var array
+     * @var array<string>
      */
     private array $listeningBehaviors = [];
 
     /**
-     * @var array
+     * @var array<string>
      */
     private array $listeningModelEvents = [];
 
     /**
-     * @var array
+     * @var array<string>
      */
     private array $defaultListeningBehaviors = [];
 
@@ -109,7 +109,7 @@ class EventCollector
     }
 
     /**
-     * @return array
+     * @return array<string>
      */
     public function getListeningBehaviors(): array
     {
@@ -132,9 +132,9 @@ class EventCollector
     }
 
     /**
-     * @param array $activeBehaviors Behaviors the factory will listen to
+     * @param array<string> $activeBehaviors Behaviors the factory will listen to
      *
-     * @return array
+     * @return array<string>
      */
     public function listeningToBehaviors(array $activeBehaviors): array
     {
@@ -144,9 +144,9 @@ class EventCollector
     }
 
     /**
-     * @param array $activeModelEvents Events the factory will listen to
+     * @param array<string> $activeModelEvents Events the factory will listen to
      *
-     * @return array
+     * @return array<string>
      */
     public function listeningToModelEvents(array $activeModelEvents): array
     {
@@ -156,7 +156,7 @@ class EventCollector
     }
 
     /**
-     * @return array
+     * @return array<string>
      */
     public function getListeningModelEvents(): array
     {
@@ -175,7 +175,7 @@ class EventCollector
     }
 
     /**
-     * @return array
+     * @return array<string>
      */
     public function getDefaultListeningBehaviors(): array
     {

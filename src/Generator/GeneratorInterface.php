@@ -93,7 +93,7 @@ namespace CakephpFixtureFactories\Generator;
  * @method string creditCardNumber() Generate a random credit card number
  * @method string creditCardType() Generate a random credit card type
  * @method \DateTime creditCardExpirationDate() Generate credit card expiration date
- * @method array creditCardDetails() Generate complete credit card details
+ * @method array<string, mixed> creditCardDetails() Generate complete credit card details
  * @method string iban() Generate a random IBAN
  * @method string swiftBicNumber() Generate a random SWIFT BIC number
  * @method string ean13() Generate EAN-13 barcode

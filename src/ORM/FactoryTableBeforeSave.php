@@ -87,7 +87,7 @@ final class FactoryTableBeforeSave
      *
      * @see DataCompiler::compileEntity()
      *
-     * @return array
+     * @return array<string>
      */
     public function getEntityModifiedUniqueProperties(): array
     {
@@ -112,13 +112,13 @@ final class FactoryTableBeforeSave
     }
 
     /**
-     * @param array $conditions Conditions that a duplicate should meet
+     * @param array<string, mixed> $conditions Conditions that a duplicate should meet
      *
-     * @return array|null
+     * @return array<string, mixed>|null
      */
     public function findDuplicate(array $conditions): ?array
     {
-        /** @var array|null $duplicate */
+        /** @var array<string, mixed>|null $duplicate */
         $duplicate = $this->getTable()
             ->find()
             ->select($this->getPropertiesToPatchFromDuplicate())
@@ -134,7 +134,7 @@ final class FactoryTableBeforeSave
      * extract their values in the entity in an array to prepare a search
      * for a duplicate.
      *
-     * @return array
+     * @return array<string, mixed>
      */
     public function getEnforcedUniquePropertyValues(): array
     {
@@ -151,7 +151,7 @@ final class FactoryTableBeforeSave
      * the primary keys and the fields modified unique
      * fields shall be overwritten by the already existing entity.
      *
-     * @param array $duplicate Values to patch from the existing entity to the one about to be created.
+     * @param array<string, mixed> $duplicate Values to patch from the existing entity to the one about to be created.
      *
      * @return void
      */
@@ -169,7 +169,7 @@ final class FactoryTableBeforeSave
      * primary keys. Those will define which fields to search
      * in duplicate.
      *
-     * @return array
+     * @return array<string>
      */
     public function getPropertiesToPatchFromDuplicate(): array
     {

@@ -44,23 +44,44 @@ class DataCompiler
      */
     public const IS_ASSOCIATED = '___data_compiler__is_associated';
 
+    /**
+     * @var \Closure|array<string, mixed>
+     */
     private array|Closure $dataFromDefaultTemplate = [];
 
     /**
-     * @var \Cake\Datasource\EntityInterface|callable|array|array<\Cake\Datasource\EntityInterface>|string
+     * @var \Cake\Datasource\EntityInterface|callable|array<mixed>|string
      */
     private $dataFromInstantiation = [];
 
+    /**
+     * @var array<string, mixed>
+     */
     private array $dataFromPatch = [];
 
+    /**
+     * @var array<string, array<int, \CakephpFixtureFactories\Factory\BaseFactory>>
+     */
     private array $dataFromAssociations = [];
 
+    /**
+     * @var array<string, array<int, \CakephpFixtureFactories\Factory\BaseFactory>>
+     */
     private array $dataFromDefaultAssociations = [];
 
+    /**
+     * @var array<string, int|string>|null
+     */
     private ?array $primaryKeyOffset = [];
 
+    /**
+     * @var array<string>
+     */
     private array $enforcedFields = [];
 
+    /**
+     * @var array<string>
+     */
     private array $skippedSetters = [];
 
     private static bool $inPersistMode = false;
@@ -112,7 +133,7 @@ class DataCompiler
     }
 
     /**
-     * @param array $data Collected data
+     * @param array<string, mixed> $data Collected data
      *
      * @return void
      */
@@ -205,7 +226,7 @@ class DataCompiler
     }
 
     /**
-     * @param \Cake\Datasource\EntityInterface|callable|array|string $injectedData Data from the injection.
+     * @param \Cake\Datasource\EntityInterface|callable|array<string, mixed>|string $injectedData Data from the injection.
      * @param bool $setPrimaryKey Set the primary key if this entity is alone or the first of an array.
      *
      * @return \Cake\Datasource\EntityInterface
@@ -246,7 +267,7 @@ class DataCompiler
      * Helper method to patch entities with the data compiler data.
      *
      * @param \Cake\Datasource\EntityInterface $entity Entity to patch.
-     * @param array $data Data to patch.
+     * @param array<string, mixed> $data Data to patch.
      *
      * @return \Cake\Datasource\EntityInterface
      */
@@ -271,11 +292,11 @@ class DataCompiler
      * If so, merge recursively with the existing data
      *
      * @param \Cake\Datasource\EntityInterface $entity entity to patch
-     * @param array $data data to patch
+     * @param array<string, mixed> $data data to patch
      *
      * @throws \CakephpFixtureFactories\Error\FixtureFactoryException if an array notation is merged with a string, or a non array
      *
-     * @return array
+     * @return array<string, mixed>
      */
     private function castArrayNotation(EntityInterface $entity, array $data): array
     {
@@ -337,9 +358,9 @@ class DataCompiler
      * and removed from the data patched.
      *
      * @param \Cake\Datasource\EntityInterface $entity entity build
-     * @param array $data data to set
+     * @param array<string, mixed> $data data to set
      *
-     * @return array Data without the fields for which the setters are ignored
+     * @return array<string, mixed> Data without the fields for which the setters are ignored
      */
     private function setDataWithoutSetters(EntityInterface $entity, array $data): array
     {
@@ -375,7 +396,7 @@ class DataCompiler
      * Merge with the data injected during the instantiation of the Factory
      *
      * @param \Cake\Datasource\EntityInterface $entity Entity to manipulate.
-     * @param \Cake\Datasource\EntityInterface|callable|array $data Data from the instantiation.
+     * @param \Cake\Datasource\EntityInterface|callable|array<string, mixed> $data Data from the instantiation.
      *
      * @return $this
      */
@@ -454,7 +475,7 @@ class DataCompiler
      *
      * @param \Cake\Datasource\EntityInterface $entity Entity produced by the factory.
      * @param string $associationName Association
-     * @param array $data Data to inject
+     * @param array<int, \CakephpFixtureFactories\Factory\BaseFactory> $data Data to inject
      *
      * @return void
      */
@@ -476,7 +497,7 @@ class DataCompiler
     /**
      * @param \Cake\Datasource\EntityInterface $entity Entity produced by the factory.
      * @param string $associationName Association
-     * @param array $data Data to inject
+     * @param array<int, \CakephpFixtureFactories\Factory\BaseFactory> $data Data to inject
      *
      * @return void
      */
@@ -515,7 +536,7 @@ class DataCompiler
      * Ensure new associated entities are marked dirty so CakePHP will save them.
      *
      * @param \Cake\Datasource\EntityInterface $entity Entity to mark.
-     * @param array $visited
+     * @param array<int, bool> $visited
      *
      * @return void
      */
@@ -628,7 +649,7 @@ class DataCompiler
     /**
      * @throws \CakephpFixtureFactories\Error\PersistenceException
      *
-     * @return array
+     * @return array<string, int|string>
      */
     public function createPrimaryKeyOffset(): array
     {
@@ -646,7 +667,7 @@ class DataCompiler
     }
 
     /**
-     * @return array
+     * @return array<string, int|string>
      */
     public function generateArrayOfRandomPrimaryKeys(): array
     {
@@ -744,7 +765,7 @@ class DataCompiler
     }
 
     /**
-     * @param array $primaryKeys Set of primary keys
+     * @param array<string, int|string> $primaryKeys Set of primary keys
      *
      * @return void
      */
@@ -775,7 +796,7 @@ class DataCompiler
      * Fetch the fields that were intentionally modified by the developer
      * and that are unique. These should be watched for uniqueness.
      *
-     * @return array
+     * @return array<string>
      */
     public function getModifiedUniqueFields(): array
     {
@@ -815,7 +836,7 @@ class DataCompiler
     }
 
     /**
-     * @return array
+     * @return array<string>
      */
     public function getEnforcedFields(): array
     {
@@ -828,7 +849,7 @@ class DataCompiler
      * have been set by the user. This is useful for the
      * uniqueness of the fields.
      *
-     * @param array $fields Fields to be marked as enforced.
+     * @param array<string, mixed> $fields Fields to be marked as enforced.
      *
      * @return void
      */
@@ -843,7 +864,7 @@ class DataCompiler
     /**
      * Sets the fields which setters should be skipped
      *
-     * @param array $skippedSetters setters to skip
+     * @param array<string> $skippedSetters setters to skip
      *
      * @return void
      */

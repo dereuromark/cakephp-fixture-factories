@@ -31,7 +31,7 @@ trait FactoryAwareTrait
      * @see \CakephpFixtureFactories\Factory\BaseFactory::make
      *
      * @param string $name Factory or model name
-     * @param \Cake\Datasource\EntityInterface|callable|array|string|int|null $makeParameter Injected data
+     * @param \Cake\Datasource\EntityInterface|callable|array<string, mixed>|string|int|null $makeParameter Injected data
      * @param int $times Number of entities created
      *
      * @throws \CakephpFixtureFactories\Error\FactoryNotFoundException if the factory could not be found
