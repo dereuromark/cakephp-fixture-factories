@@ -23,11 +23,15 @@ class CreateBills extends AbstractMigration
      */
     public function up()
     {
+        $generatedByDefault = class_exists(\Migrations\Db\Adapter\PostgresAdapter::class)
+            ? \Migrations\Db\Adapter\PostgresAdapter::GENERATED_BY_DEFAULT
+            : \Phinx\Db\Adapter\PostgresAdapter::GENERATED_BY_DEFAULT;
+
         $this->table('bills', ['id' => false])
             ->addColumn('id', 'integer', [
                 'autoIncrement' => true,
                 'limit' => 11,
-                'generated' => \Phinx\Db\Adapter\PostgresAdapter::GENERATED_BY_DEFAULT,
+                'generated' => $generatedByDefault,
             ])
             ->addPrimaryKey(['id'])
             ->addColumn('customer_id', 'integer', [

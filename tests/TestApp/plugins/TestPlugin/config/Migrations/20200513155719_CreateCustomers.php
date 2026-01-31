@@ -23,11 +23,15 @@ class CreateCustomers extends AbstractMigration
      */
     public function up()
     {
+        $generatedByDefault = class_exists(\Migrations\Db\Adapter\PostgresAdapter::class)
+            ? \Migrations\Db\Adapter\PostgresAdapter::GENERATED_BY_DEFAULT
+            : \Phinx\Db\Adapter\PostgresAdapter::GENERATED_BY_DEFAULT;
+
         $this->table('customers', ['id' => false])
             ->addColumn('id', 'integer', [
                 'autoIncrement' => true,
                 'limit' => 11,
-                'generated' => \Phinx\Db\Adapter\PostgresAdapter::GENERATED_BY_DEFAULT,
+                'generated' => $generatedByDefault,
             ])
             ->addPrimaryKey(['id'])
             ->addColumn('name', 'string', [
