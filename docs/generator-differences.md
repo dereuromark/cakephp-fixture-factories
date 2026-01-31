@@ -64,7 +64,12 @@ Most methods work identically across both generators. However, some methods are 
 
 ### 4. Seeding Behavior
 
-Both generators support seeding for reproducible test data:
+Both generators support seeding for reproducible test data. By default, factories are seeded with `1234`.
+You can configure a different seed globally:
+
+```php
+Configure::write('FixtureFactories.seed', 9999);
+```
 
 **Faker**:
 ```php
@@ -107,20 +112,14 @@ Configure::write('FixtureFactories.generatorType', 'dummy');
 Or set it per-factory:
 
 ```php
-use CakephpFixtureFactories\Factory\BaseFactory;
-
-class ArticleFactory extends BaseFactory
-{
-    protected function setDefaultTemplate(): void
-    {
-        $this->setDefaultData(function() {
-            return [
-                'title' => $this->getGenerator()->setGenerator('dummy')->sentence(),
-            ];
-        });
-    }
-}
+$article = ArticleFactory::make()
+    ->setGenerator('dummy')
+    ->getEntity();
 ```
+
+> **Note**: By default, `setGenerator()` changes the generator globally. Enable
+> `FixtureFactories.instanceLevelGenerator` to limit it to the current instance.
+> See [Fixture Factories](factories.md#instance-level-generators).
 
 ### Migration Guide: Faker → DummyGenerator
 
@@ -228,12 +227,18 @@ Write factory code that works with both generators:
 Don't hardcode generator selection in factories:
 
 ```php
-// Bad
-$this->getGenerator()->setGenerator('dummy');
-
 // Good - use configuration
 Configure::write('FixtureFactories.generatorType', 'dummy');
+
+// Good - per-factory override
+ArticleFactory::make()->setGenerator('dummy')->getEntity();
+
+// Good - set global default explicitly
+BaseFactory::setDefaultGenerator('dummy');
 ```
+
+> **Tip**: Enable `FixtureFactories.instanceLevelGenerator` so that `setGenerator()` only
+> affects the current factory instance. See [Fixture Factories](factories.md#instance-level-generators).
 
 ### 3. Test with Both Generators (Optional)
 
@@ -253,17 +258,14 @@ matrix:
 
 ### 4. Seed for Reproducible Tests
 
-When debugging, use seeding for reproducible data:
+Factories are seeded with `1234` by default for reproducible data. You can configure a different seed globally:
 
 ```php
-public function testSomething(): void
-{
-    $this->getGenerator()->seed(1234);
-
-    // Test with predictable data
-    $article = ArticleFactory::make()->getEntity();
-}
+// In tests/bootstrap.php or config/app.php
+Configure::write('FixtureFactories.seed', 9999);
 ```
+
+See `config/app.example.php` in this plugin for all available configuration options.
 
 ## Feature Matrix
 
