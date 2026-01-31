@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace CakephpFixtureFactories\Factory;
 
+use Cake\Core\Configure;
 use Cake\Database\ExpressionInterface;
 use Cake\Datasource\EntityInterface;
 use Cake\Datasource\ResultSetInterface;
@@ -42,9 +43,19 @@ use function is_array;
 abstract class BaseFactory
 {
     /**
+     * Shared default generator used by all factory instances.
+     *
      * @var \CakephpFixtureFactories\Generator\GeneratorInterface|null
      */
-    private static ?GeneratorInterface $generator = null;
+    private static ?GeneratorInterface $defaultGenerator = null;
+
+    /**
+     * Per-instance generator override.
+     * Only used when `FixtureFactories.instanceLevelGenerator` is enabled.
+     *
+     * @var \CakephpFixtureFactories\Generator\GeneratorInterface|null
+     */
+    private ?GeneratorInterface $instanceGenerator = null;
 
     /**
      * @var array<string, mixed>
@@ -257,17 +268,24 @@ abstract class BaseFactory
     /**
      * Get the generator instance, using the locale from I18n
      *
+     * Returns the per-instance generator if set (when `FixtureFactories.instanceLevelGenerator`
+     * is enabled and `setGenerator()` was called), otherwise falls back to the shared default.
+     *
      * @return \CakephpFixtureFactories\Generator\GeneratorInterface
      */
     public function getGenerator(): GeneratorInterface
     {
-        if (self::$generator === null) {
-            $locale = I18n::getLocale();
-            self::$generator = CakeGeneratorFactory::create($locale);
-            self::$generator->seed(1234);
+        if ($this->instanceGenerator !== null) {
+            return $this->instanceGenerator;
         }
 
-        return self::$generator;
+        if (self::$defaultGenerator === null) {
+            $locale = I18n::getLocale();
+            self::$defaultGenerator = CakeGeneratorFactory::create($locale);
+            self::$defaultGenerator->seed(static::getGeneratorSeed());
+        }
+
+        return self::$defaultGenerator;
     }
 
     /**
@@ -283,7 +301,10 @@ abstract class BaseFactory
     }
 
     /**
-     * Set the generator type to use for this factory
+     * Set the generator type to use.
+     *
+     * When `FixtureFactories.instanceLevelGenerator` is enabled, this only affects
+     * the current factory instance. Otherwise it sets the global default for all factories.
      *
      * @param string $type The generator type ('faker' or 'dummy')
      * @param string|null $locale Optional locale override
@@ -293,10 +314,57 @@ abstract class BaseFactory
     public function setGenerator(string $type, ?string $locale = null)
     {
         $locale = $locale ?? I18n::getLocale();
-        self::$generator = CakeGeneratorFactory::create($locale, $type);
-        self::$generator->seed(1234);
+        $generator = CakeGeneratorFactory::create($locale, $type);
+        $generator->seed(static::getGeneratorSeed());
+
+        if (Configure::read('FixtureFactories.instanceLevelGenerator', false)) {
+            $this->instanceGenerator = $generator;
+        } else {
+            self::$defaultGenerator = $generator;
+        }
 
         return $this;
+    }
+
+    /**
+     * Set the default generator for all factory instances.
+     *
+     * Unlike `setGenerator()`, this always sets the global default regardless of
+     * the `instanceLevelGenerator` configuration.
+     *
+     * @param string $type The generator type ('faker' or 'dummy')
+     * @param string|null $locale Optional locale override
+     *
+     * @return void
+     */
+    public static function setDefaultGenerator(string $type, ?string $locale = null): void
+    {
+        $locale = $locale ?? I18n::getLocale();
+        self::$defaultGenerator = CakeGeneratorFactory::create($locale, $type);
+        self::$defaultGenerator->seed(static::getGeneratorSeed());
+    }
+
+    /**
+     * Reset the default generator.
+     *
+     * Called during test teardown to ensure a fresh generator is created
+     * for the next test, respecting the current locale.
+     *
+     * @return void
+     */
+    public static function resetDefaultGenerator(): void
+    {
+        self::$defaultGenerator = null;
+    }
+
+    /**
+     * Get the configured generator seed.
+     *
+     * @return int
+     */
+    protected static function getGeneratorSeed(): int
+    {
+        return (int)Configure::read('FixtureFactories.seed', 1234);
     }
 
     /**

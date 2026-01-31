@@ -6,12 +6,35 @@ namespace CakephpFixtureFactories\Test\TestCase\Generator;
 
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
+use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\Generator\CakeGeneratorFactory;
 use CakephpFixtureFactories\Generator\GeneratorInterface;
+use CakephpFixtureFactories\Test\Factory\ArticleFactory;
 use TestApp\Model\Enum\TestStatus;
 
 class GeneratorAdapterTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Reset generator state for consistent test isolation
+        CakeGeneratorFactory::clearInstances();
+        BaseFactory::resetDefaultGenerator();
+    }
+
+    protected function tearDown(): void
+    {
+        // Clean up any config changes made during tests
+        Configure::delete('FixtureFactories.instanceLevelGenerator');
+        Configure::delete('FixtureFactories.seed');
+        Configure::delete('FixtureFactories.generatorType');
+        CakeGeneratorFactory::clearInstances();
+        BaseFactory::resetDefaultGenerator();
+
+        parent::tearDown();
+    }
+
     /**
      * Test backward compatibility with Faker
      *
@@ -410,5 +433,106 @@ class GeneratorAdapterTest extends TestCase
         // Reset config
         Configure::delete('FixtureFactories.generatorType');
         CakeGeneratorFactory::clearInstances();
+    }
+
+    /**
+     * Test that setGenerator affects all factories globally by default (BC)
+     *
+     * @return void
+     */
+    public function testSetGeneratorGlobalByDefault(): void
+    {
+        $factory1 = ArticleFactory::make();
+        $factory1->setGenerator('dummy');
+
+        // A different factory instance should also get the dummy generator
+        $factory2 = ArticleFactory::make();
+
+        // Both should return the same generator instance (global default)
+        $this->assertSame($factory1->getGenerator(), $factory2->getGenerator());
+    }
+
+    /**
+     * Test that setGenerator only affects current instance when feature flag is enabled
+     *
+     * @return void
+     */
+    public function testSetGeneratorInstanceLevel(): void
+    {
+        Configure::write('FixtureFactories.instanceLevelGenerator', true);
+
+        $factory1 = ArticleFactory::make();
+        $factory1->setGenerator('dummy');
+
+        $factory2 = ArticleFactory::make();
+
+        // factory1 should have its own generator
+        // factory2 should fall back to the default (faker)
+        $this->assertNotSame($factory1->getGenerator(), $factory2->getGenerator());
+    }
+
+    /**
+     * Test setDefaultGenerator always sets global default
+     *
+     * @return void
+     */
+    public function testSetDefaultGenerator(): void
+    {
+        Configure::write('FixtureFactories.instanceLevelGenerator', true);
+
+        // setDefaultGenerator should set the global default even with flag enabled
+        BaseFactory::setDefaultGenerator('dummy');
+
+        $factory = ArticleFactory::make();
+        $generator = $factory->getGenerator();
+
+        // Should use the default generator (dummy) since no instance override
+        $this->assertIsString($generator->name());
+    }
+
+    /**
+     * Test resetDefaultGenerator clears the cached default
+     *
+     * @return void
+     */
+    public function testResetDefaultGenerator(): void
+    {
+        // Get a generator to cache it
+        $factory1 = ArticleFactory::make();
+        $gen1 = $factory1->getGenerator();
+
+        // Reset
+        BaseFactory::resetDefaultGenerator();
+        CakeGeneratorFactory::clearInstances();
+
+        // Getting again should create a new instance
+        $factory2 = ArticleFactory::make();
+        $gen2 = $factory2->getGenerator();
+
+        $this->assertNotSame($gen1, $gen2);
+    }
+
+    /**
+     * Test configurable seed
+     *
+     * @return void
+     */
+    public function testConfigurableSeed(): void
+    {
+        Configure::write('FixtureFactories.seed', 9999);
+
+        $factory = ArticleFactory::make();
+        $gen = $factory->getGenerator();
+        $value1 = $gen->randomNumber();
+
+        // Reset and recreate with same seed
+        CakeGeneratorFactory::clearInstances();
+        BaseFactory::resetDefaultGenerator();
+
+        $factory2 = ArticleFactory::make();
+        $gen2 = $factory2->getGenerator();
+        $value2 = $gen2->randomNumber();
+
+        $this->assertEquals($value1, $value2, 'Same seed should produce same values');
     }
 }
