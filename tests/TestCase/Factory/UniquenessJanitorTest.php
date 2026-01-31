@@ -62,7 +62,7 @@ class UniquenessJanitorTest extends TestCase
         if ($expectException) {
             $this->expectException(UniquenessException::class);
             $factoryName = get_class($factoryStub);
-            $this->expectExceptionMessage("Error in {$factoryName}. The uniqueness of property_1 was not respected.");
+            $this->expectExceptionMessage("Error in `{$factoryName}`. The uniqueness of `property_1` was not respected.");
         } else {
             $this->expectNotToPerformAssertions();
         }

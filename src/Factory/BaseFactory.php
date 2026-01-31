@@ -261,7 +261,7 @@ abstract class BaseFactory
      */
     public function getGenerator(): GeneratorInterface
     {
-        if ((self::$generator === null)) {
+        if (self::$generator === null) {
             $locale = I18n::getLocale();
             self::$generator = CakeGeneratorFactory::create($locale);
             self::$generator->seed(1234);
@@ -410,7 +410,7 @@ abstract class BaseFactory
     }
 
     /**
-     * @deprecated Use getPersistedResultSet. Will be removed in v4. Use getPersistedResultSet
+     * @deprecated Use getPersistedResultSet. Will be removed in v4.
      *
      * @throws \CakephpFixtureFactories\Error\PersistenceException if the entity/entities could not be saved.
      *
@@ -439,7 +439,7 @@ abstract class BaseFactory
             $factory = static::class;
             $message = $exception->getMessage();
 
-            throw new PersistenceException("Error in Factory $factory.\n Message: $message \n");
+            throw new PersistenceException("Error in Factory `$factory`.\n Message: $message \n");
         }
     }
 
@@ -506,7 +506,7 @@ abstract class BaseFactory
     }
 
     /**
-     * A protected class to manage the Model Events inhrent to the creation of fixtures
+     * A protected class to manage the Model Events inherent to the creation of fixtures
      *
      * @return \CakephpFixtureFactories\Factory\EventCollector
      */

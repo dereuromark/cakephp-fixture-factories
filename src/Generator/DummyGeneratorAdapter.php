@@ -120,7 +120,7 @@ class DummyGeneratorAdapter implements GeneratorInterface
             return $this->__call($property, []);
         }
 
-        throw new BadMethodCallException("Property or method `$property` not found");
+        throw new BadMethodCallException("Property or method `$property` not found on DummyGenerator");
     }
 
     /**
@@ -203,12 +203,12 @@ class DummyGeneratorAdapter implements GeneratorInterface
                     $retries++;
                 } while ($retries < $maxRetries);
 
-                throw new OverflowException("Unable to generate unique value for '$method' after $maxRetries attempts");
+                throw new OverflowException("Unable to generate unique value for `$method` after $maxRetries attempts");
             }
 
             return $this->generator->$method(...$arguments);
         } catch (BadMethodCallException | InvalidArgumentException $e) {
-            throw new BadMethodCallException("Method `$method` not found");
+            throw new BadMethodCallException("Method `$method` not found on DummyGenerator");
         }
     }
 

@@ -26,7 +26,7 @@ trait FactoryAwareTrait
     /**
      * Returns a factory instance from factory or model name
      *
-     * Additionnal arguments are passed *as is* to `BaseFactory::make`
+     * Additional arguments are passed *as is* to `BaseFactory::make`
      *
      * @see \CakephpFixtureFactories\Factory\BaseFactory::make
      *
@@ -49,7 +49,7 @@ trait FactoryAwareTrait
             return $factoryClassName::make($makeParameter, $times);
         }
 
-        throw new FactoryNotFoundException("Unable to locate factory class $factoryClassName");
+        throw new FactoryNotFoundException("Unable to locate factory class `$factoryClassName`");
     }
 
     /**

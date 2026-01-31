@@ -163,9 +163,7 @@ class BakeFixtureFactoryCommand extends BakeCommand
         try {
             $this->table->getSchema();
         } catch (Exception $e) {
-            /** @var string $modelPath */
-            $modelPath = is_array($this->getModelPath()) ? implode(', ', $this->getModelPath()) : $this->getModelPath();
-            $io->warning("The table $tableName could not be found... in " . $modelPath);
+            $io->warning("The table $tableName could not be found... in " . $this->getModelPathString());
             $io->abort($e->getMessage());
         }
 
@@ -208,6 +206,18 @@ class BakeFixtureFactoryCommand extends BakeCommand
     }
 
     /**
+     * Get the model path as a string for display purposes.
+     *
+     * @return string
+     */
+    protected function getModelPathString(): string
+    {
+        $modelPath = $this->getModelPath();
+
+        return is_array($modelPath) ? implode(', ', $modelPath) : $modelPath;
+    }
+
+    /**
      * List the tables, ignore tables that should not be baked
      *
      * @param \Cake\Console\ConsoleIo $io Console
@@ -216,8 +226,7 @@ class BakeFixtureFactoryCommand extends BakeCommand
      */
     public function getTableList(ConsoleIo $io): array
     {
-        /** @var string $modelPath */
-        $modelPath = is_array($this->getModelPath()) ? $this->getModelPath()[0] : $this->getModelPath();
+        $modelPath = $this->getModelPathString();
         $tables = glob($modelPath . '*Table.php') ?: [];
 
         $tables = array_map(function ($a) {
@@ -228,8 +237,6 @@ class BakeFixtureFactoryCommand extends BakeCommand
 
         $return = [];
         foreach ($tables as $table) {
-            /** @var string $modelPath */
-            $modelPath = is_array($this->getModelPath()) ? $this->getModelPath()[0] : $this->getModelPath();
             $table = str_replace($modelPath, '', $table);
             if (!$this->thisTableShouldBeBaked($table, $io)) {
                 $io->warning("{$table} ignored");
@@ -278,9 +285,7 @@ class BakeFixtureFactoryCommand extends BakeCommand
     {
         $tables = $this->getTableList($io);
         if (!$tables) {
-            /** @var string $modelPath */
-            $modelPath = is_array($this->getModelPath()) ? implode(', ', $this->getModelPath()) : $this->getModelPath();
-            $io->err(sprintf('No tables were found at `%s`', $modelPath));
+            $io->err(sprintf('No tables were found at `%s`', $this->getModelPathString()));
         } else {
             foreach ($tables as $table) {
                 $this->bakeFixtureFactory($table, $args, $io);

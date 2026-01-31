@@ -281,24 +281,25 @@ class DataCompiler
      */
     private function castArrayNotation(EntityInterface $entity, array $data): array
     {
+        /** @var array<string|int, mixed> $accumulated Tracks merged values per root key */
+        $accumulated = [];
         foreach ($data as $key => $value) {
             if (!str_contains($key, '.')) {
                 continue;
             }
             $subData = Hash::expand([$key => $value]);
-            $rootKey = array_key_first($subData);
             /** @var string|int|null $rootKey */
             $rootKey = array_key_first($subData);
             if ($rootKey === null) {
                 continue;
             }
-            $entityValue = $entityValue ?? ($entity->get((string)$rootKey) ?? []);
+            $entityValue = $accumulated[$rootKey] ?? $entity->get((string)$rootKey) ?? [];
             if (!is_array($entityValue)) {
                 throw new FixtureFactoryException(
-                    "Value $entityValue cannot be merged with array notation $key => $value",
+                    "Value `$entityValue` cannot be merged with array notation `$key => $value`",
                 );
             }
-            $data[$rootKey] = $entityValue = array_replace_recursive($entityValue, $subData[$rootKey]);
+            $data[$rootKey] = $accumulated[$rootKey] = array_replace_recursive($entityValue, $subData[$rootKey]);
             unset($data[$key]);
         }
 
@@ -327,7 +328,7 @@ class DataCompiler
 
         throw new FixtureFactoryException(
             'The display field of a table must be a string when injecting a string into its factory. '
-            . "You injected '$data' in $factory but $table's display field is not a string.",
+            . "You injected `$data` in `$factory` but `$table`'s display field is not a string.",
         );
     }
 
@@ -721,7 +722,7 @@ class DataCompiler
             $primaryKey = $this->getFactory()->getTable()->getPrimaryKey();
             if (!is_string($primaryKey)) {
                 throw new FixtureFactoryException(
-                    "The primary key assigned must be a string as $primaryKeyOffset is a string or an integer.",
+                    "The primary key assigned must be a string as `$primaryKeyOffset` is a string or an integer.",
                 );
             }
             $this->primaryKeyOffset = [
@@ -731,7 +732,7 @@ class DataCompiler
             $this->primaryKeyOffset = $primaryKeyOffset;
         } else {
             throw new FixtureFactoryException(
-                "$primaryKeyOffset must be an integer, a string or an array of format ['primaryKey1' => value, ...]",
+                "`$primaryKeyOffset` must be an integer, a string or an array of format ['primaryKey1' => value, ...]",
             );
         }
     }
@@ -754,13 +755,18 @@ class DataCompiler
         $table = $this->getFactory()->getTable();
         if ($table->getConnection()->config()['driver'] === Postgres::class) {
             $tableName = $table->getTable();
+            $connection = $table->getConnection();
 
             foreach ($primaryKeys as $pk => $offset) {
-                $seq = $table->getConnection()->execute("
-		            SELECT pg_get_serial_sequence('$tableName','$pk')")->fetchAll()[0][0];
+                $result = $connection->execute(
+                    'SELECT pg_get_serial_sequence(?, ?)',
+                    [$tableName, $pk],
+                )->fetchAll();
+                $seq = $result[0][0] ?? null;
                 if ($seq !== null) {
-                    $table->getConnection()->execute(
-                        "SELECT setval('$seq', $offset);",
+                    $connection->execute(
+                        'SELECT setval(?, ?)',
+                        [$seq, $offset],
                     );
                 }
             }

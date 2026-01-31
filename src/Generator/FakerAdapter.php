@@ -87,12 +87,12 @@ class FakerAdapter implements GeneratorInterface
             /** @var class-string<\UnitEnum> $enumClass */
             $enumClass = $arguments[0];
             if (!is_string($enumClass) || !enum_exists($enumClass)) {
-                throw new InvalidArgumentException("Invalid enum class: $enumClass");
+                throw new InvalidArgumentException("Invalid enum class: `$enumClass`");
             }
 
             $cases = $enumClass::cases();
             if (!$cases) {
-                throw new InvalidArgumentException("Enum has no cases: $enumClass");
+                throw new InvalidArgumentException("Enum has no cases: `$enumClass`");
             }
 
             return $this->generator->randomElement($cases);
@@ -103,17 +103,17 @@ class FakerAdapter implements GeneratorInterface
             /** @var class-string<\BackedEnum> $enumClass */
             $enumClass = $arguments[0];
             if (!is_string($enumClass) || !enum_exists($enumClass)) {
-                throw new InvalidArgumentException("Invalid enum class: $enumClass");
+                throw new InvalidArgumentException("Invalid enum class: `$enumClass`");
             }
 
             $reflection = new ReflectionEnum($enumClass);
             if (!$reflection->isBacked()) {
-                throw new InvalidArgumentException("Only backed enums are supported: $enumClass");
+                throw new InvalidArgumentException("Only backed enums are supported: `$enumClass`");
             }
 
             $cases = $enumClass::cases();
             if (!$cases) {
-                throw new InvalidArgumentException("Enum has no cases: $enumClass");
+                throw new InvalidArgumentException("Enum has no cases: `$enumClass`");
             }
 
             /** @var \BackedEnum $randomCase */
@@ -127,12 +127,12 @@ class FakerAdapter implements GeneratorInterface
             /** @var class-string<\BackedEnum> $enumClass */
             $enumClass = $arguments[0];
             if (!is_string($enumClass) || !enum_exists($enumClass)) {
-                throw new InvalidArgumentException("Invalid enum class: $enumClass");
+                throw new InvalidArgumentException("Invalid enum class: `$enumClass`");
             }
 
             $cases = $enumClass::cases();
             if (!$cases) {
-                throw new InvalidArgumentException("Enum has no cases: $enumClass");
+                throw new InvalidArgumentException("Enum has no cases: `$enumClass`");
             }
 
             return $this->generator->randomElement($cases);

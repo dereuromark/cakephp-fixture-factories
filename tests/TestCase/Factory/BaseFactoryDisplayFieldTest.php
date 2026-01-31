@@ -81,7 +81,7 @@ class BaseFactoryDisplayFieldTest extends TestCase
     public function testUseDisplayFieldErrorIfDisplayFieldAnArray(): void
     {
         $this->expectException(FixtureFactoryException::class);
-        $expectedMessage = "The display field of a table must be a string when injecting a string into its factory. You injected 'Some bill' in CakephpFixtureFactories\Test\Factory\BillFactory but TestPlugin\Model\Table\BillsTable's display field is not a string.";
+        $expectedMessage = "The display field of a table must be a string when injecting a string into its factory. You injected `Some bill` in `CakephpFixtureFactories\Test\Factory\BillFactory` but `TestPlugin\Model\Table\BillsTable`'s display field is not a string.";
         $this->expectExceptionMessage($expectedMessage);
         BillFactory::make('Some bill')->persist();
     }

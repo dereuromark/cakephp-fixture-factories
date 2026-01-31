@@ -63,7 +63,7 @@ final class FactoryTableBeforeSave
      * This is triggered only in associated entities.
      * Fetched in the entity the properties marked by the data compiler
      * as unique and non-random. Look for duplicates. If found, no
-     * new associated entity is created, but the exisiting gets updated.
+     * new associated entity is created, but the existing gets updated.
      *
      * @return void
      */

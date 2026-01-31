@@ -137,7 +137,7 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
     {
         $this->expectException(UniquenessException::class);
         $factoryName = CountryFactory::class;
-        $this->expectExceptionMessage("Error in {$factoryName}. The uniqueness of unique_stamp was not respected.");
+        $this->expectExceptionMessage("Error in `{$factoryName}`. The uniqueness of `unique_stamp` was not respected.");
 
         $unique_stamp = 'Foo';
 
@@ -159,7 +159,7 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
     {
         $this->expectException(UniquenessException::class);
         $factoryName = CountryFactory::class;
-        $this->expectExceptionMessage("Error in {$factoryName}. The uniqueness of unique_stamp was not respected.");
+        $this->expectExceptionMessage("Error in `{$factoryName}`. The uniqueness of `unique_stamp` was not respected.");
 
         $unique_stamp = 'Foo';
 
@@ -178,7 +178,7 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
     {
         $this->expectException(UniquenessException::class);
         $factoryName = CountryFactory::class;
-        $this->expectExceptionMessage("Error in {$factoryName}. The uniqueness of unique_stamp was not respected.");
+        $this->expectExceptionMessage("Error in `{$factoryName}`. The uniqueness of `unique_stamp` was not respected.");
 
         $unique_stamp = 'Foo';
 
@@ -197,7 +197,7 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
     {
         $this->expectException(UniquenessException::class);
         $factoryName = CountryFactory::class;
-        $this->expectExceptionMessage("Error in {$factoryName}. The uniqueness of unique_stamp was not respected.");
+        $this->expectExceptionMessage("Error in `{$factoryName}`. The uniqueness of `unique_stamp` was not respected.");
 
         $unique_stamp = 'Foo';
 
@@ -219,7 +219,7 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
     {
         $this->expectException(UniquenessException::class);
         $factoryName = CityFactory::class;
-        $this->expectExceptionMessage("Error in {$factoryName}. The uniqueness of virtual_unique_stamp was not respected.");
+        $this->expectExceptionMessage("Error in `{$factoryName}`. The uniqueness of `virtual_unique_stamp` was not respected.");
 
         $virtual_unique_stamp = 'virtual_unique_stamp';
 
@@ -241,7 +241,7 @@ class BaseFactoryUniqueEntitiesTest extends TestCase
     {
         $this->expectException(UniquenessException::class);
         $factoryName = CityFactory::class;
-        $this->expectExceptionMessage("Error in {$factoryName}. The uniqueness of virtual_unique_stamp was not respected.");
+        $this->expectExceptionMessage("Error in `{$factoryName}`. The uniqueness of `virtual_unique_stamp` was not respected.");
 
         $virtual_unique_stamp = 'virtual_unique_stamp';
 

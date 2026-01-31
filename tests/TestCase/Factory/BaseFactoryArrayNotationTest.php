@@ -197,7 +197,7 @@ class BaseFactoryArrayNotationTest extends TestCase
     public function testBaseFactoryArrayNotationWithNonArrayValue(): void
     {
         $this->expectException(FixtureFactoryException::class);
-        $this->expectExceptionMessage('Value foo cannot be merged with array notation json_field.subField1 => newValue');
+        $this->expectExceptionMessage('Value `foo` cannot be merged with array notation `json_field.subField1 => newValue`');
 
         AuthorFactory::make(['json_field' => 'foo'])
             ->setField('json_field.subField1', 'newValue')
