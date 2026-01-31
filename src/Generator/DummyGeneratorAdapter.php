@@ -67,13 +67,11 @@ class DummyGeneratorAdapter implements GeneratorInterface
     /**
      * Constructor
      *
-     * @phpstan-ignore-next-line
-     *
-     * @param string|null $locale The locale to use
+     * @param string|null $locale The locale to use (unused, kept for interface compatibility)
      *
      * @throws \CakephpFixtureFactories\Error\FixtureFactoryException if DummyGenerator library is not installed
      */
-    public function __construct(?string $locale = null)
+    public function __construct(?string $locale = null) // @phpstan-ignore constructor.unusedParameter
     {
         if (!class_exists(DummyGenerator::class)) {
             throw new FixtureFactoryException(

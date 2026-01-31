@@ -24,15 +24,15 @@
     },
     "require-dev": {
         "vierge-noire/cakephp-test-suite-light": "^3.0",
-        "johnykvsky/dummygenerator": "^0.0.9",
+        "johnykvsky/dummygenerator": "^0.1.0",
         "fakerphp/faker": "^1.23",
         "cakephp/bake": "^3.0.0",
         "cakephp/twig-view": "^2.0.2",
         "php-collective/code-sniffer": "dev-master",
-        "cakephp/migrations": "^4.7.0",
+        "cakephp/migrations": "^4.7.0 || ^5.0.0",
         "josegonzalez/dotenv": "^4.0.0",
-        "phpstan/phpstan": "^1.0",
-        "phpunit/phpunit": "^11.5 || ^12.3"
+        "phpstan/phpstan": "^2.1",
+        "phpunit/phpunit": "^11.5 || ^12.5"
     },
     "autoload": {
         "psr-4": {

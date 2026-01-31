@@ -18,12 +18,16 @@ class InitialMigration extends BaseMigration
 {
     public function up(): void
     {
+        $generatedByDefault = class_exists(\Migrations\Db\Adapter\PostgresAdapter::class)
+            ? \Migrations\Db\Adapter\PostgresAdapter::GENERATED_BY_DEFAULT
+            : \Phinx\Db\Adapter\PostgresAdapter::GENERATED_BY_DEFAULT;
+
         $this->table('authors', ['id' => false])
             ->addColumn('id', 'integer', [
                 'autoIncrement' => true,
                 'identity' => true,
                 'limit' => 11,
-                'generated' => \Phinx\Db\Adapter\PostgresAdapter::GENERATED_BY_DEFAULT,
+                'generated' => $generatedByDefault,
             ])
             ->addPrimaryKey(['id'])
             ->addColumn('name', 'string', [
@@ -67,7 +71,7 @@ class InitialMigration extends BaseMigration
                 'autoIncrement' => true,
                 'identity' => true,
                 'limit' => 11,
-                'generated' => \Phinx\Db\Adapter\PostgresAdapter::GENERATED_BY_DEFAULT,
+                'generated' => $generatedByDefault,
             ])
             ->addPrimaryKey(['id'])
             ->addColumn('title', 'string', [
@@ -95,7 +99,7 @@ class InitialMigration extends BaseMigration
                 'autoIncrement' => true,
                 'identity' => true,
                 'limit' => 11,
-                'generated' => \Phinx\Db\Adapter\PostgresAdapter::GENERATED_BY_DEFAULT,
+                'generated' => $generatedByDefault,
             ])
             ->addPrimaryKey(['id'])
             ->addColumn('author_id', 'integer', [
@@ -113,7 +117,7 @@ class InitialMigration extends BaseMigration
                 'autoIncrement' => true,
                 'identity' => true,
                 'limit' => 11,
-                'generated' => \Phinx\Db\Adapter\PostgresAdapter::GENERATED_BY_DEFAULT,
+                'generated' => $generatedByDefault,
             ])
             ->addPrimaryKey(['id'])
             ->addColumn('street', 'string', [
@@ -133,7 +137,7 @@ class InitialMigration extends BaseMigration
                 'autoIncrement' => true,
                 'identity' => true,
                 'limit' => 11,
-                'generated' => \Phinx\Db\Adapter\PostgresAdapter::GENERATED_BY_DEFAULT,
+                'generated' => $generatedByDefault,
             ])
             ->addPrimaryKey(['id'])
             ->addColumn('name', 'string', [
@@ -160,7 +164,7 @@ class InitialMigration extends BaseMigration
                 'autoIncrement' => true,
                 'identity' => true,
                 'limit' => 11,
-                'generated' => \Phinx\Db\Adapter\PostgresAdapter::GENERATED_BY_DEFAULT,
+                'generated' => $generatedByDefault,
             ])
             ->addPrimaryKey(['id'])
             ->addColumn('name', 'string', [
