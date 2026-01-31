@@ -229,7 +229,7 @@ You can also use any custom generator, see below.
 
 #### Global Configuration
 
-To change the generator globally, set the configuration key in your test bootstrap:
+To change the generator globally, set the configuration key in your test bootstrap or `config/app.php`:
 
 ```php
 use Cake\Core\Configure;
@@ -241,14 +241,70 @@ Configure::write('FixtureFactories.generatorType', 'faker');
 Configure::write('FixtureFactories.generatorType', 'dummy');
 ```
 
+> **Tip**: See `config/app.example.php` in this plugin for a full list of available configuration options.
+
 #### Per-Factory Configuration
 
-You can also switch generators on a per-factory basis:
+You can switch generators on a per-factory basis:
 
 ```php
 $article = ArticleFactory::make()
     ->setGenerator('dummy')
     ->getEntity();
+```
+
+By default, `setGenerator()` changes the generator globally for all factory instances. This preserves backward compatibility.
+
+##### Instance-Level Generators
+
+If you want `setGenerator()` to only affect the current factory instance, enable the instance-level generator flag:
+
+```php
+Configure::write('FixtureFactories.instanceLevelGenerator', true);
+```
+
+With this enabled:
+
+```php
+$factory1 = ArticleFactory::make()->setGenerator('dummy');
+$factory2 = ArticleFactory::make();
+
+// $factory1 uses DummyGenerator, $factory2 uses the default (Faker)
+```
+
+To explicitly set the global default regardless of this flag, use the static method:
+
+```php
+use CakephpFixtureFactories\Factory\BaseFactory;
+
+BaseFactory::setDefaultGenerator('dummy');
+```
+
+We recommend enabling `instanceLevelGenerator` in new projects to avoid surprising side effects when switching generators in individual factories.
+
+#### Seeding
+
+By default, the generator is seeded with `1234` for reproducible test data. You can configure a different seed:
+
+```php
+Configure::write('FixtureFactories.seed', 9999);
+```
+
+#### Resetting Generator State
+
+When using the recommended `FactoryTransactionStrategy` (see [Setup](setup.md)), generator unique state is automatically reset between tests.
+
+If you need to manually reset the generator state (e.g. in a custom test setup), use:
+
+```php
+use CakephpFixtureFactories\Factory\BaseFactory;
+use CakephpFixtureFactories\Generator\CakeGeneratorFactory;
+
+// Clear cached generator instances
+CakeGeneratorFactory::clearInstances();
+
+// Clear the default generator (will be re-created on next access)
+BaseFactory::resetDefaultGenerator();
 ```
 
 #### Available Generators

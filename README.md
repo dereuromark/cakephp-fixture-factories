@@ -52,6 +52,7 @@ composer require --dev dereuromark/cakephp-fixture-factories
 * ### [Bake command](docs/bake.md)
 * ### [Persist command](docs/commands.md)
 * ### [Generator Abstraction](docs/generator-differences.md)
+* ### [Configuration Reference](config/app.example.php)
 
 ---
 

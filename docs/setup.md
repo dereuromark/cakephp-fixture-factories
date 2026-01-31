@@ -65,6 +65,8 @@ In CakePHP 5.2+, you can configure the fixture strategy globally in your `config
 
 This applies the strategy to **all test cases** automatically. No traits needed!
 
+> **Tip**: See `config/app.example.php` in this plugin for a full list of all available configuration options, including generator type, seed, and instance-level generator management.
+
 ##### CakePHP 5.0 - 5.1 (Trait-based)
 
 For older CakePHP versions, use the trait in your test cases:

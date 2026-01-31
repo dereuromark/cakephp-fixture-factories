@@ -9,3 +9,4 @@
 * ## [Queries](./queries.md)
 * ## [Bake command](./bake.md)
 * ## [Persist command](./commands.md)
+* ## [Configuration Reference](../config/app.example.php)
