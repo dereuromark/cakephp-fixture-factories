@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace CakephpFixtureFactories\Test\TestCase\TestSuite;
 
-use Cake\Datasource\ConnectionManager;
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
@@ -94,37 +93,66 @@ class FactoryTransactionStrategyTest extends TestCase
     }
 
     /**
-     * Test that FactoryTransactionStrategy integrates properly
+     * Test that FactoryTransactionStrategy uses lazy transactions
+     *
+     * Transactions are NOT started upfront in setupTest(), but only when
+     * a factory actually persists data.
      *
      * @return void
      */
-    public function testTransactionStrategySetupAndTeardown(): void
+    public function testTransactionStrategyLazySetup(): void
     {
         $strategy = new FactoryTransactionStrategy();
-        $connection = ConnectionManager::get('test');
 
-        //Get initial transaction state
-        $initialInTransaction = $connection->inTransaction();
+        // Get the connection the factory will actually use
+        $connection = CityFactory::make()->getTable()->getConnection();
 
-        // Setup should start transactions
+        // Setup should NOT start transactions (lazy strategy)
         $strategy->setupTest([]);
 
-        $this->assertTrue($connection->inTransaction(), 'Connection should be in transaction after setup');
+        $this->assertFalse(
+            $connection->inTransaction(),
+            'Connection should NOT be in transaction after setup (lazy)',
+        );
 
-        // Persist some data to verify tracking
+        // The active instance should be set
+        $this->assertSame($strategy, FactoryTransactionStrategy::getActiveInstance());
+
+        // Persist data — this should lazily start the transaction
         $city = CityFactory::make(['name' => 'Test City'])->persist();
         $this->assertNotEmpty($city->id);
+
+        $this->assertTrue(
+            $connection->inTransaction(),
+            'Connection should be in transaction after persist',
+        );
 
         // Verify table is tracked
         $tracker = FactoryTableTracker::getInstance();
         $this->assertTrue($tracker->hasTables());
         $this->assertContains('cities', $tracker->getTableNames());
 
-        // Teardown should clear tracked tables
+        // Teardown should rollback and clear
         $strategy->teardownTest();
 
-        // Tracker should be cleared
         $this->assertFalse($tracker->hasTables());
+        $this->assertNull(FactoryTransactionStrategy::getActiveInstance());
+    }
+
+    /**
+     * Test that teardown without any persists works fine
+     *
+     * @return void
+     */
+    public function testTeardownWithoutPersist(): void
+    {
+        $strategy = new FactoryTransactionStrategy();
+
+        $strategy->setupTest([]);
+        // No persist calls — teardown should still work
+        $strategy->teardownTest();
+
+        $this->assertNull(FactoryTransactionStrategy::getActiveInstance());
     }
 
     /**
