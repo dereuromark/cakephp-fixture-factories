@@ -563,7 +563,7 @@ class BakeFixtureFactoryCommand extends BakeCommand
             }
 
             $columnSchema = $schema->getColumn($column);
-            if ($columnSchema['null'] || $columnSchema['default'] !== null) {
+            if (!$columnSchema || $columnSchema['null'] || $columnSchema['default'] !== null) {
                 continue;
             }
 

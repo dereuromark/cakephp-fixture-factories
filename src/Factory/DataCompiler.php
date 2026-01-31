@@ -675,7 +675,7 @@ class DataCompiler
         $res = [];
         foreach ($primaryKeys as $pk) {
             $res[$pk] = $this->generateRandomPrimaryKey(
-                $this->getFactory()->getTable()->getSchema()->getColumnType($pk),
+                (string)$this->getFactory()->getTable()->getSchema()->getColumnType($pk),
             );
         }
 
