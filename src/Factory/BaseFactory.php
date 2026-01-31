@@ -27,6 +27,7 @@ use CakephpFixtureFactories\Error\PersistenceException;
 use CakephpFixtureFactories\Generator\CakeGeneratorFactory;
 use CakephpFixtureFactories\Generator\GeneratorInterface;
 use CakephpFixtureFactories\TestSuite\FactoryTableTracker;
+use CakephpFixtureFactories\TestSuite\FactoryTransactionStrategy;
 use Closure;
 use InvalidArgumentException;
 use Psr\SimpleCache\CacheInterface;
@@ -428,6 +429,12 @@ abstract class BaseFactory
         // Track this table for transaction/cleanup strategies
         $table = $this->getTable();
         FactoryTableTracker::getInstance()->trackTable($table);
+
+        // Ensure a transaction is active on this connection (lazy start)
+        $strategy = FactoryTransactionStrategy::getActiveInstance();
+        if ($strategy !== null) {
+            $strategy->ensureTransaction($table->getConnection());
+        }
 
         try {
             if (count($entities) === 1) {
