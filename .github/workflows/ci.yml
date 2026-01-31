@@ -103,6 +103,9 @@ jobs:
       - name: Bake factories to perform analysis in the following steps
         run: vendor/bin/phpunit tests/TestCase/Command/BakeFixtureFactoryCommandTest.php
 
+      - name: Clean SQLite DB to avoid stale triggers from bake tests
+        run: rm -f test_fixture_factories tests/.env
+
       - name: Run phpstan
         run: composer stan
 
