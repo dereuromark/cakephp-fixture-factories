@@ -174,7 +174,7 @@ class DummyGeneratorAdapter implements GeneratorInterface
      * Handle method calls with unique value tracking
      *
      * @param string $method The method name to call
-     * @param array $arguments The arguments to pass
+     * @param array<mixed> $arguments The arguments to pass
      *
      * @throws \OverflowException If unable to generate unique value
      * @throws \BadMethodCallException If method not found

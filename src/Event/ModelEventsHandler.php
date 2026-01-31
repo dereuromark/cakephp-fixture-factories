@@ -29,12 +29,12 @@ use ReflectionFunction;
 class ModelEventsHandler
 {
     /**
-     * @var array
+     * @var array<string>
      */
     private array $listeningBehaviors = [];
 
     /**
-     * @var array
+     * @var array<string>
      */
     private array $listeningModelEvents = [];
 
@@ -43,6 +43,9 @@ class ModelEventsHandler
      */
     protected EventCollector $eventCompiler;
 
+    /**
+     * @var array<string>
+     */
     public static array $ormEvents = [
         'Model.initialize',
         'Model.beforeMarshal',
@@ -62,8 +65,8 @@ class ModelEventsHandler
     ];
 
     /**
-     * @param array $listeningModelEvents Model events listened to from instanciation
-     * @param array $listeningBehaviors Behaviors listened to from instanciation
+     * @param array<string> $listeningModelEvents Model events listened to from instanciation
+     * @param array<string> $listeningBehaviors Behaviors listened to from instanciation
      */
     final public function __construct(array $listeningModelEvents, array $listeningBehaviors)
     {
@@ -73,8 +76,8 @@ class ModelEventsHandler
 
     /**
      * @param \Cake\ORM\Table $table Table
-     * @param array $listeningModelEvents Events listened to
-     * @param array $listeningBehaviors Behaviors listened to
+     * @param array<string> $listeningModelEvents Events listened to
+     * @param array<string> $listeningBehaviors Behaviors listened to
      *
      * @return void
      */
@@ -159,7 +162,6 @@ class ModelEventsHandler
                 continue;
             }
 
-            /** @phpstan-ignore-next-line */
             $behaviorInstance = $table->getBehavior($behavior);
 
             $behaviorClassName = get_class($behaviorInstance);
@@ -185,7 +187,7 @@ class ModelEventsHandler
     }
 
     /**
-     * @return array
+     * @return array<string>
      */
     public function getListeningModelEvents(): array
     {
@@ -193,7 +195,7 @@ class ModelEventsHandler
     }
 
     /**
-     * @return array
+     * @return array<string>
      */
     public function getListeningBehaviors(): array
     {

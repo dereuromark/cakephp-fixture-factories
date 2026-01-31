@@ -43,7 +43,7 @@ class AssociationBuilder
     private array $associations = [];
 
     /**
-     * @var array
+     * @var array<string, mixed>
      */
     private array $manualAssociations = [];
 
@@ -315,7 +315,7 @@ class AssociationBuilder
     }
 
     /**
-     * @return array
+     * @return array<string, mixed>
      */
     public function getAssociated(): array
     {
@@ -357,7 +357,7 @@ class AssociationBuilder
     }
 
     /**
-     * @param array $associations
+     * @param array<string, mixed> $associations
      *
      * @return void
      */

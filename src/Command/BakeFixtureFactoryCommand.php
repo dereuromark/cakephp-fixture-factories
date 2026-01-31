@@ -50,7 +50,7 @@ class BakeFixtureFactoryCommand extends BakeCommand
     private Table $table;
 
     /**
-     * @var array
+     * @var array<string, array<string, string>>
      */
     protected array $map = [
         'string' => [
@@ -222,7 +222,7 @@ class BakeFixtureFactoryCommand extends BakeCommand
      *
      * @param \Cake\Console\ConsoleIo $io Console
      *
-     * @return array
+     * @return array<string>
      */
     public function getTableList(ConsoleIo $io): array
     {
@@ -372,7 +372,9 @@ class BakeFixtureFactoryCommand extends BakeCommand
     }
 
     /**
-     * @inheritDoc
+     * @param \Cake\Console\Arguments $arg Arguments
+     *
+     * @return array<string, mixed>
      */
     public function templateData(Arguments $arg): array
     {
@@ -431,7 +433,7 @@ class BakeFixtureFactoryCommand extends BakeCommand
     /**
      * Returns the one and many association for a given model
      *
-     * @return array
+     * @return array<string, array<string, array<string, string>>>
      */
     public function getAssociations(): array
     {
@@ -589,7 +591,7 @@ class BakeFixtureFactoryCommand extends BakeCommand
     /**
      * @param string $column
      * @param string $modelName
-     * @param array $columnSchema
+     * @param array<string, mixed> $columnSchema
      *
      * @return mixed
      */

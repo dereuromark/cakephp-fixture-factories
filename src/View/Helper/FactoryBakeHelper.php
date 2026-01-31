@@ -9,7 +9,7 @@ use Cake\View\Helper;
 class FactoryBakeHelper extends Helper
 {
     /**
-     * @param array $defaultData
+     * @param array<string, string> $defaultData
      *
      * @return string
      */

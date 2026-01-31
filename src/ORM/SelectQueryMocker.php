@@ -50,7 +50,7 @@ class SelectQueryMocker
         // Use reflection to access the protected getMockBuilder method
         $reflection = new ReflectionMethod($testCase, 'getMockBuilder');
 
-        /** @var \PHPUnit\Framework\MockObject\MockBuilder $selectQueryMockBuilder */
+        /** @var \PHPUnit\Framework\MockObject\MockBuilder<\Cake\ORM\Query\SelectQuery<\Cake\Datasource\EntityInterface>> $selectQueryMockBuilder */
         $selectQueryMockBuilder = $reflection->invoke($testCase, SelectQuery::class);
         $selectQueryMocked = $selectQueryMockBuilder
             ->setConstructorArgs([$factory->getTable()])
@@ -63,7 +63,7 @@ class SelectQueryMocker
             ->method('all')
             ->willReturn($resultSet);
 
-        /** @var \PHPUnit\Framework\MockObject\MockBuilder $queryFactoryMockBuilder */
+        /** @var \PHPUnit\Framework\MockObject\MockBuilder<\Cake\ORM\Query\QueryFactory> $queryFactoryMockBuilder */
         $queryFactoryMockBuilder = $reflection->invoke($testCase, QueryFactory::class);
         $queryFactoryMocked = $queryFactoryMockBuilder
             ->onlyMethods(['select'])
