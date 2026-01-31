@@ -281,6 +281,8 @@ class DataCompiler
      */
     private function castArrayNotation(EntityInterface $entity, array $data): array
     {
+        /** @var array<string|int, mixed> $accumulated Tracks merged values per root key */
+        $accumulated = [];
         foreach ($data as $key => $value) {
             if (!str_contains($key, '.')) {
                 continue;
@@ -291,13 +293,13 @@ class DataCompiler
             if ($rootKey === null) {
                 continue;
             }
-            $entityValue = $entity->get((string)$rootKey) ?? [];
+            $entityValue = $accumulated[$rootKey] ?? $entity->get((string)$rootKey) ?? [];
             if (!is_array($entityValue)) {
                 throw new FixtureFactoryException(
                     "Value `$entityValue` cannot be merged with array notation `$key => $value`",
                 );
             }
-            $data[$rootKey] = $entityValue = array_replace_recursive($entityValue, $subData[$rootKey]);
+            $data[$rootKey] = $accumulated[$rootKey] = array_replace_recursive($entityValue, $subData[$rootKey]);
             unset($data[$key]);
         }
 
