@@ -62,7 +62,12 @@ class UniquenessJanitor
 
         // Extract the key after the dot
         $getPropertyName = function (string $str): string {
-            return substr($str, strrpos($str, '.') + 1);
+            $pos = strrpos($str, '.');
+            if ($pos === false) {
+                return $str;
+            }
+
+            return substr($str, $pos + 1);
         };
 
         // Extract the key before the dot
@@ -95,7 +100,7 @@ class UniquenessJanitor
                         $factoryName = get_class($factory);
 
                         throw new UniquenessException(
-                            "Error in {$factoryName}. The uniqueness of {$property} was not respected.",
+                            "Error in `{$factoryName}`. The uniqueness of `{$property}` was not respected.",
                         );
                     }
 
