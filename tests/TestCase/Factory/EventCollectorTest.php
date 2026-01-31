@@ -18,6 +18,7 @@ namespace CakephpFixtureFactories\Test\TestCase\Factory;
 use ArrayObject;
 use Cake\Core\Configure;
 use Cake\Event\EventInterface;
+use Cake\Event\EventManager;
 use Cake\ORM\TableRegistry;
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Factory\BaseFactory;
@@ -357,5 +358,32 @@ class EventCollectorTest extends TestCase
         // Note: CakePHP prefixes connection names with 'test_' during testing
         $factory = ArticleFactory::make()->setConnection('dummy');
         $this->assertSame('test_dummy', $factory->getTable()->getConnection()->configName());
+    }
+
+    public function testSetEventManagerWithCustomListener(): void
+    {
+        $customEventManager = new EventManager();
+        $customEventManager->on('Model.beforeMarshal', function (EventInterface $event, ArrayObject $entity) {
+            $entity['customEventManagerApplied'] = true;
+        });
+
+        $article = ArticleFactory::make()
+            ->setEventManager($customEventManager)
+            ->listeningToModelEvents('Model.beforeMarshal')
+            ->getEntity();
+
+        $this->assertTrue($article->get('customEventManagerApplied'));
+    }
+
+    public function testSetEventManagerResetsTableCache(): void
+    {
+        $factory = ArticleFactory::make();
+        $originalEventManager = $factory->getTable()->getEventManager();
+
+        $customEventManager = new EventManager();
+        $factory->setEventManager($customEventManager);
+
+        $this->assertNotSame($originalEventManager, $factory->getTable()->getEventManager());
+        $this->assertSame($customEventManager, $factory->getTable()->getEventManager());
     }
 }

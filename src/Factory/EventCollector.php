@@ -17,6 +17,7 @@ namespace CakephpFixtureFactories\Factory;
 
 use Cake\Core\Configure;
 use Cake\Datasource\ConnectionManager;
+use Cake\Event\EventManagerInterface;
 use Cake\ORM\Table;
 use CakephpFixtureFactories\ORM\FactoryTableRegistry;
 use RuntimeException;
@@ -69,6 +70,11 @@ class EventCollector
     private ?string $connectionName = null;
 
     /**
+     * @var \Cake\Event\EventManagerInterface|null
+     */
+    private ?EventManagerInterface $eventManager = null;
+
+    /**
      * @param string $rootTableRegistryName Name of the model of the master factory
      */
     public function __construct(string $rootTableRegistryName)
@@ -105,6 +111,10 @@ class EventCollector
             $table = FactoryTableRegistry::getTableLocator()->get($this->rootTableRegistryName, $options);
         }
 
+        if ($this->eventManager !== null) {
+            $table->setEventManager($this->eventManager);
+        }
+
         return $this->table = $table;
     }
 
@@ -127,6 +137,19 @@ class EventCollector
     {
         $this->table = null;
         $this->connectionName = $connectionName;
+
+        return $this;
+    }
+
+    /**
+     * @param \Cake\Event\EventManagerInterface $eventManager Custom event manager
+     *
+     * @return $this
+     */
+    public function setEventManager(EventManagerInterface $eventManager)
+    {
+        $this->table = null;
+        $this->eventManager = $eventManager;
 
         return $this;
     }

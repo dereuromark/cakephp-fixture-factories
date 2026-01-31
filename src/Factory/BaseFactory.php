@@ -19,6 +19,7 @@ use Cake\Core\Configure;
 use Cake\Database\ExpressionInterface;
 use Cake\Datasource\EntityInterface;
 use Cake\Datasource\ResultSetInterface;
+use Cake\Event\EventManagerInterface;
 use Cake\I18n\I18n;
 use Cake\ORM\Query\SelectQuery;
 use Cake\ORM\ResultSet;
@@ -661,6 +662,20 @@ abstract class BaseFactory
     public function setConnection(string $connectionName)
     {
         $this->getEventCompiler()->setConnection($connectionName);
+
+        return $this;
+    }
+
+    /**
+     * Set a custom event manager for the factory's table.
+     *
+     * @param \Cake\Event\EventManagerInterface $eventManager The event manager instance
+     *
+     * @return $this
+     */
+    public function setEventManager(EventManagerInterface $eventManager)
+    {
+        $this->getEventCompiler()->setEventManager($eventManager);
 
         return $this;
     }
