@@ -116,7 +116,7 @@ class PersistCommand extends Command
      */
     public function parseFactory(Arguments $args): BaseFactory
     {
-        $factoryString = $args->getArgument(self::ARG_NAME);
+        $factoryString = (string)$args->getArgument(self::ARG_NAME);
 
         if (is_subclass_of($factoryString, BaseFactory::class)) {
             return $factoryString::make();

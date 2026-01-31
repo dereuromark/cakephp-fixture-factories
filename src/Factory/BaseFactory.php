@@ -715,10 +715,7 @@ abstract class BaseFactory
         }
 
         // Remove the brackets in the association
-        $associationNameAfterBrackets = $this->getAssociationBuilder()->removeBrackets($associationName);
-        if ($associationNameAfterBrackets !== null) {
-            $associationName = $associationNameAfterBrackets;
-        }
+        $associationName = $this->getAssociationBuilder()->removeBrackets($associationName);
 
         $isToOne = $this->getAssociationBuilder()->processToOneAssociation($associationName, $factory);
         $this->getDataCompiler()->collectAssociation($associationName, $factory, $isToOne);

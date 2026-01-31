@@ -235,11 +235,11 @@ class AssociationBuilder
      *
      * @param string $string String
      *
-     * @return string|null
+     * @return string
      */
-    public function removeBrackets(string $string): ?string
+    public function removeBrackets(string $string): string
     {
-        return preg_replace("/\[[^]]+\]/", '', $string);
+        return (string)preg_replace("/\[[^]]+\]/", '', $string);
     }
 
     /**
