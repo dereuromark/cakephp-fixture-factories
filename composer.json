@@ -29,7 +29,7 @@
         "cakephp/bake": "^3.0.0",
         "cakephp/twig-view": "^2.0.2",
         "php-collective/code-sniffer": "dev-master",
-        "cakephp/migrations": "^5.0.0",
+        "cakephp/migrations": "^4.5.1 || ^5.0.0",
         "josegonzalez/dotenv": "^4.0.0",
         "phpstan/phpstan": "^2.1",
         "phpunit/phpunit": "^11.5 || ^12.5"
