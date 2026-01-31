@@ -12,9 +12,9 @@ declare(strict_types=1);
  * @license       http://www.opensource.org/licenses/mit-license.php MIT License
  */
 
-use Migrations\AbstractMigration;
+use Migrations\BaseMigration;
 
-class CreateBills extends AbstractMigration
+class CreateBills extends BaseMigration
 {
     /**
      * Change Method.
