@@ -128,9 +128,7 @@ class DataCompiler
      */
     public function collectFromDefaultTemplate(callable $fn): void
     {
-        /** @var \Closure|array $dataFromDefaultTemplate */
-        $dataFromDefaultTemplate = $fn;
-        $this->dataFromDefaultTemplate = $dataFromDefaultTemplate;
+        $this->dataFromDefaultTemplate = $fn(...);
     }
 
     /**

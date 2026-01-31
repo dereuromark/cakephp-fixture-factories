@@ -84,7 +84,6 @@ class FakerAdapter implements GeneratorInterface
     {
         // Handle enumCase method - returns the enum case itself (alias for enumElement)
         if ($name === 'enumCase' && count($arguments) === 1) {
-            /** @var class-string<\UnitEnum> $enumClass */
             $enumClass = $arguments[0];
             if (!is_string($enumClass) || !enum_exists($enumClass)) {
                 throw new InvalidArgumentException("Invalid enum class: `$enumClass`");
@@ -100,7 +99,6 @@ class FakerAdapter implements GeneratorInterface
 
         // Handle enumValue method - returns the value of a backed enum
         if ($name === 'enumValue' && count($arguments) === 1) {
-            /** @var class-string<\BackedEnum> $enumClass */
             $enumClass = $arguments[0];
             if (!is_string($enumClass) || !enum_exists($enumClass)) {
                 throw new InvalidArgumentException("Invalid enum class: `$enumClass`");
@@ -124,7 +122,6 @@ class FakerAdapter implements GeneratorInterface
 
         // Handle enumElement method - returns the enum element itself
         if ($name === 'enumElement' && count($arguments) === 1) {
-            /** @var class-string<\BackedEnum> $enumClass */
             $enumClass = $arguments[0];
             if (!is_string($enumClass) || !enum_exists($enumClass)) {
                 throw new InvalidArgumentException("Invalid enum class: `$enumClass`");
