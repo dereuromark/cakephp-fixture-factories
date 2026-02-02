@@ -190,6 +190,24 @@ protected function initialize(): void
 
 Note that you can provide either a single event, or an array of events. You will find a list of all model events [here](https://book.cakephp.org/5/en/orm/table-objects.html#event-list).
 
+### Custom event managers
+
+In some cases, you may want to use a custom event manager instance for your factories. This can be useful when you need to:
+- Test event listeners in isolation
+- Use a pre-configured event manager with specific listeners attached
+- Control the event propagation behavior
+
+You can set a custom event manager using the `setEventManager()` method:
+
+```php
+$article = ArticleFactory::make()
+    ->setEventManager($customEventManager)
+    ->listeningToModelEvents('Model.beforeMarshal')
+    ->getEntity();
+```
+
+The custom event manager will be used by the factory's table instead of the default one. This method follows the same fluent interface pattern as other factory methods like `setConnection()` and `listeningToBehaviors()`.
+
 ### Behavior events
 
 It is possible to activate the model events of a behavior in the same way with the method `listeningToBehaviors`.
