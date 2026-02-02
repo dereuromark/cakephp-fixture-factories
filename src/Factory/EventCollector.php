@@ -142,6 +142,8 @@ class EventCollector
     }
 
     /**
+     * Set a custom event manager for the factory's table.
+     *
      * @param \Cake\Event\EventManagerInterface $eventManager Custom event manager
      *
      * @return $this
