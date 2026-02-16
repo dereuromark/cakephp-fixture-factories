@@ -24,6 +24,34 @@ Main differences:
 - Supports multiple generators via adapters (chose your generator library).
 - Modern configurable generator type guessing per field name/type when baking.
 
+### Migrating from vierge-noire/cakephp-fixture-factories
+
+If you're upgrading from `vierge-noire/cakephp-fixture-factories:^3.0`, the main breaking change is the generator type.
+Callbacks in `setDefaultTemplate()` now receive `GeneratorInterface` instead of `Faker\Generator`:
+
+```diff
+- use Faker\Generator;
++ use CakephpFixtureFactories\Generator\GeneratorInterface;
+
+  protected function setDefaultTemplate(): void
+  {
+-     $this->setDefaultData(function (Generator $faker) {
++     $this->setDefaultData(function (GeneratorInterface $generator) {
+          return [
+-             'email' => $faker->email,
++             'email' => $generator->email(),
+          ];
+      });
+  }
+```
+
+Key changes:
+- Replace `Faker\Generator` type hints with `GeneratorInterface`
+- Use `$this->getGenerator()` instead of deprecated `$this->getFaker()`
+- Prefer method calls `->email()` over property access `->email` (both work)
+
+See [Generator Differences](docs/generator-differences.md) for details on the abstraction layer.
+
 ---
 
 ```php
