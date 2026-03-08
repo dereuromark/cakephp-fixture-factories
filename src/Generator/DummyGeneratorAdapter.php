@@ -24,6 +24,9 @@ use DummyGenerator\DummyGenerator;
 use InvalidArgumentException;
 use OverflowException;
 
+// Version detection classes - only one will exist at runtime
+use DummyGenerator\Container\DiContainerFactory;
+
 /**
  * Adapter for DummyGenerator library
  *
@@ -58,6 +61,16 @@ class DummyGeneratorAdapter implements GeneratorInterface
     private bool $isUnique = false;
 
     /**
+     * @var bool Whether using legacy v0.1.x API
+     */
+    private bool $isLegacyApi = false;
+
+    /**
+     * Container for v0.1.x API (DefinitionContainerInterface)
+     */
+    private ?object $container = null;
+
+    /**
      * Constructor
      *
      * @param string|null $locale The locale to use (unused, kept for interface compatibility)
@@ -74,8 +87,23 @@ class DummyGeneratorAdapter implements GeneratorInterface
 
         // DummyGenerator doesn't use locale in the same way as Faker
         // The $locale parameter is kept for interface compatibility
-        // Create generator using the static factory method (v0.2+ API)
-        $this->generator = DummyGenerator::create();
+
+        // Detect API version: v0.2+ has DiContainerFactory, v0.1.x has DefinitionContainerBuilder
+        if (class_exists(DiContainerFactory::class)) {
+            // v0.2+ API: use static factory method
+            $this->generator = DummyGenerator::create();
+        } else {
+            // v0.1.x API (deprecated) - use dynamic class instantiation to avoid static analysis errors
+            $this->isLegacyApi = true;
+            $builderClass = 'DummyGenerator\Container\DefinitionContainerBuilder';
+            $this->container = $builderClass::all();
+            $this->generator = new DummyGenerator($this->container); // @phpstan-ignore argument.type
+
+            trigger_error(
+                'DummyGenerator v0.1.x is deprecated. Please upgrade to v0.2.0 or later: `composer require --dev johnykvsky/dummygenerator:^0.2.0`',
+                E_USER_DEPRECATED,
+            );
+        }
     }
 
     /**
@@ -83,9 +111,21 @@ class DummyGeneratorAdapter implements GeneratorInterface
      */
     public function seed(?int $seed = null): void
     {
-        if ($seed !== null) {
-            // Use XoshiroRandomizer with seed for deterministic generation (v0.2+ API)
-            // withDefinition() returns a new generator instance with the custom randomizer
+        if ($seed === null) {
+            return;
+        }
+
+        if ($this->isLegacyApi) {
+            // v0.1.x API: modify container directly and recreate generator
+            /** @phpstan-ignore method.nonObject */
+            $this->container->add(
+                RandomizerInterface::class,
+                new XoshiroRandomizer($seed),
+            );
+            /** @phpstan-ignore argument.type */
+            $this->generator = new DummyGenerator($this->container);
+        } else {
+            // v0.2+ API: use immutable withDefinition()
             $this->generator = $this->generator->withDefinition(
                 RandomizerInterface::class,
                 new XoshiroRandomizer($seed),
