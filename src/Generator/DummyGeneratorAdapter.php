@@ -18,8 +18,6 @@ namespace CakephpFixtureFactories\Generator;
 use BadMethodCallException;
 use Cake\Core\Configure;
 use CakephpFixtureFactories\Error\FixtureFactoryException;
-use DummyGenerator\Container\DefinitionContainerBuilder;
-use DummyGenerator\Container\DefinitionContainerInterface;
 use DummyGenerator\Core\Randomizer\XoshiroRandomizer;
 use DummyGenerator\Definitions\Randomizer\RandomizerInterface;
 use DummyGenerator\DummyGenerator;
@@ -60,11 +58,6 @@ class DummyGeneratorAdapter implements GeneratorInterface
     private bool $isUnique = false;
 
     /**
-     * @var \DummyGenerator\Container\DefinitionContainerInterface
-     */
-    private DefinitionContainerInterface $container;
-
-    /**
      * Constructor
      *
      * @param string|null $locale The locale to use (unused, kept for interface compatibility)
@@ -81,11 +74,8 @@ class DummyGeneratorAdapter implements GeneratorInterface
 
         // DummyGenerator doesn't use locale in the same way as Faker
         // The $locale parameter is kept for interface compatibility
-        $this->container = DefinitionContainerBuilder::all();
-
-        // Do NOT use UniqueStrategy by default - uniqueness is handled in handleUniqueCall when isUnique=true
-        // This prevents the accumulation of unique values across all factory calls which hits the 1000 retry limit
-        $this->generator = new DummyGenerator($this->container);
+        // Create generator using the static factory method (v0.2+ API)
+        $this->generator = DummyGenerator::create();
     }
 
     /**
@@ -94,15 +84,12 @@ class DummyGeneratorAdapter implements GeneratorInterface
     public function seed(?int $seed = null): void
     {
         if ($seed !== null) {
-            // Use XoshiroRandomizer with seed for deterministic generation
-            $this->container->add(
+            // Use XoshiroRandomizer with seed for deterministic generation (v0.2+ API)
+            // withDefinition() returns a new generator instance with the custom randomizer
+            $this->generator = $this->generator->withDefinition(
                 RandomizerInterface::class,
                 new XoshiroRandomizer($seed),
             );
-
-            // Recreate the generator with the updated container
-            // Do NOT use UniqueStrategy - uniqueness is handled in handleUniqueCall when isUnique=true
-            $this->generator = new DummyGenerator($this->container);
         }
     }
 
