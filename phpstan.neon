@@ -6,3 +6,8 @@ parameters:
 		- src/
 	ignoreErrors:
 		- identifier: trait.unused
+		# Pre-existing issues exposed by CakePHP 5.3.2's stricter type annotations
+		- identifier: return.type
+		  path: src/Factory/BaseFactory.php
+		- identifier: missingType.generics
+		  path: src/View/Helper/FactoryBakeHelper.php
