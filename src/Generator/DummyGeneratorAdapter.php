@@ -18,8 +18,8 @@ namespace CakephpFixtureFactories\Generator;
 use BadMethodCallException;
 use Cake\Core\Configure;
 use CakephpFixtureFactories\Error\FixtureFactoryException;
-use DummyGenerator\Container\DefinitionContainerBuilder;
-use DummyGenerator\Container\DefinitionContainerInterface;
+// Version detection classes - only one will exist at runtime
+use DummyGenerator\Container\DiContainerFactory;
 use DummyGenerator\Core\Randomizer\XoshiroRandomizer;
 use DummyGenerator\Definitions\Randomizer\RandomizerInterface;
 use DummyGenerator\DummyGenerator;
@@ -60,9 +60,14 @@ class DummyGeneratorAdapter implements GeneratorInterface
     private bool $isUnique = false;
 
     /**
-     * @var \DummyGenerator\Container\DefinitionContainerInterface
+     * @var bool Whether using legacy v0.1.x API
      */
-    private DefinitionContainerInterface $container;
+    private bool $isLegacyApi = false;
+
+    /**
+     * Container for v0.1.x API (DefinitionContainerInterface)
+     */
+    private ?object $container = null;
 
     /**
      * Constructor
@@ -81,11 +86,23 @@ class DummyGeneratorAdapter implements GeneratorInterface
 
         // DummyGenerator doesn't use locale in the same way as Faker
         // The $locale parameter is kept for interface compatibility
-        $this->container = DefinitionContainerBuilder::all();
 
-        // Do NOT use UniqueStrategy by default - uniqueness is handled in handleUniqueCall when isUnique=true
-        // This prevents the accumulation of unique values across all factory calls which hits the 1000 retry limit
-        $this->generator = new DummyGenerator($this->container);
+        // Detect API version: v0.2+ has DiContainerFactory, v0.1.x has DefinitionContainerBuilder
+        if (class_exists(DiContainerFactory::class)) {
+            // v0.2+ API: use static factory method
+            $this->generator = DummyGenerator::create();
+        } else {
+            // v0.1.x API (deprecated) - use dynamic class instantiation to avoid static analysis errors
+            $this->isLegacyApi = true;
+            $builderClass = 'DummyGenerator\Container\DefinitionContainerBuilder';
+            $this->container = $builderClass::all();
+            $this->generator = new DummyGenerator($this->container); // @phpstan-ignore argument.type
+
+            trigger_error(
+                'DummyGenerator v0.1.x is deprecated. Please upgrade to v0.2.0 or later: `composer require --dev johnykvsky/dummygenerator:^0.2.0`',
+                E_USER_DEPRECATED,
+            );
+        }
     }
 
     /**
@@ -93,16 +110,25 @@ class DummyGeneratorAdapter implements GeneratorInterface
      */
     public function seed(?int $seed = null): void
     {
-        if ($seed !== null) {
-            // Use XoshiroRandomizer with seed for deterministic generation
+        if ($seed === null) {
+            return;
+        }
+
+        if ($this->isLegacyApi) {
+            // v0.1.x API: modify container directly and recreate generator
+            /** @phpstan-ignore method.nonObject */
             $this->container->add(
                 RandomizerInterface::class,
                 new XoshiroRandomizer($seed),
             );
-
-            // Recreate the generator with the updated container
-            // Do NOT use UniqueStrategy - uniqueness is handled in handleUniqueCall when isUnique=true
+            /** @phpstan-ignore argument.type */
             $this->generator = new DummyGenerator($this->container);
+        } else {
+            // v0.2+ API: use immutable withDefinition()
+            $this->generator = $this->generator->withDefinition(
+                RandomizerInterface::class,
+                new XoshiroRandomizer($seed),
+            );
         }
     }
 
