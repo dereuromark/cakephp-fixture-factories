@@ -18,14 +18,13 @@ namespace CakephpFixtureFactories\Generator;
 use BadMethodCallException;
 use Cake\Core\Configure;
 use CakephpFixtureFactories\Error\FixtureFactoryException;
+// Version detection classes - only one will exist at runtime
+use DummyGenerator\Container\DiContainerFactory;
 use DummyGenerator\Core\Randomizer\XoshiroRandomizer;
 use DummyGenerator\Definitions\Randomizer\RandomizerInterface;
 use DummyGenerator\DummyGenerator;
 use InvalidArgumentException;
 use OverflowException;
-
-// Version detection classes - only one will exist at runtime
-use DummyGenerator\Container\DiContainerFactory;
 
 /**
  * Adapter for DummyGenerator library
