@@ -1,7 +1,6 @@
 <?xml version="1.0"?>
 <ruleset name="App">
     <arg name="cache" value=".phpcs.cache"/>
-    <arg name="tab-width" value="4"/>
     <arg value="nps"/>
 
     <file>src/</file>
