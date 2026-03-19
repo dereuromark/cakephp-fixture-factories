@@ -307,7 +307,7 @@ class DataCompiler
                 continue;
             }
             $subData = Hash::expand([$key => $value]);
-            /** @var string|int|null $rootKey */
+            /** @var string|null $rootKey */
             $rootKey = array_key_first($subData);
             if ($rootKey === null) {
                 continue;
