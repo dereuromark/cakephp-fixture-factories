@@ -128,9 +128,35 @@ abstract class BaseFactory
 
     final protected function __construct()
     {
-        $this->dataCompiler = new DataCompiler($this);
+        $this->dataCompiler = $this->buildDataCompiler();
         $this->associationBuilder = new AssociationBuilder($this);
-        $this->eventCompiler = new EventCollector($this->getRootTableRegistryName());
+        $this->eventCompiler = $this->buildEventCollector();
+    }
+
+    /**
+     * Build the data compiler used by this factory.
+     *
+     * Override in a subclass to swap in a custom DataCompiler implementation
+     * (e.g. a subclass with project-specific compilation behavior).
+     *
+     * @return \CakephpFixtureFactories\Factory\DataCompiler
+     */
+    protected function buildDataCompiler(): DataCompiler
+    {
+        return new DataCompiler($this);
+    }
+
+    /**
+     * Build the event collector used by this factory.
+     *
+     * Override in a subclass to swap in a custom EventCollector implementation
+     * (e.g. a subclass that wires in a project-specific event manager).
+     *
+     * @return \CakephpFixtureFactories\Factory\EventCollector
+     */
+    protected function buildEventCollector(): EventCollector
+    {
+        return new EventCollector($this->getRootTableRegistryName());
     }
 
     /**
