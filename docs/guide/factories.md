@@ -93,7 +93,7 @@ namespace App\Test\Factory;
 ...
 class UserFactory extends BaseFactory
 {
-    protected $skippedSetters = [
+    protected array $skippedSetters = [
         'password',
     ];
 ...
@@ -126,7 +126,7 @@ namespace App\Test\Factory;
 ...
 class CountryFactory extends BaseFactory
 {
-    protected $uniqueProperties = [
+    protected array $uniqueProperties = [
         'name',
     ];
 ...

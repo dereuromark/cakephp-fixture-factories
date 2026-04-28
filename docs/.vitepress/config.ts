@@ -7,7 +7,10 @@ export default defineConfig({
   base: '/cakephp-fixture-factories/',
 
   head: [
-    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/cakephp-fixture-factories/logo.svg' }],
+    ['link', { rel: 'icon', type: 'image/png', sizes: '16x16', href: '/cakephp-fixture-factories/favicon-16.png' }],
+    ['link', { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/cakephp-fixture-factories/favicon.png' }],
+    ['link', { rel: 'apple-touch-icon', sizes: '192x192', href: '/cakephp-fixture-factories/apple-touch-icon.png' }],
+    ['link', { rel: 'shortcut icon', href: '/cakephp-fixture-factories/favicon.ico' }],
     ['meta', { name: 'theme-color', content: '#d33c43' }],
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:title', content: 'CakePHP Fixture Factories' }],
@@ -36,6 +39,7 @@ export default defineConfig({
           text: 'Introduction',
           items: [
             { text: 'Getting Started', link: '/guide/' },
+            { text: 'Why factories?', link: '/guide/why-factories' },
             { text: 'Setup', link: '/guide/setup' },
           ],
         },
@@ -54,6 +58,13 @@ export default defineConfig({
           items: [
             { text: 'Queries', link: '/guide/queries' },
             { text: 'Generators', link: '/guide/generators' },
+          ],
+        },
+        {
+          text: 'Help & Reference',
+          items: [
+            { text: 'FAQ', link: '/guide/faq' },
+            { text: 'Troubleshooting', link: '/guide/troubleshooting' },
           ],
         },
         {
