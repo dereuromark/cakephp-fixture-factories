@@ -54,7 +54,7 @@ final class FactoryTableBeforeSave
      */
     public static function handle(Table $table, EntityInterface $entity): void
     {
-        $handler = new static($table, $entity);
+        $handler = new self($table, $entity);
 
         $handler->handleUniqueFields();
     }
