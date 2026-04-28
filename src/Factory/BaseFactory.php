@@ -507,15 +507,60 @@ abstract class BaseFactory
 
         try {
             if (count($entities) === 1) {
-                return $table->saveOrFail($entities[0], $this->getSaveOptions());
+                $result = $table->saveOrFail($entities[0], $this->getSaveOptions());
+            } else {
+                $result = $table->saveManyOrFail($entities, $this->getSaveOptions());
             }
-
-            return $table->saveManyOrFail($entities, $this->getSaveOptions());
         } catch (Throwable $exception) {
             $factory = static::class;
             $message = $exception->getMessage();
 
             throw new PersistenceException("Error in Factory `$factory`.\n Message: $message \n");
+        }
+
+        $this->finalizePersistedEntities($result, $table);
+
+        return $result;
+    }
+
+    /**
+     * Mirror the deferred entity bookkeeping from `Cake\ORM\Table::save()`.
+     *
+     * Since CakePHP 5.4, `$entity->clean()`, `$entity->setNew(false)` and
+     * `$entity->setSource()` are deferred via `Connection::afterCommit()`
+     * whenever the save runs inside an outer transaction. The transaction
+     * strategy used here only ever rolls back at teardown, so those
+     * callbacks are discarded and persisted entities still report
+     * `isNew() === true` to the test — which silently breaks any code
+     * that calls `Table::delete($entity)` (it short-circuits on new
+     * entities) or otherwise inspects post-save entity state.
+     *
+     * Applying the same bookkeeping here restores the synchronous
+     * pre-5.4 behavior that tests have relied on. CakePHP <= 5.3 is
+     * unaffected — it already ran this synchronously inside `save()`,
+     * so this is a harmless second application (the entity is already
+     * clean and not new by the time we get here).
+     *
+     * @param \Cake\Datasource\EntityInterface|\Cake\Datasource\ResultSetInterface<int, \Cake\Datasource\EntityInterface>|iterable<\Cake\Datasource\EntityInterface> $result Saved entity / entities returned by the table.
+     * @param \Cake\ORM\Table $table The table the save was performed on.
+     */
+    private function finalizePersistedEntities(
+        EntityInterface|iterable|ResultSetInterface $result,
+        Table $table,
+    ): void {
+        if (!$table->getConnection()->inTransaction()) {
+            return;
+        }
+
+        $alias = $table->getRegistryAlias();
+        $entities = $result instanceof EntityInterface ? [$result] : $result;
+        foreach ($entities as $entity) {
+            if (!$entity instanceof EntityInterface) {
+                continue;
+            }
+            $entity->clean();
+            $entity->setNew(false);
+            $entity->setSource($alias);
         }
     }
 

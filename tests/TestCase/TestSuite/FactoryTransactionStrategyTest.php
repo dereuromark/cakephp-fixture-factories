@@ -196,4 +196,53 @@ class FactoryTransactionStrategyTest extends TestCase
         $this->assertCount(1, $tables, 'Same table should only be tracked once');
         $this->assertContains('cities', $tables);
     }
+
+    /**
+     * Regression: under FactoryTransactionStrategy, persisted entities must
+     * report `isNew() === false` and be clean immediately after `persist()`.
+     *
+     * CakePHP 5.4 defers `$entity->setNew(false)` / `$entity->clean()` /
+     * `$entity->setSource()` to a `Connection::afterCommit()` callback when
+     * the save runs inside an outer transaction. Our strategy never commits
+     * (always rolls back at teardown), so without compensation the returned
+     * entity would still report `isNew() === true` — silently breaking
+     * `Table::delete()` and any other `isNew()`-aware code in tests.
+     *
+     * Pre-5.4 CakePHP ran this synchronously inside `save()`; this test
+     * passes there for that reason.
+     *
+     * @return void
+     */
+    public function testPersistFinalizesEntityStateUnderOuterTransaction(): void
+    {
+        $strategy = new FactoryTransactionStrategy();
+        $strategy->setupTest([]);
+
+        try {
+            $city = CityFactory::make(['name' => 'Berlin'])->persist();
+
+            $this->assertNotEmpty($city->id, 'Entity should have an id after persist');
+            $this->assertFalse(
+                $city->isNew(),
+                'Persisted entity must not report isNew() === true; '
+                . 'a true value here would short-circuit subsequent Table::delete() calls.',
+            );
+            $this->assertFalse($city->isDirty(), 'Persisted entity must be clean.');
+            $this->assertSame(
+                'Cities',
+                $city->getSource(),
+                'Persisted entity must carry its registry alias.',
+            );
+
+            // Connection is in transaction (lazy-started by persist),
+            // mirroring the runtime conditions of the bug.
+            $connection = CityFactory::make()->getTable()->getConnection();
+            $this->assertTrue(
+                $connection->inTransaction(),
+                'Sanity check: the bug only manifests inside an outer transaction.',
+            );
+        } finally {
+            $strategy->teardownTest();
+        }
+    }
 }
