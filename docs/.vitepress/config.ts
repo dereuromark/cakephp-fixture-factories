@@ -51,6 +51,7 @@ export default defineConfig({
             { text: 'Associations', link: '/guide/associations' },
             { text: 'Associations (non-CakePHP)', link: '/guide/non-cakephp-associations' },
             { text: 'Scenarios', link: '/guide/scenarios' },
+            { text: 'Best Practices', link: '/guide/best-practices' },
           ],
         },
         {

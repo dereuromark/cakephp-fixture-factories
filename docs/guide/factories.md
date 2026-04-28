@@ -142,6 +142,34 @@ CityFactory::make(5)->with('Countries', ['myPrimaryKey' => 1])->persist();
 
 behaves as if `myPrimaryKey` were marked unique. The factory does the bookkeeping for you.
 
+## Generator-level uniqueness with `->unique()`
+
+`$uniqueProperties` deduplicates **entities** at persist time. If you instead need each *generated value* to be different from the previous ones — typically for fields with a UNIQUE database constraint — use the generator's `->unique()` modifier:
+
+```php
+protected function setDefaultTemplate(): void
+{
+    $this->setDefaultData(function (GeneratorInterface $generator) {
+        return [
+            'email'    => $generator->unique()->email(),
+            'username' => $generator->unique()->userName(),
+        ];
+    });
+}
+```
+
+Each subsequent call to `email()` or `userName()` is guaranteed not to repeat a previously returned value. This is useful when:
+
+- the column has a `UNIQUE` constraint (emails, usernames, slugs);
+- you're generating many rows in a single test and need them distinguishable.
+
+> [!WARNING]
+> `->unique()` retries internally until it finds an unused value, then gives up — Faker throws `OverflowException`, DummyGenerator does the same after 10 000 attempts. Use it only on fields with a large enough value space.
+>
+> The recommended [`FactoryTransactionStrategy`](setup#factory-transaction-strategy-recommended) resets unique state between tests automatically. If you can't use it, see [Troubleshooting](troubleshooting#overflowexception-from-unique) for the manual reset.
+
+Use `->unique()` on individual fields *inside* the factory; use `$uniqueProperties` to express that an *entire entity* shouldn't be recreated when its identifying field is reused. They solve different problems and compose cleanly.
+
 ## Validation / Behaviors
 
 This and the following sub-sections apply to CakePHP applications.
