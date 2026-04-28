@@ -1,4 +1,4 @@
-<h1 style="text-align: center">Associations for non-CakePHP apps</h1>
+# Associations for non-CakePHP apps
 
 Associations can be defined within the factories in the `initialize()` method.
 The `getTable()` method provides public access to the model class used by the factories. If not defined in your application
@@ -59,5 +59,5 @@ $city = CityFactory::make()
 ```
 which will set the city's country, and provide 4 random addresses.
 
-You will find described in the cookbook [HERE](https://book.cakephp.org/5/en/orm/associations.html) how to define your associations.
+The [CakePHP cookbook chapter on associations](https://book.cakephp.org/5/en/orm/associations.html) describes how to define your associations.
 Non CakePHP applications will not need to create any table objects, but rather use the `getTable()` public method.

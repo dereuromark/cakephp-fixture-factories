@@ -1,5 +1,5 @@
 <p align="center">
-    <a href="https://vierge-noire.github.io/" target="_blank"><img src="https://vierge-noire.github.io/images/fixture_factories.svg" alt="ff-logo" width="150"  /></a>
+    <a href="https://dereuromark.github.io/cakephp-fixture-factories/" target="_blank"><img src="https://vierge-noire.github.io/images/fixture_factories.svg" alt="ff-logo" width="150"  /></a>
 </p>
 <h1 align="center">
 CakePHP Fixture Factories
@@ -19,41 +19,24 @@ Write and run your tests faster. On any PHP application.
     <a href="https://github.com/php-collective/code-sniffer"><img src="https://img.shields.io/badge/cs-PhpCollective-purple.svg?style=flat-square" alt="Coding Standards"></a>
 </p>
 
-Note: This is a maintained fork of the original [CakePHPFixtureFactories](https://github.com/vierge-noire/cakephp-fixture-factories).
+A maintained fork of [vierge-noire/cakephp-fixture-factories](https://github.com/vierge-noire/cakephp-fixture-factories) with:
 
-Main differences:
-- Supports multiple generators via adapters (chose your generator library).
+- Multiple data generators via adapters (Faker, DummyGenerator, custom).
 - Modern configurable generator type guessing per field name/type when baking.
 
-### Migrating from vierge-noire/cakephp-fixture-factories
+## 📚 Documentation
 
-If you're upgrading from `vierge-noire/cakephp-fixture-factories:^3.0`, the main breaking change is the generator type.
-Callbacks in `setDefaultTemplate()` now receive `GeneratorInterface` instead of `Faker\Generator`:
+**👉 [dereuromark.github.io/cakephp-fixture-factories](https://dereuromark.github.io/cakephp-fixture-factories/)**
 
-```diff
-- use Faker\Generator;
-+ use CakephpFixtureFactories\Generator\GeneratorInterface;
+The full guide, reference, and migration notes live there.
 
-  protected function setDefaultTemplate(): void
-  {
--     $this->setDefaultData(function (Generator $faker) {
-+     $this->setDefaultData(function (GeneratorInterface $generator) {
-          return [
--             'email' => $faker->email,
-+             'email' => $generator->email(),
-          ];
-      });
-  }
+## Installation
+
+```bash
+composer require --dev dereuromark/cakephp-fixture-factories
 ```
 
-Key changes:
-- Replace `Faker\Generator` type hints with `GeneratorInterface`
-- Use `$this->getGenerator()` instead of deprecated `$this->getFaker()`
-- Prefer method calls `->email()` over property access `->email` (both work)
-
-See [Generator Differences](docs/generator-differences.md) for details on the abstraction layer.
-
----
+## Quick Example
 
 ```php
 ArticleFactory::make(5)
@@ -61,30 +44,9 @@ ArticleFactory::make(5)
     ->persist();
 ```
 
----
+Five articles, each with three authors, each with an address chain — persisted, in one expression.
 
-## Installation
-```
-composer require --dev dereuromark/cakephp-fixture-factories
-```
-
-
-## Content
-
-* ### [Setup - DB Cleaning](docs/setup.md)
-* ### [Fixture Factories](docs/factories.md)
-* ### [Test Fixtures](docs/examples.md)
-* ### [Associations](docs/associations.md)
-* ### [Associations for non-CakePHP apps](docs/no_cake_associations.md)
-* ### [Scenarios](docs/scenarios.md)
-* ### [Queries](docs/queries.md)
-* ### [Bake command](docs/bake.md)
-* ### [Persist command](docs/commands.md)
-* ### [Generator Abstraction](docs/generator-differences.md)
-* ### [Configuration Reference](config/app.example.php)
-
----
-
+See [Getting Started](https://dereuromark.github.io/cakephp-fixture-factories/guide/) for the full walkthrough.
 
 ## Resources
 
@@ -97,13 +59,14 @@ composer require --dev dereuromark/cakephp-fixture-factories
 Send PRs or tickets in GitHub.
 
 ## Authors
+
 Previously, Juan Pablo Ramirez and Nicolas Masson.
-This fork is maintained by Mark Scherer (dereuromark)
+This fork is maintained by Mark Scherer (dereuromark).
 
 ## License
 
 The CakePHPFixtureFactories plugin is offered under an [MIT license](https://opensource.org/licenses/mit-license.php).
 
-Copyright 2023 Juan Pablo Ramirez and Nicolas Masson
+Copyright 2023 Juan Pablo Ramirez and Nicolas Masson.
 
-Licensed under The MIT License Redistributions of files must retain the above copyright notice.
+Licensed under The MIT License. Redistributions of files must retain the above copyright notice.

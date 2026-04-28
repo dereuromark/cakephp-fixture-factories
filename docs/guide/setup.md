@@ -1,4 +1,4 @@
-<h1 align="center">Setup</h1>
+# Setup
 
 ## Non-CakePHP apps
 For non-CakePHP applications, you may use the method proposed by your framework
@@ -22,7 +22,7 @@ protected function bootstrapCli(): void
 }
 ```
 
-**We recommend using migrations for managing the schema of your test DB with the [CakePHP Migrator tool.](https://book.cakephp.org/migrations/2/en/index.html#using-migrations-for-tests)**
+**We recommend using migrations for managing the schema of your test DB with the [CakePHP Migrations plugin](https://book.cakephp.org/migrations/5/index.html#using-migrations-for-tests).**
 
 ## Table Truncation
 
@@ -42,7 +42,7 @@ This might require admin/root permission access, so this is not necessarily poss
     ],
 ```
 
-#### Factory Transaction Strategy (Recommended)
+## Factory Transaction Strategy (Recommended)
 
 This plugin provides the `FactoryTransactionStrategy` which automatically:
 - Wraps **all** database operations in transactions
@@ -53,47 +53,27 @@ This plugin provides the `FactoryTransactionStrategy` which automatically:
 Unlike the standard `TransactionStrategy`, this doesn't require manually listing fixtures.
 In fact: This strategy works best if you do not use fixtures, at all.
 
-##### CakePHP 5.2+ (Global Configuration)
+### CakePHP 5.2+ (global configuration)
 
-In CakePHP 5.2+, you can configure the fixture strategy globally in your `config/app.php`:
+In CakePHP 5.2+, configure the fixture strategy globally in `config/app.php`:
 
 ```php
-    'TestSuite' => [
-        'fixtureStrategy' => \CakephpFixtureFactories\TestSuite\FactoryTransactionStrategy::class,
-    ],
+'TestSuite' => [
+    'fixtureStrategy' => \CakephpFixtureFactories\TestSuite\FactoryTransactionStrategy::class,
+],
 ```
 
-This applies the strategy to **all test cases** automatically. No traits needed!
+This applies the strategy to **all test cases** automatically. No traits needed.
 
-> **Tip**: See `config/app.example.php` in this plugin for a full list of all available configuration options, including generator type, seed, and instance-level generator management.
+> **Tip**: See `config/app.example.php` in this plugin for a full list of available configuration options, including generator type, seed, and instance-level generator management.
 
-##### CakePHP 5.0 - 5.1 (Trait-based)
+### CakePHP 5.0–5.1 (trait-based)
 
-For older CakePHP versions, use the trait in your test cases:
+For older CakePHP versions, use `FactoryTransactionTrait`. Two patterns:
 
-```php
-use CakephpFixtureFactories\TestSuite\FactoryTransactionTrait;
+::: code-group
 
-class MyTest extends TestCase
-{
-    use FactoryTransactionTrait;
-
-    public function testSomething()
-    {
-        // Factory data - automatically tracked and rolled back
-        $article = ArticleFactory::make()->persist();
-
-        // Application code saves - also rolled back (but not tracked)
-        $this->Articles->save($article);
-
-        // ALL data is rolled back, generator state is reset
-    }
-}
-```
-
-Alternatively, create a base test class with the trait:
-
-```php
+```php [Base class (recommended)]
 namespace App\Test;
 
 use Cake\TestSuite\TestCase;
@@ -103,18 +83,35 @@ abstract class AppTestCase extends TestCase
 {
     use FactoryTransactionTrait;
 }
-```
 
-Then extend it in all your tests:
-
-```php
+// Then extend AppTestCase in every test:
 class MyTest extends AppTestCase
 {
-    // Strategy is automatically applied
+    // Strategy is automatically applied.
 }
 ```
 
-##### Benefits
+```php [Per test]
+use CakephpFixtureFactories\TestSuite\FactoryTransactionTrait;
+
+class MyTest extends TestCase
+{
+    use FactoryTransactionTrait;
+
+    public function testSomething(): void
+    {
+        $article = ArticleFactory::make()->persist();
+        $this->Articles->save($article);
+        // All data rolled back; generator state reset.
+    }
+}
+```
+
+:::
+
+Prefer the shared `AppTestCase` route — the per-test trait pattern works too but means repeating yourself.
+
+### Benefits
 
 - No need to manually list `$fixtures`
 - **All data is rolled back** - factory data AND application code modifications
@@ -122,9 +119,4 @@ class MyTest extends AppTestCase
 - **Solves unique generator state accumulation** - the strategy resets generator state after each test, preventing `OverflowException` when using `unique()` modifiers
 - Works seamlessly with nested associations
 
-**Note:** Table tracking only captures tables written via `factory->persist()`. However, the transaction rollback handles ALL data modifications regardless of source (factories, controllers, models, etc.).
-
-**We recommend using migrations for managing the schema of your test DB with the [CakePHP Migrator tool.](https://book.cakephp.org/migrations/3/en/index.html#using-migrations-for-tests)**
-
-
-
+> **Note:** Table tracking only captures tables written via `factory->persist()`. The transaction rollback handles ALL data modifications regardless of source (factories, controllers, models, etc.).

@@ -7,6 +7,15 @@ composer.lock
 .phpcs.cache
 tests/.env
 
+# VitePress docs site
+docs/node_modules/
+docs/.vitepress/cache/
+docs/.vitepress/dist/
+
+# Local planning / scratch docs
+_*.*
+/.playwright-mcp/
+
 # These factories are baked by TestFixtureFactoryTaskTest
 /tests/TestApp/tests/Factory/*
 /tests/TestApp/plugins/TestPlugin/tests/Factory/*

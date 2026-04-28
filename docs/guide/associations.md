@@ -1,7 +1,7 @@
-<h1 align="center">Associations</h1>
+# Associations
 
 If your application is not using CakePHP, or if you want to add
-associations within your factories, please take a look at the [Associations for non-CakePHP apps](./no_cake_associations.md) section
+associations within your factories, please take a look at the [Associations for non-CakePHP apps](./non-cakephp-associations.md) section
 in order to define the associations of your tables. After defining your associations, you may
 continue with the documentation below.
 

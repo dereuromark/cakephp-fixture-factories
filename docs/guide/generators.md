@@ -1,4 +1,4 @@
-# Generator Differences
+# Generators
 
 This document provides a detailed comparison between the available fake data generators and a migration guide for switching between them.
 
@@ -6,7 +6,7 @@ This document provides a detailed comparison between the available fake data gen
 
 ### Faker (Default)
 - **Package**: [FakerPHP/Faker](https://github.com/FakerPHP/Faker)
-- **Minimum PHP**: 7.4+ (8.2+ in our scope)
+- **Minimum PHP**: 8.2+ (project requirement)
 - **Install**: `composer require --dev fakerphp/faker`
 - **Best for**: Mature, feature-rich data generation with extensive locale support
 
@@ -134,14 +134,14 @@ composer require --dev johnykvsky/dummygenerator
 Configure::write('FixtureFactories.generatorType', 'dummy');
 ```
 
-**Step 4: Test Your Factories**
+**Step 3: Test Your Factories**
 
 Run your test suite to ensure compatibility:
 ```bash
 vendor/bin/phpunit
 ```
 
-**Step 5: (Optional) Remove Faker**
+**Step 4: (Optional) Remove Faker**
 
 If you no longer need Faker:
 ```bash
@@ -247,11 +247,9 @@ If your library supports multiple PHP versions, test with both:
 ```yaml
 # .github/workflows/ci.yml
 matrix:
-  php: ['8.1', '8.2', '8.3']
+  php: ['8.2', '8.3', '8.4']
   generator: ['faker', 'dummy']
   exclude:
-    - php: '8.1'
-      generator: 'dummy'
     - php: '8.2'
       generator: 'dummy'
 ```
@@ -288,8 +286,7 @@ See `config/app.example.php` in this plugin for all available configuration opti
 | `unique()` modifier | ✅ | ✅ |
 | `optional()` modifier | ✅ | ✅ |
 | Seeding | ✅ | ✅ |
-| PHP 8.0+ | ✅ | ❌ |
-| PHP 8.3+ | ✅ | ✅ Required |
+| Minimum PHP version | 8.2+ | 8.3+ |
 
 ## Performance Comparison
 
@@ -334,7 +331,7 @@ DummyGenerator library is not installed. Please install it using: `composer requ
 
 - [Faker Documentation](https://fakerphp.github.io/)
 - [DummyGenerator Documentation](https://github.com/johnykvsky/dummygenerator)
-- [GeneratorInterface Source](../src/Generator/GeneratorInterface.php)
+- [GeneratorInterface Source](https://github.com/dereuromark/cakephp-fixture-factories/blob/main/src/Generator/GeneratorInterface.php)
 - [Factory Documentation](factories.md)
 
 ## FAQ

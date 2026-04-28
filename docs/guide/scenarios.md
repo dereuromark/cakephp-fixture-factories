@@ -1,4 +1,4 @@
-<h1 align="center">Scenarios</h1>
+# Scenarios
 
 You can create scenarios that will persist a multitude of test fixtures. This can be useful to seed your
 test database with a reusable set of data.
@@ -12,7 +12,8 @@ Example:
 ```php
 $authors = $this->loadFixtureScenario('NAustralianAuthors', 3);
 ```
-will persist 3 authors associated to the country Australia, as defined here:
+
+The `N` prefix in the class name is a convention meaning "N of them" — the scenario takes a count argument and persists that many entities. The call above will persist 3 authors associated with the country Australia, as defined here:
 
 ```php
 

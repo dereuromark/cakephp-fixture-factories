@@ -1,4 +1,4 @@
-<h1 align="center">Queries</h1>
+# Queries
 
 
 The fixture factories are closely related to the database. The package provides several methods to conveniently
@@ -18,6 +18,6 @@ This method will return the number of entries in the table of the given factory.
 This method will return an entity based on its primary key.
 More documentation on the `get` method [here](https://book.cakephp.org/5/en/orm/retrieving-data-and-resultsets.html#getting-a-single-entity-by-primary-key).
 
-## ArticleFactory::firstOrFail($condition)
-This method will return an entity based on the optional conditions passed as parameter.
+## ArticleFactory::firstOrFail()
+This method returns the first entity matching the optional conditions, or throws if none exist.
 More documentation on the `firstOrFail` method [here](https://book.cakephp.org/5/en/orm/query-builder.html#getting-results).

@@ -1,4 +1,4 @@
-<h1 align="center">Fixture Factories</h1>
+# Fixture Factories
 
 A factory is a class that extends the `CakephpFixtureFactories\Factory\BaseFactory`. It should implement the following two methods:
 * `getRootTableRegistryName()`  which indicates the model, or the table name in PascalCase, where the factory will insert its fixtures;
@@ -63,7 +63,7 @@ You may add any methods related to your business model, such as `setJobTitle` to
 
 ## Required fields
 
-If a field is required in the database, it will have to be populated in the `setDefaultTemplate` method. You may simply set it to a fixed value, for example 1.
+If a field is required in the database, it will have to be populated in the `setDefaultTemplate` method. You may simply set it to a fixed value, for example `1` or `'foo'`.
 
 ## Locale
 
@@ -145,19 +145,19 @@ you will have 10 cities, all associated to one single country.
 
 ## Primary keys uniqueness
 
-The uniqueness of the primary keys is handled exactely the same way as described above,
+The uniqueness of the primary keys is handled exactly the same way as described above,
 with the particularity that you do not have to define them as unique. The factory
 cannot read the uniqueness of a property in the schema, but it knows which properties
 are primary keys. Therefore, running:
 ```php
 CityFactory::make(5)->with('Countries', ['myPrimaryKey' => 1])->persist();
 ```
-will behave the  same as if the primary key `myPrimaryKey` had been defined unique. In short, the factories
+will behave the same as if the primary key `myPrimaryKey` had been defined unique. In short, the factories
 do the job for you.
 
 ## Validation / Behaviors
 
-This and the following sub-sections address to CakePHP applications.
+This and the following sub-sections apply to CakePHP applications.
 
 With the aim of persisting data in the database as straightforwardly as possible, all validations and rules
 are deactivated when creating CakePHP entities and persisting them to the database. Validation and rules may be reactivated / customized by overwriting
@@ -334,7 +334,7 @@ The following generators are available out of the box:
 Both are included as "require-dev" dependencies in this plugin.
 Choose the one you want to use and "require" it.
 
-> **Note**: For a detailed comparison of available methods and migration guide, see [Generator Differences](generator-differences.md).
+> **Note**: For a detailed comparison of available methods and migration guide, see [Generators](generators.md).
 
 Both should offer the same generator methods as we shim the extra ones respectively.
 
