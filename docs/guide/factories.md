@@ -4,11 +4,11 @@ A factory is a class that extends the `CakephpFixtureFactories\Factory\BaseFacto
 * `getRootTableRegistryName()`  which indicates the model, or the table name in PascalCase, where the factory will insert its fixtures;
 * `setDefaultTemplate()`  which sets the default configuration of each entity created by the factory.
 
-The generator is used in order to randomly populate fields, and is anytime available using `$this->getGenerator()`.
+The generator is used to randomly populate fields, and is always available via `$this->getGenerator()`.
 
-Let us consider for example a model `Articles`, related to multiple `Authors`.
+For example, consider a model `Articles` related to multiple `Authors`.
 
-This could be for example the `ArticleFactory`. Per default the fields `title` and `body` are set with `Faker` and two associated `authors` are created.
+This could be the `ArticleFactory`. By default the fields `title` and `body` are set with Faker and two associated `Authors` are created.
 ```php
 namespace App\Test\Factory;
 
@@ -18,64 +18,57 @@ use CakephpFixtureFactories\Generator\GeneratorInterface;
 class ArticleFactory extends BaseFactory
 {
     /**
-     * Defines the Table Registry used to generate entities with
-     * @return string
+     * Defines the Table Registry used to generate entities with.
      */
     protected function getRootTableRegistryName(): string
     {
-        return "Articles"; // PascalCase of the factory's table.
+        return 'Articles'; // PascalCase of the factory's table.
     }
 
     /**
-     * Defines the default values of you factory. Useful for
-     * not nullable fields.
-     * Use the patchData method to set the field values.
-     * You may use methods of the factory here
-     * @return void
+     * Defines the default values of your factory.
+     * Useful for not-nullable fields, and a place to set up default associations.
      */
     protected function setDefaultTemplate(): void
     {
-          $this->setDefaultData(function(GeneratorInterface $generator) {
-               return [
-                    'title' => $generator->text(30),
-                    'body'  => $generator->text(1000),
-               ];
-          })
-          ->withAuthors(2);
+        $this->setDefaultData(function (GeneratorInterface $generator) {
+            return [
+                'title' => $generator->text(30),
+                'body'  => $generator->text(1000),
+            ];
+        })
+        ->withAuthors(2);
     }
 
-    public function withAuthors($parameter = null, int $n = 1): self
+    public function withAuthors(mixed $parameter = null, int $n = 1): self
     {
         return $this->with('Authors', AuthorFactory::make($parameter, $n));
     }
 
     /**
-     * Set the Article's title as a random job title
-     * @return ArticleFactory
+     * Set the article's title to a random job title.
      */
-    public function setJobTitle()
+    public function setJobTitle(): self
     {
         return $this->setField('title', $this->getGenerator()->jobTitle());
     }
 }
 ```
-You may add any methods related to your business model, such as `setJobTitle` to help you build efficient and reusable factories.
+Add any helper methods that capture your business model — like `setJobTitle()` — to keep factory calls expressive and reusable.
 
 ## Required fields
 
-If a field is required in the database, it will have to be populated in the `setDefaultTemplate` method. You may simply set it to a fixed value, for example `1` or `'foo'`.
+If a field is required in the database, populate it in `setDefaultTemplate`. A fixed value like `1` or `'foo'` is fine.
 
 ## Locale
 
-The factories will generate data in the locale of your application, if the latter is supported by faker.
+Factories generate data in your application's locale, when supported by Faker.
 
 ## Namespace
 
-Assuming your application namespace in `App`, factories should be placed in the `App\Test\Factory` namespace of your application.
-Or for a plugin Foo, in `Foo\Test\Factory`.
+Assuming your application namespace is `App`, factories belong in `App\Test\Factory`. For a `Foo` plugin, use `Foo\Test\Factory`.
 
-You may change that by setting in your configuration the key `FixtureFactories.testFixtureNamespace` to the desired namespace. E.g.
-in `tests\bootstrap.php` or in the `setUp()` method of a test case:
+Change the namespace by setting `FixtureFactories.testFixtureNamespace` — typically in `tests/bootstrap.php` or a test's `setUp()`:
 ```php
 use Cake\Core\Configure;
 
@@ -84,9 +77,7 @@ Configure::write('FixtureFactories.testFixtureNamespace', 'MyApp\Test\Factory');
 
 ## Setters
 
-By default, each entity's setters are applied. You may deactivate one or several setters by default
-by defining the protected property `skippedSetters` of a given factory. You may also __overwrite__ this set of setters
-with the public method `skipSettersFor`.
+By default, each entity's setters are applied. Deactivate one or more setters by declaring the protected `skippedSetters` property on the factory, or override the set at call time with `skipSettersFor()`.
 
 ```php
 namespace App\Test\Factory;
@@ -113,13 +104,13 @@ This can be useful for setters with heavy computation costs, such as hashing.
 
 ## Property uniqueness
 
-It is not rare to have to create entities associated with an entity that should remain
-constant and should not be recreated once it was already persisted. For example, if you create
-5 cities within a country, you will not want to have 5 countries created. This might
-collide with the constraints of your schema. The same goes of course with primary keys.
+It's common to need entities associated with another entity that should remain constant — not
+recreated once it has already been persisted. For example, if you create 5 cities within a country,
+you don't want 5 countries to be created. That would also likely collide with your schema's
+constraints. The same applies to primary keys.
 
-The fixture factories offer to define unique properties, under the protected property
-$uniqueProperties. For example given a country factory.
+You can declare unique properties via the protected `$uniqueProperties` array. For example, given a
+country factory:
 
 ```php
 namespace App\Test\Factory;
@@ -133,51 +124,43 @@ class CountryFactory extends BaseFactory
 }
 ```
 
-Knowing the property `name` is unique, the country factory
-will be cautious whenever the property `name` is set by the developer.
+Because `name` is marked unique, the country factory de-duplicates whenever a developer sets `name`.
 
-Running
 ```php
 CityFactory::make(5)->with('Countries', 'Foo')->persist();
 ```
-will create 5 cities all associated to one unique country. If you perform that same operation again,
-you will have 10 cities, all associated to one single country.
+
+creates 5 cities all associated to one country. Run it again and you'll have 10 cities, still tied to that single country.
 
 ## Primary keys uniqueness
 
-The uniqueness of the primary keys is handled exactly the same way as described above,
-with the particularity that you do not have to define them as unique. The factory
-cannot read the uniqueness of a property in the schema, but it knows which properties
-are primary keys. Therefore, running:
+Primary keys are handled the same way — you don't have to declare them in `$uniqueProperties`. The factory can't read uniqueness constraints from the schema, but it does know which fields are primary keys. So:
+
 ```php
 CityFactory::make(5)->with('Countries', ['myPrimaryKey' => 1])->persist();
 ```
-will behave the same as if the primary key `myPrimaryKey` had been defined unique. In short, the factories
-do the job for you.
+
+behaves as if `myPrimaryKey` were marked unique. The factory does the bookkeeping for you.
 
 ## Validation / Behaviors
 
 This and the following sub-sections apply to CakePHP applications.
 
-With the aim of persisting data in the database as straightforwardly as possible, all validations and rules
-are deactivated when creating CakePHP entities and persisting them to the database. Validation and rules may be reactivated / customized by overwriting
-the properties `$marshallerOptions` and `$saveOptions` in the factory concerned.
+To persist data as straightforwardly as possible, the plugin deactivates all validation and application rules when creating and saving entities. Re-enable or customize them by overriding `$marshallerOptions` and `$saveOptions` on the factory.
 
 ## Model events and behaviors
 
-Per default, *all model events* of a factory's root table and their behaviors are switched off *except those of the timestamp behavior*.
-
-The intention is to create fixtures as fast and transparently as possible without interfering with the model events.
+By default, *all model events* of a factory's root table and their behaviors are switched off *except for the timestamp behavior*. Factories aim to be fast and transparent — model events would interfere with that.
 
 ### Model events
 
-It is however possible to activate an event model with the method `listeningToModelEvents`.
+Re-enable a model event with `listeningToModelEvents`. On the fly:
 
-This can be made on the fly:
 ```php
 $article = ArticleFactory::make()->listeningToModelEvents('Model.beforeMarshal')->getEntity();
 ```
-or per default in the factory's `initialize()` method:
+
+Or as a default in `initialize()`:
 ```php
 protected function initialize(): void
 {
@@ -188,16 +171,17 @@ protected function initialize(): void
 }
 ```
 
-Note that you can provide either a single event, or an array of events. You will find a list of all model events [here](https://book.cakephp.org/5/en/orm/table-objects.html#event-list).
+Pass either a single event or an array of events. The full list lives in the [CakePHP cookbook](https://book.cakephp.org/5/en/orm/table-objects.html#event-list).
 
 ### Custom event managers
 
-In some cases, you may want to use a custom event manager instance for your factories. This can be useful when you need to:
-- Test event listeners in isolation
-- Use a pre-configured event manager with specific listeners attached
-- Control the event propagation behavior
+You may want a custom event manager instance for your factories — for example to:
 
-You can set a custom event manager using the `setEventManager()` method:
+- test event listeners in isolation,
+- use a pre-configured manager with specific listeners attached,
+- control event propagation.
+
+Set a custom manager via `setEventManager()`:
 
 ```php
 $article = ArticleFactory::make()
@@ -206,22 +190,19 @@ $article = ArticleFactory::make()
     ->getEntity();
 ```
 
-The custom event manager will be used by the factory's table instead of the default one. This method follows the same fluent interface pattern as other factory methods like `setConnection()` and `listeningToBehaviors()`.
+The factory's table uses the custom manager instead of the default one. `setEventManager()` follows the same fluent pattern as `setConnection()` and `listeningToBehaviors()`.
 
 ### Behavior events
 
-It is possible to activate the model events of a behavior in the same way with the method `listeningToBehaviors`.
+Activate behavior model events the same way, with `listeningToBehaviors`. On the fly:
 
-This can be made on the fly:
 ```php
 $article = ArticleFactory::make()->listeningToBehaviors('Sluggable')->getEntity();
 ```
-or per default in the factory's `setDefaultTemplate` method.
 
-Additionally, you can declare a behavior globally. This can be useful for behaviors that impact a large amount of tables
-and for which not nullable fields need to be populated.
+Or set them as defaults in `setDefaultTemplate`.
 
-You may save in your configuration file, under the key `FixtureFactories.testFixtureGlobalBehaviors`, all the behaviors that will be listened to, provided that the root table itself is listening to them.
+You can also declare a behavior globally — useful for behaviors that touch many tables and need to populate not-nullable fields. Configure global behaviors via `FixtureFactories.testFixtureGlobalBehaviors`. The root table must already listen for the behavior:
 
 ```php
 use Cake\Core\Configure;
@@ -231,7 +212,7 @@ Configure::write('FixtureFactories.testFixtureGlobalBehaviors', [
 ]);
 ```
 
-Note that even if the behavior is located in a plugin, you should, according to CakePHP conventions, provide the name of the behavior only. Provide `BehaviorName` and not `SomeVendor/WithPluginName.BehaviorName`.
+Even if the behavior lives in a plugin, provide the bare name (`BehaviorName`) — not the plugin-prefixed form (`SomeVendor/WithPluginName.BehaviorName`) — per CakePHP convention.
 
 ## Generator Configuration
 
@@ -310,7 +291,7 @@ Configure::write('FixtureFactories.seed', 9999);
 
 #### Resetting Generator State
 
-When using the recommended `FactoryTransactionStrategy` (see [Setup](setup.md)), generator unique state is automatically reset between tests.
+When using the recommended `FactoryTransactionStrategy` (see [Setup](setup)), generator unique state is automatically reset between tests.
 
 If you need to manually reset the generator state (e.g. in a custom test setup), use:
 
@@ -334,7 +315,7 @@ The following generators are available out of the box:
 Both are included as "require-dev" dependencies in this plugin.
 Choose the one you want to use and "require" it.
 
-> **Note**: For a detailed comparison of available methods and migration guide, see [Generators](generators.md).
+> **Note**: For a detailed comparison of available methods and migration guide, see [Generators](generators).
 
 Both should offer the same generator methods as we shim the extra ones respectively.
 

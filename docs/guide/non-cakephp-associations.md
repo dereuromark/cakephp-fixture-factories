@@ -15,7 +15,7 @@ For example, considering the following schema:
 | created   | created    | modified  |
 | modified  | modified   |           |
 
-First create the `CityFactory`, `AddressFactory` and `CountryFactory` classes as described [here](./factories.md).
+First create the `CityFactory`, `AddressFactory` and `CountryFactory` classes as described in [Fixture Factories](factories).
 
 In the `CityFactory`, you may then associate the `cities`
 belonging to a `country` and having many `addresses` in the `initialize` method:
@@ -35,7 +35,7 @@ class CityFactory extends BaseFactory
 
     protected function getRootTableRegistryName(): string
     {
-        return "Cities";
+        return 'Cities';
     }
 
     protected function setDefaultTemplate(): void
@@ -60,4 +60,4 @@ $city = CityFactory::make()
 which will set the city's country, and provide 4 random addresses.
 
 The [CakePHP cookbook chapter on associations](https://book.cakephp.org/5/en/orm/associations.html) describes how to define your associations.
-Non CakePHP applications will not need to create any table objects, but rather use the `getTable()` public method.
+Non-CakePHP applications don't need to create any table objects — use the `getTable()` public method instead.

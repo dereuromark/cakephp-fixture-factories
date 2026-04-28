@@ -7,17 +7,18 @@ test database.
 
 These methods are meant to help performing assertions in the "Assert" part of your tests. Do not use the `::find()` method in the "Act" part of your tests, e.g. to test finders.
 
-## ArticleFactory::find()
-This method will return a query on the table related to the given factory. It takes as input the same parameters as the classic table `find()` method.
-More documentation on the `find` method [here](https://book.cakephp.org/5/en/orm/query-builder.html#namespace-Cake\ORM).
+## `ArticleFactory::find()`
 
-## ArticleFactory::count()
-This method will return the number of entries in the table of the given factory.
+Returns a query on the table related to the given factory. Accepts the same parameters as the standard table `find()` method — see the [CakePHP query-builder docs](https://book.cakephp.org/5/en/orm/query-builder.html).
 
-## ArticleFactory::get()
-This method will return an entity based on its primary key.
-More documentation on the `get` method [here](https://book.cakephp.org/5/en/orm/retrieving-data-and-resultsets.html#getting-a-single-entity-by-primary-key).
+## `ArticleFactory::count()`
 
-## ArticleFactory::firstOrFail()
-This method returns the first entity matching the optional conditions, or throws if none exist.
-More documentation on the `firstOrFail` method [here](https://book.cakephp.org/5/en/orm/query-builder.html#getting-results).
+Returns the number of rows in the factory's table.
+
+## `ArticleFactory::get()`
+
+Returns an entity by primary key. See the [CakePHP `get()` docs](https://book.cakephp.org/5/en/orm/retrieving-data-and-resultsets.html#getting-a-single-entity-by-primary-key) for the full signature.
+
+## `ArticleFactory::firstOrFail()`
+
+Returns the first entity matching the optional conditions, or throws if none exist. See the [CakePHP `firstOrFail()` docs](https://book.cakephp.org/5/en/orm/query-builder.html#getting-results).

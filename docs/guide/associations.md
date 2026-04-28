@@ -1,7 +1,7 @@
 # Associations
 
 If your application is not using CakePHP, or if you want to add
-associations within your factories, please take a look at the [Associations for non-CakePHP apps](./non-cakephp-associations.md) section
+associations within your factories, please take a look at the [Associations for non-CakePHP apps](non-cakephp-associations) section
 in order to define the associations of your tables. After defining your associations, you may
 continue with the documentation below.
 
@@ -31,9 +31,9 @@ $article = ArticleFactory::make()->with('Authors.Address.City.Country', ['name' 
 ```
 will create an article, with an author having itself an address in Kenya.
 
-The second parameter of the method with can be:
-* an array of field and their values
-* a string (or an array of strings), which will be assigned to the tables display field
+The second parameter of `with()` can be:
+* an array of fields and their values
+* a string (or an array of strings), which will be assigned to the table's display field
 * an integer: the number of associated entities created
 * a factory
 
@@ -62,7 +62,7 @@ the virtual field will overwrite the data prepared by the associated factory.
 Similarly to the `make` method, it is possible to inject a string into an associated factory:
 ```php
 $country = CountryFactory::make()->with('Cities', 'Nairobi')->persist();
-````
+```
 or
 ```php
 $country = CountryFactory::make()->with('Cities', ['Nairobi', 'Mombasa'])->persist();
@@ -81,7 +81,7 @@ will provide a country associated with three cities and five villages.
 
 ## Entity injection
 
-You may also inject an exiting entity. The previous example would be now:
+You may also inject an existing entity. The previous example would be now:
 ```php
 $threeCitiesAndFiveVillages = CityFactory::make()->threeCitiesAndFiveVillages()->getEntities();
 $country = CountryFactory::make()->with('Cities', $threeCitiesAndFiveVillages)->persist();

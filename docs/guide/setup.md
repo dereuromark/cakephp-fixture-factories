@@ -1,12 +1,10 @@
 # Setup
 
 ## Non-CakePHP apps
-For non-CakePHP applications, you may use the method proposed by your framework
-to manage the test database, or opt for the universal
-[test database cleaner](https://github.com/vierge-noire/test-database-cleaner).
 
-You should define your DB connections in your test `bootstrap.php` file as described
-in the [cookbook](https://book.cakephp.org/5/en/orm/database-basics.html#configuration).
+For non-CakePHP applications, use whatever method your framework provides for managing the test database, or opt for the universal [test-database-cleaner](https://github.com/vierge-noire/test-database-cleaner).
+
+Define your DB connections in your test `bootstrap.php` as described in the [CakePHP cookbook](https://book.cakephp.org/5/en/orm/database-basics.html#configuration).
 
 ## CakePHP apps
 
@@ -26,11 +24,9 @@ protected function bootstrapCli(): void
 
 ## Table Truncation
 
-Generated fixtures usually must be removed from the database in between tests in order to avoid collisions between entities, which can cause unexpected test results.
-There are several ways to manage this behavior when using fixtures and fixture factories.
+Test data must be cleaned between tests to avoid entity collisions and unexpected results. There are several strategies for this when working with fixtures and fixture factories.
 
-CakePHP ships with [Fixture State Managers](https://book.cakephp.org/5/en/development/testing.html#fixture-state-managers) and provides the `TruncateStrategy`
-(truncate all tables after test run) as well as the `TransactionStrategy` (create a transaction and roll it back after each test run).
+CakePHP ships with [Fixture State Managers](https://book.cakephp.org/5/en/development/testing.html#fixture-state-managers) and provides the `TruncateStrategy` (truncate all tables after each test run) as well as the `TransactionStrategy` (create a transaction and roll it back after each test run).
 
 The [CakePHP test suite light plugin](https://github.com/vierge-noire/cakephp-test-suite-light#cakephp-test-suite-light) provides the `TriggerStrategy`
 which will set up a trigger in your database to clean up the tables after each test run.
@@ -50,8 +46,7 @@ This plugin provides the `FactoryTransactionStrategy` which automatically:
 - **Resets unique generator state** (fixes OverflowException issues)
 - Tracks which tables are written to by fixture factories
 
-Unlike the standard `TransactionStrategy`, this doesn't require manually listing fixtures.
-In fact: This strategy works best if you do not use fixtures, at all.
+Unlike the standard `TransactionStrategy`, this doesn't require manually listing fixtures — in fact, the strategy works best if you don't use classic `$fixtures` arrays at all.
 
 ### CakePHP 5.2+ (global configuration)
 
@@ -119,4 +114,4 @@ Prefer the shared `AppTestCase` route — the per-test trait pattern works too b
 - **Solves unique generator state accumulation** - the strategy resets generator state after each test, preventing `OverflowException` when using `unique()` modifiers
 - Works seamlessly with nested associations
 
-> **Note:** Table tracking only captures tables written via `factory->persist()`. The transaction rollback handles ALL data modifications regardless of source (factories, controllers, models, etc.).
+> **Note:** Table tracking only captures tables written via `factory->persist()`. The transaction rollback still handles **all** data modifications regardless of source (factories, controllers, models, etc.).

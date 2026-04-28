@@ -119,7 +119,7 @@ $article = ArticleFactory::make()
 
 > **Note**: By default, `setGenerator()` changes the generator globally. Enable
 > `FixtureFactories.instanceLevelGenerator` to limit it to the current instance.
-> See [Fixture Factories](factories.md#instance-level-generators).
+> See [Fixture Factories](factories#instance-level-generators).
 
 ### Migration Guide: Faker → DummyGenerator
 
@@ -238,7 +238,7 @@ BaseFactory::setDefaultGenerator('dummy');
 ```
 
 > **Tip**: Enable `FixtureFactories.instanceLevelGenerator` so that `setGenerator()` only
-> affects the current factory instance. See [Fixture Factories](factories.md#instance-level-generators).
+> affects the current factory instance. See [Fixture Factories](factories#instance-level-generators).
 
 ### 3. Test with Both Generators (Optional)
 
@@ -332,13 +332,13 @@ DummyGenerator library is not installed. Please install it using: `composer requ
 - [Faker Documentation](https://fakerphp.github.io/)
 - [DummyGenerator Documentation](https://github.com/johnykvsky/dummygenerator)
 - [GeneratorInterface Source](https://github.com/dereuromark/cakephp-fixture-factories/blob/main/src/Generator/GeneratorInterface.php)
-- [Factory Documentation](factories.md)
+- [Factory Documentation](factories)
 
 ## FAQ
 
 ### Which generator should I use?
 
-- **Use Faker** if you need extensive locale support or support PHP < 8.3
+- **Use Faker** if you need extensive locale support or need to support PHP < 8.3
 - **Use DummyGenerator** if you're on PHP 8.3+ and want a modern, lean solution with native enum support
 
 ### Can I use both generators in the same project?

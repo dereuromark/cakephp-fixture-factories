@@ -37,8 +37,7 @@ class NAustralianAuthorsScenario implements FixtureScenarioInterface
 
 ```
 
-Scenarios should implement the `CakephpFixtureFactories\Scenario\FixtureScenarioInterface` class.
-This test provides an example on how to use scenarios:
+Scenarios must implement `CakephpFixtureFactories\Scenario\FixtureScenarioInterface`. Example test using a scenario:
 
 ```php
 
