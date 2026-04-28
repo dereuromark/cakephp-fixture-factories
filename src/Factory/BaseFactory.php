@@ -555,9 +555,6 @@ abstract class BaseFactory
         $alias = $table->getRegistryAlias();
         $entities = $result instanceof EntityInterface ? [$result] : $result;
         foreach ($entities as $entity) {
-            if (!$entity instanceof EntityInterface) {
-                continue;
-            }
             $entity->clean();
             $entity->setNew(false);
             $entity->setSource($alias);
