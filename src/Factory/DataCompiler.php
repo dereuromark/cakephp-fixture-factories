@@ -699,20 +699,22 @@ class DataCompiler
 
                 break;
             case 'tinyinteger':
-                $res = mt_rand(0, (int)('127'));
+                $res = mt_rand(0, 127);
 
                 break;
             case 'smallinteger':
-                $res = mt_rand(0, (int)('32767'));
+                $res = mt_rand(0, 32767);
 
                 break;
             case 'biginteger':
-                $res = mt_rand(0, (int)('9223372036854775807'));
+                // mt_rand() is capped at mt_getrandmax() (typically 2^31 - 1),
+                // which silently truncates biginteger PKs to 32-bit range.
+                $res = random_int(0, PHP_INT_MAX);
 
                 break;
             case 'integer':
             default:
-                $res = mt_rand(0, (int)('2147483647'));
+                $res = mt_rand(0, 2147483647);
 
                 break;
         }

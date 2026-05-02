@@ -40,7 +40,11 @@ trait ScenarioAwareTrait
             // phpcs:disable
             @[$scenarioName, $plugin] = array_reverse(explode('.', $scenario));
             // phpcs:enable
-            $scenarioNamespace = trim($this->getFactoryNamespace($plugin), 'Factory') . 'Scenario';
+            $factoryNamespace = $this->getFactoryNamespace($plugin);
+            if (str_ends_with($factoryNamespace, 'Factory')) {
+                $factoryNamespace = substr($factoryNamespace, 0, -strlen('Factory'));
+            }
+            $scenarioNamespace = $factoryNamespace . 'Scenario';
             $scenarioName = str_replace('/', '\\', $scenarioName);
             $scenario = $scenarioNamespace . '\\' . $scenarioName . 'Scenario';
         }
