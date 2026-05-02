@@ -363,6 +363,6 @@ class AssociationBuilder
      */
     public function addManualAssociations(array $associations): void
     {
-        $this->manualAssociations = array_merge_recursive($associations, $this->manualAssociations);
+        $this->manualAssociations = array_merge_recursive($this->manualAssociations, $associations);
     }
 }

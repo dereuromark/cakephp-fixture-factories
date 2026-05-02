@@ -79,6 +79,41 @@ class FixtureScenarioTest extends TestCase
         $this->loadFixtureScenario(self::class);
     }
 
+    /**
+     * Regression: scenario namespace must strip the literal `Factory` suffix
+     * via substring, not via `trim()` character-mask. For a configured
+     * factory namespace whose char immediately before `Factory` is also a
+     * member of the mask `{F, a, c, t, o, r, y}` (e.g. `Custom\TestFactory`,
+     * where the trailing `t` of `Test` would also be eaten), the buggy
+     * `trim()` produced an invalid scenario class name (`Custom\TesScenario`
+     * instead of `Custom\TestScenario`).
+     */
+    public function testLoadScenarioNamespaceStripsFactorySuffixLiterally(): void
+    {
+        $original = Configure::read('FixtureFactories.testFixtureNamespace');
+        Configure::write('FixtureFactories.testFixtureNamespace', 'Custom\TestFactory');
+
+        try {
+            $this->loadFixtureScenario('NonExistentScenario');
+            $this->fail('Expected FixtureScenarioException to be thrown');
+        } catch (FixtureScenarioException $e) {
+            $this->assertStringContainsString(
+                'Custom\TestScenario\NonExistentScenarioScenario',
+                $e->getMessage(),
+            );
+            $this->assertStringNotContainsString(
+                'Custom\TesScenario',
+                $e->getMessage(),
+            );
+        } finally {
+            if ($original === null) {
+                Configure::delete('FixtureFactories.testFixtureNamespace');
+            } else {
+                Configure::write('FixtureFactories.testFixtureNamespace', $original);
+            }
+        }
+    }
+
     private function countAustralianAuthors(): int
     {
         return AuthorFactory::find()
