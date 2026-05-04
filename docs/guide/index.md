@@ -16,7 +16,7 @@ You write a factory class per table; tests then build exactly the data they need
 ```php
 $articles = ArticleFactory::make(5)
     ->with('Authors[3].Address.City.Country')
-    ->persistMany();
+    ->persistEntities();
 ```
 
 Five articles, each with three authors, each with a full address chain — persisted, in one expression.
@@ -106,18 +106,18 @@ use App\Test\Factory\ArticleFactory;
 $article = ArticleFactory::make()->getEntity();
 
 // Or persist to DB
-$article = ArticleFactory::make()->persistOne();
+$article = ArticleFactory::make()->persistEntity();
 
 // With overrides
-$article = ArticleFactory::make(['title' => 'Hello'])->persistOne();
+$article = ArticleFactory::make(['title' => 'Hello'])->persistEntity();
 
 // With associations
 $article = ArticleFactory::make()
     ->with('Authors', AuthorFactory::make(3))
-    ->persistOne();
+    ->persistEntity();
 
 // Multiple entities
-$articles = ArticleFactory::make(5)->persistMany();
+$articles = ArticleFactory::make(5)->persistEntities();
 ```
 
 That's it — your test now has data without touching a fixture file.

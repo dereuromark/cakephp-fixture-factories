@@ -103,7 +103,7 @@ $entity = ProjectFactory::make([
             ->without('Projects')
             ->with('ProjectRoles', ['id' => 1]),
     )
-    ->persistOne();
+    ->persistEntity();
 ```
 
 This is hard to read, hard to refactor, and the `->without('Projects')` is a smell that the join model's defaults don't match what the test wants.
@@ -126,20 +126,20 @@ $project = ProjectFactory::make([
     'duedate' => Carbon::now()->subDays(5),
 ])
     ->withStaffMembersProjects($staffMembersProject)
-    ->persistOne();
+    ->persistEntity();
 ```
 
 ```php [Two associations, one shared entity]
-$customer = EasybillCustomerFactory::make()->persistOne();
+$customer = EasybillCustomerFactory::make()->persistEntity();
 
 $charge = EasybillChargeFactory::make()
     ->withEasybillCustomer($customer)
-    ->persistOne();
+    ->persistEntity();
 
 $project = ProjectFactory::make()
     ->withEasybillCustomer($customer)
     ->withEasybillCharges($charge)
-    ->persistOne();
+    ->persistEntity();
 ```
 
 ```php [Multiple generated children]
@@ -151,16 +151,16 @@ $staffMembersProjects = StaffMembersProjectFactory::make(3)
 $project = ProjectFactory::make()
     ->withEasybillCustomer()
     ->withStaffMembersProjects($staffMembersProjects)
-    ->persistOne();
+    ->persistEntity();
 ```
 
 ```php [Three levels with a shared entity]
-$customer = EasybillCustomerFactory::make()->persistOne();
+$customer = EasybillCustomerFactory::make()->persistEntity();
 
 $easybillDocument = EasybillDocumentFactory::make()
     ->withEasybillCustomer($customer)
     ->withEasybillDocumentType()
-    ->persistOne();
+    ->persistEntity();
 
 $projectsEasybillDocument = ProjectsEasybillDocumentFactory::make()
     ->withProjectDocumentType()
@@ -170,7 +170,7 @@ $projectsEasybillDocument = ProjectsEasybillDocumentFactory::make()
 $project = ProjectFactory::make()
     ->withEasybillCustomer($customer)
     ->withProjectsEasybillDocuments($projectsEasybillDocument)
-    ->persistOne();
+    ->persistEntity();
 ```
 
 :::
@@ -181,15 +181,15 @@ The shape of every sub-entity is right there in the test. No nested `with()`, no
 
 If you've followed the rules above, `->without()` becomes unnecessary almost everywhere. Each sub-entity is built explicitly and attached only where it's wanted, so there's nothing to subtract. When you do reach for `->without()`, treat it as a sign that some helper or default is doing too much, and consider trimming it.
 
-## Know when to use `getEntity()` vs `persistOne()` / `persistMany()`
+## Know when to use `getEntity()` vs `persistEntity()` / `persistEntities()`
 
 Both walk the same association graph. The difference is whether they touch the database:
 
 - **`getEntity()` / `getEntities()`** — build entities in memory only. Use these when the test doesn't need DB rows: unit-testing a service that takes an entity, or generating fixtures for a select-query mock.
-- **`persistOne()`** — save a single configured entity and return it (typed). Use it whenever the factory was created with `make()` or `make([oneRow])`.
-- **`persistMany()`** — save all configured entities and return them as a typed array. Works for any factory shape; pick it when the factory produces multiple entities, or when callers iterate / assert on counts.
+- **`persistEntity()`** — save a single configured entity and return it (typed). Use it whenever the factory was created with `make()` or `make([oneRow])`.
+- **`persistEntities()`** — save all configured entities and return them as a typed array. Works for any factory shape; pick it when the factory produces multiple entities, or when callers iterate / assert on counts.
 
-`persist()` is still available for backwards compatibility but is deprecated — it returns either an entity or an iterable depending on the factory shape, which is hard for static analysis. Prefer `persistOne()` / `persistMany()`.
+`persist()` is still available for backwards compatibility but is deprecated — it returns either an entity or an iterable depending on the factory shape, which is hard for static analysis. Prefer `persistEntity()` / `persistEntities()`.
 
 ```php
 // Unit test: no DB needed
@@ -198,11 +198,11 @@ $result = $this->ArticlesService->summarize($article);
 $this->assertSame('…', $result);
 
 // Integration test: needs DB, single entity
-$article = ArticleFactory::make()->withAuthors(2)->persistOne();
+$article = ArticleFactory::make()->withAuthors(2)->persistEntity();
 $this->get(['controller' => 'Articles', 'action' => 'view', $article->id]);
 
 // Integration test: needs DB, many entities
-ArticleFactory::make(5)->withAuthors(2)->persistMany();
+ArticleFactory::make(5)->withAuthors(2)->persistEntities();
 $this->get(['controller' => 'Articles', 'action' => 'index']);
 $this->assertResponseContains('5 articles');
 ```
@@ -223,7 +223,7 @@ protected function setUp(): void
 // Prefer
 public function testIndex(): void
 {
-    $article = ArticleFactory::make()->withAuthors(2)->persistOne();
+    $article = ArticleFactory::make()->withAuthors(2)->persistEntity();
     // ...
 }
 ```
@@ -255,7 +255,7 @@ The "build sub-entities first" pattern handles one-off graphs well. When the *sa
 - `setDefaultTemplate()` sets fields and any *required* associations — never optional ones.
 - In tests, build the graph bottom-up: leaf entities first, parents last.
 - `->without()` is a smell; aim to make it unnecessary.
-- Pick `getEntity()` vs `persistOne()` / `persistMany()` deliberately; default to in-memory.
+- Pick `getEntity()` vs `persistEntity()` / `persistEntities()` deliberately; default to in-memory.
 - Build a fresh factory per test — never share instances.
 - `->unique()` is for high-cardinality fields; promote shared setups to scenarios.
 

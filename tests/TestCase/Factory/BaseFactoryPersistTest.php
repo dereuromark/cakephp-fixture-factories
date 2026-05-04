@@ -36,11 +36,11 @@ class BaseFactoryPersistTest extends TestCase
         Configure::delete('FixtureFactories.testFixtureNamespace');
     }
 
-    public function testPersistOneReturnsTheEntity(): void
+    public function testPersistEntityReturnsTheEntity(): void
     {
         $name = 'Foo';
 
-        $country = CountryFactory::make(['name' => $name])->persistOne();
+        $country = CountryFactory::make(['name' => $name])->persistEntity();
 
         $this->assertInstanceOf(Country::class, $country);
         $this->assertSame($name, $country->get('name'));
@@ -48,7 +48,7 @@ class BaseFactoryPersistTest extends TestCase
         $this->assertSame(1, CountryFactory::count());
     }
 
-    public function testPersistOneRejectsMultiEntityFactory(): void
+    public function testPersistEntityRejectsMultiEntityFactory(): void
     {
         $factory = CountryFactory::make([
             ['name' => 'Foo'],
@@ -56,17 +56,17 @@ class BaseFactoryPersistTest extends TestCase
         ]);
 
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('persistOne() expected to persist exactly 1 entity, but 2 were produced');
+        $this->expectExceptionMessage('persistEntity() expected to persist exactly 1 entity, but 2 were produced');
 
-        $factory->persistOne();
+        $factory->persistEntity();
     }
 
-    public function testPersistManyReturnsArrayForMultiEntityFactory(): void
+    public function testPersistEntitiesReturnsArrayForMultiEntityFactory(): void
     {
         $countries = CountryFactory::make([
             ['name' => 'Foo'],
             ['name' => 'Bar'],
-        ])->persistMany();
+        ])->persistEntities();
 
         $this->assertIsArray($countries);
         $this->assertCount(2, $countries);
@@ -76,9 +76,9 @@ class BaseFactoryPersistTest extends TestCase
         $this->assertSame(2, CountryFactory::count());
     }
 
-    public function testPersistManyReturnsArrayForSingleEntityFactory(): void
+    public function testPersistEntitiesReturnsArrayForSingleEntityFactory(): void
     {
-        $countries = CountryFactory::make(['name' => 'Foo'])->persistMany();
+        $countries = CountryFactory::make(['name' => 'Foo'])->persistEntities();
 
         $this->assertIsArray($countries);
         $this->assertCount(1, $countries);
