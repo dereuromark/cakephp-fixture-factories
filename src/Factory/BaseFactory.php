@@ -42,7 +42,7 @@ use function is_array;
  *
  * Subclasses should declare the entity type via PHPStan generics so that
  * `getEntity()`, `getEntities()`, `getResultSet()`, `getPersistedResultSet()`,
- * `persistOne()` and `persistMany()` resolve to the concrete entity class:
+ * `persistEntity()` and `persistEntities()` resolve to the concrete entity class:
  *
  * ```
  * /**
@@ -409,9 +409,11 @@ abstract class BaseFactory
     }
 
     /**
-     * Produce one entity from the present factory
+     * Produce one entity from the present factory.
      *
-     * @deprecated Use getResultSet instead. Will be removed in v4.
+     * Use this when the factory was created via `make()`, `make([...singleRow])`,
+     * `make($entity)` or `makeFrom($entity)` — i.e. exactly one entity will be
+     * produced. For multi-entity factories use `getEntities()` instead.
      *
      * @return TEntity
      */
@@ -421,9 +423,11 @@ abstract class BaseFactory
     }
 
     /**
-     * Produce a set of entities from the present factory
+     * Produce a set of entities from the present factory.
      *
-     * @deprecated Use getResultSet instead. Will be removed in v4.
+     * Works for any factory shape (single or multiple); always returns an
+     * array, so it is the right choice when callers iterate or assert on
+     * counts regardless of how the factory was configured.
      *
      * @return array<TEntity>
      */
@@ -531,20 +535,20 @@ abstract class BaseFactory
      *
      * Use this when the factory was created via `make()`, `make([...singleRow])`,
      * `make($entity)` or `makeFrom($entity)` — i.e. exactly one entity will be
-     * produced. For multi-entity factories use `persistMany()` instead.
+     * produced. For multi-entity factories use `persistEntities()` instead.
      *
      * @throws \RuntimeException if the factory is configured to produce more than one entity.
      *
      * @return TEntity
      */
-    public function persistOne(): EntityInterface
+    public function persistEntity(): EntityInterface
     {
         $entities = $this->doPersist();
         $count = count($entities);
         if ($count !== 1) {
             throw new RuntimeException(sprintf(
-                '%s::persistOne() expected to persist exactly 1 entity, but %d were produced. '
-                . 'Use persistMany() for factories that produce multiple entities.',
+                '%s::persistEntity() expected to persist exactly 1 entity, but %d were produced. '
+                . 'Use persistEntities() for factories that produce multiple entities.',
                 static::class,
                 $count,
             ));
@@ -562,13 +566,13 @@ abstract class BaseFactory
      *
      * @return array<TEntity>
      */
-    public function persistMany(): array
+    public function persistEntities(): array
     {
         return $this->doPersist();
     }
 
     /**
-     * @deprecated Use persistOne() (single entity) or persistMany() (multiple entities)
+     * @deprecated Use persistEntity() (single entity) or persistEntities() (multiple entities)
      *             for sharper return types. Will be removed in v4.
      *
      * @return TEntity|iterable<TEntity>
