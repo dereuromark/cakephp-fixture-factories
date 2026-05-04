@@ -12,38 +12,34 @@ from `vierge-noire/cakephp-fixture-factories`, see the [migration guide](migrati
 
 ### Symmetric persist/get API
 
-The persist-side API and the in-memory get-side API are now symmetric. Both
-sides are typed through the `TEntity` template on `BaseFactory`, so an IDE
-can resolve return types to the concrete entity class once your factory
-declares the template parameter (see below).
-
-Renames:
-
-| Before (1.3.x)       | After (1.4.0)         |
-|----------------------|-----------------------|
-| `persistOne()`       | `persistEntity()`     |
-| `persistMany()`      | `persistEntities()`   |
-
-The single-entity `persistEntity()` keeps the throw-if-multiple safety check.
-The plural `persistEntities()` always returns an `array`.
-
-`getEntity()` and `getEntities()` are no longer marked deprecated — they form
-the in-memory counterpart to the persist methods.
-
 `persist()` is now deprecated. Its return type is the union
-`TEntity|iterable<TEntity>`, which means callers always have to narrow before
-they can use the result. Use `persistEntity()` (single) or `persistEntities()`
-(many) for sharp return types instead. `persist()` will be removed in v4.
+`TEntity|iterable<TEntity>`, which means callers always have to narrow
+before they can use the result. 1.4 introduces two typed replacements:
 
-#### `persistOne()` / `persistMany()` users
+| Before (1.3.x)            | After (1.4.0)         | When to use                                  |
+|---------------------------|-----------------------|----------------------------------------------|
+| `persist()` (single row)  | `persistEntity()`     | Factory configured via `make()` or `make([...singleRow])` |
+| `persist()` (multiple)    | `persistEntities()`   | `setTimes(n)`, `make([[...], [...]])`, multi-entity factories |
 
-If you're upgrading from a pre-release that already used `persistOne()` /
-`persistMany()`, just rename the calls — same behavior.
+`persistEntity()` keeps a throw-if-multiple safety check; if the factory
+ends up producing more than one entity, you get a clear runtime error
+instead of a silently-narrowed return value. `persistEntities()` always
+returns an `array<TEntity>`.
 
-#### `persist()` users
+The in-memory side is now symmetric: `getEntity()` and `getEntities()`
+are no longer marked deprecated. They form the non-persisted counterpart
+to the persist pair.
 
-Replace each call site with `persistEntity()` or `persistEntities()` based on
-how the factory was configured:
+All four methods are typed through the `TEntity` template on
+`BaseFactory`, so an IDE resolves return types to the concrete entity
+class once your factory declares the template parameter (see below).
+
+`persist()` will be removed in v4.
+
+#### `persist()` call sites
+
+Replace each call site with `persistEntity()` or `persistEntities()` based
+on how the factory was configured:
 
 ```diff
 - $invoice = InvoiceFactory::make()->persist();
