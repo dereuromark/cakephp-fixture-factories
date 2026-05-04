@@ -19,6 +19,8 @@ Write and run your tests faster. On any PHP application.
     <a href="https://github.com/php-collective/code-sniffer"><img src="https://img.shields.io/badge/cs-PhpCollective-purple.svg?style=flat-square" alt="Coding Standards"></a>
 </p>
 
+This branch is for **CakePHP 5.0+**. See [version map](https://github.com/dereuromark/cakephp-fixture-factories/wiki#cakephp-version-map) for details.
+
 A maintained fork of [vierge-noire/cakephp-fixture-factories](https://github.com/vierge-noire/cakephp-fixture-factories) with:
 
 - Multiple data generators via adapters (Faker, DummyGenerator, custom).
