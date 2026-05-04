@@ -36,11 +36,15 @@
         "fakerphp/faker": "^1.23",
         "cakephp/bake": "^3.0.0",
         "cakephp/twig-view": "^2.0.2",
+        "dereuromark/cakephp-ide-helper": "^2.16",
         "php-collective/code-sniffer": "dev-master",
         "cakephp/migrations": "^4.7.0 || ^5.0.0",
         "josegonzalez/dotenv": "^4.0.0",
         "phpstan/phpstan": "^2.1",
         "phpunit/phpunit": "^11.5 || ^12.1 || ^13.0"
+    },
+    "suggest": {
+        "dereuromark/cakephp-ide-helper": "Auto-keeps Factory subclass docblocks in sync via the bundled FactoryAnnotatorTask; runs as part of `bin/cake annotate classes`."
     },
     "autoload": {
         "psr-4": {
