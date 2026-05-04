@@ -91,6 +91,11 @@ $articles = ArticleFactory::make(3)->getResultSet(); // Will not persist in the 
 $articles = ArticleFactory::make(3)->getPersistedResultSet(); // Will persist in the DB
 ```
 
+A single entity is returned wrapped in a result set as well, so the contract is the same regardless of count:
+```php
+$article = ArticleFactory::make()->getPersistedResultSet()->first(); // Cake\Datasource\EntityInterface
+```
+
 Do not forget to check the [plugin's tests](https://github.com/dereuromark/cakephp-fixture-factories/tree/main/tests) for
 more insights!
 

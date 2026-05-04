@@ -16,12 +16,14 @@ declare(strict_types=1);
 namespace CakephpFixtureFactories\Test\TestCase\Factory;
 
 use Cake\Core\Configure;
+use Cake\Datasource\EntityInterface;
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Test\Factory\ArticleFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
 use PHPUnit\Framework\Attributes\DataProvider;
 use TestApp\Model\Entity\Address;
+use TestApp\Model\Entity\Country;
 
 class BaseFactoryGetResultSetTest extends TestCase
 {
@@ -63,6 +65,22 @@ class BaseFactoryGetResultSetTest extends TestCase
         $this->assertSame($street, $articles->last()['authors'][0]['address']['street']);
         $this->assertInstanceOf(Address::class, $articles->first()['authors'][0]['address']);
         $this->assertSame($isPersisted ? 2 : 0, ArticleFactory::count());
+    }
+
+    #[DataProvider('isPersisted')]
+    public function testBaseFactoryGetResultSetWithSingleEntity(bool $isPersisted): void
+    {
+        $name = 'Single';
+        $factory = CountryFactory::make(['name' => $name]);
+
+        $countries = $isPersisted ? $factory->getPersistedResultSet() : $factory->getResultSet();
+
+        $this->assertSame(1, $countries->count());
+        $this->assertInstanceOf(Country::class, $countries->first());
+        $this->assertInstanceOf(EntityInterface::class, $countries->first());
+        $this->assertSame($name, $countries->first()->get('name'));
+        $this->assertSame(!$isPersisted, $countries->first()->get('id') === null);
+        $this->assertSame($isPersisted ? 1 : 0, CountryFactory::count());
     }
 
     public function testBaseFactoryGetResultSetWithIds(): void
