@@ -19,9 +19,8 @@ use CakephpFixtureFactories\Generator\GeneratorInterface;
 /**
  * Class CountryFactory
  *
- * @method \TestApp\Model\Entity\Country getEntity()
- * @method \TestApp\Model\Entity\Country[] getEntities()
- * @method \TestApp\Model\Entity\Country|\TestApp\Model\Entity\Country[] persist()
+ * @extends BaseFactory<\TestApp\Model\Entity\Country>
+ *
  * @method static \TestApp\Model\Entity\Country get(mixed $primaryKey, array $options = [])
  */
 class CountryFactory extends BaseFactory

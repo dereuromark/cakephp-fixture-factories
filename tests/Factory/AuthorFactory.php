@@ -18,9 +18,9 @@ use CakephpFixtureFactories\Generator\GeneratorInterface;
 
 /**
  * Class AuthorFactory
- * @method \TestApp\Model\Entity\Author getEntity()
- * @method \TestApp\Model\Entity\Author[] getEntities()
- * @method \TestApp\Model\Entity\Author|\TestApp\Model\Entity\Author[] persist()
+ *
+ * @extends BaseFactory<\TestApp\Model\Entity\Author>
+ *
  * @method static \TestApp\Model\Entity\Author get(mixed $primaryKey, array $options = [])
  * @method static \TestApp\Model\Entity\Author firstOrFail($conditions = null)
  */

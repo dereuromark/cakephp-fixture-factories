@@ -18,7 +18,6 @@ namespace CakephpFixtureFactories\Factory;
 use Cake\Core\Configure;
 use Cake\Database\ExpressionInterface;
 use Cake\Datasource\EntityInterface;
-use Cake\Datasource\ResultSetInterface;
 use Cake\Event\EventManagerInterface;
 use Cake\I18n\I18n;
 use Cake\ORM\Query\SelectQuery;
@@ -33,12 +32,26 @@ use CakephpFixtureFactories\TestSuite\FactoryTransactionStrategy;
 use Closure;
 use InvalidArgumentException;
 use Psr\SimpleCache\CacheInterface;
+use RuntimeException;
 use Throwable;
 use function array_merge;
 use function is_array;
 
 /**
  * Class BaseFactory
+ *
+ * Subclasses should declare the entity type via PHPStan generics so that
+ * `getEntity()`, `getEntities()`, `getResultSet()`, `getPersistedResultSet()`,
+ * `persistOne()` and `persistMany()` resolve to the concrete entity class:
+ *
+ * ```
+ * /**
+ *  * @extends BaseFactory<\App\Model\Entity\Article>
+ *  *\/
+ * class ArticleFactory extends BaseFactory { ... }
+ * ```
+ *
+ * @template TEntity of \Cake\Datasource\EntityInterface
  *
  * @package CakephpFixtureFactories\Factory
  */
@@ -243,7 +256,7 @@ abstract class BaseFactory
      * Collect the number of entities to be created
      * Apply the default template in the factory
      *
-     * @param \CakephpFixtureFactories\Factory\BaseFactory $factory Factory
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<TEntity> $factory Factory
      * @param int $times Number of entities created
      *
      * @return void
@@ -400,7 +413,7 @@ abstract class BaseFactory
      *
      * @deprecated Use getResultSet instead. Will be removed in v4.
      *
-     * @return \Cake\Datasource\EntityInterface
+     * @return TEntity
      */
     public function getEntity(): EntityInterface
     {
@@ -412,7 +425,7 @@ abstract class BaseFactory
      *
      * @deprecated Use getResultSet instead. Will be removed in v4.
      *
-     * @return array<\Cake\Datasource\EntityInterface>
+     * @return array<TEntity>
      */
     public function getEntities(): array
     {
@@ -422,7 +435,7 @@ abstract class BaseFactory
     /**
      * Creates a result set of non-persisted entities
      *
-     * @return \Cake\ORM\ResultSet<int, \Cake\Datasource\EntityInterface>
+     * @return \Cake\ORM\ResultSet<int, TEntity>
      */
     public function getResultSet(): ResultSet
     {
@@ -432,7 +445,7 @@ abstract class BaseFactory
     /**
      * Creates a result set of persisted entities
      *
-     * @return \Cake\ORM\ResultSet<int, \Cake\Datasource\EntityInterface>
+     * @return \Cake\ORM\ResultSet<int, TEntity>
      */
     public function getPersistedResultSet(): ResultSet
     {
@@ -514,13 +527,67 @@ abstract class BaseFactory
     }
 
     /**
-     * @deprecated Use getPersistedResultSet. Will be removed in v4.
+     * Persist a single entity and return it.
+     *
+     * Use this when the factory was created via `make()`, `make([...singleRow])`,
+     * `make($entity)` or `makeFrom($entity)` — i.e. exactly one entity will be
+     * produced. For multi-entity factories use `persistMany()` instead.
+     *
+     * @throws \RuntimeException if the factory is configured to produce more than one entity.
+     *
+     * @return TEntity
+     */
+    public function persistOne(): EntityInterface
+    {
+        $entities = $this->doPersist();
+        $count = count($entities);
+        if ($count !== 1) {
+            throw new RuntimeException(sprintf(
+                '%s::persistOne() expected to persist exactly 1 entity, but %d were produced. '
+                . 'Use persistMany() for factories that produce multiple entities.',
+                static::class,
+                $count,
+            ));
+        }
+
+        return $entities[0];
+    }
+
+    /**
+     * Persist all configured entities and return them as an array.
+     *
+     * Works for any factory shape (single or multiple); always returns an
+     * array, so it is the right choice when callers iterate or assert on
+     * counts regardless of how the factory was configured.
+     *
+     * @return array<TEntity>
+     */
+    public function persistMany(): array
+    {
+        return $this->doPersist();
+    }
+
+    /**
+     * @deprecated Use persistOne() (single entity) or persistMany() (multiple entities)
+     *             for sharper return types. Will be removed in v4.
+     *
+     * @return TEntity|iterable<TEntity>
+     */
+    public function persist(): EntityInterface|iterable
+    {
+        $entities = $this->doPersist();
+
+        return count($entities) === 1 ? $entities[0] : $entities;
+    }
+
+    /**
+     * Persist the configured entities and return them as a normalized array.
      *
      * @throws \CakephpFixtureFactories\Error\PersistenceException if the entity/entities could not be saved.
      *
-     * @return \Cake\Datasource\EntityInterface|\Cake\Datasource\ResultSetInterface<int, \Cake\Datasource\EntityInterface>|iterable<\Cake\Datasource\EntityInterface>
+     * @return array<TEntity>
      */
-    public function persist(): EntityInterface|iterable|ResultSetInterface
+    private function doPersist(): array
     {
         $this->getDataCompiler()->startPersistMode();
         try {
@@ -529,11 +596,9 @@ abstract class BaseFactory
             $this->getDataCompiler()->endPersistMode();
         }
 
-        // Track this table for transaction/cleanup strategies
         $table = $this->getTable();
         FactoryTableTracker::getInstance()->trackTable($table);
 
-        // Ensure a transaction is active on this connection (lazy start)
         $strategy = FactoryTransactionStrategy::getActiveInstance();
         if ($strategy !== null) {
             $strategy->ensureTransaction($table->getConnection());
@@ -541,9 +606,10 @@ abstract class BaseFactory
 
         try {
             if (count($entities) === 1) {
-                $result = $table->saveOrFail($entities[0], $this->getSaveOptions());
+                $saved = [$table->saveOrFail($entities[0], $this->getSaveOptions())];
             } else {
                 $result = $table->saveManyOrFail($entities, $this->getSaveOptions());
+                $saved = is_array($result) ? array_values($result) : iterator_to_array($result, false);
             }
         } catch (Throwable $exception) {
             $factory = static::class;
@@ -552,9 +618,9 @@ abstract class BaseFactory
             throw new PersistenceException("Error in Factory `$factory`.\n Message: $message \n");
         }
 
-        $this->finalizePersistedEntities($result, $table);
+        $this->finalizePersistedEntities($saved, $table);
 
-        return $result;
+        return $saved;
     }
 
     /**
@@ -575,19 +641,16 @@ abstract class BaseFactory
      * so this is a harmless second application (the entity is already
      * clean and not new by the time we get here).
      *
-     * @param \Cake\Datasource\EntityInterface|\Cake\Datasource\ResultSetInterface<int, \Cake\Datasource\EntityInterface>|iterable<\Cake\Datasource\EntityInterface> $result Saved entity / entities returned by the table.
+     * @param array<\Cake\Datasource\EntityInterface> $entities Saved entities returned by the table.
      * @param \Cake\ORM\Table $table The table the save was performed on.
      */
-    private function finalizePersistedEntities(
-        EntityInterface|iterable|ResultSetInterface $result,
-        Table $table,
-    ): void {
+    private function finalizePersistedEntities(array $entities, Table $table): void
+    {
         if (!$table->getConnection()->inTransaction()) {
             return;
         }
 
         $alias = $table->getRegistryAlias();
-        $entities = $result instanceof EntityInterface ? [$result] : $result;
         foreach ($entities as $entity) {
             $entity->clean();
             $entity->setNew(false);
@@ -857,7 +920,7 @@ abstract class BaseFactory
      * The data can be an array, an integer, an entity interface, a callable or a factory
      *
      * @param string $associationName Association name
-     * @param \CakephpFixtureFactories\Factory\BaseFactory|\Cake\Datasource\EntityInterface|callable|array<string, mixed>|string|int $data Injected data
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>|\Cake\Datasource\EntityInterface|callable|array<string, mixed>|string|int $data Injected data
      *
      * @return $this
      */

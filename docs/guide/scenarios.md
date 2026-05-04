@@ -27,11 +27,11 @@ class NAustralianAuthorsScenario implements FixtureScenarioInterface
 
     /**
      * @param int $n the number of authors
-     * @return Author|Author[]
+     * @return array<Author>
      */
     public function load($n = 1, ...$args)
     {
-        return AuthorFactory::make($n)->fromCountry(self::COUNTRY_NAME)->persist();
+        return AuthorFactory::make($n)->fromCountry(self::COUNTRY_NAME)->persistMany();
     }
 }
 

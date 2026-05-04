@@ -63,7 +63,7 @@ features:
 ```php
 ArticleFactory::make(5)
     ->with('Authors[3].Address.City.Country')
-    ->persist();
+    ->persistMany();
 ```
 
 Five articles, each with three authors, each with an address, city and country — persisted in one expression.

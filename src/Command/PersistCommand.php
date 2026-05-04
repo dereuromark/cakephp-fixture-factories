@@ -112,7 +112,7 @@ class PersistCommand extends Command
     /**
      * @param \Cake\Console\Arguments $args The command arguments
      *
-     * @return \CakephpFixtureFactories\Factory\BaseFactory
+     * @return \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>
      */
     public function parseFactory(Arguments $args): BaseFactory
     {
@@ -132,9 +132,9 @@ class PersistCommand extends Command
 
     /**
      * @param \Cake\Console\Arguments $args Arguments
-     * @param \CakephpFixtureFactories\Factory\BaseFactory $factory Factory
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Factory
      *
-     * @return \CakephpFixtureFactories\Factory\BaseFactory
+     * @return \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>
      */
     public function setTimes(Arguments $args, BaseFactory $factory): BaseFactory
     {
@@ -149,12 +149,12 @@ class PersistCommand extends Command
 
     /**
      * @param \Cake\Console\Arguments $args Arguments
-     * @param \CakephpFixtureFactories\Factory\BaseFactory $factory Factory
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Factory
      * @param \Cake\Console\ConsoleIo $io Console
      *
      * @throws \CakephpFixtureFactories\Error\FactoryNotFoundException if the method is not found in the factory
      *
-     * @return \CakephpFixtureFactories\Factory\BaseFactory
+     * @return \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>
      */
     public function attachMethod(Arguments $args, BaseFactory $factory, ConsoleIo $io): BaseFactory
     {
@@ -176,9 +176,9 @@ class PersistCommand extends Command
 
     /**
      * @param \Cake\Console\Arguments $args Arguments
-     * @param \CakephpFixtureFactories\Factory\BaseFactory $factory Factory
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Factory
      *
-     * @return \CakephpFixtureFactories\Factory\BaseFactory
+     * @return \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>
      */
     public function with(Arguments $args, BaseFactory $factory): BaseFactory
     {
@@ -200,7 +200,7 @@ class PersistCommand extends Command
      * overwriting the table's default connection.
      *
      * @param string $connection Connection name
-     * @param \CakephpFixtureFactories\Factory\BaseFactory $factory Factory
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Factory
      *
      * @return void
      */
@@ -213,7 +213,7 @@ class PersistCommand extends Command
     }
 
     /**
-     * @param \CakephpFixtureFactories\Factory\BaseFactory $factory Factory
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Factory
      * @param \Cake\Console\Arguments $args Arguments
      * @param \Cake\Console\ConsoleIo $io Console
      *
@@ -247,7 +247,7 @@ class PersistCommand extends Command
     }
 
     /**
-     * @param \CakephpFixtureFactories\Factory\BaseFactory $factory Factory
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Factory
      * @param \Cake\Console\ConsoleIo $io Console
      *
      * @return void

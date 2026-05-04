@@ -20,9 +20,8 @@ use TestApp\Model\Entity\Article;
 /**
  * Class ArticleFactory
  *
- * @method \TestApp\Model\Entity\Article getEntity()
- * @method \TestApp\Model\Entity\Article[] getEntities()
- * @method \TestApp\Model\Entity\Article|\TestApp\Model\Entity\Article[] persist()
+ * @extends BaseFactory<\TestApp\Model\Entity\Article>
+ *
  * @method static \TestApp\Model\Entity\Article get(mixed $primaryKey, array $options = [])
  * @method static \TestApp\Model\Entity\Article firstOrFail($conditions = null)
  */

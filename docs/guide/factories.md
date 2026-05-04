@@ -127,7 +127,7 @@ class CountryFactory extends BaseFactory
 Because `name` is marked unique, the country factory de-duplicates whenever a developer sets `name`.
 
 ```php
-CityFactory::make(5)->with('Countries', 'Foo')->persist();
+CityFactory::make(5)->with('Countries', 'Foo')->persistMany();
 ```
 
 creates 5 cities all associated to one country. Run it again and you'll have 10 cities, still tied to that single country.
@@ -137,7 +137,7 @@ creates 5 cities all associated to one country. Run it again and you'll have 10 
 Primary keys are handled the same way — you don't have to declare them in `$uniqueProperties`. The factory can't read uniqueness constraints from the schema, but it does know which fields are primary keys. So:
 
 ```php
-CityFactory::make(5)->with('Countries', ['myPrimaryKey' => 1])->persist();
+CityFactory::make(5)->with('Countries', ['myPrimaryKey' => 1])->persistMany();
 ```
 
 behaves as if `myPrimaryKey` were marked unique. The factory does the bookkeeping for you.

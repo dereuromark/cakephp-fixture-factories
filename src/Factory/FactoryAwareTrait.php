@@ -36,7 +36,7 @@ trait FactoryAwareTrait
      *
      * @throws \CakephpFixtureFactories\Error\FactoryNotFoundException if the factory could not be found
      *
-     * @return \CakephpFixtureFactories\Factory\BaseFactory
+     * @return \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>
      */
     public function getFactory(
         string $name,
