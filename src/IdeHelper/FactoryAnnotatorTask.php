@@ -20,9 +20,14 @@ use IdeHelper\Annotator\ClassAnnotatorTask\ClassAnnotatorTaskInterface;
  * persistEntity(), persistEntities(), getResultSet() and
  * getPersistedResultSet() all fall back to EntityInterface.
  *
- * Auto-registers via CakephpFixtureFactoriesPlugin::bootstrap() when
- * cakephp-ide-helper is installed. Runs as part of `bin/cake annotate
- * classes`.
+ * Invoked by the dedicated `bin/cake annotate_factories` command shipped
+ * by this plugin. Note that the stock `bin/cake annotate classes` command
+ * from cakephp-ide-helper does not visit `tests/Factory/` or plugin
+ * factory directories, which is why a separate command exists.
+ *
+ * The task is also registered in `IdeHelper.classAnnotatorTasks` during
+ * plugin bootstrap, so it is reused by `annotate_factories` and is
+ * available to any custom command that scans factory paths.
  *
  * Also strips the legacy three-line method block (getEntity / getEntities
  * / persist) emitted by pre-1.4 bake output, so first runs over an

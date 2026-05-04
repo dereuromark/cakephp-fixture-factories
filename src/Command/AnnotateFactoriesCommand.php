@@ -11,6 +11,8 @@ use CakephpFixtureFactories\IdeHelper\FactoryAnnotatorTask;
 use IdeHelper\Annotator\AbstractAnnotator;
 use IdeHelper\Command\AnnotateCommand;
 use IdeHelper\Console\Io;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 
 /**
  * Run the FactoryAnnotatorTask over every Factory subclass under the app's
@@ -93,6 +95,11 @@ class AnnotateFactoriesCommand extends AnnotateCommand
     }
 
     /**
+     * Recursively walk $directory and pass every *Factory.php file at any
+     * depth through the annotator. Recursion matches CakePHP's own
+     * convention where factories may live in subdirectories that mirror
+     * an entity's namespace (e.g. tests/Factory/Admin/UserFactory.php).
+     *
      * @param string $directory
      *
      * @return bool true if any file was modified
@@ -100,10 +107,20 @@ class AnnotateFactoriesCommand extends AnnotateCommand
     protected function annotateDirectory(string $directory): bool
     {
         $changed = false;
-        $files = glob($directory . '*Factory.php') ?: [];
 
-        foreach ($files as $path) {
-            $name = pathinfo($path, PATHINFO_FILENAME);
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($directory, RecursiveDirectoryIterator::SKIP_DOTS),
+        );
+
+        foreach ($iterator as $file) {
+            if (!$file->isFile() || $file->getExtension() !== 'php') {
+                continue;
+            }
+            if (!str_ends_with($file->getFilename(), 'Factory.php')) {
+                continue;
+            }
+            $path = $file->getPathname();
+            $name = $file->getBasename('.php');
             if ($this->_shouldSkip($name, $path)) {
                 continue;
             }

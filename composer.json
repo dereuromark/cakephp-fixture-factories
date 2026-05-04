@@ -44,7 +44,7 @@
         "phpunit/phpunit": "^11.5 || ^12.1 || ^13.0"
     },
     "suggest": {
-        "dereuromark/cakephp-ide-helper": "Auto-keeps Factory subclass docblocks in sync via the bundled FactoryAnnotatorTask; runs as part of `bin/cake annotate classes`."
+        "dereuromark/cakephp-ide-helper": "Required for the bundled `bin/cake annotate_factories` command, which keeps Factory subclass docblocks in sync with the generic-extends contract."
     },
     "autoload": {
         "psr-4": {
