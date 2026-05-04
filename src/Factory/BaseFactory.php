@@ -436,7 +436,15 @@ abstract class BaseFactory
      */
     public function getPersistedResultSet(): ResultSet
     {
-        return new ResultSet((array)$this->persist());
+        $result = $this->persist();
+        if ($result instanceof EntityInterface) {
+            return new ResultSet([$result]);
+        }
+        if ($result instanceof ResultSet) {
+            return $result;
+        }
+
+        return new ResultSet(is_array($result) ? $result : iterator_to_array($result));
     }
 
     /**
