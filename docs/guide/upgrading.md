@@ -105,11 +105,14 @@ paths:
    persist` blocks and inserts the canonical `extends` line, keeping
    any other docblock content intact.
 
-2. **`FactoryClassAnnotatorTask`** *(if you also use
-   `dereuromark/cakephp-ide-helper`)* — the task is auto-registered and
-   runs as part of `bin/cake annotate classes`. Unlike the migration
-   script it keeps your factory annotations correct over time, not just
-   on the one-time upgrade.
+2. **`FactoryAnnotatorTask`** *(if you also use
+   `dereuromark/cakephp-ide-helper` 2.17 or newer)* — the task is
+   auto-registered during plugin bootstrap, declares its own scan path
+   (`tests/Factory/`) via `PathAwareClassAnnotatorTaskInterface`, and
+   runs as part of the standard `bin/cake annotate classes` (or
+   `annotate all`) command. Unlike the migration script it keeps your
+   factory annotations correct over time, not just on the one-time
+   upgrade.
 
 After running either, verify with your usual quality gates (phpunit,
 phpstan, phpcs).
