@@ -49,7 +49,7 @@ class ArticlesIndexTest extends AppTestCase
     {
         ArticleFactory::make()
             ->with('Authors[3].Address.City.Country', ['name' => 'Kenya'])
-            ->persist();
+            ->persistOne();
 
         $articles = $this->fetchTable('Articles')
             ->find()

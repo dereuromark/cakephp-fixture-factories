@@ -19,9 +19,8 @@ use CakephpFixtureFactories\Generator\GeneratorInterface;
 /**
  * Class TableWithoutModelFactory
  *
- * @method \Cake\ORM\Entity getEntity()
- * @method \Cake\ORM\Entity[] getEntities()
- * @method \Cake\ORM\Entity|\Cake\ORM\Entity[] persist()
+ * @extends BaseFactory<\Cake\ORM\Entity>
+ *
  * @method static \Cake\ORM\Entity get(mixed $primaryKey, array $options = [])
  */
 class TableWithoutModelFactory extends BaseFactory

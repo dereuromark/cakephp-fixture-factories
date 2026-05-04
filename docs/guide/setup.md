@@ -95,7 +95,7 @@ class MyTest extends TestCase
 
     public function testSomething(): void
     {
-        $article = ArticleFactory::make()->persist();
+        $article = ArticleFactory::make()->persistOne();
         $this->Articles->save($article);
         // All data rolled back; generator state reset.
     }

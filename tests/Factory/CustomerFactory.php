@@ -18,9 +18,9 @@ use CakephpFixtureFactories\Generator\GeneratorInterface;
 
 /**
  * Class CustomerFactory
- * @method \TestPlugin\Model\Entity\Customer getEntity()
- * @method \TestPlugin\Model\Entity\Customer[] getEntities()
- * @method \TestPlugin\Model\Entity\Customer|\TestPlugin\Model\Entity\Customer[] persist()
+ *
+ * @extends BaseFactory<\TestPlugin\Model\Entity\Customer>
+ *
  * @method static \TestPlugin\Model\Entity\Customer get(mixed $primaryKey, array $options = [])
  */
 class CustomerFactory extends BaseFactory

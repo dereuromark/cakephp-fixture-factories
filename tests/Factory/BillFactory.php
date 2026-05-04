@@ -18,9 +18,9 @@ use CakephpFixtureFactories\Generator\GeneratorInterface;
 
 /**
  * Class BillFactory
- * @method \TestPlugin\Model\Entity\Bill getEntity()
- * @method \TestPlugin\Model\Entity\Bill[] getEntities()
- * @method \TestPlugin\Model\Entity\Bill|\TestPlugin\Model\Entity\Bill[] persist()
+ *
+ * @extends BaseFactory<\TestPlugin\Model\Entity\Bill>
+ *
  * @method static \TestPlugin\Model\Entity\Bill get(mixed $primaryKey, array $options = [])
  */
 class BillFactory extends BaseFactory
