@@ -146,6 +146,7 @@ class FactoryAnnotatorTask extends AbstractClassAnnotatorTask implements ClassAn
      * (method, property, see, etc.) are preserved.
      *
      * @param string $content
+     *
      * @return string
      */
     protected function stripLegacyMethodBlock(string $content): string
