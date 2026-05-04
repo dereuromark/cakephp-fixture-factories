@@ -60,12 +60,12 @@ class DataCompiler
     private array $dataFromPatch = [];
 
     /**
-     * @var array<string, array<int, \CakephpFixtureFactories\Factory\BaseFactory>>
+     * @var array<string, array<int, \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>>>
      */
     private array $dataFromAssociations = [];
 
     /**
-     * @var array<string, array<int, \CakephpFixtureFactories\Factory\BaseFactory>>
+     * @var array<string, array<int, \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>>>
      */
     private array $dataFromDefaultAssociations = [];
 
@@ -87,7 +87,7 @@ class DataCompiler
     private static bool $inPersistMode = false;
 
     /**
-     * @var \CakephpFixtureFactories\Factory\BaseFactory
+     * @var \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>
      */
     private BaseFactory $factory;
 
@@ -97,7 +97,7 @@ class DataCompiler
     private bool $setPrimaryKey = true;
 
     /**
-     * @param \CakephpFixtureFactories\Factory\BaseFactory $factory Master factory
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Master factory
      */
     public function __construct(BaseFactory $factory)
     {
@@ -154,7 +154,7 @@ class DataCompiler
 
     /**
      * @param string $associationName Association name
-     * @param \CakephpFixtureFactories\Factory\BaseFactory $factory Collected factory
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Collected factory
      * @param bool $isToOne is the association a toOne
      *
      * @return void
@@ -475,14 +475,14 @@ class DataCompiler
      *
      * @param \Cake\Datasource\EntityInterface $entity Entity produced by the factory.
      * @param string $associationName Association
-     * @param array<int, \CakephpFixtureFactories\Factory\BaseFactory> $data Data to inject
+     * @param array<int, \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>> $data Data to inject
      *
      * @return void
      */
     private function mergeWithToOne(EntityInterface $entity, string $associationName, array $data): void
     {
         $count = count($data);
-        /** @var \CakephpFixtureFactories\Factory\BaseFactory $factory */
+        /** @var \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory */
         $factory = $data[$count - 1];
 
         $associatedEntity = $factory->getEntity();
@@ -497,7 +497,7 @@ class DataCompiler
     /**
      * @param \Cake\Datasource\EntityInterface $entity Entity produced by the factory.
      * @param string $associationName Association
-     * @param array<int, \CakephpFixtureFactories\Factory\BaseFactory> $data Data to inject
+     * @param array<int, \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>> $data Data to inject
      *
      * @return void
      */
@@ -515,7 +515,7 @@ class DataCompiler
     }
 
     /**
-     * @param \CakephpFixtureFactories\Factory\BaseFactory $factory Factory
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Factory
      *
      * @return array<\Cake\Datasource\EntityInterface>
      */
@@ -723,7 +723,7 @@ class DataCompiler
     }
 
     /**
-     * @return \CakephpFixtureFactories\Factory\BaseFactory
+     * @return \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>
      */
     public function getFactory(): BaseFactory
     {

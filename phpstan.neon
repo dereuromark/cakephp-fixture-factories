@@ -11,18 +11,3 @@ parameters:
 		  path: src/Factory/BaseFactory.php
 		- identifier: missingType.generics
 		  path: src/View/Helper/FactoryBakeHelper.php
-		# BaseFactory grew a TEntity template; internal helpers operate on any factory
-		# regardless of entity class, so annotating BaseFactory<EntityInterface>
-		# everywhere would be pure noise.
-		- identifier: missingType.generics
-		  path: src/Command/PersistCommand.php
-		- identifier: missingType.generics
-		  path: src/Factory/AssociationBuilder.php
-		- identifier: missingType.generics
-		  path: src/Factory/DataCompiler.php
-		- identifier: missingType.generics
-		  path: src/Factory/FactoryAwareTrait.php
-		- identifier: missingType.generics
-		  path: src/Factory/UniquenessJanitor.php
-		- identifier: missingType.generics
-		  path: src/ORM/SelectQueryMocker.php

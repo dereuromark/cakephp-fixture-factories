@@ -38,7 +38,7 @@ class AssociationBuilder
     }
 
     /**
-     * @var array<\CakephpFixtureFactories\Factory\BaseFactory>
+     * @var array<\CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>>
      */
     private array $associations = [];
 
@@ -48,12 +48,12 @@ class AssociationBuilder
     private array $manualAssociations = [];
 
     /**
-     * @var \CakephpFixtureFactories\Factory\BaseFactory
+     * @var \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>
      */
     private BaseFactory $factory;
 
     /**
-     * @param \CakephpFixtureFactories\Factory\BaseFactory $factory Associated factory
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Associated factory
      */
     public function __construct(BaseFactory $factory)
     {
@@ -90,7 +90,7 @@ class AssociationBuilder
 
     /**
      * @param string $associationName Name of the association
-     * @param \CakephpFixtureFactories\Factory\BaseFactory $associationFactory Factory
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $associationFactory Factory
      *
      * @return bool
      */
@@ -106,7 +106,7 @@ class AssociationBuilder
      * HasOne and BelongsTo association cannot be multiple
      *
      * @param string $associationName Name of the association
-     * @param \CakephpFixtureFactories\Factory\BaseFactory $associationFactory Factory
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $associationFactory Factory
      *
      * @throws \CakephpFixtureFactories\Error\AssociationBuilderException
      *
@@ -125,7 +125,7 @@ class AssociationBuilder
 
     /**
      * @param string $associationName Association name
-     * @param \CakephpFixtureFactories\Factory\BaseFactory $associatedFactory Factory
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $associatedFactory Factory
      *
      * @return void
      */
@@ -186,7 +186,7 @@ class AssociationBuilder
      * @param string $associationName Association name
      * @param mixed $data Injected data
      *
-     * @return \CakephpFixtureFactories\Factory\BaseFactory
+     * @return \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>
      */
     public function getAssociatedFactory(
         string $associationName,
@@ -219,7 +219,7 @@ class AssociationBuilder
      * @param string $modelName Model Name
      * @param mixed $data Injected data
      *
-     * @return \CakephpFixtureFactories\Factory\BaseFactory
+     * @return \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>
      */
     public function getFactoryFromTableName(string $modelName, mixed $data = []): BaseFactory
     {
@@ -266,7 +266,7 @@ class AssociationBuilder
     }
 
     /**
-     * @return \CakephpFixtureFactories\Factory\BaseFactory Factory
+     * @return \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> Factory
      */
     public function getFactory(): BaseFactory
     {
@@ -328,7 +328,7 @@ class AssociationBuilder
     }
 
     /**
-     * @return array<\CakephpFixtureFactories\Factory\BaseFactory>
+     * @return array<\CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>>
      */
     public function getAssociations(): array
     {
@@ -339,7 +339,7 @@ class AssociationBuilder
      * Add an associated factory to the BaseFactory
      *
      * @param string $associationName Association
-     * @param \CakephpFixtureFactories\Factory\BaseFactory $factory Factory
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Factory
      *
      * @return void
      */

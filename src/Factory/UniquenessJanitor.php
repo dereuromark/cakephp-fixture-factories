@@ -29,7 +29,7 @@ class UniquenessJanitor
      * When providing data to a factory, unique fields are scanned
      * in order to warn the user that she is about to create duplicates.
      *
-     * @param \CakephpFixtureFactories\Factory\BaseFactory $factory Factory on which the entity will be built.
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Factory on which the entity will be built.
      * @param array<\Cake\Datasource\EntityInterface> $entities Array of data meant to be patched into entities.
      * @param bool $isStrict Throw an exception if unique fields in $entities collide.
      *

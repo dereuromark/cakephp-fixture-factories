@@ -30,7 +30,7 @@ class SelectQueryMocker
 {
     /**
      * @param \Cake\TestSuite\TestCase $testCase test case should extend CakePHP's Test Case
-     * @param \CakephpFixtureFactories\Factory\BaseFactory $factory fixture factory which non persisted entities will be returned by the select query
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory fixture factory which non persisted entities will be returned by the select query
      * @param string|null $alias The model to get a mock for.
      * @param array<string> $methods The list of methods to mock
      * @param array<string, mixed> $options The config data for the mock's constructor.
