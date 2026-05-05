@@ -10,7 +10,10 @@ from `vierge-noire/cakephp-fixture-factories`, see the [migration guide](migrati
 
 ## `next` / v2 migration helpers
 
-The `next` branch ships a Rector config to help with the mechanical API rename work:
+The `next` branch targets projects already on `1.4.x`.
+If you're still on `1.3.x`, upgrade to `1.4.x` on `main` first, then move to `next` / v2.
+
+For the v2 step, the branch ships a Rector config to help with the mechanical API rename work:
 
 ```bash
 vendor/bin/rector process tests --config rector.php
@@ -21,6 +24,7 @@ The bundled rules cover the safe, mechanical call-site changes:
 - `Factory::make(...)` to `Factory::new(...)`
 - `Factory::make($data, $n)` to `Factory::new($data)->count($n)`
 - nested helper-body calls such as `EventFactory::make($parameters, $n)`
+- `setDefaultTemplate()` wrappers to `definition(GeneratorInterface $generator)`
 - `getEntity()` to `build()`
 - `getEntities()` to `buildMany()`
 - `persistEntity()` to `save()`
@@ -29,7 +33,11 @@ The bundled rules cover the safe, mechanical call-site changes:
 
 It intentionally does **not** rewrite deprecated `persist()` calls, because that return type is shape-dependent and needs a human choice between `save()` and `saveMany()`.
 
+Factory subclass `@extends BaseFactory<TEntity>` annotations are expected to already be in place from the `1.4.x` upgrade step. The one-off `1.3.x` annotation migration script remains on the `main` branch and is not part of the v2 branch.
+
 ## 1.3 → 1.4
+
+These notes are kept here as historical context for the required pre-v2 upgrade path. Complete the `1.4.x` migration on `main` before adopting `next` / v2.
 
 ### Symmetric persist/get API
 
@@ -109,31 +117,14 @@ freshly-baked factories require no manual annotation work.
 
 ### Migrating an existing project
 
-The bake template only helps with new factories. For existing ones, two
-paths:
-
-1. **Bundled migration script** — a standalone PHP script that rewrites
-   all factory subclasses under a given path in one pass:
-
-   ```bash
-   php vendor/dereuromark/cakephp-fixture-factories/bin/migrate-factory-annotations.php \
-       tests/Factory
-   ```
-
-   You can pass multiple paths (e.g. for plugin factories under
-   `plugins/MyPlugin/tests/Factory`). The script is idempotent — running
-   it twice is a no-op. It removes legacy `method getEntity/getEntities/
-   persist` blocks and inserts the canonical `extends` line, keeping
-   any other docblock content intact.
-
-2. **`FactoryAnnotatorTask`** *(if you also use
+The bake template only helps with new factories. For existing ones, use
+**`FactoryAnnotatorTask`** *(if you also use
    `dereuromark/cakephp-ide-helper` 2.17 or newer)* — the task is
    auto-registered during plugin bootstrap, declares its own scan path
    (`tests/Factory/`) via `PathAwareClassAnnotatorTaskInterface`, and
    runs as part of the standard `bin/cake annotate classes` (or
-   `annotate all`) command. Unlike the migration script it keeps your
-   factory annotations correct over time, not just on the one-time
-   upgrade.
+   `annotate all`) command. It keeps your factory annotations correct
+   over time, not just on a one-time upgrade.
 
-After running either, verify with your usual quality gates (phpunit,
+After updating annotations, verify with your usual quality gates (phpunit,
 phpstan, phpcs).
