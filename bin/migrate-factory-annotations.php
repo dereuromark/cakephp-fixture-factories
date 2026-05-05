@@ -23,6 +23,15 @@
 
 declare(strict_types=1);
 
+// Best-effort: load the project's autoloader so we can verify candidate
+// entity classes exist. Without it class_exists() always returns false
+// and the script will conservatively pick \Cake\Datasource\EntityInterface
+// rather than a wrong guess.
+$autoload = getcwd() . '/vendor/autoload.php';
+if (is_file($autoload)) {
+    require_once $autoload;
+}
+
 $argv = $_SERVER['argv'] ?? [];
 array_shift($argv);
 
@@ -59,7 +68,7 @@ foreach ($paths as $path) {
     foreach (collectFiles($path) as $file) {
         $scanned++;
         $src = (string)file_get_contents($file);
-        if (!preg_match('/extends\h+(?:\\\\?CakephpFixtureFactories\\\\Factory\\\\BaseFactory|\w+BaseFactory)\b/', $src)) {
+        if (!extendsBaseFactory($src)) {
             $skippedNoMatch++;
 
             continue;
@@ -138,13 +147,25 @@ function collectFiles(string $path): iterable
 }
 
 /**
- * Derive the entity FQN from the file's namespace + class name.
+ * Derive the entity FQN for a factory.
  *
- * App\Test\Factory\InvoiceFactory -> \App\Model\Entity\Invoice
- * MyPlugin\Test\Factory\ThingFactory -> \MyPlugin\Model\Entity\Thing
+ * Strategy:
+ *   1. If the factory's getRootTableRegistryName() returns a "Plugin.Table"
+ *      string, derive \Plugin\Model\Entity\<Singular(Table)>. This handles
+ *      cross-plugin factories like an App\Test\Factory\CommentFactory that
+ *      targets the Comments plugin.
+ *   2. Otherwise (or if the candidate class does not exist), derive from
+ *      the factory's own namespace:
+ *        App\Test\Factory\InvoiceFactory -> \App\Model\Entity\Invoice
+ *        MyPlugin\Test\Factory\ThingFactory -> \MyPlugin\Model\Entity\Thing
+ *   3. If the namespace-based candidate doesn't exist either, fall back to
+ *      \Cake\Datasource\EntityInterface — a safe, always-loadable default
+ *      that keeps the docblock honest rather than pointing at a phantom
+ *      class.
  *
- * Returns null if the file does not contain a namespace + class declaration
- * matching the convention.
+ * The class-exists checks only fire when the project's vendor/autoload.php
+ * was loadable from cwd. Without it the script keeps the old behaviour
+ * of trusting the namespace convention.
  */
 function deriveEntityFqn(string $src, string $file): ?string
 {
@@ -156,13 +177,111 @@ function deriveEntityFqn(string $src, string $file): ?string
     }
     $namespace = $nsMatch[1];
     $entityName = $classMatch[1];
+
+    // Namespace-based default (the original heuristic).
     $entityNs = preg_replace('/\\\\Test\\\\Factory$/', '\\Model\\Entity', $namespace);
     if ($entityNs === $namespace) {
         // Namespace did not end with \Test\Factory — fall back to a best-effort guess.
         $entityNs = $namespace . '\\Model\\Entity';
     }
+    $namespaceCandidate = '\\' . $entityNs . '\\' . $entityName;
 
-    return '\\' . $entityNs . '\\' . $entityName;
+    // No plugin hint -> stick with the namespace convention. Verifying via
+    // class_exists() here would break factories whose entities live outside
+    // the autoload path the script can see (e.g. tests that fixture a
+    // factory inline).
+    $pluginCandidate = derivePluginEntityFqn($src);
+    if ($pluginCandidate === null) {
+        return $namespaceCandidate;
+    }
+
+    // Plugin hint present: prefer the plugin's entity when it actually exists.
+    if (entityClassExists($pluginCandidate)) {
+        return $pluginCandidate;
+    }
+
+    // Plugin candidate didn't autoload. Try the namespace candidate next.
+    if (entityClassExists($namespaceCandidate)) {
+        return $namespaceCandidate;
+    }
+
+    // Without an autoloader the class_exists checks above are uninformative;
+    // keep the more-specific plugin candidate as a best guess.
+    if (!autoloadAvailable()) {
+        return $pluginCandidate;
+    }
+
+    // Autoloader said no class exists at either spot — bail to a safe
+    // interface rather than emitting a phantom FQN.
+    return '\\Cake\\Datasource\\EntityInterface';
+}
+
+/**
+ * Read getRootTableRegistryName() from the source and turn "Plugin.Table"
+ * into \Plugin\Model\Entity\<Singular(Table)>. Returns null when the method
+ * isn't present, doesn't return a literal string, or the name has no plugin
+ * prefix.
+ */
+function derivePluginEntityFqn(string $src): ?string
+{
+    // Allow whitespace, // line comments, and /* block comments */ between
+    // the opening brace and the return statement so that we still recognise
+    // factories that explain the registry choice with a leading comment.
+    $separator = '(?:\s|\/\/[^\n]*\n|\/\*.*?\*\/)*';
+    if (
+        !preg_match(
+            '/function\s+getRootTableRegistryName\s*\([^)]*\)\s*:\s*string\s*\{' . $separator . 'return\s*[\'"]([^\'"]+)[\'"]/s',
+            $src,
+            $m,
+        )
+    ) {
+        return null;
+    }
+    $registryName = $m[1];
+    if (!str_contains($registryName, '.')) {
+        return null;
+    }
+    [$plugin, $table] = explode('.', $registryName, 2);
+    $pluginNs = str_replace('/', '\\', $plugin);
+    $singular = singularize($table);
+
+    return '\\' . $pluginNs . '\\Model\\Entity\\' . $singular;
+}
+
+function entityClassExists(string $fqn): bool
+{
+    $name = ltrim($fqn, '\\');
+
+    return class_exists($name) || interface_exists($name);
+}
+
+function autoloadAvailable(): bool
+{
+    // BaseFactory ships with the plugin and is always available once the
+    // project autoloader has been required. Use it as a marker.
+    return class_exists(\CakephpFixtureFactories\Factory\BaseFactory::class);
+}
+
+function singularize(string $word): string
+{
+    if (class_exists(\Cake\Utility\Inflector::class)) {
+        return \Cake\Utility\Inflector::singularize($word);
+    }
+    // Minimal fallback singularizer for the standalone case.
+    if (preg_match('/(.+)ies$/', $word, $m)) {
+        return $m[1] . 'y';
+    }
+    if (preg_match('/(.+)es$/', $word, $m)) {
+        $stem = $m[1];
+        if (preg_match('/(s|x|z|ch|sh)$/', $stem)) {
+            return $stem;
+        }
+    }
+    if (substr($word, -1) === 's' && substr($word, -2) !== 'ss') {
+        return substr($word, 0, -1);
+    }
+
+    return $word;
 }
 
 /**
@@ -180,6 +299,25 @@ function insertExtendsLine(string $src, string $extendsLine): ?string
     $newDocblock = rtrim($docblock) . "\n" . $extendsLine . "\n ";
 
     return substr_replace($src, $newDocblock, $offset, strlen($docblock));
+}
+
+function extendsBaseFactory(string $content): bool
+{
+    if (preg_match('/\bextends\h+\\\\?CakephpFixtureFactories\\\\Factory\\\\BaseFactory\b/', $content)) {
+        return true;
+    }
+    if (
+        !preg_match(
+            '/\buse\h+\\\\?CakephpFixtureFactories\\\\Factory\\\\BaseFactory(?:\h+as\h+(\w+))?\h*;/',
+            $content,
+            $useMatch,
+        )
+    ) {
+        return false;
+    }
+    $alias = $useMatch[1] ?? 'BaseFactory';
+
+    return (bool)preg_match('/\bextends\h+' . preg_quote($alias, '/') . '\b/', $content);
 }
 
 function usage(): void
