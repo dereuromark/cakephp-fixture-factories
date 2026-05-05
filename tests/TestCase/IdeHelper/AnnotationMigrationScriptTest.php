@@ -148,7 +148,7 @@ PHP);
      */
     public function testScriptFallsBackToEntityInterfaceWhenPluginEntityIsMissing(): void
     {
-        $file = $this->writeFactoryFile(<<<'PHP'
+        $contents = <<<'PHP'
 <?php
 declare(strict_types=1);
 
@@ -177,7 +177,8 @@ class MysteryThingFactory extends BaseFactory
         return [];
     }
 }
-PHP, 'MysteryThingFactory.php');
+PHP;
+        $file = $this->writeFactoryFile($contents, 'MysteryThingFactory.php');
 
         $output = $this->runScript($file);
 
@@ -196,7 +197,7 @@ PHP, 'MysteryThingFactory.php');
      */
     public function testScriptKeepsNamespaceCandidateWhenNoPluginHint(): void
     {
-        $file = $this->writeFactoryFile(<<<'PHP'
+        $contents = <<<'PHP'
 <?php
 declare(strict_types=1);
 
@@ -224,7 +225,8 @@ class GhostFactory extends BaseFactory
         return [];
     }
 }
-PHP, 'GhostFactory.php');
+PHP;
+        $file = $this->writeFactoryFile($contents, 'GhostFactory.php');
 
         $output = $this->runScript($file);
 
