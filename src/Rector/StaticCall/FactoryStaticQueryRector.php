@@ -36,7 +36,7 @@ final class FactoryStaticQueryRector extends AbstractRector
             return null;
         }
 
-        foreach (['find', 'get', 'firstOrFail', 'count'] as $queryMethod) {
+        foreach (['find', 'firstOrFail', 'count'] as $queryMethod) {
             if ($this->isName($node->name, $queryMethod)) {
                 return new MethodCall(
                     new StaticCall($node->class, new Identifier('query')),
