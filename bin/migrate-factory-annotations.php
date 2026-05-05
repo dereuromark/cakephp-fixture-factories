@@ -59,7 +59,7 @@ foreach ($paths as $path) {
     foreach (collectFiles($path) as $file) {
         $scanned++;
         $src = (string)file_get_contents($file);
-        if (!preg_match('/extends\h+(?:\\\\?CakephpFixtureFactories\\\\Factory\\\\BaseFactory|\w+BaseFactory)\b/', $src)) {
+        if (!extendsBaseFactory($src)) {
             $skippedNoMatch++;
 
             continue;
@@ -180,6 +180,25 @@ function insertExtendsLine(string $src, string $extendsLine): ?string
     $newDocblock = rtrim($docblock) . "\n" . $extendsLine . "\n ";
 
     return substr_replace($src, $newDocblock, $offset, strlen($docblock));
+}
+
+function extendsBaseFactory(string $content): bool
+{
+    if (preg_match('/\bextends\h+\\\\?CakephpFixtureFactories\\\\Factory\\\\BaseFactory\b/', $content)) {
+        return true;
+    }
+    if (
+        !preg_match(
+            '/\buse\h+\\\\?CakephpFixtureFactories\\\\Factory\\\\BaseFactory(?:\h+as\h+(\w+))?\h*;/',
+            $content,
+            $useMatch,
+        )
+    ) {
+        return false;
+    }
+    $alias = $useMatch[1] ?? 'BaseFactory';
+
+    return (bool)preg_match('/\bextends\h+' . preg_quote($alias, '/') . '\b/', $content);
 }
 
 function usage(): void
