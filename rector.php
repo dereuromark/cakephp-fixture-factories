@@ -5,6 +5,7 @@ declare(strict_types=1);
 use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\Rector\StaticCall\FactoryLegacyMakeToNewRector;
 use CakephpFixtureFactories\Rector\StaticCall\FactoryStaticQueryRector;
+use CakephpFixtureFactories\Rector\ClassMethod\FactorySetDefaultTemplateToDefinitionRector;
 use Rector\Config\RectorConfig;
 use Rector\Renaming\Rector\MethodCall\RenameMethodRector;
 use Rector\Renaming\ValueObject\MethodCallRename;
@@ -23,4 +24,5 @@ return static function (RectorConfig $rectorConfig): void {
 
     $rectorConfig->rule(FactoryLegacyMakeToNewRector::class);
     $rectorConfig->rule(FactoryStaticQueryRector::class);
+    $rectorConfig->rule(FactorySetDefaultTemplateToDefinitionRector::class);
 };
