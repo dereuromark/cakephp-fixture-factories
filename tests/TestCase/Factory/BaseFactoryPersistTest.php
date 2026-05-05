@@ -45,7 +45,7 @@ class BaseFactoryPersistTest extends TestCase
         $this->assertInstanceOf(Country::class, $country);
         $this->assertSame($name, $country->get('name'));
         $this->assertNotNull($country->get('id'));
-        $this->assertSame(1, CountryFactory::count());
+        $this->assertSame(1, CountryFactory::query()->count());
     }
 
     public function testPersistEntityRejectsMultiEntityFactory(): void
@@ -73,7 +73,7 @@ class BaseFactoryPersistTest extends TestCase
         $this->assertContainsOnlyInstancesOf(Country::class, $countries);
         $this->assertSame('Foo', $countries[0]->get('name'));
         $this->assertSame('Bar', $countries[1]->get('name'));
-        $this->assertSame(2, CountryFactory::count());
+        $this->assertSame(2, CountryFactory::query()->count());
     }
 
     public function testPersistEntitiesReturnsArrayForSingleEntityFactory(): void
@@ -84,7 +84,7 @@ class BaseFactoryPersistTest extends TestCase
         $this->assertCount(1, $countries);
         $this->assertInstanceOf(Country::class, $countries[0]);
         $this->assertSame('Foo', $countries[0]->get('name'));
-        $this->assertSame(1, CountryFactory::count());
+        $this->assertSame(1, CountryFactory::query()->count());
     }
 
     /**
@@ -100,6 +100,6 @@ class BaseFactoryPersistTest extends TestCase
         $this->assertIsIterable($multiple);
         $this->assertNotInstanceOf(Country::class, $multiple);
 
-        $this->assertSame(3, CountryFactory::count());
+        $this->assertSame(3, CountryFactory::query()->count());
     }
 }

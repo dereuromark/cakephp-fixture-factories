@@ -105,6 +105,16 @@ class DataCompiler
     }
 
     /**
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Master factory
+     *
+     * @return void
+     */
+    public function setFactory(BaseFactory $factory): void
+    {
+        $this->factory = $factory;
+    }
+
+    /**
      * Data passed in the instantiation by array
      *
      * @param \Cake\Datasource\EntityInterface|array<\Cake\Datasource\EntityInterface>|string $data Injected data.
@@ -167,12 +177,12 @@ class DataCompiler
                 $this->dataFromInstantiation instanceof EntityInterface &&
                 $this->dataFromInstantiation->has($associationFieldName)
             ) {
-                $factory->patchData($this->dataFromInstantiation->get($associationFieldName));
+                $factory = $factory->state($this->dataFromInstantiation->get($associationFieldName));
             } elseif (
                 is_array($this->dataFromInstantiation) &&
                 isset($this->dataFromInstantiation[$associationFieldName])
             ) {
-                $factory->patchData($this->dataFromInstantiation[$associationFieldName]);
+                $factory = $factory->state($this->dataFromInstantiation[$associationFieldName]);
             }
         }
         if (isset($this->dataFromAssociations[$associationName])) {
@@ -196,6 +206,22 @@ class DataCompiler
     }
 
     /**
+     * @param string $associationName Association name
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Factory
+     *
+     * @return void
+     */
+    public function replaceAssociationFactory(string $associationName, BaseFactory $factory): void
+    {
+        if (isset($this->dataFromAssociations[$associationName])) {
+            $this->dataFromAssociations[$associationName] = [$factory];
+        }
+        if (isset($this->dataFromDefaultAssociations[$associationName])) {
+            $this->dataFromDefaultAssociations[$associationName] = [$factory];
+        }
+    }
+
+    /**
      * Populate the factored entity
      *
      * @return \Cake\Datasource\EntityInterface|array<\Cake\Datasource\EntityInterface>
@@ -208,7 +234,7 @@ class DataCompiler
             $compiledTemplateData = [];
             foreach ($this->dataFromInstantiation as $data) {
                 if ($data instanceof BaseFactory) {
-                    foreach ($data->getEntities() as $subEntity) {
+                    foreach ($data->buildMany() as $subEntity) {
                         $compiledTemplateData[] = $this->compileEntity($subEntity, $setPrimaryKey);
                         $setPrimaryKey = false;
                     }
@@ -521,7 +547,7 @@ class DataCompiler
      */
     private function getManyEntities(BaseFactory $factory): array
     {
-        $entities = $factory->getEntities();
+        $entities = $factory->buildMany();
         if ($this->isInPersistMode()) {
             foreach ($entities as $entity) {
                 $entity->set(self::IS_ASSOCIATED, true);

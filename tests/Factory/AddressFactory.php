@@ -30,19 +30,25 @@ class AddressFactory extends BaseFactory
         return 'Addresses';
     }
 
-    protected function setDefaultTemplate(): void
+    public function definition(GeneratorInterface $generator): array
     {
-        $this
-            ->setDefaultData(function (GeneratorInterface $generator) {
-                return [
-                    'street' => $generator->streetAddress(),
-                ];
-            })
-            ->withCity();
+        return [
+            'street' => $generator->streetAddress(),
+        ];
+    }
+
+    protected function configure(): static
+    {
+        return $this->forCity();
+    }
+
+    public function forCity(mixed $parameter = null): self
+    {
+        return $this->for(CityFactory::new($parameter));
     }
 
     public function withCity(mixed $parameter = null): self
     {
-        return $this->with('City', CityFactory::make($parameter));
+        return $this->forCity($parameter);
     }
 }

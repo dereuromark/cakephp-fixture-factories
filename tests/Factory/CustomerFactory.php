@@ -30,13 +30,11 @@ class CustomerFactory extends BaseFactory
         return 'TestPlugin.Customers';
     }
 
-    protected function setDefaultTemplate(): void
+    public function definition(GeneratorInterface $generator): array
     {
-        $this->setDefaultData(function (GeneratorInterface $generator) {
-            return [
-                'name' => $generator->lastName(),
-            ];
-        });
+        return [
+            'name' => $generator->lastName(),
+        ];
     }
 
     /**
@@ -44,17 +42,32 @@ class CustomerFactory extends BaseFactory
      * @param int $n
      * @return CustomerFactory
      */
+    public function hasBills($parameter = null, int $n = 1): self
+    {
+        if (is_int($parameter) && $n === 1) {
+            $n = $parameter;
+            $parameter = null;
+        }
+
+        return $this->has(BillFactory::new($parameter)->count($n)->without('Customer'));
+    }
+
     public function withBills($parameter = null, int $n = 1): self
     {
-        return $this->with('Bills', BillFactory::make($parameter, $n)->without('Customer'));
+        return $this->hasBills($parameter, $n);
     }
 
     /**
      * @param array|callable|null|int|\Cake\Datasource\EntityInterface $parameter Injected data
      * @return CustomerFactory
      */
+    public function forAddress($parameter = null): self
+    {
+        return $this->for(AddressFactory::new($parameter));
+    }
+
     public function withAddress($parameter = null): self
     {
-        return $this->with('Address', AddressFactory::make($parameter));
+        return $this->forAddress($parameter);
     }
 }

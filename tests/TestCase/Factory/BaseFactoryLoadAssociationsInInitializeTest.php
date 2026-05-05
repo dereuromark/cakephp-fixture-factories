@@ -99,8 +99,8 @@ class BaseFactoryLoadAssociationsInInitializeTest extends TestCase
         $this->assertInstanceOf(Entity::class, $tableWithoutModel);
         $this->assertSame($name, $tableWithoutModel->get('name'));
         $this->assertSame($city->id, $tableWithoutModel->get('foreign_key'));
-        $this->assertSame(1, TableWithoutModelFactory::count());
-        $this->assertSame(1, CountryFactory::count());
+        $this->assertSame(1, TableWithoutModelFactory::query()->count());
+        $this->assertSame(1, CountryFactory::query()->count());
     }
 
     public function testLoadAssociationOnTheFlyHasOnePersist(): void
@@ -120,8 +120,8 @@ class BaseFactoryLoadAssociationsInInitializeTest extends TestCase
         $this->assertInstanceOf(Entity::class, $hasOneTableWithoutModel);
         $this->assertSame($name, $hasOneTableWithoutModel->get('name'));
         $this->assertSame($city->id, $hasOneTableWithoutModel->get('foreign_key'));
-        $this->assertSame(1, TableWithoutModelFactory::count());
-        $this->assertSame(1, CountryFactory::count());
+        $this->assertSame(1, TableWithoutModelFactory::query()->count());
+        $this->assertSame(1, CountryFactory::query()->count());
     }
 
     public static function dataForClassName(): array
@@ -146,9 +146,9 @@ class BaseFactoryLoadAssociationsInInitializeTest extends TestCase
             $this->assertSame($name, $address->get('name'));
             $this->assertSame($city->id, $address->city_id);
         }
-        $this->assertSame(1, CityFactory::count());
-        $this->assertSame(0, AddressFactory::count());
-        $this->assertSame($n, TableWithoutModelFactory::count());
+        $this->assertSame(1, CityFactory::query()->count());
+        $this->assertSame(0, AddressFactory::query()->count());
+        $this->assertSame($n, TableWithoutModelFactory::query()->count());
     }
 
     #[DataProvider('dataForClassName')]
@@ -170,9 +170,9 @@ class BaseFactoryLoadAssociationsInInitializeTest extends TestCase
         $this->assertInstanceOf(Entity::class, $country);
         $this->assertNotInstanceOf(Country::class, $country);
         $this->assertSame($name, $country->name);
-        $this->assertSame(1, CountryFactory::count());
-        $this->assertSame(1, CityFactory::count());
-        $this->assertSame(1, TableWithoutModelFactory::count());
+        $this->assertSame(1, CountryFactory::query()->count());
+        $this->assertSame(1, CityFactory::query()->count());
+        $this->assertSame(1, TableWithoutModelFactory::query()->count());
     }
 
     #[DataProvider('dataForClassName')]
@@ -196,8 +196,8 @@ class BaseFactoryLoadAssociationsInInitializeTest extends TestCase
             $this->assertNotInstanceOf(ArticleFactory::class, $article);
             $this->assertSame($name, $article->get('name'));
         }
-        $this->assertSame(1, AuthorFactory::count());
-        $this->assertSame($n, TableWithoutModelFactory::count());
+        $this->assertSame(1, AuthorFactory::query()->count());
+        $this->assertSame($n, TableWithoutModelFactory::query()->count());
 
         $author = AuthorFactory::find()->contain('ParallelArticles')->firstOrFail();
         $articles = $author->get('parallel_articles');
@@ -233,8 +233,8 @@ class BaseFactoryLoadAssociationsInInitializeTest extends TestCase
             $this->assertSame($name, $address->get('name'));
             $this->assertSame($city->id, $address->get('foreign_key'));
         }
-        $this->assertSame(1, CityFactory::count());
-        $this->assertSame(0, AddressFactory::count());
-        $this->assertSame($n, TableWithoutModelFactory::count());
+        $this->assertSame(1, CityFactory::query()->count());
+        $this->assertSame(0, AddressFactory::query()->count());
+        $this->assertSame($n, TableWithoutModelFactory::query()->count());
     }
 }

@@ -66,7 +66,7 @@ class BaseFactoryStaticFinderTest extends TestCase
         $this->assertSame([], $this->Articles->find()->toArray());
         $this->assertSame($n, ArticleFactory::find()->count());
         $this->assertSame(0, ArticleFactory::find('published')->count());
-        $this->assertSame($n, ArticleFactory::count());
+        $this->assertSame($n, ArticleFactory::query()->count());
     }
 
     public function testBaseFactoryStaticFirstOrFail(): void
@@ -80,7 +80,7 @@ class BaseFactoryStaticFinderTest extends TestCase
 
         $retrievedArticle = ArticleFactory::firstOrFail(['title' => 'title 1']);
         $this->assertSame($firstArticleId, $retrievedArticle->id);
-        $this->assertSame(2, ArticleFactory::count());
+        $this->assertSame(2, ArticleFactory::query()->count());
     }
 
     public function testBaseFactoryStaticFirstOrFailNoParameters(): void

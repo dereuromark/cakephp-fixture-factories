@@ -43,17 +43,15 @@ class TableWithoutModelFactory extends BaseFactory
      *
      * @return void
      */
-    protected function setDefaultTemplate(): void
+    public function definition(GeneratorInterface $generator): array
     {
-        $this->setDefaultData(function (GeneratorInterface $generator) {
-            return [
-                'name' => $generator->text(120),
-                'foreign_key' => $generator->randomNumber(),
-                'binding_key' => $generator->randomNumber(),
-                'country_id' => $generator->randomNumber(),
-                'created' => $generator->dateTime(),
-                'modified' => $generator->dateTime(),
-            ];
-        });
+        return [
+            'name' => $generator->text(120),
+            'foreign_key' => $generator->randomNumber(),
+            'binding_key' => $generator->randomNumber(),
+            'country_id' => $generator->randomNumber(),
+            'created' => $generator->dateTime(),
+            'modified' => $generator->dateTime(),
+        ];
     }
 }

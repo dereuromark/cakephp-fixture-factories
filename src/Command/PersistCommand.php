@@ -93,9 +93,9 @@ class PersistCommand extends Command
         try {
             $factory = $this->parseFactory($args);
             // The following order is important, as methods may overwrite $times
-            $this->setTimes($args, $factory);
-            $this->with($args, $factory);
-            $this->attachMethod($args, $factory, $io);
+            $factory = $this->setTimes($args, $factory);
+            $factory = $this->with($args, $factory);
+            $factory = $this->attachMethod($args, $factory, $io);
         } catch (FactoryNotFoundException $e) {
             $io->error($e->getMessage());
             $this->abort();
@@ -119,7 +119,7 @@ class PersistCommand extends Command
         $factoryString = (string)$args->getArgument(self::ARG_NAME);
 
         if (is_subclass_of($factoryString, BaseFactory::class)) {
-            return $factoryString::make();
+            return $factoryString::new();
         }
 
         $plugin = $args->getOption('plugin');

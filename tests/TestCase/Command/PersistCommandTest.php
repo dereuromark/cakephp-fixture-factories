@@ -84,7 +84,7 @@ class PersistCommandTest extends TestCase
         $output = $this->command->execute($args, $this->io);
 
         $this->assertSame(PersistCommand::CODE_SUCCESS, $output);
-        $this->assertSame(1, ArticleFactory::count());
+        $this->assertSame(1, ArticleFactory::query()->count());
     }
 
     public static function dataProviderForStringPluginFactories(): array
@@ -104,7 +104,7 @@ class PersistCommandTest extends TestCase
         $output = $this->command->execute($args, $this->io);
 
         $this->assertSame(PersistCommand::CODE_SUCCESS, $output);
-        $this->assertSame(1, BillFactory::count());
+        $this->assertSame(1, BillFactory::query()->count());
     }
 
     #[DataProvider('dataProviderForStringFactories')]
@@ -116,7 +116,7 @@ class PersistCommandTest extends TestCase
         $output = $this->command->execute($args, $this->io);
 
         $this->assertSame(PersistCommand::CODE_SUCCESS, $output);
-        $this->assertEquals($number, ArticleFactory::count());
+        $this->assertEquals($number, ArticleFactory::query()->count());
     }
 
     public function testPersistWithMethodAndNumber(): void
@@ -127,8 +127,8 @@ class PersistCommandTest extends TestCase
         $output = $this->command->execute($args, $this->io);
 
         $this->assertSame(PersistCommand::CODE_SUCCESS, $output);
-        $this->assertEquals($number, ArticleFactory::count());
-        $this->assertEquals($number, BillFactory::count());
+        $this->assertEquals($number, ArticleFactory::query()->count());
+        $this->assertEquals($number, BillFactory::query()->count());
     }
 
     public function testPersistWithAssociation(): void
@@ -140,9 +140,9 @@ class PersistCommandTest extends TestCase
         $output = $this->command->execute($args, $this->io);
 
         $this->assertSame(PersistCommand::CODE_SUCCESS, $output);
-        $this->assertEquals(1, CountryFactory::count());
-        $this->assertEquals($numberOfCities, CityFactory::count());
-        $this->assertEquals($numberOfCities * $numberOfAddresses, AddressFactory::count());
+        $this->assertEquals(1, CountryFactory::query()->count());
+        $this->assertEquals($numberOfCities, CityFactory::query()->count());
+        $this->assertEquals($numberOfCities * $numberOfAddresses, AddressFactory::query()->count());
     }
 
     public function testPersistWithMethodAndNumberDryRun(): void
@@ -153,8 +153,8 @@ class PersistCommandTest extends TestCase
         $output = $this->command->execute($args, $this->io);
 
         $this->assertSame(PersistCommand::CODE_SUCCESS, $output);
-        $this->assertSame(0, ArticleFactory::count());
-        $this->assertSame(0, BillFactory::count());
+        $this->assertSame(0, ArticleFactory::query()->count());
+        $this->assertSame(0, BillFactory::query()->count());
     }
 
     public function testPersistWithWrongFactory(): void

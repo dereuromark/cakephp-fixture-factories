@@ -64,7 +64,7 @@ class BaseFactoryGetResultSetTest extends TestCase
         $this->assertSame($name2, $articles->last()->get('name'));
         $this->assertSame($street, $articles->last()['authors'][0]['address']['street']);
         $this->assertInstanceOf(Address::class, $articles->first()['authors'][0]['address']);
-        $this->assertSame($isPersisted ? 2 : 0, ArticleFactory::count());
+        $this->assertSame($isPersisted ? 2 : 0, ArticleFactory::query()->count());
     }
 
     #[DataProvider('isPersisted')]
@@ -80,7 +80,7 @@ class BaseFactoryGetResultSetTest extends TestCase
         $this->assertInstanceOf(EntityInterface::class, $countries->first());
         $this->assertSame($name, $countries->first()->get('name'));
         $this->assertSame(!$isPersisted, $countries->first()->get('id') === null);
-        $this->assertSame($isPersisted ? 1 : 0, CountryFactory::count());
+        $this->assertSame($isPersisted ? 1 : 0, CountryFactory::query()->count());
     }
 
     public function testBaseFactoryGetResultSetWithIds(): void

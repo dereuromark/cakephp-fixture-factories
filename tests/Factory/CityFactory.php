@@ -43,22 +43,29 @@ class CityFactory extends BaseFactory
         return 'Cities';
     }
 
-    protected function setDefaultTemplate(): void
+    public function definition(GeneratorInterface $generator): array
     {
-        $this->setDefaultData(function (GeneratorInterface $generator) {
-            return [
-                'name' => $generator->city(),
-            ];
-        })
-        ->withCountries();
+        return [
+            'name' => $generator->city(),
+        ];
     }
 
     /**
      * @param array|callable|null|int $parameter
      * @return $this
      */
+    protected function configure(): static
+    {
+        return $this->forCountries();
+    }
+
+    public function forCountries(mixed $parameter = null): self
+    {
+        return $this->for(CountryFactory::new($parameter));
+    }
+
     public function withCountries(mixed $parameter = null): self
     {
-        return $this->with('Countries', CountryFactory::make($parameter));
+        return $this->forCountries($parameter);
     }
 }

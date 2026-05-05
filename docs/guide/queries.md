@@ -11,7 +11,7 @@ These methods are meant to help performing assertions in the "Assert" part of yo
 
 Returns a query on the table related to the given factory. Accepts the same parameters as the standard table `find()` method — see the [CakePHP query-builder docs](https://book.cakephp.org/5/en/orm/query-builder.html).
 
-## `ArticleFactory::count()`
+## `ArticleFactory::query()->count()`
 
 Returns the number of rows in the factory's table.
 

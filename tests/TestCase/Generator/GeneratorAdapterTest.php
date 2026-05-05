@@ -462,7 +462,7 @@ class GeneratorAdapterTest extends TestCase
         Configure::write('FixtureFactories.instanceLevelGenerator', true);
 
         $factory1 = ArticleFactory::make();
-        $factory1->setGenerator('dummy');
+        $factory1 = $factory1->setGenerator('dummy');
 
         $factory2 = ArticleFactory::make();
 

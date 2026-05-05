@@ -60,7 +60,7 @@ class BaseFactoryMakeWithEntityTest extends TestCase
         $this->assertSame($author1, $author2);
         $this->assertSame($author1->id, $author3->id);
         $this->assertSame($author3Name, $author3->name);
-        $this->assertSame(1, AuthorFactory::count());
+        $this->assertSame(1, AuthorFactory::query()->count());
     }
 
     public function testMakeWithEntities(): void
@@ -70,7 +70,7 @@ class BaseFactoryMakeWithEntityTest extends TestCase
         $authors2 = AuthorFactory::make($authors)->persist();
         $this->assertSame($n, count($authors2));
         $this->assertSame($authors, $authors2);
-        $this->assertSame($n, AuthorFactory::count());
+        $this->assertSame($n, AuthorFactory::query()->count());
     }
 
     public function testWithWithEntity(): void
@@ -79,8 +79,8 @@ class BaseFactoryMakeWithEntityTest extends TestCase
         $author = AuthorFactory::make()->with('Address', $address)->persist();
         $this->assertSame($address, $author->get('address'));
         $this->assertSame($author->get('address_id'), $address->get('id'));
-        $this->assertSame(1, AuthorFactory::count());
-        $this->assertSame(1, AddressFactory::count());
+        $this->assertSame(1, AuthorFactory::query()->count());
+        $this->assertSame(1, AddressFactory::query()->count());
     }
 
     public function testWithToOneWithEntities(): void
@@ -90,8 +90,8 @@ class BaseFactoryMakeWithEntityTest extends TestCase
         $author = AuthorFactory::make()->with('Address', $addresses)->persist();
         $this->assertSame($addresses[0], $author->get('address'));
         $this->assertSame($author->get('address_id'), $addresses[0]->get('id'));
-        $this->assertSame(1, AuthorFactory::count());
-        $this->assertSame(2, AddressFactory::count());
+        $this->assertSame(1, AuthorFactory::query()->count());
+        $this->assertSame(2, AddressFactory::query()->count());
     }
 
     public function testWithToManyWithEntities(): void
@@ -101,8 +101,8 @@ class BaseFactoryMakeWithEntityTest extends TestCase
         $author = AuthorFactory::make()->withArticles($articles)->persist();
 
         $this->assertSame($articles, $author->get('articles'));
-        $this->assertSame(ArticleFactory::DEFAULT_NUMBER_OF_AUTHORS * $n + 1, AuthorFactory::count());
-        $this->assertSame(2, ArticleFactory::count());
+        $this->assertSame(ArticleFactory::DEFAULT_NUMBER_OF_AUTHORS * $n + 1, AuthorFactory::query()->count());
+        $this->assertSame(2, ArticleFactory::query()->count());
     }
 
     public function testMakeEntityAndTimes(): void
@@ -113,7 +113,7 @@ class BaseFactoryMakeWithEntityTest extends TestCase
         foreach ($authors as $author) {
             $this->assertSame($author1, $author);
         }
-        $this->assertSame(1, AuthorFactory::count());
+        $this->assertSame(1, AuthorFactory::query()->count());
     }
 
     public function testWithEntitiesAndTimes(): void
@@ -131,7 +131,7 @@ class BaseFactoryMakeWithEntityTest extends TestCase
             }
         }
         $this->assertSame($n * $m, count($authors));
-        $this->assertSame($n, AuthorFactory::count());
+        $this->assertSame($n, AuthorFactory::query()->count());
     }
 
     public function testMakeEntityWithoutDefaultAssociations(): void

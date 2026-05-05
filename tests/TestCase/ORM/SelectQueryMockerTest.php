@@ -43,7 +43,7 @@ class SelectQueryMockerTest extends TestCase
             $this->assertSame($names[$i], $country['name']);
         }
 
-        $this->assertSame(0, CountryFactory::count());
+        $this->assertSame(0, CountryFactory::query()->count());
     }
 
     public function testSelectQueryMockerWithDataInDb(): void
@@ -64,7 +64,7 @@ class SelectQueryMockerTest extends TestCase
             $this->assertSame($names[$i], $country['name']);
         }
 
-        $this->assertSame($nCountriesInDB, CountryFactory::count());
+        $this->assertSame($nCountriesInDB, CountryFactory::query()->count());
     }
 
     public function testSelectQueryMockerWithAssociations(): void
@@ -90,7 +90,7 @@ class SelectQueryMockerTest extends TestCase
         $this->assertSame(0, $countries->count());
         $this->assertSame([], $countries->toArray());
 
-        $this->assertSame(0, CountryFactory::count());
-        $this->assertSame(0, CityFactory::count());
+        $this->assertSame(0, CountryFactory::query()->count());
+        $this->assertSame(0, CityFactory::query()->count());
     }
 }

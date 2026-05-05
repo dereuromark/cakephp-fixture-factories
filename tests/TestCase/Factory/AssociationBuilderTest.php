@@ -75,7 +75,7 @@ class AssociationBuilderTest extends TestCase
 
         $address = $factory->persist();
         $this->assertSame($street, $address->street);
-        $this->assertSame(1, AddressFactory::count());
+        $this->assertSame(1, AddressFactory::query()->count());
     }
 
     public function testGetFactoryFromTableNameWrong(): void
@@ -105,7 +105,7 @@ class AssociationBuilderTest extends TestCase
 
         $bill = $factory->persist();
         $this->assertEquals($amount, $bill->amount);
-        $this->assertSame(1, BillFactory::count());
+        $this->assertSame(1, BillFactory::query()->count());
     }
 
     public function testValidateToOneAssociationPass(): void

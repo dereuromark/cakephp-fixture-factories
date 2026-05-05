@@ -34,15 +34,13 @@ class {{ factory }} extends CakephpBaseFactory
      * Defines the factory's default values. This is useful for
      * not nullable fields. You may use methods of the present factory here too.
      *
-     * @return void
+     * @return array<string, mixed>
      */
-    protected function setDefaultTemplate(): void
+    public function definition(GeneratorInterface $generator): array
     {
-        $this->setDefaultData(function (GeneratorInterface $generator) {
-            return [
-                {{ FactoryBake.defaultData(defaultData)|raw }}
-            ];
-        });
+        return [
+            {{ FactoryBake.defaultData(defaultData)|raw }}
+        ];
     }
 {% for association, associationData in toOne %}
 
@@ -55,7 +53,7 @@ class {{ factory }} extends CakephpBaseFactory
     {
         return $this->with(
             '{{ association }}',
-            {{ associationData.className }}::make($parameter),
+            {{ associationData.className }}::new($parameter),
         );
     }
 {% endfor %}
@@ -71,7 +69,7 @@ class {{ factory }} extends CakephpBaseFactory
     {
         return $this->with(
             '{{ association }}',
-            {{ associationData.className }}::make($parameter, $n),
+            {{ associationData.className }}::new($parameter)->count($n),
         );
     }
 {% endfor %}
@@ -87,7 +85,7 @@ class {{ factory }} extends CakephpBaseFactory
     {
         return $this->with(
             '{{ association }}',
-            {{ associationData.className }}::make($parameter, $n)->without('{{ modelName }}'),
+            {{ associationData.className }}::new($parameter)->count($n)->without('{{ modelName }}'),
         );
     }
 {% endfor %}

@@ -13,20 +13,18 @@ declare(strict_types=1);
  */
 namespace CakephpFixtureFactories\Test\Factory;
 
-use CakephpFixtureFactories\Generator\GeneratorInterface;
-
 class ArticleWithFiveBillsFactory extends ArticleFactory
 {
-    protected function setDefaultTemplate(): void
+    public function definition(\CakephpFixtureFactories\Generator\GeneratorInterface $generator): array
     {
-        $this
-            ->setDefaultData(function (GeneratorInterface $generator) {
-                return [
-                    'title' => 'Article with 5 bills',
-                ];
-            })
-            ->withBills(null, 5);
+        return [
+            ...parent::definition($generator),
+            'title' => 'Article with 5 bills',
+        ];
+    }
 
-        parent::setDefaultTemplate();
+    protected function configure(): static
+    {
+        return parent::configure()->hasBills(null, 5);
     }
 }

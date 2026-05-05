@@ -61,6 +61,16 @@ class AssociationBuilder
     }
 
     /**
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Associated factory
+     *
+     * @return void
+     */
+    public function setFactory(BaseFactory $factory): void
+    {
+        $this->factory = $factory;
+    }
+
+    /**
      * Makes sure that a given association is well defined in the
      * builder's factory's table
      *
@@ -94,10 +104,10 @@ class AssociationBuilder
      *
      * @return bool
      */
-    public function processToOneAssociation(string $associationName, BaseFactory $associationFactory): bool
+    public function processToOneAssociation(string $associationName, BaseFactory &$associationFactory): bool
     {
         $this->validateToOneAssociation($associationName, $associationFactory);
-        $this->removeAssociationForToOneFactory($associationName, $associationFactory);
+        $associationFactory = $this->removeAssociationForToOneFactory($associationName, $associationFactory);
 
         return $this->associationIsToOne($this->getAssociation($associationName));
     }
@@ -129,14 +139,16 @@ class AssociationBuilder
      *
      * @return void
      */
-    public function removeAssociationForToOneFactory(string $associationName, BaseFactory $associatedFactory): void
+    public function removeAssociationForToOneFactory(string $associationName, BaseFactory $associatedFactory): BaseFactory
     {
         if ($this->associationIsToMany($this->getAssociation($associationName))) {
             $backAssociation = $this->findBackAssociation($associatedFactory->getTable());
             if ($backAssociation !== null) {
-                $associatedFactory->without($backAssociation->getName());
+                return $associatedFactory->without($backAssociation->getName());
             }
         }
+
+        return $associatedFactory;
     }
 
     /**
@@ -202,12 +214,12 @@ class AssociationBuilder
 
         if ($associations) {
             $factory = $this->getFactoryFromTableName($table);
-            $factory->with(implode('.', $associations), $data);
+            $factory = $factory->with(implode('.', $associations), $data);
         } else {
             $factory = $this->getFactoryFromTableName($table, $data);
         }
         if ($times) {
-            $factory->setTimes($times);
+            $factory = $factory->count($times);
         }
 
         return $factory;
@@ -310,7 +322,7 @@ class AssociationBuilder
         if (count($explode) === 0) {
             unset($this->associations[$baseAssociationName]);
         } else {
-            $this->associations[$baseAssociationName]->without(implode('.', $explode));
+            $this->associations[$baseAssociationName] = $this->associations[$baseAssociationName]->without(implode('.', $explode));
         }
     }
 

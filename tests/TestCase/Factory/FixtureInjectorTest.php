@@ -25,9 +25,7 @@ class FixtureInjectorTest extends TestCase
     use TruncateDirtyTables;
 
     /**
-     * For each of the data provided, their should be
-     * 10 Articles found, which is the last value given to times
-     * value
+     * With immutable factories, each derived factory keeps its own count.
      *
      * @return array
      */
@@ -36,9 +34,9 @@ class FixtureInjectorTest extends TestCase
         $Factory = ArticleFactory::make();
 
         return [
-            [$Factory],
-            [$Factory->setTimes(2)],
-            [$Factory->setTimes(10)],
+            [1, $Factory],
+            [2, $Factory->setTimes(2)],
+            [10, $Factory->setTimes(10)],
         ];
     }
 
@@ -58,16 +56,14 @@ class FixtureInjectorTest extends TestCase
     }
 
     /**
-     * Since there is only one factory in this data provider,
-     * the factories will always return 10
-                 *
+     * @param int $expectedCount
      * @param \CakephpFixtureFactories\Test\Factory\ArticleFactory $factory
      */
     #[DataProvider('createWithOneFactoryInTheDataProvider')]
-    public function testCreateFactoryInTheDataProvider(ArticleFactory $factory): void
+    public function testCreateFactoryInTheDataProvider(int $expectedCount, ArticleFactory $factory): void
     {
         $factory->persist();
-        $this->assertSame(10, ArticleFactory::count());
+        $this->assertSame($expectedCount, ArticleFactory::query()->count());
     }
 
     /**
@@ -81,6 +77,6 @@ class FixtureInjectorTest extends TestCase
     public function testCreateFactoryInTheDataProvider2(int $n, ArticleFactory $factory): void
     {
         $factory->persist();
-        $this->assertSame($n, ArticleFactory::count());
+        $this->assertSame($n, ArticleFactory::query()->count());
     }
 }

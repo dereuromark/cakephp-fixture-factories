@@ -592,7 +592,7 @@ class BaseFactoryTest extends TestCase
         })->persist();
 
         $this->assertSame($id, $article->id);
-        $this->assertSame(1, ArticleFactory::count());
+        $this->assertSame(1, ArticleFactory::query()->count());
         $this->assertSame($id, ArticleFactory::find()->firstOrFail()->get('id'));
     }
 
@@ -730,7 +730,7 @@ class BaseFactoryTest extends TestCase
             ->withCity(['name' => $secondCity])
             ->withCity(['name' => $thirdCity])
             ->persist();
-        $this->assertEquals(1, CityFactory::count());
+        $this->assertEquals(1, CityFactory::query()->count());
         $this->assertEquals($thirdCity, $address->city->name);
     }
 
@@ -791,7 +791,7 @@ class BaseFactoryTest extends TestCase
     public function testKeepDirtyPropagatesToAssociationsAddedBefore(): void
     {
         $factory = ArticleFactory::make()->withBills();
-        $factory->keepDirty();
+        $factory = $factory->keepDirty();
 
         $article = $factory->getEntity();
 
@@ -812,7 +812,7 @@ class BaseFactoryTest extends TestCase
     {
         AuthorFactory::make()->withAddress()->withAddress()->persist();
 
-        $this->assertEquals(1, AddressFactory::count());
+        $this->assertEquals(1, AddressFactory::query()->count());
     }
 
     public function testSaveMultipleInArray(): void
@@ -822,9 +822,9 @@ class BaseFactoryTest extends TestCase
         $countries = CountryFactory::make([
             ['name' => $name1],
             ['name' => $name2],
-        ])->persist();
+        ])->saveMany();
 
-        $this->assertSame(2, CountryFactory::count());
+        $this->assertSame(2, CountryFactory::query()->count());
         $this->assertSame($name1, $countries[0]->name);
         $this->assertSame($name2, $countries[1]->name);
     }
@@ -839,7 +839,7 @@ class BaseFactoryTest extends TestCase
             ['name' => $name2],
         ], $times)->persist();
 
-        $this->assertSame($times * 2, CountryFactory::count());
+        $this->assertSame($times * 2, CountryFactory::query()->count());
 
         $this->assertSame($name1, $countries[0]->name);
         $this->assertSame($name2, $countries[1]->name);
@@ -857,7 +857,7 @@ class BaseFactoryTest extends TestCase
                 ['amount' => $amount2],
             ])->persist();
 
-        $this->assertSame(2, BillFactory::count());
+        $this->assertSame(2, BillFactory::query()->count());
         $this->assertEquals($amount1, $customer->bills[0]->amount);
         $this->assertEquals($amount2, $customer->bills[1]->amount);
     }
@@ -873,7 +873,7 @@ class BaseFactoryTest extends TestCase
                 ['amount' => $amount2],
             ], $times)->persist();
 
-        $this->assertSame(2 * $times, BillFactory::count());
+        $this->assertSame(2 * $times, BillFactory::query()->count());
         $this->assertEquals($amount1, $customer->bills[0]->amount);
         $this->assertEquals($amount2, $customer->bills[1]->amount);
         $this->assertEquals($amount1, $customer->bills[2]->amount);
@@ -896,7 +896,7 @@ class BaseFactoryTest extends TestCase
     {
         ArticleFactory::make()->setTimes($times)->persist();
 
-        $this->assertSame($times, ArticleFactory::count());
+        $this->assertSame($times, ArticleFactory::query()->count());
     }
 
     /**

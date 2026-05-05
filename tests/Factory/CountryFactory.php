@@ -34,13 +34,11 @@ class CountryFactory extends BaseFactory
         return 'Countries';
     }
 
-    protected function setDefaultTemplate(): void
+    public function definition(GeneratorInterface $generator): array
     {
-        $this->setDefaultData(function (GeneratorInterface $generator) {
-            return [
-                'name' => $generator->country(),
-                'unique_stamp' => $generator->uuid(),
-            ];
-        });
+        return [
+            'name' => $generator->country(),
+            'unique_stamp' => $generator->uuid(),
+        ];
     }
 }

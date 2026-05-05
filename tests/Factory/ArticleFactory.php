@@ -47,19 +47,31 @@ class ArticleFactory extends BaseFactory
      *
      * @return void
      */
-    protected function setDefaultTemplate(): void
+    public function definition(GeneratorInterface $generator): array
     {
-        $this->setDefaultData(function (GeneratorInterface $generator) {
-            return [
-                'title' => $generator->text(120),
-            ];
-        })
-        ->withAuthors(null, self::DEFAULT_NUMBER_OF_AUTHORS);
+        return [
+            'title' => $generator->text(120),
+        ];
+    }
+
+    protected function configure(): static
+    {
+        return $this->hasAuthors(null, self::DEFAULT_NUMBER_OF_AUTHORS);
+    }
+
+    public function hasAuthors(mixed $parameter = null, int $n = 1): self
+    {
+        if (is_int($parameter) && $n === 1) {
+            $n = $parameter;
+            $parameter = null;
+        }
+
+        return $this->has(AuthorFactory::new($parameter)->count($n));
     }
 
     public function withAuthors(mixed $parameter = null, int $n = 1): self
     {
-        return $this->with('Authors', AuthorFactory::make($parameter, $n));
+        return $this->hasAuthors($parameter, $n);
     }
 
     /**
@@ -70,9 +82,19 @@ class ArticleFactory extends BaseFactory
      * @param int $n
      * @return ArticleFactory
      */
+    public function hasBills(mixed $parameter = null, int $n = 1): self
+    {
+        if (is_int($parameter) && $n === 1) {
+            $n = $parameter;
+            $parameter = null;
+        }
+
+        return $this->has(BillFactory::new($parameter)->count($n)->without('Article'));
+    }
+
     public function withBills(mixed $parameter = null, int $n = 1): self
     {
-        return $this->with('Bills', BillFactory::make($parameter, $n)->without('Article'));
+        return $this->hasBills($parameter, $n);
     }
 
     /**
@@ -83,9 +105,19 @@ class ArticleFactory extends BaseFactory
      * @param int $n
      * @return ArticleFactory
      */
+    public function hasBillsWithArticle(mixed $parameter = null, int $n = 1): self
+    {
+        if (is_int($parameter) && $n === 1) {
+            $n = $parameter;
+            $parameter = null;
+        }
+
+        return $this->has(BillFactory::new($parameter)->count($n));
+    }
+
     public function withBillsWithArticle(mixed $parameter = null, int $n = 1): self
     {
-        return $this->with('Bills', BillFactory::make($parameter, $n));
+        return $this->hasBillsWithArticle($parameter, $n);
     }
 
     /**
@@ -96,7 +128,7 @@ class ArticleFactory extends BaseFactory
      */
     public function withTitle(string $title): self
     {
-        return $this->patchData(compact('title'));
+        return $this->state(compact('title'));
     }
 
     /**

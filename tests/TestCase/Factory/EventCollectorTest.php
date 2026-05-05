@@ -338,7 +338,7 @@ class EventCollectorTest extends TestCase
 
         // Set a different connection and verify it's applied
         // Note: CakePHP prefixes connection names with 'test_' during testing
-        $factory->setConnection('dummy');
+        $factory = $factory->setConnection('dummy');
         $newConnectionName = $factory->getTable()->getConnection()->configName();
 
         $this->assertNotSame($originalConnectionName, $newConnectionName);
@@ -381,7 +381,7 @@ class EventCollectorTest extends TestCase
         $originalEventManager = $factory->getTable()->getEventManager();
 
         $customEventManager = new EventManager();
-        $factory->setEventManager($customEventManager);
+        $factory = $factory->setEventManager($customEventManager);
 
         $this->assertNotSame($originalEventManager, $factory->getTable()->getEventManager());
         $this->assertSame($customEventManager, $factory->getTable()->getEventManager());

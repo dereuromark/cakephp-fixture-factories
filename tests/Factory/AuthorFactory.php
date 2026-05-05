@@ -40,33 +40,49 @@ class AuthorFactory extends BaseFactory
         return 'Authors';
     }
 
-    protected function setDefaultTemplate(): void
+    public function definition(GeneratorInterface $generator): array
     {
-        $this
-            ->setDefaultData(function (GeneratorInterface $generator) {
-                return [
-                    'name' => $generator->name(),
-                    'field_with_setter_1' => $generator->word(),
-                    'field_with_setter_2' => $generator->word(),
-                    'field_with_setter_3' => $generator->word(),
-                    'json_field' => self::JSON_FIELD_DEFAULT_VALUE,
-                ];
-            })
-            ->withAddress();
+        return [
+            'name' => $generator->name(),
+            'field_with_setter_1' => $generator->word(),
+            'field_with_setter_2' => $generator->word(),
+            'field_with_setter_3' => $generator->word(),
+            'json_field' => self::JSON_FIELD_DEFAULT_VALUE,
+        ];
+    }
+
+    protected function configure(): static
+    {
+        return $this->forAddress();
+    }
+
+    public function hasArticles(mixed $parameter = null, int $n = 1): self
+    {
+        if (is_int($parameter) && $n === 1) {
+            $n = $parameter;
+            $parameter = null;
+        }
+
+        return $this->has(ArticleFactory::new($parameter)->count($n)->without('Authors'));
     }
 
     public function withArticles(mixed $parameter = null, int $n = 1): self
     {
-        return $this->with('Articles', ArticleFactory::make($parameter, $n)->without('Authors'));
+        return $this->hasArticles($parameter, $n);
+    }
+
+    public function forAddress(mixed $parameter = null): self
+    {
+        return $this->for(AddressFactory::new($parameter));
     }
 
     public function withAddress(mixed $parameter = null): self
     {
-        return $this->with('Address', AddressFactory::make($parameter));
+        return $this->forAddress($parameter);
     }
 
     public function fromCountry(string $name): self
     {
-        return $this->with('Address.City.Countries', CountryFactory::make(compact('name')));
+        return $this->with('Address.City.Countries', CountryFactory::new(compact('name')));
     }
 }
