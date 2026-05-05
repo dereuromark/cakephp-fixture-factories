@@ -514,7 +514,8 @@ class DataCompiler
         /** @var \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory */
         $factory = $data[$count - 1];
 
-        $associatedEntity = $factory->getEntity();
+        $associatedEntities = $factory->buildMany();
+        $associatedEntity = $associatedEntities[0];
         if ($this->isInPersistMode()) {
             $associatedEntity->set(self::IS_ASSOCIATED, true);
             $this->markEntityDirtyIfNew($associatedEntity);

@@ -52,8 +52,8 @@ class BaseFactoryTest extends TestCase
     public static function dataForTestConnectionInDataProvider(): array
     {
         return [
-            [AuthorFactory::make()],
-            [BillFactory::make()],
+            [AuthorFactory::new()],
+            [BillFactory::new()],
         ];
     }
 
@@ -70,7 +70,7 @@ class BaseFactoryTest extends TestCase
     public function testGetEntityWithArray(): void
     {
         $title = 'blah';
-        $entity = ArticleFactory::make()->withTitle($title)->getEntity();
+        $entity = ArticleFactory::new()->withTitle($title)->build();
         $this->assertTrue($entity instanceof EntityInterface);
         $this->assertTrue($entity instanceof Article);
         $this->assertSame($title, $entity->title);
@@ -79,9 +79,9 @@ class BaseFactoryTest extends TestCase
     public function testGetEntityWithCallbackReturningArray(): void
     {
         $title = 'blah';
-        $entity = ArticleFactory::make(function (ArticleFactory $factory, GeneratorInterface $generator) use ($title) {
+        $entity = ArticleFactory::new(function (ArticleFactory $factory, GeneratorInterface $generator) use ($title) {
             return compact('title');
-        })->getEntity();
+        })->build();
 
         $this->assertTrue($entity instanceof EntityInterface);
         $this->assertTrue($entity instanceof Article);
@@ -91,7 +91,7 @@ class BaseFactoryTest extends TestCase
     public function testGetEntitiesWithArray(): void
     {
         $n = 3;
-        $entities = ArticleFactory::make(['title' => 'blah'], $n)->getEntities();
+        $entities = ArticleFactory::new(['title' => 'blah'], $n)->buildMany();
 
         $this->assertSame($n, count($entities));
         foreach ($entities as $entity) {
@@ -104,11 +104,11 @@ class BaseFactoryTest extends TestCase
     public function testGetEntitiesWithCallbackReturningArray(): void
     {
         $n = 3;
-        $entities = ArticleFactory::make(function (ArticleFactory $factory, GeneratorInterface $generator) {
+        $entities = ArticleFactory::new(function (ArticleFactory $factory, GeneratorInterface $generator) {
             return [
                 'title' => $generator->word(),
             ];
-        }, $n)->getEntities();
+        }, $n)->buildMany();
 
         $this->assertSame($n, count($entities));
         foreach ($entities as $entity) {
@@ -119,7 +119,7 @@ class BaseFactoryTest extends TestCase
 
     public function testGetTable(): void
     {
-        $table = ArticleFactory::make()->getTable();
+        $table = ArticleFactory::new()->getTable();
         $this->assertInstanceOf(ArticlesTable::class, $table);
     }
 
@@ -134,9 +134,9 @@ class BaseFactoryTest extends TestCase
      */
     public function testWithOnePersistOneLevel(): void
     {
-        $author = AuthorFactory::make(['name' => 'test author'])
-            ->with('Address', AddressFactory::make(['street' => 'test street']))
-            ->persist();
+        $author = AuthorFactory::new(['name' => 'test author'])
+            ->with('Address', AddressFactory::new(['street' => 'test street']))
+            ->save();
 
         $this->assertTrue($author instanceof Author);
         $this->assertTrue(is_int($author->id));
@@ -147,11 +147,11 @@ class BaseFactoryTest extends TestCase
     public function testMakeMultipleWithArray(): void
     {
         $n = 3;
-        $entities = ArticleFactory::make(function (ArticleFactory $factory, GeneratorInterface $generator) {
+        $entities = ArticleFactory::new(function (ArticleFactory $factory, GeneratorInterface $generator) {
             return [
                 'title' => $generator->sentence(),
             ];
-        }, $n)->persist();
+        }, $n)->saveMany();
 
         $this->assertSame($n, count($entities));
         $previousName = '';
@@ -165,9 +165,9 @@ class BaseFactoryTest extends TestCase
     public function testMakeFromArrayMultiple(): void
     {
         $n = 3;
-        $entities = ArticleFactory::make([
+        $entities = ArticleFactory::new([
             'title' => 'test title',
-        ], $n)->persist();
+        ], $n)->saveMany();
 
         $this->assertSame($n, count($entities));
         $previousName = '';
@@ -182,13 +182,13 @@ class BaseFactoryTest extends TestCase
     {
         $n = 3;
         $m = 2;
-        $articles = ArticleFactory::make([
+        $articles = ArticleFactory::new([
             'title' => 'test title',
         ], $n)
             ->withAuthors([
                 'name' => 'blah',
             ], $m)
-            ->persist();
+            ->saveMany();
 
         $this->assertSame($n, count($articles));
 
@@ -207,7 +207,7 @@ class BaseFactoryTest extends TestCase
     {
         $n = 3;
         $m = 2;
-        $articles = ArticleFactory::make([
+        $articles = ArticleFactory::new([
             'title' => 'test title',
         ], $n)
             ->withAuthors(function (AuthorFactory $factory, GeneratorInterface $generator) {
@@ -215,7 +215,7 @@ class BaseFactoryTest extends TestCase
                     'name' => $generator->lastName(),
                 ];
             }, $m)
-            ->persist();
+            ->saveMany();
 
         $this->assertSame($n, count($articles));
 
@@ -232,18 +232,18 @@ class BaseFactoryTest extends TestCase
 
     public function testMakeSingleWithArray(): void
     {
-        $article = ArticleFactory::make(function (ArticleFactory $factory, GeneratorInterface $generator) {
+        $article = ArticleFactory::new(function (ArticleFactory $factory, GeneratorInterface $generator) {
             return [
                 'title' => $generator->sentence(),
             ];
-        })->persist();
+        })->save();
 
         $this->assertTrue($article instanceof Article);
     }
 
     public function testMakeSingleWithArrayWithSubFactory(): void
     {
-        $city = CityFactory::make(function (CityFactory $factory, GeneratorInterface $generator) {
+        $city = CityFactory::new(function (CityFactory $factory, GeneratorInterface $generator) {
             $factory->withCountries(function (CountryFactory $factory, GeneratorInterface $generator) {
                 return [
                     'name' => $generator->country(),
@@ -253,7 +253,7 @@ class BaseFactoryTest extends TestCase
             return [
                 'name' => $generator->city(),
             ];
-        })->persist();
+        })->save();
 
         $this->assertTrue($city instanceof City);
         $this->assertTrue(is_int($city->id));
@@ -265,7 +265,7 @@ class BaseFactoryTest extends TestCase
     {
         $n = 3;
         $m = 2;
-        $articles = ArticleFactory::make(
+        $articles = ArticleFactory::new(
             function (ArticleFactory $factory, GeneratorInterface $generator) {
                 return ['title' => $generator->sentence()];
             },
@@ -277,7 +277,7 @@ class BaseFactoryTest extends TestCase
             },
             $m,
         )
-        ->persist();
+        ->saveMany();
 
         foreach ($articles as $article) {
             $this->assertTrue($article instanceof Article);
@@ -294,7 +294,7 @@ class BaseFactoryTest extends TestCase
     {
         $n = 3;
         $m = 2;
-        $articles = ArticleFactory::make(['title' => 'test title'], $n)
+        $articles = ArticleFactory::new(['title' => 'test title'], $n)
             ->withAuthors(function (AuthorFactory $factory, GeneratorInterface $generator) {
                 $factory->withAddress(function (AddressFactory $factory, GeneratorInterface $generator) {
                     $factory->withCity(function (CityFactory $factory, GeneratorInterface $generator) {
@@ -318,7 +318,7 @@ class BaseFactoryTest extends TestCase
                     'name' => $generator->lastName(),
                 ];
             }, $m)
-            ->persist();
+            ->saveMany();
 
         $this->assertSame($n, count($articles));
 
@@ -337,7 +337,7 @@ class BaseFactoryTest extends TestCase
 
     public function testWithOneGetEntityTwoLevel(): void
     {
-        $author = AuthorFactory::make(['name' => 'test author'])
+        $author = AuthorFactory::new(['name' => 'test author'])
             ->withAddress(function (AddressFactory $factory, GeneratorInterface $generator) {
                 $factory->withCity(function (CityFactory $factory, GeneratorInterface $generator) {
                     $factory->withCountries(['name' => 'Wonderland']);
@@ -351,7 +351,7 @@ class BaseFactoryTest extends TestCase
                     'street' => $generator->streetName(),
                 ];
             })
-            ->getEntity();
+            ->build();
 
         $this->assertTrue($author->address instanceof Address);
         $this->assertTrue($author->address->city instanceof City);
@@ -369,12 +369,12 @@ class BaseFactoryTest extends TestCase
      */
     public function testMakeHasOneAssociationFromArrayWithoutSettingAssociatedThenPersist(): void
     {
-        $persistedEntity = AuthorFactory::make([
+        $persistedEntity = AuthorFactory::new([
             'name' => 'test author',
             'business_address' => [
                 'street' => 'test address',
             ],
-        ])->persist();
+        ])->save();
 
         $this->assertTrue($persistedEntity instanceof Author);
         $this->assertTrue(is_int($persistedEntity->id));
@@ -393,14 +393,14 @@ class BaseFactoryTest extends TestCase
      */
     public function testMakeHasOneAssociationFromArrayWithoutSettingAssociatedThenGetEntity(): void
     {
-        $factory = AuthorFactory::make([
+        $factory = AuthorFactory::new([
             'name' => 'test project',
             'business_address' => [
                 'name' => 'test project address',
             ],
         ]);
 
-        $marshalledEntity = $factory->getEntity();
+        $marshalledEntity = $factory->build();
 
         $this->assertTrue($marshalledEntity instanceof Author);
         $this->assertFalse(isset($marshalledEntity->id));
@@ -419,15 +419,15 @@ class BaseFactoryTest extends TestCase
      */
     public function testMakeHasOneAssociationFromArrayWithSettingAssociatedThenPersist(): void
     {
-        $factory = AuthorFactory::make([
+        $factory = AuthorFactory::new([
             'name' => 'test author',
             'business_address' => [
                 'street' => 'test address',
-                'city_id' => CityFactory::make()->persist()->id,
+                'city_id' => CityFactory::new()->save()->id,
             ],
         ])->mergeAssociated(['BusinessAddress']);
 
-        $persistedEntity = $factory->persist();
+        $persistedEntity = $factory->save();
 
         $this->assertTrue($persistedEntity instanceof Author);
         $this->assertTrue(is_int($persistedEntity->id));
@@ -447,14 +447,14 @@ class BaseFactoryTest extends TestCase
      */
     public function testMakeHasOneAssociationFromArrayWithSettingAssociatedThenGetEntity(): void
     {
-        $factory = AuthorFactory::make([
+        $factory = AuthorFactory::new([
             'name' => 'test author',
             'business_address' => [
                 'street' => 'test street',
             ],
         ])->mergeAssociated(['BusinessAddress']);
 
-        $marshalledEntity = $factory->getEntity();
+        $marshalledEntity = $factory->build();
 
         $this->assertTrue($marshalledEntity instanceof Author);
         $this->assertFalse(isset($marshalledEntity->id));
@@ -464,7 +464,7 @@ class BaseFactoryTest extends TestCase
 
     public function testMakeHasOneAssociationFromCallableThenPersist(): void
     {
-        $entity = AuthorFactory::make(function (AuthorFactory $factory, GeneratorInterface $generator) {
+        $entity = AuthorFactory::new(function (AuthorFactory $factory, GeneratorInterface $generator) {
             $factory->withAddress(function (AddressFactory $factory, GeneratorInterface $generator) {
                 return [
                     'street' => $generator->streetAddress(),
@@ -474,7 +474,7 @@ class BaseFactoryTest extends TestCase
             return [
                 'name' => $generator->lastName(),
             ];
-        })->persist();
+        })->save();
 
         $this->assertTrue($entity instanceof Author);
         $this->assertTrue(is_int($entity->id));
@@ -484,14 +484,14 @@ class BaseFactoryTest extends TestCase
 
     public function testMakeHasOneAssociationFromCallableWithAssociatedDataInSingleArrayThenPersist(): void
     {
-        $author = AuthorFactory::make(function (AuthorFactory $factory, GeneratorInterface $generator) {
+        $author = AuthorFactory::new(function (AuthorFactory $factory, GeneratorInterface $generator) {
             return [
                 'name' => $generator->name(),
                 'business_address' => [
                     'street' => $generator->streetAddress(),
                 ],
             ];
-        })->persist();
+        })->save();
 
         $this->assertTrue($author instanceof Author);
         $this->assertTrue(is_int($author->id));
@@ -500,11 +500,11 @@ class BaseFactoryTest extends TestCase
 
     public function testMakeHasOneAssociationFromCallableWithAssociatedDataUsingWith(): void
     {
-        $entity = AuthorFactory::make(function (AuthorFactory $factory, GeneratorInterface $generator) {
-            $factory->with('Address', AddressFactory::make(['street' => $generator->streetAddress()]));
+        $entity = AuthorFactory::new(function (AuthorFactory $factory, GeneratorInterface $generator) {
+            $factory->with('Address', AddressFactory::new(['street' => $generator->streetAddress()]));
 
             return ['name' => $generator->lastName()];
-        })->persist();
+        })->save();
 
         $this->assertTrue($entity instanceof Author);
         $this->assertTrue(is_int($entity->id));
@@ -515,11 +515,11 @@ class BaseFactoryTest extends TestCase
     public function testMakeTenHasOneAssociationFromCallableWithAssociatedDataUsingWith(): void
     {
         $n = 10;
-        $entities = AuthorFactory::make(function (AuthorFactory $factory, GeneratorInterface $generator) {
-            $factory->with('Address', AddressFactory::make(['street' => $generator->streetAddress()]));
+        $entities = AuthorFactory::new(function (AuthorFactory $factory, GeneratorInterface $generator) {
+            $factory->with('Address', AddressFactory::new(['street' => $generator->streetAddress()]));
 
             return ['name' => $generator->lastName()];
-        }, $n)->persist();
+        }, $n)->saveMany();
 
         $this->assertSame($n, count($entities));
         foreach ($entities as $entity) {
@@ -533,38 +533,38 @@ class BaseFactoryTest extends TestCase
     public function testGetEntityAfterMakingMultipleShouldReturnTheFirstOfAll(): void
     {
         $title = 'Foo';
-        $article = ArticleFactory::make(compact('title'), 2)->getEntity();
-        $this->assertSame($title, $article->title);
+        $articles = ArticleFactory::new(compact('title'), 2)->buildMany();
+        $this->assertSame($title, $articles[0]->title);
     }
 
     public function testGetEntityAfterMakingMultipleFromArrayShouldReturnTheFirstOfAll(): void
     {
         $title = 'Foo';
-        $article = ArticleFactory::make([
+        $articles = ArticleFactory::new([
             ['title' => $title],
             ['title' => 'Bar'],
-        ], 2)->getEntity();
-        $this->assertSame($title, $article->title);
+        ], 2)->buildMany();
+        $this->assertSame($title, $articles[0]->title);
     }
 
     public function testGetEntitiesAfterMakingOneShouldNotThrowException(): void
     {
         $title = 'foo';
-        $articles = ArticleFactory::make(compact('title'))->getEntities();
+        $articles = ArticleFactory::new(compact('title'))->buildMany();
         $this->assertIsArray($articles);
         $this->assertSame($title, $articles[0]->title);
     }
 
     public function testHasAssociation(): void
     {
-        $authorsTable = AuthorFactory::make()->getTable();
+        $authorsTable = AuthorFactory::new()->getTable();
         $this->assertTrue($authorsTable->hasAssociation('Address'));
         $this->assertTrue($authorsTable->hasAssociation('Articles'));
     }
 
     public function testAssociationByPropertyName(): void
     {
-        $articlesTable = ArticleFactory::make()->getTable();
+        $articlesTable = ArticleFactory::new()->getTable();
         $this->assertTrue($articlesTable->hasAssociation(Inflector::camelize('authors')));
     }
 
@@ -584,25 +584,25 @@ class BaseFactoryTest extends TestCase
     {
         $id = 100;
 
-        $article = ArticleFactory::make(function (ArticleFactory $factory, GeneratorInterface $generator) use ($id) {
+        $article = ArticleFactory::new(function (ArticleFactory $factory, GeneratorInterface $generator) use ($id) {
             return [
                 'id' => $id,
                 'name' => $generator->sentence(),
             ];
-        })->persist();
+        })->save();
 
         $this->assertSame($id, $article->id);
         $this->assertSame(1, ArticleFactory::query()->count());
-        $this->assertSame($id, ArticleFactory::find()->firstOrFail()->get('id'));
+        $this->assertSame($id, ArticleFactory::query()->firstOrFail()->get('id'));
     }
 
     public function testPatchingWithAssociationPluginToApp(): void
     {
         $title = 'Some title';
         $amount = 10;
-        $bill = BillFactory::make(compact('amount'))
+        $bill = BillFactory::new(compact('amount'))
             ->withArticle(compact('title'))
-            ->getEntity();
+            ->build();
         $this->assertEquals($title, $bill->article->title);
         $this->assertEquals($amount, $bill->amount);
     }
@@ -611,9 +611,9 @@ class BaseFactoryTest extends TestCase
     {
         $title = 'Some title';
         $amount = 10;
-        $bill = BillFactory::make(compact('amount'))
+        $bill = BillFactory::new(compact('amount'))
             ->withArticle(compact('title'))
-            ->persist();
+            ->save();
         $this->assertTrue(is_int($bill->id));
         $this->assertTrue(is_int($bill->article->id));
         $this->assertEquals($title, $bill->article->title);
@@ -632,9 +632,9 @@ class BaseFactoryTest extends TestCase
         $title = 'Some title';
         $amount = 10;
         $n = 2;
-        $article = ArticleFactory::make(compact('title'))
+        $article = ArticleFactory::new(compact('title'))
             ->withBills(compact('amount'), $n)
-            ->getEntity();
+            ->build();
         $this->assertEquals($title, $article->title);
         $this->assertEquals($n, count($article->bills));
         $this->assertTrue(empty($article->bills[0]->article));
@@ -645,9 +645,9 @@ class BaseFactoryTest extends TestCase
         $title = 'Some title';
         $amount = 10;
         $n = 2;
-        $article = ArticleFactory::make(compact('title'))
+        $article = ArticleFactory::new(compact('title'))
             ->withBills(compact('amount'), $n)
-            ->persist();
+            ->save();
 
         $this->assertTrue(is_int($article->id));
         $this->assertSame($n, count($article->bills));
@@ -670,9 +670,9 @@ class BaseFactoryTest extends TestCase
         $title = 'Some title';
         $amount = 10;
         $n = 2;
-        $article = ArticleFactory::make(compact('title'))
+        $article = ArticleFactory::new(compact('title'))
             ->withBillsWithArticle(compact('amount'), $n)
-            ->persist();
+            ->save();
 
         $this->assertTrue(is_int($article->id));
         $this->assertSame($n, count($article->bills));
@@ -690,9 +690,9 @@ class BaseFactoryTest extends TestCase
         $name = 'Some name';
         $amount = 10;
         $n = 2;
-        $customer = CustomerFactory::make(compact('name'))
+        $customer = CustomerFactory::new(compact('name'))
             ->withBills(compact('amount'), $n)
-            ->getEntity();
+            ->build();
         $this->assertEquals($name, $customer->name);
         $this->assertEquals($n, count($customer->bills));
         foreach ($customer->bills as $bill) {
@@ -706,9 +706,9 @@ class BaseFactoryTest extends TestCase
         $name = 'Some name';
         $amount = 10;
         $n = 2;
-        $customer = CustomerFactory::make(compact('name'))
+        $customer = CustomerFactory::new(compact('name'))
             ->withBills(compact('amount'), $n)
-            ->persist();
+            ->save();
 
         $this->assertTrue(is_int($customer->id));
         $this->assertSame($n, count($customer->bills));
@@ -725,46 +725,46 @@ class BaseFactoryTest extends TestCase
         $firstCity = 'First';
         $secondCity = 'Second';
         $thirdCity = 'Third';
-        $address = AddressFactory::make()
+        $address = AddressFactory::new()
             ->withCity(['name' => $firstCity])
             ->withCity(['name' => $secondCity])
             ->withCity(['name' => $thirdCity])
-            ->persist();
+            ->save();
         $this->assertEquals(1, CityFactory::query()->count());
         $this->assertEquals($thirdCity, $address->city->name);
     }
 
     public function testWithoutAssociation(): void
     {
-        $article = ArticleFactory::make()->getEntity();
+        $article = ArticleFactory::new()->build();
         $this->assertInstanceOf(Author::class, $article->authors[0]);
 
-        $article = ArticleFactory::make()->without('Authors')->getEntity();
+        $article = ArticleFactory::new()->without('Authors')->build();
         $this->assertNull($article->authors);
     }
 
     public function testWithoutAssociation2(): void
     {
-        $article = ArticleFactory::make()->withBills()->getEntity();
+        $article = ArticleFactory::new()->withBills()->build();
         $this->assertInstanceOf(Bill::class, $article->bills[0]);
 
-        $article = ArticleFactory::make()->withBills()->without('Bills')->getEntity();
+        $article = ArticleFactory::new()->withBills()->without('Bills')->build();
         $this->assertNull($article->bills);
     }
 
     public function testKeepDirtyWithGetEntity(): void
     {
-        $article = ArticleFactory::make()->getEntity();
+        $article = ArticleFactory::new()->build();
         $this->assertFalse($article->isDirty('title'));
 
-        $dirtyArticle = ArticleFactory::make()->keepDirty()->getEntity();
+        $dirtyArticle = ArticleFactory::new()->keepDirty()->build();
         $this->assertTrue($dirtyArticle->isDirty('title'));
         $this->assertTrue($dirtyArticle->authors[0]->isDirty('name'));
     }
 
     public function testKeepDirtyPropagatesToToOneAssociations(): void
     {
-        $author = AuthorFactory::make()->keepDirty()->getEntity();
+        $author = AuthorFactory::new()->keepDirty()->build();
 
         $this->assertTrue($author->isDirty('name'));
         $this->assertTrue($author->address->isDirty('street'));
@@ -774,7 +774,7 @@ class BaseFactoryTest extends TestCase
 
     public function testKeepDirtyPropagatesToToManyAssociations(): void
     {
-        $article = ArticleFactory::make()->keepDirty()->getEntity();
+        $article = ArticleFactory::new()->keepDirty()->build();
 
         $this->assertTrue($article->authors[0]->isDirty('name'));
         $this->assertTrue($article->authors[0]->address->isDirty('street'));
@@ -782,7 +782,7 @@ class BaseFactoryTest extends TestCase
 
     public function testKeepDirtyPropagatesToAssociationsAddedAfter(): void
     {
-        $article = ArticleFactory::make()->keepDirty()->withBills()->getEntity();
+        $article = ArticleFactory::new()->keepDirty()->withBills()->build();
 
         $this->assertTrue($article->bills[0]->isDirty('amount'));
         $this->assertTrue($article->bills[0]->customer->isDirty('name'));
@@ -790,10 +790,10 @@ class BaseFactoryTest extends TestCase
 
     public function testKeepDirtyPropagatesToAssociationsAddedBefore(): void
     {
-        $factory = ArticleFactory::make()->withBills();
+        $factory = ArticleFactory::new()->withBills();
         $factory = $factory->keepDirty();
 
-        $article = $factory->getEntity();
+        $article = $factory->build();
 
         $this->assertTrue($article->bills[0]->isDirty('amount'));
         $this->assertTrue($article->bills[0]->customer->isDirty('name'));
@@ -801,8 +801,8 @@ class BaseFactoryTest extends TestCase
 
     public function testKeepDirtyPropagatesToProvidedAssociationFactory(): void
     {
-        $authorsFactory = AuthorFactory::make(2);
-        $article = ArticleFactory::make()->keepDirty()->with('Authors', $authorsFactory)->getEntity();
+        $authorsFactory = AuthorFactory::new(2);
+        $article = ArticleFactory::new()->keepDirty()->with('Authors', $authorsFactory)->build();
 
         $this->assertTrue($article->authors[0]->isDirty('name'));
         $this->assertTrue($article->authors[1]->isDirty('name'));
@@ -810,12 +810,12 @@ class BaseFactoryTest extends TestCase
 
     public function testKeepDirtyPreservesMultipleFactoriesForTheSameToManyAssociation(): void
     {
-        $article = ArticleFactory::make()
+        $article = ArticleFactory::new()
             ->without('Authors')
-            ->with('Authors', AuthorFactory::make(['name' => 'First']))
-            ->with('Authors', AuthorFactory::make(['name' => 'Second']))
+            ->with('Authors', AuthorFactory::new(['name' => 'First']))
+            ->with('Authors', AuthorFactory::new(['name' => 'Second']))
             ->keepDirty()
-            ->getEntity();
+            ->build();
 
         $this->assertCount(2, $article->authors);
         $this->assertSame('First', $article->authors[0]->name);
@@ -826,7 +826,7 @@ class BaseFactoryTest extends TestCase
 
     public function testHandlingOfMultipleIdenticalWith(): void
     {
-        AuthorFactory::make()->withAddress()->withAddress()->persist();
+        AuthorFactory::new()->withAddress()->withAddress()->save();
 
         $this->assertEquals(1, AddressFactory::query()->count());
     }
@@ -835,7 +835,7 @@ class BaseFactoryTest extends TestCase
     {
         $name1 = 'Foo';
         $name2 = 'Bar';
-        $countries = CountryFactory::make([
+        $countries = CountryFactory::new([
             ['name' => $name1],
             ['name' => $name2],
         ])->saveMany();
@@ -850,10 +850,10 @@ class BaseFactoryTest extends TestCase
         $times = 2;
         $name1 = 'Foo';
         $name2 = 'Bar';
-        $countries = CountryFactory::make([
+        $countries = CountryFactory::new([
             ['name' => $name1],
             ['name' => $name2],
-        ], $times)->persist();
+        ], $times)->saveMany();
 
         $this->assertSame($times * 2, CountryFactory::query()->count());
 
@@ -867,11 +867,11 @@ class BaseFactoryTest extends TestCase
     {
         $amount1 = rand(1, 100);
         $amount2 = rand(1, 100);
-        $customer = CustomerFactory::make()
+        $customer = CustomerFactory::new()
             ->withBills([
                 ['amount' => $amount1],
                 ['amount' => $amount2],
-            ])->persist();
+            ])->save();
 
         $this->assertSame(2, BillFactory::query()->count());
         $this->assertEquals($amount1, $customer->bills[0]->amount);
@@ -883,11 +883,11 @@ class BaseFactoryTest extends TestCase
         $times = 2;
         $amount1 = rand(1, 100);
         $amount2 = rand(1, 100);
-        $customer = CustomerFactory::make()
+        $customer = CustomerFactory::new()
             ->withBills([
                 ['amount' => $amount1],
                 ['amount' => $amount2],
-            ], $times)->persist();
+            ], $times)->save();
 
         $this->assertSame(2 * $times, BillFactory::query()->count());
         $this->assertEquals($amount1, $customer->bills[0]->amount);
@@ -910,7 +910,7 @@ class BaseFactoryTest extends TestCase
     #[DataProvider('feedTestSetTimes')]
     public function testSetTimes(int $times): void
     {
-        ArticleFactory::make()->setTimes($times)->persist();
+        ArticleFactory::new()->count($times)->saveMany();
 
         $this->assertSame($times, ArticleFactory::query()->count());
     }
@@ -930,48 +930,48 @@ class BaseFactoryTest extends TestCase
         $this->assertTrue($country->hasErrors());
         $this->assertFalse($CountriesTable->save($country));
 
-        $country = CountryFactory::make(compact('name'))->getEntity();
+        $country = CountryFactory::new(compact('name'))->build();
         $this->assertFalse($country->hasErrors());
-        $country = CountryFactory::make(compact('name'))->persist();
+        $country = CountryFactory::new(compact('name'))->save();
         $this->assertInstanceOf(Country::class, $country);
     }
 
     public function testMakeEntityWithNumber(): void
     {
         $n = 2;
-        $country = CountryFactory::make($n)->getEntity();
-        $this->assertInstanceOf(Country::class, $country);
+        $countries = CountryFactory::new($n)->buildMany();
+        $this->assertInstanceOf(Country::class, $countries[0]);
     }
 
     public function testMakeEntitiesWithNumber(): void
     {
         $n = 2;
-        $country = CountryFactory::make($n)->getEntities();
+        $country = CountryFactory::new($n)->buildMany();
         $this->assertSame($n, count($country));
     }
 
     public function testMakeAliases(): void
     {
         $title = 'Foo';
-        $articles = ArticleFactory::makeMany(2)->getEntities();
+        $articles = ArticleFactory::new()->count(2)->buildMany();
         $this->assertCount(2, $articles);
 
-        $fromCallable = ArticleFactory::makeWith(function (ArticleFactory $factory, GeneratorInterface $generator) {
+        $fromCallable = ArticleFactory::new(function (ArticleFactory $factory, GeneratorInterface $generator) {
             return ['title' => $generator->jobTitle()];
-        })->getEntity();
+        })->build();
         $this->assertNotEmpty($fromCallable->title);
 
-        $base = ArticleFactory::make(['title' => $title])->getEntity();
-        $wrapped = ArticleFactory::makeFrom($base)->getEntity();
+        $base = ArticleFactory::new(['title' => $title])->build();
+        $wrapped = ArticleFactory::from($base)->build();
         $this->assertSame($base, $wrapped);
     }
 
     public function testPersistWithNonCreatedSubEntities(): void
     {
-        $authors = AuthorFactory::make(5)->getEntities();
-        $article = ArticleFactory::make()
+        $authors = AuthorFactory::new(5)->buildMany();
+        $article = ArticleFactory::new()
             ->withAuthors($authors)
-            ->persist();
+            ->save();
 
         $this->assertCount(5, $article->authors);
     }

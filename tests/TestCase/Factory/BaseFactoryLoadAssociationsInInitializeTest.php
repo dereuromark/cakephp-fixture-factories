@@ -62,9 +62,9 @@ class BaseFactoryLoadAssociationsInInitializeTest extends TestCase
     public function testLoadAssociationInInitializeGetEntity(): void
     {
         $name = 'Foo';
-        $city = CityFactory::make()
+        $city = CityFactory::new()
             ->with('TableWithoutModel', compact('name'))
-            ->getEntity();
+            ->build();
 
         $this->assertSame(1, count($city->get('table_without_model')));
         $tableWithoutModel = $city->get('table_without_model')[0];
@@ -76,9 +76,9 @@ class BaseFactoryLoadAssociationsInInitializeTest extends TestCase
     {
         $name = 'Foo';
         $n = 2;
-        $city = CityFactory::make()
+        $city = CityFactory::new()
             ->with("TableWithoutModel[$n]", compact('name'))
-            ->getEntity();
+            ->build();
 
         $this->assertSame($n, count($city->get('table_without_model')));
         foreach ($city->get('table_without_model') as $entity) {
@@ -90,9 +90,9 @@ class BaseFactoryLoadAssociationsInInitializeTest extends TestCase
     public function testLoadAssociationInInitializePersist(): void
     {
         $name = 'Foo';
-        $city = CityFactory::make()
+        $city = CityFactory::new()
             ->with('TableWithoutModel', compact('name'))
-            ->persist();
+            ->save();
 
         $this->assertSame(1, count($city->get('table_without_model')));
         $tableWithoutModel = $city->get('table_without_model')[0];
@@ -105,7 +105,7 @@ class BaseFactoryLoadAssociationsInInitializeTest extends TestCase
 
     public function testLoadAssociationOnTheFlyHasOnePersist(): void
     {
-        $factory = CityFactory::make();
+        $factory = CityFactory::new();
         $factory->getTable()->hasOne('HasOneTableWithoutModel', [
             'className' => 'TableWithoutModel',
             'foreignKey' => 'foreign_key',
@@ -114,7 +114,7 @@ class BaseFactoryLoadAssociationsInInitializeTest extends TestCase
         $name = 'Foo';
         $city = $factory
             ->with('HasOneTableWithoutModel', compact('name'))
-            ->persist();
+            ->save();
 
         $hasOneTableWithoutModel = $city->get('has_one_table_without_model');
         $this->assertInstanceOf(Entity::class, $hasOneTableWithoutModel);
@@ -132,12 +132,12 @@ class BaseFactoryLoadAssociationsInInitializeTest extends TestCase
     #[DataProvider('dataForClassName')]
     public function testLoadAssociationOnTheFlyHasManyWithMagicPersist(string $className): void
     {
-        CityFactory::make()->getTable()->associations()->remove('Addresses');
-        CityFactory::make()->getTable()->hasMany('Addresses', compact('className'));
+        CityFactory::new()->getTable()->associations()->remove('Addresses');
+        CityFactory::new()->getTable()->hasMany('Addresses', compact('className'));
 
         $name = 'Foo';
         $n = 2;
-        $city = CityFactory::make()->with("Addresses[$n]", compact('name'))->persist();
+        $city = CityFactory::new()->with("Addresses[$n]", compact('name'))->save();
 
         $addresses = $city->addresses;
         foreach ($addresses as $address) {
@@ -156,15 +156,15 @@ class BaseFactoryLoadAssociationsInInitializeTest extends TestCase
     {
         // Because of a foreign key constrain at the DB level, a country with id $city->country_id
         // must be in the DB
-        $country = CountryFactory::make()->persist();
+        $country = CountryFactory::new()->save();
 
-        $factory = CityFactory::make()->without('Countries');
+        $factory = CityFactory::new()->without('Countries');
         $factory->getTable()->associations()->remove('Countries');
         $factory->getTable()->belongsTo('Country', compact('className'));
 
         $name = 'Foo';
         $id = $country->id;
-        $city = $factory->with('Country', compact('id', 'name'))->persist();
+        $city = $factory->with('Country', compact('id', 'name'))->save();
 
         $country = $city->country;
         $this->assertInstanceOf(Entity::class, $country);
@@ -178,7 +178,7 @@ class BaseFactoryLoadAssociationsInInitializeTest extends TestCase
     #[DataProvider('dataForClassName')]
     public function testLoadAssociationOnTheFlyBelongsToManyWithMagicPersist(string $className): void
     {
-        $factory = AuthorFactory::make();
+        $factory = AuthorFactory::new();
         $factory->getTable()->belongsToMany('ParallelArticles', [
             'className' => $className,
             'joinTable' => 'articles_authors',
@@ -187,7 +187,7 @@ class BaseFactoryLoadAssociationsInInitializeTest extends TestCase
 
         $name = 'Foo';
         $n = 2;
-        $author = $factory->with("ParallelArticles[$n]", compact('name'))->persist();
+        $author = $factory->with("ParallelArticles[$n]", compact('name'))->save();
 
         $articles = $author->get('parallel_articles');
         $this->assertSame($n, count($articles));
@@ -199,7 +199,7 @@ class BaseFactoryLoadAssociationsInInitializeTest extends TestCase
         $this->assertSame(1, AuthorFactory::query()->count());
         $this->assertSame($n, TableWithoutModelFactory::query()->count());
 
-        $author = AuthorFactory::find()->contain('ParallelArticles')->firstOrFail();
+        $author = AuthorFactory::query()->contain('ParallelArticles')->firstOrFail();
         $articles = $author->get('parallel_articles');
         $this->assertSame($n, count($articles));
         foreach ($articles as $article) {
@@ -211,7 +211,7 @@ class BaseFactoryLoadAssociationsInInitializeTest extends TestCase
 
     public function testLoadAssociationOnTheFlyOverwriteExistingAssociationPersist(): void
     {
-        $factory = CityFactory::make();
+        $factory = CityFactory::new();
         $this->assertTrue($factory->getTable()->hasAssociation('Addresses'));
 
         $factory->getTable()->associations()->remove('Addresses');
@@ -224,7 +224,7 @@ class BaseFactoryLoadAssociationsInInitializeTest extends TestCase
         $n = 2;
         $city = $factory
             ->with("Addresses[$n]", compact('name'))
-            ->persist();
+            ->save();
 
         $addresses = $city->addresses;
         foreach ($addresses as $address) {

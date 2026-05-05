@@ -38,24 +38,24 @@ class BaseFactoryArrayNotationTest extends TestCase
 
     public function testBaseFactoryArrayNotationDefaultValue(): void
     {
-        AuthorFactory::make()->persist();
+        AuthorFactory::new()->save();
 
-        $author = AuthorFactory::firstOrFail();
+        $author = AuthorFactory::query()->where()->firstOrFail();
         $this->assertSame(AuthorFactory::JSON_FIELD_DEFAULT_VALUE, $author->json_field);
     }
 
     public function testBaseFactoryArrayNotationOverwriteDefaultValue(): void
     {
         $value = ['c' => 'd'];
-        AuthorFactory::make(['json_field' => $value])->persist();
+        AuthorFactory::new(['json_field' => $value])->save();
 
-        $author = AuthorFactory::firstOrFail();
+        $author = AuthorFactory::query()->where()->firstOrFail();
         $this->assertSame($value, $author->json_field);
     }
 
     public function testBaseFactoryArrayNotationOverwriteOneField(): void
     {
-        $author = AuthorFactory::make(['json_field.subField1' => 'newValue'])->getEntity();
+        $author = AuthorFactory::new(['json_field.subField1' => 'newValue'])->build();
 
         $expectedValue = AuthorFactory::JSON_FIELD_DEFAULT_VALUE;
         $expectedValue['subField1'] = 'newValue';
@@ -66,10 +66,10 @@ class BaseFactoryArrayNotationTest extends TestCase
 
     public function testBaseFactoryArrayNotationOverwriteMultipleSelectedNestedFields(): void
     {
-        $author = AuthorFactory::make([
+        $author = AuthorFactory::new([
             'json_field.subField1' => 'newVal1',
             'json_field.subField2' => 'newVal2',
-        ])->getEntity();
+        ])->build();
 
         $expectedValue = AuthorFactory::JSON_FIELD_DEFAULT_VALUE;
         $expectedValue['subField1'] = 'newVal1';
@@ -81,11 +81,11 @@ class BaseFactoryArrayNotationTest extends TestCase
 
     public function testBaseFactoryArrayNotationOverwriteMultipleSelectedMultiplesNestedFields(): void
     {
-        $author = AuthorFactory::make([
+        $author = AuthorFactory::new([
             'json_field.subField1' => 'newVal11',
             'json_field2.subField1' => 'newVal21',
             'json_field2.subField2' => 'newVal22',
-        ])->getEntity();
+        ])->build();
 
         $this->assertSame('newVal11', $author['json_field']['subField1']);
         $this->assertSame(AuthorFactory::JSON_FIELD_DEFAULT_VALUE['subField2'], $author['json_field']['subField2']);
@@ -99,9 +99,9 @@ class BaseFactoryArrayNotationTest extends TestCase
 
     public function testBaseFactoryArrayNotationOverwriteMultipleSelectedNestedFieldsOnMaeAndSetField(): void
     {
-        $author = AuthorFactory::make(['json_field.subField1' => 'newVal1'])
+        $author = AuthorFactory::new(['json_field.subField1' => 'newVal1'])
             ->setField('json_field.subField2', 'newVal2')
-            ->getEntity();
+            ->build();
 
         $expectedValue = AuthorFactory::JSON_FIELD_DEFAULT_VALUE;
         $expectedValue['subField1'] = 'newVal1';
@@ -113,9 +113,9 @@ class BaseFactoryArrayNotationTest extends TestCase
 
     public function testBaseFactoryArrayNotationOverwriteOneFieldWithSetField(): void
     {
-        $author = AuthorFactory::make()
+        $author = AuthorFactory::new()
             ->setField('json_field.subField1', 'newValue')
-            ->getEntity();
+            ->build();
 
         $expectedValue = AuthorFactory::JSON_FIELD_DEFAULT_VALUE;
         $expectedValue['subField1'] = 'newValue';
@@ -126,14 +126,14 @@ class BaseFactoryArrayNotationTest extends TestCase
 
     public function testBaseFactoryArrayNotationOverwriteOneFieldWithDeepAssociation(): void
     {
-        $author = AuthorFactory::make([
+        $author = AuthorFactory::new([
             'json_field.subField1' => [
                 'subSubField1' => 'subSubValue1',
                 'subSubField2' => 'subSubValue2',
             ],
         ])
             ->setField('json_field.subField1.subSubField2', 'blah')
-            ->getEntity();
+            ->build();
 
         $expectedValue = [
             'subField1' => [
@@ -148,12 +148,12 @@ class BaseFactoryArrayNotationTest extends TestCase
 
     public function testBaseFactoryArrayNotationOverwriteOneFieldWithDeepAssociationInline(): void
     {
-        $author = AuthorFactory::make([
+        $author = AuthorFactory::new([
             'json_field.subField1.subSubField1' => 'subSubValue1',
             'json_field.subField1.subSubField2' => 'subSubValue2',
         ])
         ->setField('json_field.subField1.subSubField2', 'blah')
-        ->getEntity();
+        ->build();
 
         $expectedValue = [
             'subField1' => [
@@ -168,10 +168,10 @@ class BaseFactoryArrayNotationTest extends TestCase
 
     public function testBaseFactoryArrayNotationOverwriteOneFieldWithSetFieldOnAssociation(): void
     {
-        $article = ArticleFactory::make()->withAuthors(
-            AuthorFactory::make(2)
-                    ->setField('json_field.subField1', 'newValue')->getEntities(),
-        )->getEntity();
+        $article = ArticleFactory::new()->withAuthors(
+            AuthorFactory::new(2)
+                    ->setField('json_field.subField1', 'newValue')->buildMany(),
+        )->build();
 
         $expectedValue = AuthorFactory::JSON_FIELD_DEFAULT_VALUE;
         $expectedValue['subField1'] = 'newValue';
@@ -184,9 +184,9 @@ class BaseFactoryArrayNotationTest extends TestCase
 
     public function testBaseFactoryArrayNotationWithUndefinedValue(): void
     {
-        $author = AuthorFactory::make()
+        $author = AuthorFactory::new()
             ->setField('non-existing_json_field.subField1', 'newValue')
-            ->getEntity();
+            ->build();
 
         $expectedValue = AuthorFactory::JSON_FIELD_DEFAULT_VALUE;
 
@@ -199,8 +199,8 @@ class BaseFactoryArrayNotationTest extends TestCase
         $this->expectException(FixtureFactoryException::class);
         $this->expectExceptionMessage('Value `foo` cannot be merged with array notation `json_field.subField1 => newValue`');
 
-        AuthorFactory::make(['json_field' => 'foo'])
+        AuthorFactory::new(['json_field' => 'foo'])
             ->setField('json_field.subField1', 'newValue')
-            ->getEntity();
+            ->build();
     }
 }

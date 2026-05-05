@@ -48,7 +48,7 @@ class FactoryTransactionStrategyTest extends TestCase
         $this->assertFalse($tracker->hasTables(), 'Tracker should start empty');
 
         // Persist a city
-        CityFactory::make()->persist();
+        CityFactory::new()->save();
 
         $this->assertTrue($tracker->hasTables(), 'Tracker should have tables after persist');
         $tables = $tracker->getTableNames();
@@ -66,8 +66,8 @@ class FactoryTransactionStrategyTest extends TestCase
         $tracker->clear();
 
         // Persist cities and countries
-        CityFactory::make()->persist();
-        CountryFactory::make()->persist();
+        CityFactory::new()->save();
+        CountryFactory::new()->save();
 
         $tables = $tracker->getTableNames();
         $this->assertContains('cities', $tables);
@@ -84,7 +84,7 @@ class FactoryTransactionStrategyTest extends TestCase
     {
         $tracker = FactoryTableTracker::getInstance();
 
-        CityFactory::make()->persist();
+        CityFactory::new()->save();
         $this->assertTrue($tracker->hasTables());
 
         $tracker->clear();
@@ -105,7 +105,7 @@ class FactoryTransactionStrategyTest extends TestCase
         $strategy = new FactoryTransactionStrategy();
 
         // Get the connection the factory will actually use
-        $connection = CityFactory::make()->getTable()->getConnection();
+        $connection = CityFactory::new()->getTable()->getConnection();
 
         // Setup should NOT start transactions (lazy strategy)
         $strategy->setupTest([]);
@@ -119,7 +119,7 @@ class FactoryTransactionStrategyTest extends TestCase
         $this->assertSame($strategy, FactoryTransactionStrategy::getActiveInstance());
 
         // Persist data — this should lazily start the transaction
-        $city = CityFactory::make(['name' => 'Test City'])->persist();
+        $city = CityFactory::new(['name' => 'Test City'])->save();
         $this->assertNotEmpty($city->id);
 
         $this->assertTrue(
@@ -166,8 +166,8 @@ class FactoryTransactionStrategyTest extends TestCase
         $tracker->clear();
 
         // Create some data
-        $city1 = CityFactory::make(['name' => 'City 1'])->persist();
-        $city2 = CityFactory::make(['name' => 'City 2'])->persist();
+        $city1 = CityFactory::new(['name' => 'City 1'])->save();
+        $city2 = CityFactory::new(['name' => 'City 2'])->save();
 
         $this->assertNotEmpty($city1->id);
         $this->assertNotEmpty($city2->id);
@@ -188,9 +188,9 @@ class FactoryTransactionStrategyTest extends TestCase
         $tracker->clear();
 
         // Persist multiple cities
-        CityFactory::make()->persist();
-        CityFactory::make()->persist();
-        CityFactory::make()->persist();
+        CityFactory::new()->save();
+        CityFactory::new()->save();
+        CityFactory::new()->save();
 
         $tables = $tracker->getTableNames();
         $this->assertCount(1, $tables, 'Same table should only be tracked once');
@@ -219,7 +219,7 @@ class FactoryTransactionStrategyTest extends TestCase
         $strategy->setupTest([]);
 
         try {
-            $city = CityFactory::make(['name' => 'Berlin'])->persist();
+            $city = CityFactory::new(['name' => 'Berlin'])->save();
 
             $this->assertNotEmpty($city->id, 'Entity should have an id after persist');
             $this->assertFalse(
@@ -236,7 +236,7 @@ class FactoryTransactionStrategyTest extends TestCase
 
             // Connection is in transaction (lazy-started by persist),
             // mirroring the runtime conditions of the bug.
-            $connection = CityFactory::make()->getTable()->getConnection();
+            $connection = CityFactory::new()->getTable()->getConnection();
             $this->assertTrue(
                 $connection->inTransaction(),
                 'Sanity check: the bug only manifests inside an outer transaction.',

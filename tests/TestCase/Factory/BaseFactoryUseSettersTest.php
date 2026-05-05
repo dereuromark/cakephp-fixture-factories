@@ -25,17 +25,17 @@ class BaseFactoryUseSettersTest extends TestCase
     public function testNonStringField(): void
     {
         $this->expectException(TypeError::class);
-        AuthorFactory::make()->skipSetterFor(0);
+        AuthorFactory::new()->skipSetterFor(0);
     }
 
     public function testSettersAreDefinedOnOneAuthor(): void
     {
         $value = 'Foo';
-        $author = AuthorFactory::make([
+        $author = AuthorFactory::new([
             'field_with_setter_1' => $value,
             'field_with_setter_2' => $value,
             'field_with_setter_3' => $value,
-        ])->skipSetterFor([])->getEntity();
+        ])->skipSetterFor([])->build();
 
         for ($i = 1; $i < 4; $i++) {
             $this->assertSame($author->prependPrefixToField($value), $author->get("field_with_setter_$i"));
@@ -45,11 +45,11 @@ class BaseFactoryUseSettersTest extends TestCase
     public function testSettersAreDefinedOnTwoAuthors(): void
     {
         $value = 'Foo';
-        $authors = AuthorFactory::make([
+        $authors = AuthorFactory::new([
             'field_with_setter_1' => $value,
             'field_with_setter_2' => $value,
             'field_with_setter_3' => $value,
-        ], 2)->skipSetterFor([])->getEntities();
+        ], 2)->skipSetterFor([])->buildMany();
 
         foreach ($authors as $author) {
             for ($i = 1; $i < 4; $i++) {
@@ -61,14 +61,14 @@ class BaseFactoryUseSettersTest extends TestCase
     public function testSettersAreDefinedOnAssociatedAuthor(): void
     {
         $value = 'Foo';
-        $authorFactory = AuthorFactory::make(4)
-            ->patchData([
+        $authorFactory = AuthorFactory::new(4)
+            ->state([
                 'field_with_setter_1' => $value,
                 'field_with_setter_2' => $value,
                 'field_with_setter_3' => $value,
             ])
             ->skipSetterFor([]);
-        $authors = ArticleFactory::make()->with('Authors', $authorFactory)->getEntity()->authors;
+        $authors = ArticleFactory::new()->with('Authors', $authorFactory)->build()->authors;
 
         foreach ($authors as $author) {
             for ($i = 1; $i < 4; $i++) {
@@ -80,11 +80,11 @@ class BaseFactoryUseSettersTest extends TestCase
     public function testSetterIsSkippedForDefaultFields(): void
     {
         $value = 'Foo';
-        $author = AuthorFactory::make([
+        $author = AuthorFactory::new([
             'field_with_setter_1' => $value,
             'field_with_setter_2' => $value,
             'field_with_setter_3' => $value,
-        ])->getEntity();
+        ])->build();
 
         $this->assertSame($value, $author->get('field_with_setter_1'));
         $this->assertSame($author->prependPrefixToField($value), $author->get('field_with_setter_2'));
@@ -94,11 +94,11 @@ class BaseFactoryUseSettersTest extends TestCase
     public function testSettersAreSkippedDefinedOnTwoAuthors(): void
     {
         $value = 'Foo';
-        $authors = AuthorFactory::make([
+        $authors = AuthorFactory::new([
             'field_with_setter_1' => $value,
             'field_with_setter_2' => $value,
             'field_with_setter_3' => $value,
-        ], 2)->skipSetterFor('field_with_setter_2')->getEntities();
+        ], 2)->skipSetterFor('field_with_setter_2')->buildMany();
 
         foreach ($authors as $author) {
             $this->assertSame($author->prependPrefixToField($value), $author->get('field_with_setter_1'));
@@ -110,11 +110,11 @@ class BaseFactoryUseSettersTest extends TestCase
     public function testSettersAreSkippedDefinedOnTwoAuthorsWithMerge(): void
     {
         $value = 'Foo';
-        $authors = AuthorFactory::make([
+        $authors = AuthorFactory::new([
             'field_with_setter_1' => $value,
             'field_with_setter_2' => $value,
             'field_with_setter_3' => $value,
-        ], 2)->skipSetterFor('field_with_setter_2', true)->getEntities();
+        ], 2)->skipSetterFor('field_with_setter_2', true)->buildMany();
 
         foreach ($authors as $author) {
             $this->assertSame($value, $author->get('field_with_setter_1'));
@@ -126,14 +126,14 @@ class BaseFactoryUseSettersTest extends TestCase
     public function testSettersAreSkippedOnAssociatedAuthor(): void
     {
         $value = 'Foo';
-        $authorFactory = AuthorFactory::make(4)
-            ->patchData([
+        $authorFactory = AuthorFactory::new(4)
+            ->state([
                 'field_with_setter_1' => $value,
                 'field_with_setter_2' => $value,
                 'field_with_setter_3' => $value,
             ])
             ->skipSetterFor(['field_with_setter_2', 'field_with_setter_3']);
-        $authors = ArticleFactory::make()->with('Authors', $authorFactory)->getEntity()->authors;
+        $authors = ArticleFactory::new()->with('Authors', $authorFactory)->build()->authors;
 
         foreach ($authors as $author) {
             $this->assertSame($author->prependPrefixToField($value), $author->get('field_with_setter_1'));

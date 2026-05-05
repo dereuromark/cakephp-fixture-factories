@@ -29,7 +29,7 @@ The bundled rules cover the safe, mechanical call-site changes:
 - `getEntities()` to `buildMany()`
 - `persistEntity()` to `save()`
 - `persistEntities()` to `saveMany()`
-- static query helpers like `Factory::find()` to `Factory::query()->find()`
+- static query helpers like `Factory::find()` to `Factory::query()`
 
 It intentionally does **not** rewrite deprecated `persist()` calls, because that return type is shape-dependent and needs a human choice between `save()` and `saveMany()`.
 

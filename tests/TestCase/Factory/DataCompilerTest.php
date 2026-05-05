@@ -40,8 +40,8 @@ class DataCompilerTest extends TestCase
 
     public function setUp(): void
     {
-        $this->authorDataCompiler = new DataCompiler(AuthorFactory::make());
-        $this->articleDataCompiler = new DataCompiler(ArticleFactory::make());
+        $this->authorDataCompiler = new DataCompiler(AuthorFactory::new());
+        $this->articleDataCompiler = new DataCompiler(ArticleFactory::new());
 
         parent::setUp();
     }
@@ -115,7 +115,7 @@ class DataCompilerTest extends TestCase
 
     public function testSetPrimaryKey(): void
     {
-        $data = CountryFactory::make()->getEntity();
+        $data = CountryFactory::new()->build();
 
         $this->articleDataCompiler->startPersistMode();
         $res = $this->articleDataCompiler->setPrimaryKey($data);
@@ -137,10 +137,10 @@ class DataCompilerTest extends TestCase
 
     public function testSetPrimaryKeyOnEntity(): void
     {
-        $countries = CountryFactory::make(2)->getEntity();
+        $country = CountryFactory::new()->build();
 
         $this->articleDataCompiler->startPersistMode();
-        $res = $this->articleDataCompiler->setPrimaryKey($countries);
+        $res = $this->articleDataCompiler->setPrimaryKey($country);
 
         $this->assertTrue(is_int($res['id']));
 
@@ -164,7 +164,7 @@ class DataCompilerTest extends TestCase
     #[DataProvider('dataForGetModifiedUniqueFields')]
     public function testGetModifiedUniqueFields(array $injectedData, array $expected): void
     {
-        $dataCompiler = new DataCompiler(CountryFactory::make($injectedData));
+        $dataCompiler = new DataCompiler(CountryFactory::new($injectedData));
         $dataCompiler->compileEntity($injectedData);
         $this->assertSame($dataCompiler->getModifiedUniqueFields(), $expected);
     }
@@ -172,7 +172,7 @@ class DataCompilerTest extends TestCase
     public function testCompileEntityWithoutSetters(): void
     {
         $value = 'Foo';
-        $dataCompiler = new DataCompiler(AuthorFactory::make()->without('Address'));
+        $dataCompiler = new DataCompiler(AuthorFactory::new()->without('Address'));
         $dataCompiler->setSkippedSetters(['field_with_setter_1']);
         /** @var \TestApp\Model\Entity\Author $author */
         $author = $dataCompiler->compileEntity([
@@ -188,7 +188,7 @@ class DataCompilerTest extends TestCase
 
     public function testEntityHasRegistryAlias(): void
     {
-        $country = CountryFactory::make()->getEntity();
+        $country = CountryFactory::new()->build();
         $this->assertSame('Countries', $country->getSource());
     }
 }

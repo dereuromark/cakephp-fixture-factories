@@ -27,7 +27,7 @@ class BuildCollaboratorHooksTest extends TestCase
     public function testDefaultDataCompilerIsUsedWhenNotOverridden(): void
     {
         /** @var \CakephpFixtureFactories\Test\Factory\CustomBuildHooksArticleFactory $factory */
-        $factory = ArticleFactory::make();
+        $factory = ArticleFactory::new();
 
         $reflection = new ReflectionMethod($factory, 'getDataCompiler');
         $compiler = $reflection->invoke($factory);
@@ -37,7 +37,7 @@ class BuildCollaboratorHooksTest extends TestCase
 
     public function testDefaultEventCollectorIsUsedWhenNotOverridden(): void
     {
-        $factory = ArticleFactory::make();
+        $factory = ArticleFactory::new();
 
         $reflection = new ReflectionMethod($factory, 'getEventCompiler');
         $collector = $reflection->invoke($factory);
@@ -47,7 +47,7 @@ class BuildCollaboratorHooksTest extends TestCase
 
     public function testBuildDataCompilerHookIsUsedBySubclass(): void
     {
-        $factory = CustomBuildHooksArticleFactory::make();
+        $factory = CustomBuildHooksArticleFactory::new();
 
         $compiler = $factory->exposeDataCompiler();
 
@@ -61,7 +61,7 @@ class BuildCollaboratorHooksTest extends TestCase
 
     public function testBuildEventCollectorHookIsUsedBySubclass(): void
     {
-        $factory = CustomBuildHooksArticleFactory::make();
+        $factory = CustomBuildHooksArticleFactory::new();
 
         $collector = $factory->exposeEventCollector();
 

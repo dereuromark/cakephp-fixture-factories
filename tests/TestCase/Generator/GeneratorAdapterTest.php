@@ -442,11 +442,11 @@ class GeneratorAdapterTest extends TestCase
      */
     public function testSetGeneratorGlobalByDefault(): void
     {
-        $factory1 = ArticleFactory::make();
+        $factory1 = ArticleFactory::new();
         $factory1->setGenerator('dummy');
 
         // A different factory instance should also get the dummy generator
-        $factory2 = ArticleFactory::make();
+        $factory2 = ArticleFactory::new();
 
         // Both should return the same generator instance (global default)
         $this->assertSame($factory1->getGenerator(), $factory2->getGenerator());
@@ -461,10 +461,10 @@ class GeneratorAdapterTest extends TestCase
     {
         Configure::write('FixtureFactories.instanceLevelGenerator', true);
 
-        $factory1 = ArticleFactory::make();
+        $factory1 = ArticleFactory::new();
         $factory1 = $factory1->setGenerator('dummy');
 
-        $factory2 = ArticleFactory::make();
+        $factory2 = ArticleFactory::new();
 
         // factory1 should have its own generator
         // factory2 should fall back to the default (faker)
@@ -483,7 +483,7 @@ class GeneratorAdapterTest extends TestCase
         // setDefaultGenerator should set the global default even with flag enabled
         BaseFactory::setDefaultGenerator('dummy');
 
-        $factory = ArticleFactory::make();
+        $factory = ArticleFactory::new();
         $generator = $factory->getGenerator();
 
         // Should use the default generator (dummy) since no instance override
@@ -498,7 +498,7 @@ class GeneratorAdapterTest extends TestCase
     public function testResetDefaultGenerator(): void
     {
         // Get a generator to cache it
-        $factory1 = ArticleFactory::make();
+        $factory1 = ArticleFactory::new();
         $gen1 = $factory1->getGenerator();
 
         // Reset
@@ -506,7 +506,7 @@ class GeneratorAdapterTest extends TestCase
         CakeGeneratorFactory::clearInstances();
 
         // Getting again should create a new instance
-        $factory2 = ArticleFactory::make();
+        $factory2 = ArticleFactory::new();
         $gen2 = $factory2->getGenerator();
 
         $this->assertNotSame($gen1, $gen2);
@@ -521,7 +521,7 @@ class GeneratorAdapterTest extends TestCase
     {
         Configure::write('FixtureFactories.seed', 9999);
 
-        $factory = ArticleFactory::make();
+        $factory = ArticleFactory::new();
         $gen = $factory->getGenerator();
         $value1 = $gen->randomNumber();
 
@@ -529,7 +529,7 @@ class GeneratorAdapterTest extends TestCase
         CakeGeneratorFactory::clearInstances();
         BaseFactory::resetDefaultGenerator();
 
-        $factory2 = ArticleFactory::make();
+        $factory2 = ArticleFactory::new();
         $gen2 = $factory2->getGenerator();
         $value2 = $gen2->randomNumber();
 

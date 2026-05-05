@@ -116,7 +116,7 @@ class FixtureScenarioTest extends TestCase
 
     private function countAustralianAuthors(): int
     {
-        return AuthorFactory::find()
+        return AuthorFactory::query()
             ->innerJoinWith('Address.City.Countries', function (SelectQuery $q) {
                 return $q->where(['Countries.name' => NAustralianAuthorsScenario::COUNTRY_NAME]);
             })

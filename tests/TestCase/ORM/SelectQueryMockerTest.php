@@ -30,7 +30,7 @@ class SelectQueryMockerTest extends TestCase
     public function testSelectQueryMocker(): void
     {
         $names = ['Foo', 'Bar'];
-        $countryFactory = CountryFactory::make([
+        $countryFactory = CountryFactory::new([
             ['name' => $names[0]],
             ['name' => $names[1]],
         ]);
@@ -49,12 +49,12 @@ class SelectQueryMockerTest extends TestCase
     public function testSelectQueryMockerWithDataInDb(): void
     {
         $names = ['Foo', 'Bar'];
-        $countryFactory = CountryFactory::make([
+        $countryFactory = CountryFactory::new([
             ['name' => $names[0]],
             ['name' => $names[1]],
         ]);
         $nCountriesInDB = rand(2, 5);
-        CountryFactory::make($nCountriesInDB)->persist();
+        CountryFactory::new($nCountriesInDB)->saveMany();
         SelectQueryMocker::mock($this, $countryFactory);
 
         $CountriesTable = TableRegistry::getTableLocator()->get('Countries');
@@ -70,7 +70,7 @@ class SelectQueryMockerTest extends TestCase
     public function testSelectQueryMockerWithAssociations(): void
     {
         $names = ['Foo', 'Bar'];
-        $cityFactory = CityFactory::make([
+        $cityFactory = CityFactory::new([
             ['name' => $names[0]],
             ['name' => $names[1]],
         ])->withCountries();

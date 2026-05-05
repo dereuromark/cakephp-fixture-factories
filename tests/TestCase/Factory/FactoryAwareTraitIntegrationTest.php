@@ -54,13 +54,13 @@ class FactoryAwareTraitIntegrationTest extends TestCase
 
     public function testGetFactoryWithArgs(): void
     {
-        $article = $this->getFactory('articles', ['title' => 'Foo'])->getEntity();
+        $article = $this->getFactory('articles', ['title' => 'Foo'])->build();
         $this->assertEquals('Foo', $article->title);
 
-        $articles = $this->getFactory('articles', 3)->getEntities();
+        $articles = $this->getFactory('articles', 3)->buildMany();
         $this->assertEquals(3, count($articles));
 
-        $articles = $this->getFactory('articles', ['title' => 'Foo'], 3)->getEntities();
+        $articles = $this->getFactory('articles', ['title' => 'Foo'], 3)->buildMany();
         $this->assertEquals(3, count($articles));
         foreach ($articles as $article) {
             $this->assertEquals('Foo', $article->title);

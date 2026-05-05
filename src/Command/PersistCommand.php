@@ -93,7 +93,7 @@ class PersistCommand extends Command
         try {
             $factory = $this->parseFactory($args);
             // The following order is important, as methods may overwrite $times
-            $factory = $this->setTimes($args, $factory);
+            $factory = $this->countFactory($args, $factory);
             $factory = $this->with($args, $factory);
             $factory = $this->attachMethod($args, $factory, $io);
         } catch (FactoryNotFoundException $e) {
@@ -136,7 +136,7 @@ class PersistCommand extends Command
      *
      * @return \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>
      */
-    public function setTimes(Arguments $args, BaseFactory $factory): BaseFactory
+    public function countFactory(Arguments $args, BaseFactory $factory): BaseFactory
     {
         if ($args->getOption('number')) {
             $times = (int)$args->getOption('number');
@@ -144,7 +144,7 @@ class PersistCommand extends Command
             $times = 1;
         }
 
-        return $factory->setTimes($times);
+        return $factory->count($times);
     }
 
     /**
@@ -229,19 +229,13 @@ class PersistCommand extends Command
 
         $entities = [];
         try {
-            $entities = $factory->persist();
+            $entities = $factory->saveMany();
         } catch (PersistenceException $e) {
             $io->error($e->getMessage());
             $this->abort();
         }
 
-        if (!is_iterable($entities)) {
-            $times = 1;
-        } elseif (is_countable($entities)) {
-            $times = count($entities);
-        } else {
-            $times = iterator_count($entities);
-        }
+        $times = count($entities);
         $factory = get_class($factory);
         $io->success("{$times} {$factory} persisted on '{$connection}' connection.");
     }
@@ -254,7 +248,7 @@ class PersistCommand extends Command
      */
     public function dryRun(BaseFactory $factory, ConsoleIo $io): void
     {
-        $entities = $factory->getEntities();
+        $entities = $factory->buildMany();
         $times = count($entities);
         $factory = get_class($factory);
 

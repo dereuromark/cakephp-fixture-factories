@@ -25,7 +25,7 @@ $articles = ArticleFactory::new(['title' => 'Foo'])->count(3)->buildMany();
 ```
 or
 ```php
-$articles = ArticleFactory::new()->count(3)->patchData(['title' => 'Foo'])->buildMany();
+$articles = ArticleFactory::new()->count(3)->state(['title' => 'Foo'])->buildMany();
 ```
 or
 ```php
@@ -85,13 +85,13 @@ $this->Articles->save($article, ['associated' => ['Authors']]);
 
 You may want to retrieve your entities as a result set, allowing you to conveniently query the entities created:
 ```php
-$articles = ArticleFactory::new()->count(3)->getResultSet(); // Will not persist in the DB
-$articles = ArticleFactory::new()->count(3)->getPersistedResultSet(); // Will persist in the DB
+$articles = new \Cake\ORM\ResultSet(ArticleFactory::new()->count(3)->buildMany()); // Will not persist in the DB
+$articles = new \Cake\ORM\ResultSet(ArticleFactory::new()->count(3)->saveMany()); // Will persist in the DB
 ```
 
 A single entity is returned wrapped in a result set as well, so the contract is the same regardless of count:
 ```php
-$article = ArticleFactory::new()->getPersistedResultSet()->first(); // Cake\Datasource\EntityInterface
+$article = (new \Cake\ORM\ResultSet(ArticleFactory::new()->saveMany()))->first(); // Cake\Datasource\EntityInterface
 ```
 
 Do not forget to check the [plugin's tests](https://github.com/dereuromark/cakephp-fixture-factories/tree/main/tests) for

@@ -21,7 +21,6 @@ use Cake\Event\EventManagerInterface;
 use Cake\I18n\I18n;
 use Cake\ORM\Association\BelongsTo;
 use Cake\ORM\Query\SelectQuery;
-use Cake\ORM\ResultSet;
 use Cake\ORM\Table;
 use CakephpFixtureFactories\Error\FixtureFactoryException;
 use CakephpFixtureFactories\Error\PersistenceException;
@@ -185,25 +184,23 @@ abstract class BaseFactory
 
     /**
      * @param mixed $makeParameter Injected data
+     * @param int $times Number of entities to produce. Prefer `->count()` in userland.
      *
      * @throws \InvalidArgumentException
      *
      * @return static
      */
-    public static function new(mixed $makeParameter = []): self
+    public static function new(mixed $makeParameter = [], int $times = 1): self
     {
         if (is_numeric($makeParameter)) {
             $factory = self::makeFromNonCallable();
             $times = (int)$makeParameter;
         } elseif ($makeParameter === null) {
             $factory = self::makeFromNonCallable();
-            $times = 1;
         } elseif (is_array($makeParameter) || $makeParameter instanceof EntityInterface || is_string($makeParameter)) {
             $factory = self::makeFromNonCallable($makeParameter);
-            $times = 1;
         } elseif (is_callable($makeParameter)) {
             $factory = self::makeFromCallable($makeParameter);
-            $times = 1;
         } else {
             throw new InvalidArgumentException('
                 ::new only accepts an array, an integer, an EntityInterface, a string or a callable as first parameter.
@@ -328,18 +325,6 @@ abstract class BaseFactory
     }
 
     /**
-     * Get the generator instance, using the locale from I18n
-     *
-     * @deprecated 3.1.0 Use getGenerator() instead. Will be removed in v4.0
-     *
-     * @return \CakephpFixtureFactories\Generator\GeneratorInterface
-     */
-    public function getFaker(): GeneratorInterface
-    {
-        return $this->getGenerator();
-    }
-
-    /**
      * Set the generator type to use.
      *
      * When `FixtureFactories.instanceLevelGenerator` is enabled, this only affects
@@ -448,46 +433,6 @@ abstract class BaseFactory
     }
 
     /**
-     * @deprecated Transitional wrapper for the v2 branch.
-     *
-     * @return TEntity
-     */
-    public function getEntity(): EntityInterface
-    {
-        return $this->toArray()[0];
-    }
-
-    /**
-     * @deprecated Transitional wrapper for the v2 branch.
-     *
-     * @return array<TEntity>
-     */
-    public function getEntities(): array
-    {
-        return $this->buildMany();
-    }
-
-    /**
-     * @deprecated Transitional wrapper for the v2 branch.
-     *
-     * @return \Cake\ORM\ResultSet<int, TEntity>
-     */
-    public function getResultSet(): ResultSet
-    {
-        return new ResultSet($this->buildMany());
-    }
-
-    /**
-     * @deprecated Transitional wrapper for the v2 branch.
-     *
-     * @return \Cake\ORM\ResultSet<int, TEntity>
-     */
-    public function getPersistedResultSet(): ResultSet
-    {
-        return new ResultSet($this->saveMany());
-    }
-
-    /**
      * @return array<string, mixed>
      */
     public function getMarshallerOptions(): array
@@ -519,16 +464,6 @@ abstract class BaseFactory
             : $marshallerOptions;
 
         return $factory;
-    }
-
-    /**
-     * @deprecated will be removed in v4
-     *
-     * @return array<string, mixed>
-     */
-    public function getAssociated(): array
-    {
-        return $this->getAssociationBuilder()->getAssociated();
     }
 
     /**
@@ -618,50 +553,6 @@ abstract class BaseFactory
         $factory = $data ? $this->state($data) : $this;
 
         return $factory->doPersist();
-    }
-
-    /**
-     * @deprecated Transitional wrapper for the v2 branch.
-     *
-     * @throws \RuntimeException if the factory is configured to produce more than one entity.
-     *
-     * @return TEntity
-     */
-    public function persistEntity(): EntityInterface
-    {
-        $entities = $this->doPersist();
-        $count = count($entities);
-        if ($count !== 1) {
-            throw new RuntimeException(sprintf(
-                '%s::persistEntity() expected to persist exactly 1 entity, but %d were produced. Use persistEntities() for factories that produce multiple entities.',
-                static::class,
-                $count,
-            ));
-        }
-
-        return $entities[0];
-    }
-
-    /**
-     * @deprecated Transitional wrapper for the v2 branch.
-     *
-     * @return array<TEntity>
-     */
-    public function persistEntities(): array
-    {
-        return $this->saveMany();
-    }
-
-    /**
-     * @deprecated Transitional wrapper for the v2 branch.
-     *
-     * @return TEntity|array<TEntity>
-     */
-    public function persist(): EntityInterface|array
-    {
-        $entities = $this->doPersist();
-
-        return count($entities) === 1 ? $entities[0] : $entities;
     }
 
     /**
@@ -797,18 +688,6 @@ abstract class BaseFactory
     }
 
     /**
-     * @deprecated Transitional wrapper for the v2 branch.
-     *
-     * @param \Cake\Datasource\EntityInterface|array<string, mixed> $data Data to inject
-     *
-     * @return static
-     */
-    public function patchData(array|EntityInterface $data): static
-    {
-        return $this->state($data);
-    }
-
-    /**
      * Sets the value for a single field
      *
      * @param string $field to set
@@ -839,6 +718,16 @@ abstract class BaseFactory
     protected function getAssociationBuilder(): AssociationBuilder
     {
         return $this->associationBuilder;
+    }
+
+    /**
+     * Expose normalized association marshalling config for advanced use cases.
+     *
+     * @return array<string, mixed>
+     */
+    public function getAssociatedFactories(): array
+    {
+        return $this->getAssociationBuilder()->getAssociated();
     }
 
     /**
@@ -874,16 +763,6 @@ abstract class BaseFactory
         $factory->times = $times;
 
         return $factory;
-    }
-
-    /**
-     * @deprecated Transitional wrapper for the v2 branch.
-     *
-     * @return static
-     */
-    public function setTimes(int $times): static
-    {
-        return $this->count($times);
     }
 
     /**
@@ -1170,96 +1049,15 @@ abstract class BaseFactory
     }
 
     /**
-     * @deprecated Transitional wrapper for the v2 branch.
+     * Access the factory's related table directly.
      *
-     * @return static
+     * Useful for table-level operations like `Table::get()`.
+     *
+     * @return \Cake\ORM\Table
      */
-    public static function make(mixed $makeParameter = [], int $times = 1): self
+    public static function table(): Table
     {
-        $factory = static::new($makeParameter);
-        if ($times !== 1) {
-            $factory = $factory->count($times);
-        }
-
-        return $factory;
-    }
-
-    /**
-     * @deprecated Transitional wrapper for the v2 branch.
-     *
-     * @return static
-     */
-    public static function makeMany(int $times): self
-    {
-        return static::new()->count($times);
-    }
-
-    /**
-     * @deprecated Transitional wrapper for the v2 branch.
-     *
-     * @return static
-     */
-    public static function makeWith(callable $fn): self
-    {
-        return static::new($fn);
-    }
-
-    /**
-     * @deprecated Transitional wrapper for the v2 branch.
-     *
-     * @return static
-     */
-    public static function makeFrom(EntityInterface $entity): self
-    {
-        return static::from($entity);
-    }
-
-    /**
-     * @deprecated Transitional wrapper for the v2 branch.
-     *
-     * @return \Cake\ORM\Query\SelectQuery<\Cake\Datasource\EntityInterface>
-     */
-    public static function find(string $type = 'all', mixed ...$options): SelectQuery
-    {
-        return (new static())->getTable()->find($type, ...$options);
-    }
-
-    /**
-     * @deprecated Transitional wrapper for the v2 branch.
-     *
-     * @param mixed $primaryKey Primary key value to find
-     * @param array<string, mixed>|string $finder Finder name or options array
-     * @param mixed ...$args Additional finder arguments
-     *
-     * @return \Cake\Datasource\EntityInterface
-     */
-    public static function get(
-        mixed $primaryKey,
-        array|string $finder = 'all',
-        mixed ...$args,
-    ): EntityInterface {
-        if (is_array($finder)) {
-            $options = $finder;
-            $finder = 'all';
-
-            if (!$args && isset($options['contain'])) {
-                return (new static())->getTable()->get($primaryKey, finder: $finder, contain: $options['contain']);
-            }
-
-            return (new static())->getTable()->get($primaryKey, $finder, ...$options, ...$args);
-        }
-
-        return (new static())->getTable()->get($primaryKey, $finder, ...$args);
-    }
-
-    /**
-     * @deprecated Transitional wrapper for the v2 branch.
-     *
-     * @return \Cake\Datasource\EntityInterface|array<string, mixed>
-     */
-    public static function firstOrFail(mixed $conditions = null): EntityInterface|array
-    {
-        return static::query()->where($conditions)->firstOrFail();
+        return (new static())->getTable();
     }
 
     /**

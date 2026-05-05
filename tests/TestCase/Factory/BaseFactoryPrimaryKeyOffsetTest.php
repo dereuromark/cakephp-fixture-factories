@@ -43,9 +43,9 @@ class BaseFactoryPrimaryKeyOffsetTest extends TestCase
     public function testSetPrimaryKeyOffset(int $cityOffset): void
     {
         $n = 10;
-        $cities = CityFactory::make($n)
+        $cities = CityFactory::new($n)
             ->setPrimaryKeyOffset($cityOffset)
-            ->persist();
+            ->saveMany();
 
         $countryOffset = $cities[0]->country->id;
 
@@ -62,9 +62,9 @@ class BaseFactoryPrimaryKeyOffsetTest extends TestCase
     public function testSetPrimaryKeyOffsetInAssociation(int $countryOffset): void
     {
         $n = 5;
-        $cities = CityFactory::make($n)
-            ->with('Countries', CountryFactory::make()->setPrimaryKeyOffset($countryOffset))
-            ->persist();
+        $cities = CityFactory::new($n)
+            ->with('Countries', CountryFactory::new()->setPrimaryKeyOffset($countryOffset))
+            ->saveMany();
 
         $cityOffset = $cities[0]->id;
 
@@ -80,10 +80,10 @@ class BaseFactoryPrimaryKeyOffsetTest extends TestCase
         $cityOffset = rand(1, 100000);
         $countryOffset = rand(1, 100000);
 
-        $cities = CityFactory::make($nCities)
-            ->with('Countries', CountryFactory::make()->setPrimaryKeyOffset($countryOffset))
+        $cities = CityFactory::new($nCities)
+            ->with('Countries', CountryFactory::new()->setPrimaryKeyOffset($countryOffset))
             ->setPrimaryKeyOffset($cityOffset)
-            ->persist();
+            ->saveMany();
 
         $this->assertSame($cityOffset + $nCities - 1, $cities[$nCities - 1]->id);
         $this->assertSame($countryOffset + $nCities - 1, $cities[$nCities - 1]->country->id);
@@ -96,10 +96,10 @@ class BaseFactoryPrimaryKeyOffsetTest extends TestCase
         $countryOffset = rand(1, 100000);
 
         /** @var \TestApp\Model\Entity\Country $country */
-        $country = CountryFactory::make()
-            ->with('Cities', CityFactory::make($nCities)->setPrimaryKeyOffset($cityOffset))
+        $country = CountryFactory::new()
+            ->with('Cities', CityFactory::new($nCities)->setPrimaryKeyOffset($cityOffset))
             ->setPrimaryKeyOffset($countryOffset)
-            ->persist();
+            ->save();
 
         $this->assertSame($countryOffset, $country->id);
         $this->assertSame($cityOffset + $nCities - 1, $country->cities[$nCities - 1]->id);
@@ -112,11 +112,11 @@ class BaseFactoryPrimaryKeyOffsetTest extends TestCase
      */
     public function testSetPrimaryKeyOffsetConflict(): void
     {
-        $country = CountryFactory::make()->persist();
+        $country = CountryFactory::new()->save();
         $offset = $country->id;
 
         $this->expectException(PersistenceException::class);
-        CountryFactory::make()->setPrimaryKeyOffset($offset)->persist();
+        CountryFactory::new()->setPrimaryKeyOffset($offset)->save();
     }
 
     public function testPrimaryOffsetOnMultipleCalls(): void
@@ -124,11 +124,11 @@ class BaseFactoryPrimaryKeyOffsetTest extends TestCase
         $n = rand(3, 5);
         $m = rand(3, 5);
         $offset = rand(1, 1000000);
-        $factory = CountryFactory::make($n)->setPrimaryKeyOffset($offset);
+        $factory = CountryFactory::new($n)->setPrimaryKeyOffset($offset);
 
         $countries = [];
         for ($i = 0; $i < $m; $i++) {
-            $countries = $factory->persist();
+            $countries = $factory->saveMany();
         }
         $lastCountryId = $countries[$n - 1]->id;
         $expectedId = $offset + $n * $m - 1;
@@ -143,13 +143,13 @@ class BaseFactoryPrimaryKeyOffsetTest extends TestCase
         $countryOffset = rand(1, 1000000);
         $iterations = rand(3, 5);
 
-        $factory = CountryFactory::make($nCountries)
-            ->with('Cities', CityFactory::make($nCitiesPerCountry)->setPrimaryKeyOffset($cityOffset))
+        $factory = CountryFactory::new($nCountries)
+            ->with('Cities', CityFactory::new($nCitiesPerCountry)->setPrimaryKeyOffset($cityOffset))
             ->setPrimaryKeyOffset($countryOffset);
 
         $countries = [];
         for ($i = 0; $i < $iterations; $i++) {
-            $countries = $factory->persist();
+            $countries = $factory->saveMany();
         }
 
         $lastCountryId = $countries[$nCountries - 1]->id;
@@ -166,10 +166,10 @@ class BaseFactoryPrimaryKeyOffsetTest extends TestCase
         $offset1 = rand(1, 100000);
         $offset2 = $offset1 + rand(1, 100);
 
-        $country = CountryFactory::make()
-            ->with('Cities', CityFactory::make()->setPrimaryKeyOffset($offset1))
-            ->with('Cities', CityFactory::make()->setPrimaryKeyOffset($offset2))
-            ->persist();
+        $country = CountryFactory::new()
+            ->with('Cities', CityFactory::new()->setPrimaryKeyOffset($offset1))
+            ->with('Cities', CityFactory::new()->setPrimaryKeyOffset($offset2))
+            ->save();
 
         $this->assertSame($offset1, $country->cities[0]->id);
         $this->assertSame($offset2, $country->cities[1]->id);
@@ -178,22 +178,22 @@ class BaseFactoryPrimaryKeyOffsetTest extends TestCase
     public function testSetPrimaryKeyManually(): void
     {
         $id = 2;
-        $country = CountryFactory::make()->patchData(compact('id'))->persist();
+        $country = CountryFactory::new()->state(compact('id'))->save();
         $this->assertSame($id, $country->id);
 
         $id = rand(1, 100000);
-        $country = CountryFactory::make()->patchData(compact('id'))->persist();
+        $country = CountryFactory::new()->state(compact('id'))->save();
         $this->assertSame($id, $country->id);
     }
 
     public function testSetPrimaryKeyManuallyInPlugin(): void
     {
         $id = 2;
-        $bill = BillFactory::make()->patchData(compact('id'))->persist();
+        $bill = BillFactory::new()->state(compact('id'))->save();
         $this->assertSame($id, $bill->id);
 
         $id = rand(1, 100000);
-        $bill = BillFactory::make()->patchData(compact('id'))->persist();
+        $bill = BillFactory::new()->state(compact('id'))->save();
         $this->assertSame($id, $bill->id);
     }
 }

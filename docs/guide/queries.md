@@ -23,11 +23,9 @@ See the [CakePHP query-builder docs](https://book.cakephp.org/5/en/orm/query-bui
 
 Returns the number of rows in the factory's table.
 
-## `ArticleFactory::get($id)`
+## Fetching by primary key
 
-Returns an entity by primary key while the compatibility wrapper is still available on the v2 branch.
-
-If you want to stay on the query surface, use:
+Use the query surface:
 
 ```php
 ArticleFactory::query()->where(['id' => $id])->firstOrFail();

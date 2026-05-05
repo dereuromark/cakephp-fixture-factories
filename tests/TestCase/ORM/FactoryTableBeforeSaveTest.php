@@ -24,32 +24,32 @@ class FactoryTableBeforeSaveTest extends TestCase
 {
     public function testFindDuplicate(): void
     {
-        $persistedCountry = CountryFactory::make()->persist();
+        $persistedCountry = CountryFactory::new()->save();
 
         $unique_stamp = $persistedCountry->unique_stamp;
         $name = $persistedCountry->name;
         $id = $persistedCountry->id;
 
         // Has modified unique_stamp
-        $duplicateCountry = CountryFactory::make(compact('id', 'unique_stamp', 'name'))->getEntity();
+        $duplicateCountry = CountryFactory::new(compact('id', 'unique_stamp', 'name'))->build();
         $duplicateCountry->set(DataCompiler::MODIFIED_UNIQUE_PROPERTIES, ['unique_stamp']);
-        $beforeSaver = new FactoryTableBeforeSave(CountryFactory::make()->getTable(), $duplicateCountry);
+        $beforeSaver = new FactoryTableBeforeSave(CountryFactory::new()->getTable(), $duplicateCountry);
         $res = $beforeSaver->findDuplicate(compact('id'));
         $expect = compact('id', 'unique_stamp');
         $this->assertSame($expect, $res);
 
         // Has modified id
-        $duplicateCountry = CountryFactory::make(compact('id', 'unique_stamp', 'name'))->getEntity();
+        $duplicateCountry = CountryFactory::new(compact('id', 'unique_stamp', 'name'))->build();
         $duplicateCountry->set(DataCompiler::MODIFIED_UNIQUE_PROPERTIES, ['id']);
-        $beforeSaver = new FactoryTableBeforeSave(CountryFactory::make()->getTable(), $duplicateCountry);
+        $beforeSaver = new FactoryTableBeforeSave(CountryFactory::new()->getTable(), $duplicateCountry);
         $res = $beforeSaver->findDuplicate(compact('id'));
         $expect = compact('id');
         $this->assertSame($expect, $res);
 
         // Has modified id and unique_stamp
-        $duplicateCountry = CountryFactory::make(compact('id', 'unique_stamp', 'name'))->getEntity();
+        $duplicateCountry = CountryFactory::new(compact('id', 'unique_stamp', 'name'))->build();
         $duplicateCountry->set(DataCompiler::MODIFIED_UNIQUE_PROPERTIES, ['id', 'unique_stamp']);
-        $beforeSaver = new FactoryTableBeforeSave(CountryFactory::make()->getTable(), $duplicateCountry);
+        $beforeSaver = new FactoryTableBeforeSave(CountryFactory::new()->getTable(), $duplicateCountry);
         $res = $beforeSaver->findDuplicate(compact('id'));
         $expect = compact('id', 'unique_stamp');
         $this->assertSame($expect, $res);
@@ -57,17 +57,17 @@ class FactoryTableBeforeSaveTest extends TestCase
 
     public function testHandleUniqueFields(): void
     {
-        $persistedCountry = CountryFactory::make()->persist();
+        $persistedCountry = CountryFactory::new()->save();
 
         $unique_stamp = $persistedCountry->unique_stamp;
         $id = $persistedCountry->id;
 
         // Has modified id and unique_stamp
-        $duplicateCountry = CountryFactory::make(compact('id', 'unique_stamp'))->getEntity();
+        $duplicateCountry = CountryFactory::new(compact('id', 'unique_stamp'))->build();
         $duplicateCountry->set(DataCompiler::MODIFIED_UNIQUE_PROPERTIES, ['id', 'unique_stamp']);
         $duplicateCountry->set(DataCompiler::IS_ASSOCIATED, true);
 
-        $beforeSaver = new FactoryTableBeforeSave(CountryFactory::make()->getTable(), $duplicateCountry);
+        $beforeSaver = new FactoryTableBeforeSave(CountryFactory::new()->getTable(), $duplicateCountry);
         $beforeSaver->handleUniqueFields();
 
         $this->assertNull($duplicateCountry->get(DataCompiler::IS_ASSOCIATED));
