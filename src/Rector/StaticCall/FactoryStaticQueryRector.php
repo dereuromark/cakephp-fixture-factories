@@ -36,6 +36,14 @@ final class FactoryStaticQueryRector extends AbstractRector
             return null;
         }
 
+        if ($this->isName($node->name, 'get')) {
+            return new MethodCall(
+                new StaticCall($node->class, new Identifier('table')),
+                new Identifier('get'),
+                $node->args,
+            );
+        }
+
         foreach (['find', 'firstOrFail', 'count'] as $queryMethod) {
             if ($this->isName($node->name, $queryMethod)) {
                 return new MethodCall(
