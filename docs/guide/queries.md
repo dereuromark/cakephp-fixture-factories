@@ -23,9 +23,15 @@ See the [CakePHP query-builder docs](https://book.cakephp.org/5/en/orm/query-bui
 
 Returns the number of rows in the factory's table.
 
-## `ArticleFactory::query()->get()`
+## `ArticleFactory::get($id)`
 
-Returns an entity by primary key. See the [CakePHP `get()` docs](https://book.cakephp.org/5/en/orm/retrieving-data-and-resultsets.html#getting-a-single-entity-by-primary-key) for the full signature.
+Returns an entity by primary key while the compatibility wrapper is still available on the v2 branch.
+
+If you want to stay on the query surface, use:
+
+```php
+ArticleFactory::query()->where(['id' => $id])->firstOrFail();
+```
 
 ## `ArticleFactory::query()->firstOrFail()`
 

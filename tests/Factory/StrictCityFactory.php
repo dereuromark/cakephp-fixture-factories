@@ -13,18 +13,10 @@ declare(strict_types=1);
  */
 namespace CakephpFixtureFactories\Test\Factory;
 
-class ArticleWithFiveBillsFactory extends ArticleFactory
+class StrictCityFactory extends CityFactory
 {
-    public function definition(\CakephpFixtureFactories\Generator\GeneratorInterface $generator): array
+    public function enableCheckRules(bool $check = true): static
     {
-        return [
-            ...parent::definition($generator),
-            'title' => 'Article with 5 bills',
-        ];
-    }
-
-    protected function configure(): static
-    {
-        return parent::configure()->hasBills(5);
+        return $this->setSaveOptions(['checkRules' => $check]);
     }
 }

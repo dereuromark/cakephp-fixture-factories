@@ -13,18 +13,15 @@ declare(strict_types=1);
  */
 namespace CakephpFixtureFactories\Test\Factory;
 
-class ArticleWithFiveBillsFactory extends ArticleFactory
+use CakephpFixtureFactories\Generator\GeneratorInterface;
+
+class SchemaAwareCountryFactory extends CountryFactory
 {
-    public function definition(\CakephpFixtureFactories\Generator\GeneratorInterface $generator): array
+    public function definition(GeneratorInterface $generator): array
     {
         return [
-            ...parent::definition($generator),
-            'title' => 'Article with 5 bills',
+            'name' => $this->getTable()->getAlias(),
+            'unique_stamp' => $generator->uuid(),
         ];
-    }
-
-    protected function configure(): static
-    {
-        return parent::configure()->hasBills(5);
     }
 }

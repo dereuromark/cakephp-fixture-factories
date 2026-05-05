@@ -8,6 +8,27 @@ description: Per-version upgrade notes
 This page collects breaking-change notes between minor versions. For migrating
 from `vierge-noire/cakephp-fixture-factories`, see the [migration guide](migration.md).
 
+## `next` / v2 migration helpers
+
+The `next` branch ships a Rector config to help with the mechanical API rename work:
+
+```bash
+vendor/bin/rector process tests --config rector.php
+```
+
+The bundled rules cover the safe, mechanical call-site changes:
+
+- `Factory::make(...)` to `Factory::new(...)`
+- `Factory::make($data, $n)` to `Factory::new($data)->count($n)`
+- nested helper-body calls such as `EventFactory::make($parameters, $n)`
+- `getEntity()` to `build()`
+- `getEntities()` to `buildMany()`
+- `persistEntity()` to `save()`
+- `persistEntities()` to `saveMany()`
+- static query helpers like `Factory::find()` to `Factory::query()->find()`
+
+It intentionally does **not** rewrite deprecated `persist()` calls, because that return type is shape-dependent and needs a human choice between `save()` and `saveMany()`.
+
 ## 1.3 → 1.4
 
 ### Symmetric persist/get API

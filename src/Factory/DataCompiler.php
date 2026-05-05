@@ -206,18 +206,21 @@ class DataCompiler
     }
 
     /**
-     * @param string $associationName Association name
-     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Factory
+     * Apply a transformation to every stored association factory while preserving
+     * the cardinality already collected for each association name.
+     *
+     * @param callable(\CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>): \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $callback Mapper
      *
      * @return void
      */
-    public function replaceAssociationFactory(string $associationName, BaseFactory $factory): void
+    public function mapAssociationFactories(callable $callback): void
     {
-        if (isset($this->dataFromAssociations[$associationName])) {
-            $this->dataFromAssociations[$associationName] = [$factory];
+        foreach ($this->dataFromAssociations as $associationName => $associationFactories) {
+            $this->dataFromAssociations[$associationName] = array_map($callback, $associationFactories);
         }
-        if (isset($this->dataFromDefaultAssociations[$associationName])) {
-            $this->dataFromDefaultAssociations[$associationName] = [$factory];
+
+        foreach ($this->dataFromDefaultAssociations as $associationName => $associationFactories) {
+            $this->dataFromDefaultAssociations[$associationName] = array_map($callback, $associationFactories);
         }
     }
 

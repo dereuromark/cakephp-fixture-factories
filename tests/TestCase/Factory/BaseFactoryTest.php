@@ -808,6 +808,22 @@ class BaseFactoryTest extends TestCase
         $this->assertTrue($article->authors[1]->isDirty('name'));
     }
 
+    public function testKeepDirtyPreservesMultipleFactoriesForTheSameToManyAssociation(): void
+    {
+        $article = ArticleFactory::make()
+            ->without('Authors')
+            ->with('Authors', AuthorFactory::make(['name' => 'First']))
+            ->with('Authors', AuthorFactory::make(['name' => 'Second']))
+            ->keepDirty()
+            ->getEntity();
+
+        $this->assertCount(2, $article->authors);
+        $this->assertSame('First', $article->authors[0]->name);
+        $this->assertSame('Second', $article->authors[1]->name);
+        $this->assertTrue($article->authors[0]->isDirty('name'));
+        $this->assertTrue($article->authors[1]->isDirty('name'));
+    }
+
     public function testHandlingOfMultipleIdenticalWith(): void
     {
         AuthorFactory::make()->withAddress()->withAddress()->persist();

@@ -501,6 +501,27 @@ abstract class BaseFactory
     }
 
     /**
+     * Override marshaller options with immutable semantics.
+     *
+     * By default options are merged on top of the existing defaults. Pass
+     * `$merge = false` to replace the entire option set.
+     *
+     * @param array<string, mixed> $marshallerOptions Marshaller options
+     * @param bool $merge Whether to merge with existing options
+     *
+     * @return static
+     */
+    public function setMarshallerOptions(array $marshallerOptions, bool $merge = true): static
+    {
+        $factory = clone $this;
+        $factory->marshallerOptions = $merge
+            ? array_merge($factory->marshallerOptions, $marshallerOptions)
+            : $marshallerOptions;
+
+        return $factory;
+    }
+
+    /**
      * @deprecated will be removed in v4
      *
      * @return array<string, mixed>
@@ -732,6 +753,27 @@ abstract class BaseFactory
     }
 
     /**
+     * Override save options with immutable semantics.
+     *
+     * By default options are merged on top of the existing defaults. Pass
+     * `$merge = false` to replace the entire option set.
+     *
+     * @param array<string, mixed> $saveOptions Save options
+     * @param bool $merge Whether to merge with existing options
+     *
+     * @return static
+     */
+    public function setSaveOptions(array $saveOptions, bool $merge = true): static
+    {
+        $factory = clone $this;
+        $factory->saveOptions = $merge
+            ? array_merge($factory->saveOptions, $saveOptions)
+            : $saveOptions;
+
+        return $factory;
+    }
+
+    /**
      * Assigns the values of $data to the $keys of the entities generated
      *
      * @param callable(\CakephpFixtureFactories\Factory\BaseFactory<TEntity>, \CakephpFixtureFactories\Generator\GeneratorInterface): array<string, mixed>|\Cake\Datasource\EntityInterface|array<string, mixed> $data Data to inject
@@ -856,11 +898,12 @@ abstract class BaseFactory
         $factory = clone $this;
         $factory->keepDirty = $keepDirty;
         if ($keepDirty) {
-            foreach ($factory->getAssociationBuilder()->getAssociations() as $associationName => $associationFactory) {
-                $dirtyAssociationFactory = $associationFactory->keepDirty();
-                $factory->getAssociationBuilder()->addAssociation($associationName, $dirtyAssociationFactory);
-                $factory->getDataCompiler()->replaceAssociationFactory($associationName, $dirtyAssociationFactory);
-            }
+            $factory->getAssociationBuilder()->mapAssociations(
+                static fn (BaseFactory $associationFactory): BaseFactory => $associationFactory->keepDirty(),
+            );
+            $factory->getDataCompiler()->mapAssociationFactories(
+                static fn (BaseFactory $associationFactory): BaseFactory => $associationFactory->keepDirty(),
+            );
         }
 
         return $factory;

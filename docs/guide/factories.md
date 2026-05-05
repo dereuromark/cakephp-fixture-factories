@@ -171,7 +171,7 @@ Use `->unique()` on individual fields *inside* the factory; use `$uniqueProperti
 
 This and the following sub-sections apply to CakePHP applications.
 
-To persist data as straightforwardly as possible, the plugin deactivates all validation and application rules when creating and saving entities. Re-enable or customize them by overriding `$marshallerOptions` and `$saveOptions` on the factory.
+To persist data as straightforwardly as possible, the plugin deactivates all validation and application rules when creating and saving entities. Re-enable or customize them by overriding `$marshallerOptions` and `$saveOptions` on the factory, or by using the immutable setters `setMarshallerOptions()` and `setSaveOptions()` in custom helper methods.
 
 ## Model events and behaviors
 

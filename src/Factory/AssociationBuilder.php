@@ -362,6 +362,18 @@ class AssociationBuilder
     }
 
     /**
+     * @param callable(\CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>): \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $callback Mapper
+     *
+     * @return void
+     */
+    public function mapAssociations(callable $callback): void
+    {
+        foreach ($this->associations as $associationName => $associatedFactory) {
+            $this->associations[$associationName] = $callback($associatedFactory);
+        }
+    }
+
+    /**
      * @return \Cake\ORM\Table
      */
     public function getTable(): Table
