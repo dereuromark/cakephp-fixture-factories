@@ -1,14 +1,14 @@
 # Fixture Factories
 
-A factory is a class that extends the `CakephpFixtureFactories\Factory\BaseFactory`. It should implement the following two methods:
-* `getRootTableRegistryName()`  which indicates the model, or the table name in PascalCase, where the factory will insert its fixtures;
-* `setDefaultTemplate()`  which sets the default configuration of each entity created by the factory.
+A factory is a class that extends `CakephpFixtureFactories\Factory\BaseFactory`. It should implement the following two methods:
+* `getRootTableRegistryName()` which indicates the model, or the table name in PascalCase, where the factory will insert its fixtures;
+* `definition()` which returns the default configuration of each entity created by the factory.
 
 The generator is used to randomly populate fields, and is always available via `$this->getGenerator()`.
 
 For example, consider a model `Articles` related to multiple `Authors`.
 
-This could be the `ArticleFactory`. By default the fields `title` and `body` are set with Faker and two associated `Authors` are created.
+This could be the `ArticleFactory`. By default the fields `title` and `body` are set with Faker.
 ```php
 namespace App\Test\Factory;
 
@@ -29,26 +29,23 @@ class ArticleFactory extends BaseFactory
      * Defines the default values of your factory.
      * Useful for not-nullable fields, and a place to set up default associations.
      */
-    protected function setDefaultTemplate(): void
+    public function definition(GeneratorInterface $generator): array
     {
-        $this->setDefaultData(function (GeneratorInterface $generator) {
-            return [
-                'title' => $generator->text(30),
-                'body'  => $generator->text(1000),
-            ];
-        })
-        ->withAuthors(2);
+        return [
+            'title' => $generator->text(30),
+            'body'  => $generator->text(1000),
+        ];
     }
 
-    public function withAuthors(mixed $parameter = null, int $n = 1): self
+    public function hasAuthors(int $n = 1, mixed $parameter = null): static
     {
-        return $this->with('Authors', AuthorFactory::make($parameter, $n));
+        return $this->has(AuthorFactory::new($parameter)->count($n));
     }
 
     /**
      * Set the article's title to a random job title.
      */
-    public function setJobTitle(): self
+    public function setJobTitle(): static
     {
         return $this->setField('title', $this->getGenerator()->jobTitle());
     }
@@ -56,9 +53,11 @@ class ArticleFactory extends BaseFactory
 ```
 Add any helper methods that capture your business model — like `setJobTitle()` — to keep factory calls expressive and reusable.
 
+Factories are immutable. Every fluent call returns a cloned factory, so reusing a base factory in the same test is safe.
+
 ## Required fields
 
-If a field is required in the database, populate it in `setDefaultTemplate`. A fixed value like `1` or `'foo'` is fine.
+If a field is required in the database, populate it in `definition()`. A fixed value like `1` or `'foo'` is fine.
 
 ## Locale
 
@@ -94,10 +93,10 @@ class UserFactory extends BaseFactory
 or
 
 ```php
-UserFactory::make([
+UserFactory::new([
     'username' => 'foo@bar.com',
     'password' => 'secret',
-])->skipSetterFor('password')->getEntity();
+])->skipSetterFor('password')->build();
 ```
 
 This can be useful for setters with heavy computation costs, such as hashing.
@@ -127,7 +126,7 @@ class CountryFactory extends BaseFactory
 Because `name` is marked unique, the country factory de-duplicates whenever a developer sets `name`.
 
 ```php
-CityFactory::make(5)->with('Countries', 'Foo')->persistEntities();
+CityFactory::new()->count(5)->with('Countries', 'Foo')->saveMany();
 ```
 
 creates 5 cities all associated to one country. Run it again and you'll have 10 cities, still tied to that single country.
@@ -137,7 +136,7 @@ creates 5 cities all associated to one country. Run it again and you'll have 10 
 Primary keys are handled the same way — you don't have to declare them in `$uniqueProperties`. The factory can't read uniqueness constraints from the schema, but it does know which fields are primary keys. So:
 
 ```php
-CityFactory::make(5)->with('Countries', ['myPrimaryKey' => 1])->persistEntities();
+CityFactory::new()->count(5)->with('Countries', ['myPrimaryKey' => 1])->saveMany();
 ```
 
 behaves as if `myPrimaryKey` were marked unique. The factory does the bookkeeping for you.
@@ -147,14 +146,12 @@ behaves as if `myPrimaryKey` were marked unique. The factory does the bookkeepin
 `$uniqueProperties` deduplicates **entities** at persist time. If you instead need each *generated value* to be different from the previous ones — typically for fields with a UNIQUE database constraint — use the generator's `->unique()` modifier:
 
 ```php
-protected function setDefaultTemplate(): void
+public function definition(GeneratorInterface $generator): array
 {
-    $this->setDefaultData(function (GeneratorInterface $generator) {
-        return [
-            'email'    => $generator->unique()->email(),
-            'username' => $generator->unique()->userName(),
-        ];
-    });
+    return [
+        'email'    => $generator->unique()->email(),
+        'username' => $generator->unique()->userName(),
+    ];
 }
 ```
 
@@ -185,17 +182,17 @@ By default, *all model events* of a factory's root table and their behaviors are
 Re-enable a model event with `listeningToModelEvents`. On the fly:
 
 ```php
-$article = ArticleFactory::make()->listeningToModelEvents('Model.beforeMarshal')->getEntity();
+$article = ArticleFactory::new()->listeningToModelEvents('Model.beforeMarshal')->build();
 ```
 
-Or as a default in `initialize()`:
+Or as a default in `configure()`:
 ```php
-protected function initialize(): void
+protected function configure(): static
 {
-      $this->listeningToModelEvents([
+    return $this->listeningToModelEvents([
         'Model.beforeMarshal',
         'Model.beforeSave',
-      ]);
+    ]);
 }
 ```
 
@@ -212,10 +209,10 @@ You may want a custom event manager instance for your factories — for example 
 Set a custom manager via `setEventManager()`:
 
 ```php
-$article = ArticleFactory::make()
+$article = ArticleFactory::new()
     ->setEventManager($customEventManager)
     ->listeningToModelEvents('Model.beforeMarshal')
-    ->getEntity();
+    ->build();
 ```
 
 The factory's table uses the custom manager instead of the default one. `setEventManager()` follows the same fluent pattern as `setConnection()` and `listeningToBehaviors()`.
@@ -225,10 +222,10 @@ The factory's table uses the custom manager instead of the default one. `setEven
 Activate behavior model events the same way, with `listeningToBehaviors`. On the fly:
 
 ```php
-$article = ArticleFactory::make()->listeningToBehaviors('Sluggable')->getEntity();
+$article = ArticleFactory::new()->listeningToBehaviors('Sluggable')->build();
 ```
 
-Or set them as defaults in `setDefaultTemplate`.
+Or set them as defaults in `configure()`.
 
 You can also declare a behavior globally — useful for behaviors that touch many tables and need to populate not-nullable fields. Configure global behaviors via `FixtureFactories.testFixtureGlobalBehaviors`. The root table must already listen for the behavior:
 
@@ -275,9 +272,9 @@ Configure::write('FixtureFactories.generatorType', 'dummy');
 You can switch generators on a per-factory basis:
 
 ```php
-$article = ArticleFactory::make()
+$article = ArticleFactory::new()
     ->setGenerator('dummy')
-    ->getEntity();
+    ->build();
 ```
 
 By default, `setGenerator()` changes the generator globally for all factory instances. This preserves backward compatibility.
@@ -293,8 +290,8 @@ Configure::write('FixtureFactories.instanceLevelGenerator', true);
 With this enabled:
 
 ```php
-$factory1 = ArticleFactory::make()->setGenerator('dummy');
-$factory2 = ArticleFactory::make();
+$factory1 = ArticleFactory::new()->setGenerator('dummy');
+$factory2 = ArticleFactory::new();
 
 // $factory1 uses DummyGenerator, $factory2 uses the default (Faker)
 ```

@@ -42,11 +42,12 @@ class CustomerFactory extends BaseFactory
      * @param int $n
      * @return CustomerFactory
      */
-    public function hasBills($parameter = null, int $n = 1): self
+    public function hasBills($n = 1, $parameter = null): self
     {
-        if (is_int($parameter) && $n === 1) {
-            $n = $parameter;
-            $parameter = null;
+        if (!is_int($n)) {
+            $originalParameter = $n;
+            $n = is_int($parameter) ? $parameter : 1;
+            $parameter = $originalParameter;
         }
 
         return $this->has(BillFactory::new($parameter)->count($n)->without('Customer'));
@@ -54,7 +55,11 @@ class CustomerFactory extends BaseFactory
 
     public function withBills($parameter = null, int $n = 1): self
     {
-        return $this->hasBills($parameter, $n);
+        if (is_int($parameter) && $n === 1) {
+            return $this->hasBills($parameter);
+        }
+
+        return $this->hasBills($n, $parameter);
     }
 
     /**

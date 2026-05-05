@@ -19,8 +19,8 @@ use Cake\Core\Configure;
 use Cake\Datasource\EntityInterface;
 use Cake\Event\EventManagerInterface;
 use Cake\I18n\I18n;
-use Cake\ORM\Query\SelectQuery;
 use Cake\ORM\Association\BelongsTo;
+use Cake\ORM\Query\SelectQuery;
 use Cake\ORM\ResultSet;
 use Cake\ORM\Table;
 use CakephpFixtureFactories\Error\FixtureFactoryException;
@@ -185,15 +185,13 @@ abstract class BaseFactory
 
     /**
      * @param mixed $makeParameter Injected data
-     * @param int $times Number of entities created
      *
      * @throws \InvalidArgumentException
      *
      * @return static
      */
-    public static function new(
-        mixed $makeParameter = [],
-    ): self {
+    public static function new(mixed $makeParameter = []): self
+    {
         if (is_numeric($makeParameter)) {
             $factory = self::makeFromNonCallable();
             $times = (int)$makeParameter;
@@ -350,9 +348,9 @@ abstract class BaseFactory
      * @param string $type The generator type ('faker' or 'dummy')
      * @param string|null $locale Optional locale override
      *
-     * @return $this
+     * @return static
      */
-    public function setGenerator(string $type, ?string $locale = null)
+    public function setGenerator(string $type, ?string $locale = null): static
     {
         $factory = clone $this;
         $locale = $locale ?? I18n::getLocale();
@@ -415,6 +413,8 @@ abstract class BaseFactory
      * Use this when the factory was created via `new()`, `new([...singleRow])`,
      * `new($entity)` or `from($entity)` — i.e. exactly one entity will be
      * produced. For multi-entity factories use `buildMany()` instead.
+     *
+     * @throws \RuntimeException if the factory is configured to produce more than one entity.
      *
      * @return TEntity
      */
@@ -558,6 +558,8 @@ abstract class BaseFactory
      * `new($entity)` or `from($entity)` — i.e. exactly one entity will be
      * produced. For multi-entity factories use `saveMany()` instead.
      *
+     * @param \Cake\Datasource\EntityInterface|array<string, mixed> $data Last-mile override data
+     *
      * @throws \RuntimeException if the factory is configured to produce more than one entity.
      *
      * @return TEntity
@@ -586,6 +588,8 @@ abstract class BaseFactory
      * array, so it is the right choice when callers iterate or assert on
      * counts regardless of how the factory was configured.
      *
+     * @param \Cake\Datasource\EntityInterface|array<string, mixed> $data Last-mile override data
+     *
      * @return array<TEntity>
      */
     public function saveMany(array|EntityInterface $data = []): array
@@ -597,6 +601,8 @@ abstract class BaseFactory
 
     /**
      * @deprecated Transitional wrapper for the v2 branch.
+     *
+     * @throws \RuntimeException if the factory is configured to produce more than one entity.
      *
      * @return TEntity
      */
@@ -728,11 +734,11 @@ abstract class BaseFactory
     /**
      * Assigns the values of $data to the $keys of the entities generated
      *
-     * @param \Cake\Datasource\EntityInterface|array<string, mixed> $data Data to inject
+     * @param callable(\CakephpFixtureFactories\Factory\BaseFactory<TEntity>, \CakephpFixtureFactories\Generator\GeneratorInterface): array<string, mixed>|\Cake\Datasource\EntityInterface|array<string, mixed> $data Data to inject
      *
-     * @return $this
+     * @return static
      */
-    public function state(array|callable|EntityInterface $data)
+    public function state(array|callable|EntityInterface $data): static
     {
         $factory = clone $this;
         if (is_callable($data)) {
@@ -755,7 +761,7 @@ abstract class BaseFactory
      *
      * @return static
      */
-    public function patchData(array|EntityInterface $data)
+    public function patchData(array|EntityInterface $data): static
     {
         return $this->state($data);
     }
@@ -766,9 +772,9 @@ abstract class BaseFactory
      * @param string $field to set
      * @param mixed $value to assign
      *
-     * @return $this
+     * @return static
      */
-    public function setField(string $field, mixed $value)
+    public function setField(string $field, mixed $value): static
     {
         return $this->state([$field => $value]);
     }
@@ -818,9 +824,9 @@ abstract class BaseFactory
      *
      * @param int $times Number if entities created
      *
-     * @return $this
+     * @return static
      */
-    public function count(int $times)
+    public function count(int $times): static
     {
         $factory = clone $this;
         $factory->times = $times;
@@ -833,7 +839,7 @@ abstract class BaseFactory
      *
      * @return static
      */
-    public function setTimes(int $times)
+    public function setTimes(int $times): static
     {
         return $this->count($times);
     }
@@ -843,9 +849,9 @@ abstract class BaseFactory
      *
      * @param bool $keepDirty Whether to keep entities dirty.
      *
-     * @return $this
+     * @return static
      */
-    public function keepDirty(bool $keepDirty = true)
+    public function keepDirty(bool $keepDirty = true): static
     {
         $factory = clone $this;
         $factory->keepDirty = $keepDirty;
@@ -865,9 +871,9 @@ abstract class BaseFactory
      *
      * @throws \CakephpFixtureFactories\Error\FixtureFactoryException on argument passed error
      *
-     * @return $this
+     * @return static
      */
-    public function listeningToBehaviors(array|string $activeBehaviors)
+    public function listeningToBehaviors(array|string $activeBehaviors): static
     {
         $factory = clone $this;
         $activeBehaviors = (array)$activeBehaviors;
@@ -884,9 +890,9 @@ abstract class BaseFactory
      *
      * @param string $connectionName Name of the database connection
      *
-     * @return $this
+     * @return static
      */
-    public function setConnection(string $connectionName)
+    public function setConnection(string $connectionName): static
     {
         $factory = clone $this;
         $factory->getEventCompiler()->setConnection($connectionName);
@@ -899,9 +905,9 @@ abstract class BaseFactory
      *
      * @param \Cake\Event\EventManagerInterface $eventManager The event manager instance
      *
-     * @return $this
+     * @return static
      */
-    public function setEventManager(EventManagerInterface $eventManager)
+    public function setEventManager(EventManagerInterface $eventManager): static
     {
         $factory = clone $this;
         $factory->getEventCompiler()->setEventManager($eventManager);
@@ -914,9 +920,9 @@ abstract class BaseFactory
      *
      * @throws \CakephpFixtureFactories\Error\FixtureFactoryException on argument passed error
      *
-     * @return $this
+     * @return static
      */
-    public function listeningToModelEvents(array|string $activeModelEvents)
+    public function listeningToModelEvents(array|string $activeModelEvents): static
     {
         $factory = clone $this;
         $activeModelEvents = (array)$activeModelEvents;
@@ -940,9 +946,9 @@ abstract class BaseFactory
      *
      * @param array<string, int|string>|string|int $primaryKeyOffset Offset
      *
-     * @return $this
+     * @return static
      */
-    public function setPrimaryKeyOffset(int|string|array $primaryKeyOffset)
+    public function setPrimaryKeyOffset(int|string|array $primaryKeyOffset): static
     {
         $factory = clone $this;
         $factory->getDataCompiler()->setPrimaryKeyOffset($primaryKeyOffset);
@@ -953,9 +959,9 @@ abstract class BaseFactory
     /**
      * Will not set primary key when saving the entity, instead SQL engine can handle that.
      *
-     * @return $this
+     * @return static
      */
-    public function disablePrimaryKeyOffset()
+    public function disablePrimaryKeyOffset(): static
     {
         $factory = clone $this;
         $factory->getDataCompiler()->disablePrimaryKeyOffset();
@@ -984,9 +990,9 @@ abstract class BaseFactory
      *
      * @param array<string>|string|null $fields Unique fields set on the fly.
      *
-     * @return $this
+     * @return static
      */
-    public function setUniqueProperties(array|string|null $fields)
+    public function setUniqueProperties(array|string|null $fields): static
     {
         $factory = clone $this;
         $factory->uniqueProperties = (array)$fields;
@@ -999,9 +1005,9 @@ abstract class BaseFactory
      *
      * @param callable $fn Callable delivering injected data
      *
-     * @return $this
+     * @return static
      */
-    protected function setDefaultData(callable $fn)
+    protected function setDefaultData(callable $fn): static
     {
         $this->getDataCompiler()->collectFromDefaultTemplate($fn);
 
@@ -1016,9 +1022,9 @@ abstract class BaseFactory
      * @param string $associationName Association name
      * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>|\Cake\Datasource\EntityInterface|callable|array<string, mixed>|string|int $data Injected data
      *
-     * @return $this
+     * @return static
      */
-    public function with(string $associationName, array|int|callable|BaseFactory|EntityInterface|string $data = [])
+    public function with(string $associationName, array|int|callable|BaseFactory|EntityInterface|string $data = []): static
     {
         $factory = clone $this;
         $factory->getAssociationBuilder()->getAssociation($associationName);
@@ -1041,7 +1047,13 @@ abstract class BaseFactory
         // Remove the brackets in the association
         $associationName = $factory->getAssociationBuilder()->removeBrackets($associationName);
 
-        $isToOne = $factory->getAssociationBuilder()->processToOneAssociation($associationName, $associatedFactory);
+        $associatedFactory = $factory->getAssociationBuilder()->prepareAssociationFactory(
+            $associationName,
+            $associatedFactory,
+        );
+        $isToOne = $factory->getAssociationBuilder()->associationIsToOne(
+            $factory->getAssociationBuilder()->getAssociation($associationName),
+        );
         $factory->getDataCompiler()->collectAssociation($associationName, $associatedFactory, $isToOne);
 
         $factory->getAssociationBuilder()->addAssociation($associationName, $associatedFactory);
@@ -1055,9 +1067,9 @@ abstract class BaseFactory
      *
      * @param string $association Association name
      *
-     * @return $this
+     * @return static
      */
-    public function without(string $association)
+    public function without(string $association): static
     {
         $factory = clone $this;
         $factory->getDataCompiler()->dropAssociation($association);
@@ -1071,9 +1083,9 @@ abstract class BaseFactory
      *
      * @param array<string, mixed> $data Data to merge
      *
-     * @return $this
+     * @return static
      */
-    public function mergeAssociated(array $data)
+    public function mergeAssociated(array $data): static
     {
         $factory = clone $this;
         $factory->getAssociationBuilder()->addManualAssociations($data);
@@ -1088,9 +1100,9 @@ abstract class BaseFactory
      * @param array<string>|string $skippedSetters Field or list of fields for which setters ought to be skipped
      * @param bool $merge Merge the first argument with the setters already skipped. False by default.
      *
-     * @return $this
+     * @return static
      */
-    public function skipSetterFor(array|string $skippedSetters, bool $merge = false)
+    public function skipSetterFor(array|string $skippedSetters, bool $merge = false): static
     {
         $factory = clone $this;
         $skippedSetters = (array)$skippedSetters;
@@ -1106,9 +1118,6 @@ abstract class BaseFactory
      * Query the factory's related table without before find.
      *
      * @see \Cake\ORM\Query\SelectQuery::find()
-     *
-     * @param string $type the type of query to perform
-     * @param mixed ...$options Options passed to the finder
      *
      * @return \Cake\ORM\Query\SelectQuery<\Cake\Datasource\EntityInterface> The query builder
      */
@@ -1175,6 +1184,10 @@ abstract class BaseFactory
     /**
      * @deprecated Transitional wrapper for the v2 branch.
      *
+     * @param mixed $primaryKey Primary key value to find
+     * @param array<string, mixed>|string $finder Finder name or options array
+     * @param mixed ...$args Additional finder arguments
+     *
      * @return \Cake\Datasource\EntityInterface
      */
     public static function get(
@@ -1207,19 +1220,9 @@ abstract class BaseFactory
     }
 
     /**
-     * Get from primary key the factory's related table entries, without before find.
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Associated belongsTo factory
      *
-     * @see Table::get()
-     *
-     * @param mixed $primaryKey primary key value to find
-     * @param array<string, mixed>|string $finder The finder to use. Passing an options array is deprecated.
-     * @param \Psr\SimpleCache\CacheInterface|string|null $cache The cache config to use.
-     *   Defaults to `null`, i.e. no caching.
-     * @param \Closure|string|null $cacheKey The cache key to use. If not provided
-     *   one will be autogenerated if `$cache` is not null.
-     * @param mixed ...$args Arguments that query options or finder specific parameters.
-     *
-     * @return \Cake\Datasource\EntityInterface
+     * @return static
      */
     public function for(BaseFactory $factory): static
     {
@@ -1244,6 +1247,14 @@ abstract class BaseFactory
         return $this->with($association, $factory);
     }
 
+    /**
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Related factory
+     * @param bool $belongsTo Whether to resolve a belongsTo association
+     *
+     * @throws \RuntimeException if no matching directional association can be found.
+     *
+     * @return string
+     */
     protected function resolveDirectionalAssociation(BaseFactory $factory, bool $belongsTo): string
     {
         $sourceTable = $this->getTable();
@@ -1271,7 +1282,7 @@ abstract class BaseFactory
         ));
     }
 
-    public function __clone()
+    public function __clone(): void
     {
         $this->dataCompiler = clone $this->dataCompiler;
         $this->dataCompiler->setFactory($this);

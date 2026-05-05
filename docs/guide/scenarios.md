@@ -31,7 +31,7 @@ class NAustralianAuthorsScenario implements FixtureScenarioInterface
      */
     public function load($n = 1, ...$args)
     {
-        return AuthorFactory::make($n)->fromCountry(self::COUNTRY_NAME)->persistEntities();
+        return AuthorFactory::new()->count($n)->fromCountry(self::COUNTRY_NAME)->saveMany();
     }
 }
 
@@ -72,7 +72,7 @@ class FixtureScenarioTest extends TestCase
 
     private function countAustralianAuthors(): int
     {
-        return AuthorFactory::find()
+        return AuthorFactory::query()
             ->innerJoinWith('Address.City.Country', function (SelectQuery $q) {
                 return $q->where(['Country.name' => NAustralianAuthorsScenario::COUNTRY_NAME]);
             })

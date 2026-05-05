@@ -25,10 +25,10 @@ class DocumentationExamplesTest extends TestCase
 {
     public function testArticlesFindPublished(): void
     {
-        $articles = ArticleFactory::make(['published' => 1], 3)->persist();
-        ArticleFactory::make(['published' => 0], 2)->persist();
+        $articles = ArticleFactory::new(['published' => 1])->count(3)->saveMany();
+        ArticleFactory::new(['published' => 0])->count(2)->saveMany();
 
-        $result = ArticleFactory::find('published')->find('list')->toArray();
+        $result = ArticleFactory::query()->find('published')->find('list')->toArray();
 
         $expected = [
             $articles[0]->id => $articles[0]->title,
@@ -41,25 +41,25 @@ class DocumentationExamplesTest extends TestCase
 
     public function testExampleStaticData(): void
     {
-        $article = ArticleFactory::make()->getEntity();
+        $article = ArticleFactory::new()->build();
         $this->assertInstanceOf(Article::class, $article);
 
-        $articles = ArticleFactory::make(2)->getEntities();
+        $articles = ArticleFactory::new()->count(2)->buildMany();
         $previous = '';
         foreach ($articles as $article) {
             $this->assertNotEquals($previous, $article['title']);
             $previous = $article['title'];
         }
 
-        ArticleFactory::make(['title' => 'Foo'])->getEntity();
+        ArticleFactory::new(['title' => 'Foo'])->build();
 
-        $articles = ArticleFactory::make(['title' => 'Foo'], 3)->getEntities();
+        $articles = ArticleFactory::new(['title' => 'Foo'])->count(3)->buildMany();
         $this->assertEquals(3, count($articles));
         foreach ($articles as $article) {
             $this->assertEquals('Foo', $article['title']);
         }
 
-        $articles = ArticleFactory::make(['title' => 'Foo'], 3)->persist();
+        $articles = ArticleFactory::new(['title' => 'Foo'])->count(3)->saveMany();
         $this->assertEquals(3, count($articles));
         foreach ($articles as $article) {
             $this->assertEquals('Foo', $article['title']);
@@ -68,11 +68,11 @@ class DocumentationExamplesTest extends TestCase
 
     public function testExampleDynamicData(): void
     {
-        $articles = ArticleFactory::make(function (ArticleFactory $factory, GeneratorInterface $generator) {
+        $articles = ArticleFactory::new(function (ArticleFactory $factory, GeneratorInterface $generator) {
             return [
                 'title' => $generator->text(100),
             ];
-        }, 3)->persist();
+        })->count(3)->saveMany();
         $this->assertEquals(3, count($articles));
         $previousTitle = 'Foo';
         foreach ($articles as $article) {
@@ -83,27 +83,27 @@ class DocumentationExamplesTest extends TestCase
 
     public function testExampleChainable(): void
     {
-        $articleFactory = ArticleFactory::make(['title' => 'Foo']);
-        $articleFoo = $articleFactory->getEntity();
+        $articleFactory = ArticleFactory::new(['title' => 'Foo']);
+        $articleFoo = $articleFactory->build();
 
-        $articleJobOffer = $articleFactory->setJobTitle()->getEntity();
+        $articleJobOffer = $articleFactory->setJobTitle()->build();
         $this->assertEquals('Foo', $articleFoo['title']);
         $this->assertNotEquals('Foo', $articleJobOffer['title']);
     }
 
     public function testExampleChainableWithPersist(): void
     {
-        $articleFactory = ArticleFactory::make(['title' => 'Foo']);
-        $articleFoo = $articleFactory->persist();
+        $articleFactory = ArticleFactory::new(['title' => 'Foo']);
+        $articleFoo = $articleFactory->save();
 
-        $articleJobOffer = $articleFactory->setJobTitle()->persist();
+        $articleJobOffer = $articleFactory->setJobTitle()->save();
         $this->assertEquals('Foo', $articleFoo['title']);
         $this->assertNotEquals('Foo', $articleJobOffer['title']);
     }
 
     public function testAssociationsMultiple(): void
     {
-        $article = ArticleFactory::make()->with('Authors', AuthorFactory::make(10))->persist();
+        $article = ArticleFactory::new()->with('Authors', AuthorFactory::new()->count(10))->save();
         $this->assertEquals(10, count($article['authors']));
         $previous = '';
         foreach ($article['authors'] as $author) {
@@ -111,7 +111,7 @@ class DocumentationExamplesTest extends TestCase
             $previous = $author->name;
         }
 
-        $article = ArticleFactory::make()->withAuthors(10)->persist();
+        $article = ArticleFactory::new()->hasAuthors(10)->save();
         $this->assertEquals(10, count($article['authors']));
         $previous = '';
         foreach ($article['authors'] as $author) {
@@ -122,11 +122,11 @@ class DocumentationExamplesTest extends TestCase
 
     public function testAssociationsMultipleWithBiography(): void
     {
-        $article = ArticleFactory::make()->withAuthors(function (AuthorFactory $factory, GeneratorInterface $generator) {
+        $article = ArticleFactory::new()->hasAuthors(10, function (AuthorFactory $factory, GeneratorInterface $generator) {
             return [
                 'biography' => $generator->realText(),
             ];
-        }, 10)->persist();
+        })->save();
         $this->assertEquals(10, count($article['authors']));
         $lastName = '';
         $lastBio = '';

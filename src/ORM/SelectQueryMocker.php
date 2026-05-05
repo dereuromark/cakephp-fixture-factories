@@ -17,6 +17,7 @@ namespace CakephpFixtureFactories\ORM;
 
 use Cake\ORM\Query\QueryFactory;
 use Cake\ORM\Query\SelectQuery;
+use Cake\ORM\ResultSet;
 use Cake\ORM\Table;
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Factory\BaseFactory;
@@ -45,7 +46,7 @@ class SelectQueryMocker
         array $options = [],
     ): Table|MockObject {
         $alias = $alias ?? $factory->getTable()->getAlias();
-        $resultSet = new \Cake\ORM\ResultSet($factory->buildMany());
+        $resultSet = new ResultSet($factory->buildMany());
 
         // Use reflection to access the protected getMockBuilder method
         $reflection = new ReflectionMethod($testCase, 'getMockBuilder');

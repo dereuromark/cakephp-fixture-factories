@@ -231,10 +231,10 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
         $this->bake([], ['methods' => true, 'all' => true]);
 
         $title = 'Foo';
-        $articleFactory = ArticleFactory::make(compact('title'))->withAuthors([], 2);
+        $articleFactory = ArticleFactory::new(compact('title'))->hasAuthors(2);
         $this->assertInstanceOf(ArticleFactory::class, $articleFactory);
 
-        $article = $articleFactory->getEntity();
+        $article = $articleFactory->build();
         $this->assertEquals($title, $article->title);
         $authors = $article->authors;
         $this->assertSame(2, count($authors));
@@ -247,21 +247,21 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
     {
         $this->bake([], ['all' => true, 'methods' => true]);
 
-        $this->assertInstanceOf(BaseFactory::class, ArticleFactory::make());
-        $this->assertInstanceOf(BaseFactory::class, AddressFactory::make());
-        $this->assertInstanceOf(BaseFactory::class, AuthorFactory::make());
-        $this->assertInstanceOf(BaseFactory::class, CityFactory::make());
-        $this->assertInstanceOf(BaseFactory::class, CountryFactory::make());
+        $this->assertInstanceOf(BaseFactory::class, ArticleFactory::new());
+        $this->assertInstanceOf(BaseFactory::class, AddressFactory::new());
+        $this->assertInstanceOf(BaseFactory::class, AuthorFactory::new());
+        $this->assertInstanceOf(BaseFactory::class, CityFactory::new());
+        $this->assertInstanceOf(BaseFactory::class, CountryFactory::new());
 
-        $country = CountryFactory::make(['name' => 'Foo'])->persist();
+        $country = CountryFactory::new(['name' => 'Foo'])->save();
         unset($country['id']);
-        $city = CityFactory::make(['name' => 'Foo'])->withCountries($country->toArray())->persist();
+        $city = CityFactory::new(['name' => 'Foo'])->forCountries($country->toArray())->save();
         unset($city['id']);
-        $address = AddressFactory::make(['street' => 'Foo'])->withCity($city->toArray())->persist();
+        $address = AddressFactory::new(['street' => 'Foo'])->forCity($city->toArray())->save();
         unset($address['id']);
-        $author = AuthorFactory::make(['name' => 'Foo'])->withAddress($address->toArray())->persist();
-        $article = ArticleFactory::make(['title' => 'Foo'])->withAuthors($author->toArray())->persist();
-        $address2 = AddressFactory::make(['street' => 'Foo2'])->withCity($city->toArray())->withAuthors(['name' => 'Foo2'])->persist();
+        $author = AuthorFactory::new(['name' => 'Foo'])->forAddress($address->toArray())->save();
+        $article = ArticleFactory::new(['title' => 'Foo'])->hasAuthors(1, $author->toArray())->save();
+        $address2 = AddressFactory::new(['street' => 'Foo2'])->forCity($city->toArray())->hasAuthors(1, ['name' => 'Foo2'])->save();
 
         $this->assertInstanceOf(Article::class, $article);
         $this->assertInstanceOf(Author::class, $author);
@@ -276,10 +276,10 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
         $this->bake(['Articles']);
 
         $title = 'Foo';
-        $articleFactory = ArticleFactory::make(compact('title'));
+        $articleFactory = ArticleFactory::new(compact('title'));
         $this->assertInstanceOf(BaseFactory::class, $articleFactory);
 
-        $article = $articleFactory->persist();
+        $article = $articleFactory->save();
         $this->assertEquals($title, $article['title']);
     }
 
@@ -287,20 +287,20 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
     {
         $this->bake([], ['all' => true]);
 
-        $this->assertInstanceOf(BaseFactory::class, ArticleFactory::make());
-        $this->assertInstanceOf(BaseFactory::class, AddressFactory::make());
-        $this->assertInstanceOf(BaseFactory::class, AuthorFactory::make());
-        $this->assertInstanceOf(BaseFactory::class, CityFactory::make());
-        $this->assertInstanceOf(BaseFactory::class, CountryFactory::make());
+        $this->assertInstanceOf(BaseFactory::class, ArticleFactory::new());
+        $this->assertInstanceOf(BaseFactory::class, AddressFactory::new());
+        $this->assertInstanceOf(BaseFactory::class, AuthorFactory::new());
+        $this->assertInstanceOf(BaseFactory::class, CityFactory::new());
+        $this->assertInstanceOf(BaseFactory::class, CountryFactory::new());
 
-        $country = CountryFactory::make(['name' => 'Foo'])->persist();
+        $country = CountryFactory::new(['name' => 'Foo'])->save();
         unset($country['id']);
-        $city = CityFactory::make(['name' => 'Foo'])->with('Countries', CountryFactory::make($country->toArray()))->persist();
+        $city = CityFactory::new(['name' => 'Foo'])->with('Countries', CountryFactory::new($country->toArray()))->save();
         unset($city['id']);
-        $address = AddressFactory::make(['street' => 'Foo'])->with('City', CityFactory::make($city->toArray()))->persist();
+        $address = AddressFactory::new(['street' => 'Foo'])->with('City', CityFactory::new($city->toArray()))->save();
         unset($address['id']);
-        $author = AuthorFactory::make(['name' => 'Foo'])->with('Address', AddressFactory::make($address->toArray()))->persist();
-        $article = ArticleFactory::make(['title' => 'Foo'])->with('Authors', AuthorFactory::make($author->toArray()))->persist();
+        $author = AuthorFactory::new(['name' => 'Foo'])->with('Address', AddressFactory::new($address->toArray()))->save();
+        $article = ArticleFactory::new(['title' => 'Foo'])->with('Authors', AuthorFactory::new($author->toArray()))->save();
 
         $this->assertInstanceOf(Article::class, $article);
         $this->assertInstanceOf(Author::class, $author);
@@ -315,15 +315,15 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
 
         $this->bake([], ['plugin' => 'TestPlugin', 'all' => true, 'methods' => true]);
 
-        $customer = CustomerFactory::make(['name' => 'Foo'])->persist();
+        $customer = CustomerFactory::new(['name' => 'Foo'])->save();
         unset($customer['id']);
-        $article = ArticleFactory::make(['title' => 'Foo'])->persist();
+        $article = ArticleFactory::new(['title' => 'Foo'])->save();
         unset($article['id']);
 
-        $bill = BillFactory::make(['amount' => 100])
-            ->with('Customer', CustomerFactory::make($customer->toArray()))
-            ->with('Article', ArticleFactory::make($article->toArray()))
-            ->persist();
+        $bill = BillFactory::new(['amount' => 100])
+            ->with('Customer', CustomerFactory::new($customer->toArray()))
+            ->with('Article', ArticleFactory::new($article->toArray()))
+            ->save();
 
         $this->assertInstanceOf(Article::class, $article);
         $this->assertInstanceOf(Bill::class, $bill);

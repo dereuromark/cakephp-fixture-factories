@@ -95,7 +95,7 @@ class MyTest extends TestCase
 
     public function testSomething(): void
     {
-        $article = ArticleFactory::make()->persistEntity();
+        $article = ArticleFactory::new()->save();
         $this->Articles->save($article);
         // All data rolled back; generator state reset.
     }
@@ -114,4 +114,4 @@ Prefer the shared `AppTestCase` route — the per-test trait pattern works too b
 - **Solves unique generator state accumulation** - the strategy resets generator state after each test, preventing `OverflowException` when using `unique()` modifiers
 - Works seamlessly with nested associations
 
-> **Note:** Table tracking only captures tables written via `factory->persist()`. The transaction rollback still handles **all** data modifications regardless of source (factories, controllers, models, etc.).
+> **Note:** Table tracking only captures tables written via the factory save methods. The transaction rollback still handles **all** data modifications regardless of source (factories, controllers, models, etc.).

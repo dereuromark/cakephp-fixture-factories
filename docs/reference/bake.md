@@ -27,7 +27,7 @@ bin/cake bake fixture_factory Articles
 # All models in your app
 bin/cake bake fixture_factory -a
 
-# Include association helpers (->withAuthors(), ->withCountry(), …)
+# Include association helpers (->hasAuthors(), ->forCountry(), …)
 bin/cake bake fixture_factory Articles -m
 
 # Bake into a plugin's namespace
@@ -39,7 +39,7 @@ bin/cake bake fixture_factory Articles -p MyPlugin
 | Flag        | Effect |
 |-------------|--------|
 | `-a`        | Bake every model in the app |
-| `-m`        | Add `with…()` helpers based on associations |
+| `-m`        | Add directional helpers based on associations (`for…()` for to-one, `has…()` for to-many) |
 | `-p Plugin` | Bake into a plugin's namespace |
 | `-h`        | Show all available options |
 

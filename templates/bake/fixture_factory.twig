@@ -49,44 +49,35 @@ class {{ factory }} extends CakephpBaseFactory
      *
      * @return static
      */
-    public function with{{ association }}($parameter = null): static
+    public function for{{ association }}($parameter = null): static
     {
-        return $this->with(
-            '{{ association }}',
-            {{ associationData.className }}::new($parameter),
-        );
+        return $this->for({{ associationData.className }}::new($parameter));
     }
 {% endfor %}
 {% for association, associationData in oneToMany %}
 
     /**
-     * @param \Cake\Datasource\EntityInterface|callable|array|string|int|null $parameter
      * @param int $n
+     * @param \Cake\Datasource\EntityInterface|callable|array|string|int|null $parameter
      *
      * @return static
      */
-    public function with{{ association }}($parameter = null, int $n = 1): static
+    public function has{{ association }}(int $n = 1, $parameter = null): static
     {
-        return $this->with(
-            '{{ association }}',
-            {{ associationData.className }}::new($parameter)->count($n),
-        );
+        return $this->has({{ associationData.className }}::new($parameter)->count($n));
     }
 {% endfor %}
 {% for association, associationData in manyToMany %}
 
     /**
-     * @param \Cake\Datasource\EntityInterface|callable|array|string|int|null $parameter
      * @param int $n
+     * @param \Cake\Datasource\EntityInterface|callable|array|string|int|null $parameter
      *
      * @return static
      */
-    public function with{{ association }}($parameter = null, int $n = 1): static
+    public function has{{ association }}(int $n = 1, $parameter = null): static
     {
-        return $this->with(
-            '{{ association }}',
-            {{ associationData.className }}::new($parameter)->count($n)->without('{{ modelName }}'),
-        );
+        return $this->has({{ associationData.className }}::new($parameter)->count($n)->without('{{ modelName }}'));
     }
 {% endfor %}
 }

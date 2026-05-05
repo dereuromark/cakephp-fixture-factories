@@ -99,20 +99,6 @@ class AssociationBuilder
     }
 
     /**
-     * @param string $associationName Name of the association
-     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $associationFactory Factory
-     *
-     * @return bool
-     */
-    public function processToOneAssociation(string $associationName, BaseFactory &$associationFactory): bool
-    {
-        $this->validateToOneAssociation($associationName, $associationFactory);
-        $associationFactory = $this->removeAssociationForToOneFactory($associationName, $associationFactory);
-
-        return $this->associationIsToOne($this->getAssociation($associationName));
-    }
-
-    /**
      * HasOne and BelongsTo association cannot be multiple
      *
      * @param string $associationName Name of the association
@@ -137,7 +123,7 @@ class AssociationBuilder
      * @param string $associationName Association name
      * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $associatedFactory Factory
      *
-     * @return void
+     * @return \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>
      */
     public function removeAssociationForToOneFactory(string $associationName, BaseFactory $associatedFactory): BaseFactory
     {
@@ -149,6 +135,21 @@ class AssociationBuilder
         }
 
         return $associatedFactory;
+    }
+
+    /**
+     * Normalize the associated factory for to-one relations.
+     *
+     * @param string $associationName Association name
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $associationFactory Factory
+     *
+     * @return \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>
+     */
+    public function prepareAssociationFactory(string $associationName, BaseFactory $associationFactory): BaseFactory
+    {
+        $this->validateToOneAssociation($associationName, $associationFactory);
+
+        return $this->removeAssociationForToOneFactory($associationName, $associationFactory);
     }
 
     /**

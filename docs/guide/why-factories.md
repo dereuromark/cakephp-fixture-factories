@@ -47,9 +47,9 @@ class ArticlesIndexTest extends AppTestCase
 {
     public function testIndex(): void
     {
-        ArticleFactory::make()
+        ArticleFactory::new()
             ->with('Authors[3].Address.City.Country', ['name' => 'Kenya'])
-            ->persistEntity();
+            ->save();
 
         $articles = $this->fetchTable('Articles')
             ->find()
@@ -82,7 +82,7 @@ In practice, the two coexist — many teams keep a small "seed" fixture for refe
 
 | | Classic `$fixtures` | Fixture factories |
 |---|---|---|
-| Defaults | Repeated in every fixture row | Once, in `setDefaultTemplate()` |
+| Defaults | Repeated in every fixture row | Once, in `definition()` |
 | Associations | Manually link FKs, list every fixture | `->with('Authors[3].Address.City.Country')` |
 | Per-test data | Edit YAML/array — touches all tests | Override on the factory call |
 | Required-field churn | Add column → update every fixture | Add to template; existing tests keep working |

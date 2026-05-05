@@ -112,9 +112,9 @@ Configure::write('FixtureFactories.generatorType', 'dummy');
 Or set it per-factory:
 
 ```php
-$article = ArticleFactory::make()
+$article = ArticleFactory::new()
     ->setGenerator('dummy')
-    ->getEntity();
+    ->build();
 ```
 
 > **Note**: By default, `setGenerator()` changes the generator globally. Enable
@@ -231,7 +231,7 @@ Don't hardcode generator selection in factories:
 Configure::write('FixtureFactories.generatorType', 'dummy');
 
 // Good - per-factory override
-ArticleFactory::make()->setGenerator('dummy')->getEntity();
+ArticleFactory::new()->setGenerator('dummy')->build();
 
 // Good - set global default explicitly
 BaseFactory::setDefaultGenerator('dummy');
