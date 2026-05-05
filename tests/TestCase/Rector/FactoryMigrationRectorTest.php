@@ -7,10 +7,18 @@ namespace CakephpFixtureFactories\Test\TestCase\Rector;
 use Iterator;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Rector\Testing\PHPUnit\AbstractRectorTestCase;
-use Throwable;
 
 class FactoryMigrationRectorTest extends AbstractRectorTestCase
 {
+    protected function setUp(): void
+    {
+        if ($this->hasUnsupportedTokenizerStack()) {
+            $this->markTestSkipped('The installed tokenizer/parser stack does not support Rector integration tests on this PHP version.');
+        }
+
+        parent::setUp();
+    }
+
     /**
      * @return \Iterator<string>
      */
@@ -22,15 +30,7 @@ class FactoryMigrationRectorTest extends AbstractRectorTestCase
     #[DataProvider('provideData')]
     public function testRectorRules(string $fixtureFilePath): void
     {
-        try {
-            $this->doTestFile($fixtureFilePath);
-        } catch (Throwable $exception) {
-            if ($this->isKnownTokenizerCompatibilityIssue($exception)) {
-                $this->markTestSkipped($exception->getMessage());
-            }
-
-            throw $exception;
-        }
+        $this->doTestFile($fixtureFilePath);
     }
 
     public function provideConfigFilePath(): string
@@ -38,11 +38,9 @@ class FactoryMigrationRectorTest extends AbstractRectorTestCase
         return dirname(__DIR__, 3) . '/rector.php';
     }
 
-    private function isKnownTokenizerCompatibilityIssue(Throwable $exception): bool
+    private function hasUnsupportedTokenizerStack(): bool
     {
-        $message = $exception->getMessage();
-
-        return str_contains($message, 'Token T_PUBLIC_SET has ID of type string')
-            || str_contains($message, 'Undefined constant "T_PROPERTY_C"');
+        return defined('T_PUBLIC_SET') && !is_int(T_PUBLIC_SET)
+            || !defined('T_PROPERTY_C');
     }
 }
