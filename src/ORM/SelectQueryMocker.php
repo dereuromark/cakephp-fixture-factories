@@ -45,7 +45,7 @@ class SelectQueryMocker
         array $options = [],
     ): Table|MockObject {
         $alias = $alias ?? $factory->getTable()->getAlias();
-        $resultSet = $factory->getResultSet();
+        $resultSet = new \Cake\ORM\ResultSet($factory->buildMany());
 
         // Use reflection to access the protected getMockBuilder method
         $reflection = new ReflectionMethod($testCase, 'getMockBuilder');
