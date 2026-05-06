@@ -43,6 +43,14 @@ class BaseFactoryDisplayFieldTest extends TestCase
         $this->assertSame($title, $article->title);
     }
 
+    public function testNumericStringUsesDisplayFieldInsteadOfCount(): void
+    {
+        $title = '12345';
+        $article = ArticleFactory::new($title)->build();
+
+        $this->assertSame($title, $article->title);
+    }
+
     public function testUseDisplayFieldIfFieldIsNotSpecifiedMultiple(): void
     {
         $titles = ['Some title 1', 'Some title 2'];

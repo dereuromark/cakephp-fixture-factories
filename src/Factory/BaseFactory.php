@@ -202,7 +202,7 @@ abstract class BaseFactory
      */
     public static function new(mixed $makeParameter = [], int $times = 1): self
     {
-        if (is_numeric($makeParameter)) {
+        if (is_int($makeParameter) || is_float($makeParameter)) {
             $factory = self::makeFromNonCallable();
             $times = (int)$makeParameter;
         } elseif ($makeParameter === null) {
@@ -612,7 +612,11 @@ abstract class BaseFactory
             $factory = static::class;
             $message = $exception->getMessage();
 
-            throw new PersistenceException("Error in Factory `$factory`.\n Message: $message \n");
+            throw new PersistenceException(
+                "Error in Factory `$factory`.\n Message: $message \n",
+                (int)$exception->getCode(),
+                $exception,
+            );
         }
 
         $this->finalizePersistedEntities($saved, $table);

@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace CakephpFixtureFactories\Test\TestCase\TestSuite;
 
+use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
+use CakephpFixtureFactories\Factory\BaseFactory;
+use CakephpFixtureFactories\Generator\FakerAdapter;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpFixtureFactories\TestSuite\FactoryTableTracker;
 use CakephpFixtureFactories\TestSuite\FactoryTransactionStrategy;
+use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
 use ReflectionProperty;
 
 /**
@@ -17,6 +21,8 @@ use ReflectionProperty;
  */
 class FactoryTransactionStrategyTest extends TestCase
 {
+    use TruncateDirtyTables;
+
     /**
      * We don't use the FactoryTransactionTrait here because we're testing
      * the strategy itself and need more control
@@ -32,6 +38,8 @@ class FactoryTransactionStrategyTest extends TestCase
     protected function tearDown(): void
     {
         FactoryTableTracker::getInstance()->clear();
+        Configure::delete('FixtureFactories.generatorType');
+        BaseFactory::resetDefaultGenerator();
 
         parent::tearDown();
     }
@@ -156,6 +164,21 @@ class FactoryTransactionStrategyTest extends TestCase
         $this->assertNull(FactoryTransactionStrategy::getActiveInstance());
     }
 
+    public function testStrategyResetsSharedDefaultGenerator(): void
+    {
+        Configure::write('FixtureFactories.generatorType', 'faker');
+        BaseFactory::setDefaultGenerator('dummy');
+
+        $strategy = new FactoryTransactionStrategy();
+        $strategy->setupTest([]);
+
+        $generator = CityFactory::new()->getGenerator();
+
+        $this->assertInstanceOf(FakerAdapter::class, $generator);
+
+        $strategy->teardownTest();
+    }
+
     /**
      * Test that tracker continues to work across multiple persist calls
      *
@@ -165,10 +188,16 @@ class FactoryTransactionStrategyTest extends TestCase
     {
         $tracker = FactoryTableTracker::getInstance();
         $tracker->clear();
+        $country = CountryFactory::new(['name' => 'Tracked country'])->save();
+        $tracker->clear();
 
         // Create some data
-        $city1 = CityFactory::new(['name' => 'City 1'])->save();
-        $city2 = CityFactory::new(['name' => 'City 2'])->save();
+        $city1 = CityFactory::new(['name' => 'City 1', 'country_id' => $country->id])
+            ->without('Countries')
+            ->save();
+        $city2 = CityFactory::new(['name' => 'City 2', 'country_id' => $country->id])
+            ->without('Countries')
+            ->save();
 
         $this->assertNotEmpty($city1->id);
         $this->assertNotEmpty($city2->id);
@@ -232,11 +261,13 @@ class FactoryTransactionStrategyTest extends TestCase
     {
         $tracker = FactoryTableTracker::getInstance();
         $tracker->clear();
+        $country = CountryFactory::new(['name' => 'Tracked country'])->save();
+        $tracker->clear();
 
         // Persist multiple cities
-        CityFactory::new()->save();
-        CityFactory::new()->save();
-        CityFactory::new()->save();
+        CityFactory::new(['name' => 'City 1', 'country_id' => $country->id])->without('Countries')->save();
+        CityFactory::new(['name' => 'City 2', 'country_id' => $country->id])->without('Countries')->save();
+        CityFactory::new(['name' => 'City 3', 'country_id' => $country->id])->without('Countries')->save();
 
         $tables = $tracker->getTableNames();
         $this->assertCount(1, $tables, 'Same table should only be tracked once');

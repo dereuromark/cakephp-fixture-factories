@@ -7,6 +7,7 @@ namespace CakephpFixtureFactories\TestSuite;
 use Cake\Database\Connection;
 use Cake\TestSuite\Fixture\FixtureStrategyInterface;
 use CakephpFixtureFactories\Error\PersistenceException;
+use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\Generator\CakeGeneratorFactory;
 use Throwable;
 
@@ -63,6 +64,7 @@ class FactoryTransactionStrategy implements FixtureStrategyInterface
 
         // Reset generator unique state
         CakeGeneratorFactory::clearInstances();
+        BaseFactory::resetDefaultGenerator();
     }
 
     /**
@@ -88,6 +90,7 @@ class FactoryTransactionStrategy implements FixtureStrategyInterface
 
         // Reset generator unique state for next test
         CakeGeneratorFactory::clearInstances();
+        BaseFactory::resetDefaultGenerator();
     }
 
     /**

@@ -37,6 +37,19 @@ class BaseFactoryOptionsTest extends TestCase
         $strictFactory->save();
     }
 
+    public function testPersistenceExceptionChainsOriginalFailure(): void
+    {
+        $factory = StrictCityFactory::new(['name' => 'Default rules off'])->enableCheckRules();
+
+        try {
+            $factory->save();
+            $this->fail('Expected PersistenceException to be thrown');
+        } catch (PersistenceException $exception) {
+            $this->assertNotNull($exception->getPrevious());
+            $this->assertNotSame('', $exception->getPrevious()?->getMessage() ?? '');
+        }
+    }
+
     public function testSetMarshallerOptionsIsImmutable(): void
     {
         $factory = StrictCityFactory::new();
