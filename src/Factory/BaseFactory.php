@@ -359,7 +359,7 @@ abstract class BaseFactory
      * 2. `Configure::read('FixtureFactories.defaultLocale')`,
      * 3. `I18n::getLocale()` as the final fallback.
      *
-     * Centralising this prevents the `defaultLocale` Configure key from being
+     * Centralizing this prevents the `defaultLocale` Configure key from being
      * silently bypassed by callers that pre-default to `I18n::getLocale()`.
      *
      * @param string|null $override Caller-supplied locale, if any.

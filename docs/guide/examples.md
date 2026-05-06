@@ -108,6 +108,16 @@ $article = ArticleFactory::new()
 `afterBuild()` runs before `build*()` returns and before `save*()` persists.
 `afterSave()` runs after the entity has been saved, so it can adjust the in-memory entity without rewriting the database row.
 
+Both hooks fire for nested factories too — when a child factory is persisted as part of its parent's cascading save, its own `afterSave()` callbacks run on the saved child entities:
+
+```php
+ArticleFactory::new()
+    ->with('Authors', AuthorFactory::new()->afterSave(function (Author $author) {
+        // runs once per saved author, even though save() was called on the article factory
+    }))
+    ->save();
+```
+
 If you want to manually save an entity using a table instance, keep it dirty so required fields are written:
 ```php
 $article = ArticleFactory::new()

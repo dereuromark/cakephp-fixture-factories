@@ -170,7 +170,7 @@ class GeneratorAdapterTest extends TestCase
      * Regression: BaseFactory's locale-resolution path used to short-circuit
      * `Configure::read('FixtureFactories.defaultLocale')` by passing
      * `I18n::getLocale()` (which is never null) as the explicit param. The
-     * Configure key was therefore unreachable. Centralising in
+     * Configure key was therefore unreachable. Centralizing in
      * `BaseFactory::resolveLocale()` flips the precedence to:
      * explicit > Configure > I18n.
      *
