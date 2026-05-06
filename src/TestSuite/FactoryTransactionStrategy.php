@@ -93,7 +93,7 @@ class FactoryTransactionStrategy implements FixtureStrategyInterface
     /**
      * Ensure a transaction is active on the given connection.
      *
-     * Called from BaseFactory::persist() before saving, so transactions
+     * Called from BaseFactory save operations before persistence, so transactions
      * are only started on connections that are actually used.
      *
      * @param \Cake\Database\Connection $connection The connection to ensure a transaction on

@@ -125,13 +125,21 @@ $article = ArticleFactory::new()
 $this->Articles->save($article, ['associated' => ['Authors']]);
 ```
 
-You may want to retrieve your entities as a result set, allowing you to conveniently query the entities created:
+If a test wants CakePHP `ResultSet` semantics, wrap the array returned by
+`buildMany()` or `saveMany()` explicitly. There are no dedicated factory
+`ResultSet` helpers in v2:
 ```php
-$articles = new \Cake\ORM\ResultSet(ArticleFactory::new()->count(3)->buildMany()); // Will not persist in the DB
-$articles = new \Cake\ORM\ResultSet(ArticleFactory::new()->count(3)->saveMany()); // Will persist in the DB
+$articles = new \Cake\ORM\ResultSet(
+    ArticleFactory::new()->count(3)->buildMany()
+); // In-memory only
+
+$articles = new \Cake\ORM\ResultSet(
+    ArticleFactory::new()->count(3)->saveMany()
+); // Persisted rows
 ```
 
-A single entity is returned wrapped in a result set as well, so the contract is the same regardless of count:
+A single entity can be normalized the same way when a caller expects a
+`ResultSet` contract:
 ```php
 $article = (new \Cake\ORM\ResultSet(ArticleFactory::new()->saveMany()))->first(); // Cake\Datasource\EntityInterface
 ```

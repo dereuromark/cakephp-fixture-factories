@@ -20,8 +20,6 @@ use CakephpFixtureFactories\Generator\GeneratorInterface;
  * Class CityFactory
  *
  * @extends BaseFactory<\TestApp\Model\Entity\City>
- *
- * @method static \TestApp\Model\Entity\City get(mixed $primaryKey, array $options = [])
  */
 class CityFactory extends BaseFactory
 {

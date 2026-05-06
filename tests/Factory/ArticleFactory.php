@@ -21,9 +21,6 @@ use TestApp\Model\Entity\Article;
  * Class ArticleFactory
  *
  * @extends BaseFactory<\TestApp\Model\Entity\Article>
- *
- * @method static \TestApp\Model\Entity\Article get(mixed $primaryKey, array $options = [])
- * @method static \TestApp\Model\Entity\Article firstOrFail($conditions = null)
  */
 class ArticleFactory extends BaseFactory
 {

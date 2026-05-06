@@ -20,8 +20,6 @@ use CakephpFixtureFactories\Generator\GeneratorInterface;
  * Class TableWithoutModelFactory
  *
  * @extends BaseFactory<\Cake\ORM\Entity>
- *
- * @method static \Cake\ORM\Entity get(mixed $primaryKey, array $options = [])
  */
 class TableWithoutModelFactory extends BaseFactory
 {

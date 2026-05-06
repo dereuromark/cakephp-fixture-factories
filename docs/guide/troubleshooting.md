@@ -49,7 +49,7 @@ Symptoms: prior test's `Authors` rows show up in the next test's queries.
 
 ## Validation errors when persisting
 
-Factories deactivate validation by default. If you're seeing rule/validation failures from `persist()`, something is overriding that — check whether you've set `$marshallerOptions` or `$saveOptions` on the factory.
+Factories deactivate validation by default. If you're seeing rule or validation failures from `save()` / `saveMany()`, something is overriding that — check whether you've set `$marshallerOptions` or `$saveOptions` on the factory.
 
 To re-enable validation deliberately:
 

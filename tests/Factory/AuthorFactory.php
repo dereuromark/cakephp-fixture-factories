@@ -20,9 +20,6 @@ use CakephpFixtureFactories\Generator\GeneratorInterface;
  * Class AuthorFactory
  *
  * @extends BaseFactory<\TestApp\Model\Entity\Author>
- *
- * @method static \TestApp\Model\Entity\Author get(mixed $primaryKey, array $options = [])
- * @method static \TestApp\Model\Entity\Author firstOrFail($conditions = null)
  */
 class AuthorFactory extends BaseFactory
 {

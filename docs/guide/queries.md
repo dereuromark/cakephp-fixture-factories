@@ -25,11 +25,20 @@ Returns the number of rows in the factory's table.
 
 ## Fetching by primary key
 
-Use the query surface:
+Use the query surface when you want finder-style conditions:
 
 ```php
 ArticleFactory::query()->where(['id' => $id])->firstOrFail();
 ```
+
+If you specifically want CakePHP's table `get()` semantics, use the table accessor instead:
+
+```php
+ArticleFactory::table()->get($id);
+ArticleFactory::table()->get($id, contain: ['Authors']);
+```
+
+This is the direct replacement for the old deprecated `ArticleFactory::get(...)` helper. It keeps primary-key fetches on the Cake table API, while `query()` remains the read/query surface for finder chains.
 
 ## `ArticleFactory::query()->firstOrFail()`
 

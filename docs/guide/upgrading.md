@@ -8,12 +8,12 @@ description: Per-version upgrade notes
 This page collects breaking-change notes between minor versions. For migrating
 from `vierge-noire/cakephp-fixture-factories`, see the [migration guide](migration.md).
 
-## `next` / v2 migration helpers
+## v2 migration helpers
 
-The `next` branch targets projects already on `1.4.x`.
-If you're still on `1.3.x`, upgrade to `1.4.x` on `main` first, then move to `next` / v2.
+Version 2 targets projects already on `1.4.x`.
+If you're still on `1.3.x`, upgrade to `1.4.x` first, then move to v2.
 
-For the v2 step, the branch ships a Rector config to help with the mechanical API rename work:
+For the v2 step, the package ships a Rector config to help with the mechanical API rename work:
 
 ```bash
 vendor/bin/rector process tests --config rector.php
@@ -30,14 +30,31 @@ The bundled rules cover the safe, mechanical call-site changes:
 - `persistEntity()` to `save()`
 - `persistEntities()` to `saveMany()`
 - static query helpers like `Factory::find()` to `Factory::query()`
+- `Factory::get($id, $options)` to `Factory::table()->get($id, $options)`
 
 It intentionally does **not** rewrite deprecated `persist()` calls, because that return type is shape-dependent and needs a human choice between `save()` and `saveMany()`.
 
-Factory subclass `@extends BaseFactory<TEntity>` annotations are expected to already be in place from the `1.4.x` upgrade step. The one-off `1.3.x` annotation migration script remains on the `main` branch and is not part of the v2 branch.
+Typical before/after replacements look like this:
+
+```diff
+- $article = ArticleFactory::make(['title' => 'Foo'])->persistEntity();
++ $article = ArticleFactory::new(['title' => 'Foo'])->save();
+
+- $articles = ArticleFactory::make()->setTimes(3)->persistEntities();
++ $articles = ArticleFactory::new()->count(3)->saveMany();
+
+- $article = ArticleFactory::get($id, ['contain' => ['Authors']]);
++ $article = ArticleFactory::table()->get($id, ['contain' => ['Authors']]);
+
+- $published = ArticleFactory::find('published')->all();
++ $published = ArticleFactory::query()->find('published')->all();
+```
+
+Factory subclass `@extends BaseFactory<TEntity>` annotations are expected to already be in place from the `1.4.x` upgrade step.
 
 ## 1.3 → 1.4
 
-These notes are kept here as historical context for the required pre-v2 upgrade path. Complete the `1.4.x` migration on `main` before adopting `next` / v2.
+These notes are kept here as historical context for the required pre-v2 upgrade path. Complete the `1.4.x` migration before adopting v2.
 
 ### Symmetric persist/get API
 
@@ -63,7 +80,7 @@ All four methods are typed through the `TEntity` template on
 `BaseFactory`, so an IDE resolves return types to the concrete entity
 class once your factory declares the template parameter (see below).
 
-`persist()` will be removed in v4.
+`persist()` was removed in v2. Use `save()` or `saveMany()` instead.
 
 #### `persist()` call sites
 
@@ -81,9 +98,9 @@ on how the factory was configured:
 ### Factory subclass annotations
 
 To get sharp IDE autocomplete and PHPStan/Psalm type resolution on
-`getEntity()`, `getEntities()`, `persistEntity()`, `persistEntities()`,
-`getResultSet()` and `getPersistedResultSet()`, declare the template
-parameter on each Factory subclass:
+`getEntity()`, `getEntities()`, `persistEntity()` and
+`persistEntities()`, declare the template parameter on each Factory
+subclass:
 
 ```php
 /**

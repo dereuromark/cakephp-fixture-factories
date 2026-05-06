@@ -262,7 +262,6 @@ use CakephpFixtureFactories\Factory\BaseFactory as CakephpBaseFactory;
  * @method \App\Model\Entity\Invoice getEntity()
  * @method array<\App\Model\Entity\Invoice> getEntities()
  * @method \App\Model\Entity\Invoice|array<\App\Model\Entity\Invoice> persist()
- * @method static \App\Model\Entity\Invoice get(mixed $primaryKey, array $options = [])
  */
 class InvoiceFactory extends CakephpBaseFactory
 {
@@ -280,10 +279,6 @@ PHP;
             $this->assertStringNotContainsString('persist()', $newContent);
             $this->assertStringContainsString(
                 '@extends \CakephpFixtureFactories\Factory\BaseFactory<\App\Model\Entity\Invoice>',
-                $newContent,
-            );
-            $this->assertStringContainsString(
-                '@method static \App\Model\Entity\Invoice get(mixed $primaryKey, array $options = [])',
                 $newContent,
             );
         } finally {
@@ -308,7 +303,6 @@ use CakephpFixtureFactories\Factory\BaseFactory as CakephpBaseFactory;
  * InvoiceFactory
  *
  * @extends \CakephpFixtureFactories\Factory\BaseFactory<\App\Model\Entity\Invoice>
- * @method static \App\Model\Entity\Invoice get(mixed $primaryKey, array $options = [])
  */
 class InvoiceFactory extends CakephpBaseFactory
 {

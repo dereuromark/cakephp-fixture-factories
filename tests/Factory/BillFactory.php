@@ -20,8 +20,6 @@ use CakephpFixtureFactories\Generator\GeneratorInterface;
  * Class BillFactory
  *
  * @extends BaseFactory<\TestPlugin\Model\Entity\Bill>
- *
- * @method static \TestPlugin\Model\Entity\Bill get(mixed $primaryKey, array $options = [])
  */
 class BillFactory extends BaseFactory
 {
