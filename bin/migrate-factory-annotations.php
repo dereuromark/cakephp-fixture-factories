@@ -23,6 +23,9 @@
 
 declare(strict_types=1);
 
+use Cake\Utility\Inflector;
+use CakephpFixtureFactories\Factory\BaseFactory;
+
 // Best-effort: load the project's autoloader so we can verify candidate
 // entity classes exist. Without it class_exists() always returns false
 // and the script will conservatively pick \Cake\Datasource\EntityInterface
@@ -55,10 +58,6 @@ if (!$paths) {
     exit(64);
 }
 
-$pattern = '/^\h*\*\h*@method\h+\\\\?[\w\\\\]+\h+getEntity\(\)\R'
-    . '\h*\*\h*@method\h+array<\\\\?[\w\\\\]+>\h+getEntities\(\)\R'
-    . '\h*\*\h*@method\h+\\\\?[\w\\\\]+\|array<\\\\?[\w\\\\]+>\h+persist\(\)\R/m';
-
 $replaced = 0;
 $skippedAlreadyMigrated = 0;
 $skippedNoMatch = 0;
@@ -84,16 +83,12 @@ foreach ($paths as $path) {
 
             continue;
         }
-        $replacementLine = sprintf(" * @extends \\CakephpFixtureFactories\\Factory\\BaseFactory<%s>\n", $entity);
-        $new = preg_replace($pattern, $replacementLine, $src, 1, $count);
-        if ($count === 0 || $new === null) {
-            // Legacy block not found, but extends BaseFactory: try inserting @extends before the closing */ of the class docblock.
-            $new = insertExtendsLine($src, $replacementLine);
-            if ($new === null) {
-                $skippedNoMatch++;
+        $replacementLine = sprintf(' * @extends \\CakephpFixtureFactories\\Factory\\BaseFactory<%s>', $entity);
+        $new = rewriteClassDocblock($src, $replacementLine);
+        if ($new === null) {
+            $skippedNoMatch++;
 
-                continue;
-            }
+            continue;
         }
         if ($new === $src) {
             $skippedAlreadyMigrated++;
@@ -259,13 +254,13 @@ function autoloadAvailable(): bool
 {
     // BaseFactory ships with the plugin and is always available once the
     // project autoloader has been required. Use it as a marker.
-    return class_exists(\CakephpFixtureFactories\Factory\BaseFactory::class);
+    return class_exists(BaseFactory::class);
 }
 
 function singularize(string $word): string
 {
-    if (class_exists(\Cake\Utility\Inflector::class)) {
-        return \Cake\Utility\Inflector::singularize($word);
+    if (class_exists(Inflector::class)) {
+        return Inflector::singularize($word);
     }
     // Minimal fallback singularizer for the standalone case.
     if (preg_match('/(.+)ies$/', $word, $m)) {
@@ -285,20 +280,71 @@ function singularize(string $word): string
 }
 
 /**
- * Insert an @extends line into the class docblock when no legacy block is present.
+ * Rewrite the class docblock for a factory:
+ * - remove legacy @method getEntity()/getEntities()/persist() lines
+ * - preserve all other docblock content
+ * - insert the canonical @extends line before the docblock close
  *
- * Returns null if the docblock cannot be located.
+ * Returns null if the class docblock cannot be located.
  */
-function insertExtendsLine(string $src, string $extendsLine): ?string
+function rewriteClassDocblock(string $src, string $extendsLine): ?string
 {
-    if (!preg_match('/(\/\*\*[^*]*(?:\*(?!\/)[^*]*)*)\*\/\s*(?:abstract\h+|final\h+)?class\h+\w+Factory\b/m', $src, $m, PREG_OFFSET_CAPTURE)) {
+    if (
+        !preg_match(
+            '/\/\*\*.*?\*\/\s*(?:abstract\h+|final\h+)?class\h+\w+Factory\b/s',
+            $src,
+            $match,
+            PREG_OFFSET_CAPTURE,
+        )
+    ) {
         return null;
     }
-    $docblock = $m[1][0];
-    $offset = $m[1][1];
-    $newDocblock = rtrim($docblock) . "\n" . $extendsLine . "\n ";
 
-    return substr_replace($src, $newDocblock, $offset, strlen($docblock));
+    $matchedBlock = $match[0][0];
+    $offset = $match[0][1];
+    if (!preg_match('/^(\/\*\*.*?\*\/)(\s*(?:abstract\h+|final\h+)?class\h+\w+Factory\b.*)$/s', $matchedBlock, $parts)) {
+        return null;
+    }
+
+    $docblock = $parts[1];
+    $newline = str_contains($docblock, "\r\n") ? "\r\n" : "\n";
+    $lines = preg_split('/\R/', $docblock);
+    if ($lines === false || count($lines) < 2) {
+        return null;
+    }
+
+    $filteredLines = [];
+    foreach ($lines as $line) {
+        if (isLegacyFactoryMethodAnnotation($line)) {
+            continue;
+        }
+        $filteredLines[] = $line;
+    }
+
+    $closingLine = array_pop($filteredLines);
+    if ($closingLine === null || trim($closingLine) !== '*/') {
+        return null;
+    }
+
+    while ($filteredLines !== [] && isDocblockBlankLine((string)end($filteredLines))) {
+        array_pop($filteredLines);
+    }
+
+    $filteredLines[] = $extendsLine;
+    $filteredLines[] = $closingLine;
+    $rewrittenDocblock = implode($newline, $filteredLines);
+
+    return substr_replace($src, $rewrittenDocblock, $offset, strlen($docblock));
+}
+
+function isLegacyFactoryMethodAnnotation(string $line): bool
+{
+    return (bool)preg_match('/^\h*\*\h*@method\b.*\h+(getEntity|getEntities|persist)\(\)\h*$/', $line);
+}
+
+function isDocblockBlankLine(string $line): bool
+{
+    return (bool)preg_match('/^\h*\*\h*$/', $line);
 }
 
 function extendsBaseFactory(string $content): bool
