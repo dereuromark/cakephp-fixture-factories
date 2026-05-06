@@ -29,6 +29,7 @@ The bundled rules cover the safe, mechanical call-site changes:
 - `getEntities()` to `buildMany()`
 - `persistEntity()` to `save()`
 - `persistEntities()` to `saveMany()`
+- `patchData(...)` to `state(...)` (in factory helper methods such as `asAdmin()`)
 - static query helpers like `Factory::find()` to `Factory::query()`
 - `Factory::get($id, $options)` to `Factory::table()->get($id, $options)`
 
@@ -48,6 +49,17 @@ Typical before/after replacements look like this:
 
 - $published = ArticleFactory::find('published')->all();
 + $published = ArticleFactory::query()->find('published')->all();
+```
+
+Custom factory helpers that wrap field overrides also flip from
+`patchData()` to `state()`:
+
+```diff
+ public function asAdmin(): static
+ {
+-    return $this->patchData(['role_id' => self::ROLE_ADMIN]);
++    return $this->state(['role_id' => self::ROLE_ADMIN]);
+ }
 ```
 
 Factory subclass `@extends BaseFactory<TEntity>` annotations are expected to already be in place from the `1.4.x` upgrade step.
