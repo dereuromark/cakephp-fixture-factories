@@ -199,7 +199,10 @@ class AssociationBuilder
         $times = $this->getTimeBetweenBrackets($firstAssociation);
         $firstAssociation = $this->removeBrackets($firstAssociation);
 
-        $table = $this->getTable()->getAssociation($firstAssociation)->getClassName();
+        // Route through $this->getAssociation() so a typo surfaces as the
+        // documented AssociationBuilderException with the previous chain
+        // preserved, instead of Cake's raw InvalidArgumentException.
+        $table = $this->getAssociation($firstAssociation)->getClassName();
 
         if ($associations) {
             $factory = $this->getFactoryFromTableName($table);

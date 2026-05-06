@@ -132,6 +132,8 @@ $articles = ArticleFactory::new()
     ->buildMany();
 ```
 
+> **Caveat — `Model.afterSaveCommit`.** Cake fires `afterSaveCommit` only after the outer transaction commits. Under `FactoryTransactionStrategy` (the recommended setup) the outer transaction always rolls back at teardown, so `afterSaveCommit` listeners do not fire for factory-created entities. If your behavior depends on `afterSaveCommit`, exercise it through application code instead, or run the relevant test under a non-transactional strategy.
+
 Both hooks fire for nested factories too — when a child factory is persisted as part of its parent's cascading save, its own `afterSave()` callbacks run on the saved child entities:
 
 ```php

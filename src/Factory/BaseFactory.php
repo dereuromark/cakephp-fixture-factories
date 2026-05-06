@@ -32,8 +32,6 @@ use CakephpFixtureFactories\TestSuite\FactoryTransactionStrategy;
 use InvalidArgumentException;
 use RuntimeException;
 use Throwable;
-use function array_merge;
-use function is_array;
 
 /**
  * Class BaseFactory

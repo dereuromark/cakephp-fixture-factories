@@ -86,6 +86,8 @@ $author = AuthorFactory::new()
 
 Both methods auto-resolve which association to attach based on the target factory's table — no association name needed. If the parent table has more than one association pointing at the target table (e.g. `created_by` and `updated_by` both → Users), the call throws an "ambiguous association" exception so you don't accidentally attach to the wrong one. Use the underlying `with('Author', …)` form with the explicit association name when you need to disambiguate.
 
+> Bake-generated `for*()` / `has*()` helpers emit `with('AssociationName', …)` rather than `for()` / `has()` for exactly this reason — the explicit alias is unambiguous at codegen time and survives later schema changes that introduce sibling associations.
+
 `has()` accepts an optional `$pivot` array as the second parameter for habtm joins, populating the `_joinData` columns on the join row.
 
 ## `from()` — start from an existing entity

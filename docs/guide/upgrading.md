@@ -13,6 +13,12 @@ from `vierge-noire/cakephp-fixture-factories`, see the [migration guide](migrati
 Version 2 targets projects already on `1.4.x`.
 If you're still on `1.3.x`, upgrade to `1.4.x` first, then move to v2.
 
+### Behavior changes since 1.4.x
+
+- **`setGenerator()` now scopes to the calling factory by default.** The `FixtureFactories.instanceLevelGenerator` config defaults to `true` in v2 (was `false` in 1.x). Calls like `ArticleFactory::new()->setGenerator('dummy')` no longer mutate the global default — they return a clone with the override scoped to that factory. If you relied on the global mutation, either set `Configure::write('FixtureFactories.instanceLevelGenerator', false)` in your test bootstrap to restore the 1.x behavior, or use the explicit static `BaseFactory::setDefaultGenerator($type)` instead.
+- **`setDefaultTemplate()` / `setDefaultData()` are no longer wired up.** v2 only consults `definition(GeneratorInterface $generator): array` on the factory class. Run the bundled Rector config (below) to migrate; otherwise factories silently produce empty data.
+- **The standalone `bin/migrate-factory-annotations.php` shim is gone.** Annotation upkeep now lives entirely in the IDE-helper integration: install `dereuromark/cakephp-ide-helper` and run `bin/cake annotate classes` (or `annotate all`) — `FactoryAnnotatorTask` is auto-registered when the plugin boots.
+
 For the v2 step, the package ships a Rector config to help with the mechanical API rename work:
 
 ```bash

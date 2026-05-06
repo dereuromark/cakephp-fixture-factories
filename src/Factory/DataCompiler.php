@@ -206,8 +206,11 @@ class DataCompiler
      */
     public function collectAssociation(string $associationName, BaseFactory $factory, bool $isToOne): void
     {
+        // Only the toOne path layers data from the instantiation array onto
+        // the associated factory here. ToMany associations are merged later in
+        // mergeWithToMany() based on the resolved property of the relation.
         if ($isToOne) {
-            $associationFieldName = Inflector::underscore(Inflector::singularize($associationName));
+            $associationFieldName = $this->getAssociationPropertyName($associationName);
             if (
                 $this->dataFromInstantiation instanceof EntityInterface &&
                 $this->dataFromInstantiation->has($associationFieldName)
@@ -224,6 +227,25 @@ class DataCompiler
             $this->dataFromAssociations[$associationName][] = $factory;
         } else {
             $this->dataFromAssociations[$associationName] = [$factory];
+        }
+    }
+
+    /**
+     * Resolve the entity property name for the given association.
+     *
+     * Honors a custom `propertyName` declared on the association (e.g.
+     * `belongsTo('Country', ['propertyName' => 'native_country'])`) and falls
+     * back to the inflected default when the association cannot be resolved
+     * (e.g. non-Cake apps where the table object has no associations).
+     *
+     * @param string $associationName Association alias, optionally bracketed.
+     */
+    private function getAssociationPropertyName(string $associationName): string
+    {
+        try {
+            return $this->getFactory()->getTable()->getAssociation($associationName)->getProperty();
+        } catch (InvalidArgumentException) {
+            return Inflector::underscore(Inflector::singularize($associationName));
         }
     }
 
