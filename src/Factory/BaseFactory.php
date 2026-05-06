@@ -398,7 +398,7 @@ abstract class BaseFactory
         $generator = clone CakeGeneratorFactory::create($resolvedLocale, $type);
         $generator->seed(static::getGeneratorSeed());
 
-        if (Configure::read('FixtureFactories.instanceLevelGenerator', false)) {
+        if (Configure::read('FixtureFactories.instanceLevelGenerator', true)) {
             $factory = clone $this;
             $factory->instanceGenerator = $generator;
 

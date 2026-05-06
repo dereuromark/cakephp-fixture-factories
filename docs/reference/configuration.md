@@ -13,7 +13,7 @@ return [
         'generatorType' => 'faker',
         'defaultLocale' => 'en_US',
         'seed' => 1234,
-        'instanceLevelGenerator' => false,
+        'instanceLevelGenerator' => true,
         'testFixtureNamespace' => 'App\\Test\\Factory',
         'testFixtureOutputDir' => 'Factory/',
         'testFixtureGlobalBehaviors' => [],
@@ -48,9 +48,9 @@ Seed for the generator's RNG. A fixed seed produces reproducible test data acros
 
 When `true`, `setGenerator()` only affects the current factory instance instead of globally changing the generator for all factories. Use `BaseFactory::setDefaultGenerator()` to set the global default explicitly.
 
-Default: `false` (BC — `setGenerator()` affects all factories globally).
+Default: `true` (`setGenerator()` only affects the current factory instance).
 
-> Recommended `true` for new projects to avoid surprising side effects when switching generators per-factory.
+> Set this to `false` only if you explicitly need the legacy global `setGenerator()` behavior.
 
 ### `testFixtureNamespace`
 

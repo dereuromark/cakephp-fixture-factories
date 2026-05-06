@@ -820,13 +820,13 @@ class DataCompiler
     {
         return match ($columnType) {
             'uuid', 'string' => $this->getFactory()->getGenerator()->uuid(),
-            'tinyinteger' => mt_rand(0, 127),
-            'smallinteger' => mt_rand(0, 32767),
-            'mediuminteger' => mt_rand(0, 8388607),
+            'tinyinteger' => random_int(0, 127),
+            'smallinteger' => random_int(0, 32767),
+            'mediuminteger' => random_int(0, 8388607),
             // mt_rand() is capped at mt_getrandmax() (typically 2^31 - 1),
             // which silently truncates biginteger PKs to 32-bit range.
             'biginteger' => random_int(0, PHP_INT_MAX),
-            'integer' => mt_rand(0, 2147483647),
+            'integer' => random_int(0, 2147483647),
             default => throw new FixtureFactoryException(sprintf(
                 'Cannot generate a random primary key for column type `%s`. '
                 . 'Provide an explicit primary key offset via setPrimaryKeyOffset().',

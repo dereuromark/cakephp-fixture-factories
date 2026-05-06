@@ -83,6 +83,14 @@ class DataCompilerTest extends TestCase
         $this->assertTrue(is_int($this->articleDataCompiler->generateRandomPrimaryKey('integer')));
     }
 
+    public function testGenerateRandomPrimaryKeyIntegerProducesDistinctValues(): void
+    {
+        $value1 = $this->articleDataCompiler->generateRandomPrimaryKey('integer');
+        $value2 = $this->articleDataCompiler->generateRandomPrimaryKey('integer');
+
+        $this->assertNotSame($value1, $value2);
+    }
+
     public function testGenerateRandomPrimaryKeyBigInteger(): void
     {
         $values = [];
