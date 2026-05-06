@@ -182,7 +182,7 @@ class GeneratorAdapterTest extends TestCase
      *
      * @return void
      */
-    public function testConfigureDefaultLocaleIsHonoured(): void
+    public function testConfigureDefaultLocaleIsHonored(): void
     {
         BaseFactory::resetDefaultGenerator();
         Configure::delete('FixtureFactories.defaultLocale');
