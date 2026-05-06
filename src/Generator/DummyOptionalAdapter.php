@@ -15,8 +15,6 @@ declare(strict_types=1);
 
 namespace CakephpFixtureFactories\Generator;
 
-use RuntimeException;
-
 /**
  * Adapter for DummyGenerator's optional generator
  */
@@ -78,18 +76,13 @@ class DummyOptionalAdapter implements OptionalGeneratorInterface
 
     /**
      * @inheritDoc
-     *
-     * @throws \RuntimeException
      */
     public function unique(): UniqueGeneratorInterface
     {
-        if ($this->generator instanceof DummyGeneratorAdapter) {
-            return new DummyUniqueAdapter($this->generator);
-        }
-
-        // If it's not a DummyGeneratorAdapter, we need to handle it differently
-        // This shouldn't happen in normal usage
-        throw new RuntimeException('Cannot create unique adapter from non-DummyGeneratorAdapter');
+        // Delegate to the wrapped generator so the returned adapter has
+        // unique-mode actually enabled. Wrapping in a fresh DummyUniqueAdapter
+        // here would skip the clone+isUnique flip in DummyGeneratorAdapter::unique().
+        return $this->generator->unique();
     }
 
     /**
@@ -102,12 +95,19 @@ class DummyOptionalAdapter implements OptionalGeneratorInterface
     }
 
     /**
-     * Determine if a value should be returned
+     * Determine if a value should be returned.
+     *
+     * Routes through the wrapped generator's randomizer so seeded tests stay
+     * deterministic. Falling back to mt_rand() bypasses any seed configured
+     * via {@see GeneratorInterface::seed()}.
      *
      * @return bool
      */
     private function shouldReturnValue(): bool
     {
-        return mt_rand() / mt_getrandmax() < $this->weight;
+        $threshold = (int)round($this->weight * 100);
+        $roll = $this->generator->__call('numberBetween', [1, 100]);
+
+        return is_int($roll) && $roll <= $threshold;
     }
 }

@@ -535,4 +535,84 @@ class GeneratorAdapterTest extends TestCase
 
         $this->assertEquals($value1, $value2, 'Same seed should produce same values');
     }
+
+    /**
+     * Regression: $gen->name (Faker-style property access) must work on the
+     * Dummy adapter too. Previously DummyGeneratorAdapter::__get gated on
+     * method_exists() against the underlying DummyGenerator — but DummyGenerator
+     * dispatches via __call, so method_exists returns false for almost
+     * everything and __get threw. Cross-backend definition() code broke.
+     *
+     * @return void
+     */
+    public function testDummyGeneratorPropertyAccess(): void
+    {
+        Configure::write('FixtureFactories.generatorType', 'dummy');
+        CakeGeneratorFactory::clearInstances();
+
+        $generator = CakeGeneratorFactory::create();
+
+        $this->assertIsString($generator->name);
+        $this->assertIsString($generator->email);
+        $this->assertIsString($generator->word);
+    }
+
+    /**
+     * Regression: $gen->optional()->unique() on the Dummy adapter must
+     * actually deduplicate. Previously DummyOptionalAdapter::unique() returned
+     * a fresh DummyUniqueAdapter wrapping the parent generator without setting
+     * its isUnique flag, so duplicates leaked through.
+     *
+     * @return void
+     */
+    public function testDummyOptionalUniqueDoesDedup(): void
+    {
+        Configure::write('FixtureFactories.generatorType', 'dummy');
+        CakeGeneratorFactory::clearInstances();
+
+        $generator = CakeGeneratorFactory::create();
+        $unique = $generator->optional(1.0)->unique();
+
+        $values = [];
+        for ($i = 0; $i < 10; $i++) {
+            $values[] = $unique->randomDigit();
+        }
+
+        // randomDigit() has 10 possible values; with optional(1.0) all return
+        // a value (never null) so unique() must dedup all 10.
+        $this->assertCount(10, array_unique($values));
+    }
+
+    /**
+     * Regression: DummyOptionalAdapter::shouldReturnValue previously used
+     * mt_rand() which bypassed the seeded randomizer. Two generators with the
+     * same seed must produce the same optional() draw sequence.
+     *
+     * @return void
+     */
+    public function testDummyOptionalRespectsSeed(): void
+    {
+        Configure::write('FixtureFactories.generatorType', 'dummy');
+        CakeGeneratorFactory::clearInstances();
+
+        $gen1 = CakeGeneratorFactory::create();
+        $gen1->seed(42);
+        $optional1 = $gen1->optional(0.5);
+        $sequence1 = [];
+        for ($i = 0; $i < 20; $i++) {
+            $sequence1[] = $optional1->randomDigit();
+        }
+
+        CakeGeneratorFactory::clearInstances();
+
+        $gen2 = CakeGeneratorFactory::create();
+        $gen2->seed(42);
+        $optional2 = $gen2->optional(0.5);
+        $sequence2 = [];
+        for ($i = 0; $i < 20; $i++) {
+            $sequence2[] = $optional2->randomDigit();
+        }
+
+        $this->assertSame($sequence1, $sequence2, 'Seeded optional() should produce identical draw sequences');
+    }
 }

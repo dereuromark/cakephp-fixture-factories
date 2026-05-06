@@ -135,16 +135,14 @@ class DummyGeneratorAdapter implements GeneratorInterface
     /**
      * @inheritDoc
      *
-     * @throws \BadMethodCallException
+     * DummyGenerator dispatches via `__call`, so most "Faker-style" properties
+     * (e.g. `$gen->name`, `$gen->email`) resolve via `__call` rather than as
+     * real methods. We unconditionally delegate to `__call`; if the underlying
+     * provider doesn't expose the method, `handleUniqueCall` will throw.
      */
     public function __get(string $property): mixed
     {
-        // DummyGenerator doesn't support property access, convert to method call
-        if (method_exists($this->generator, $property)) {
-            return $this->__call($property, []);
-        }
-
-        throw new BadMethodCallException("Property or method `$property` not found on DummyGenerator");
+        return $this->__call($property, []);
     }
 
     /**

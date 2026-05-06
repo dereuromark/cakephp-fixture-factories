@@ -15,8 +15,12 @@ declare(strict_types=1);
 
 namespace CakephpFixtureFactories\Generator;
 
+use BackedEnum;
+use Faker\Generator;
 use Faker\UniqueGenerator;
+use InvalidArgumentException;
 use OverflowException;
+use ReflectionEnum;
 use ReflectionObject;
 
 /**
@@ -69,64 +73,19 @@ class FakerUniqueAdapter implements UniqueGeneratorInterface
 
     /**
      * @inheritDoc
-     *
-     * @throws \OverflowException
      */
     public function __call(string $name, array $arguments): mixed
     {
-        // Handle enum methods that Faker's unique generator doesn't understand
+        // Handle enum methods that Faker's unique generator doesn't understand.
+        // Picking from a fixed set of enum cases is naturally bounded, so we
+        // dedup against the UniqueGenerator's $uniques bucket and stop early
+        // once all distinct cases have been emitted.
         if ($name === 'enumValue' && count($arguments) === 1) {
-            // Get the underlying generator and manually handle unique tracking
-            $reflection = new ReflectionObject($this->generator);
-
-            // Get unique values array
-            $uniquesProperty = $reflection->getProperty('uniques');
-            $uniques = $uniquesProperty->getValue($this->generator);
-
-            $maxRetries = 10000;
-            $key = 'enumValue';
-
-            for ($i = 0; $i < $maxRetries; $i++) {
-                // Manually call enumValue on the FakerAdapter
-                $adapter = new FakerAdapter();
-                $value = $adapter->enumValue($arguments[0]);
-
-                if (!isset($uniques[$key]) || !in_array($value, $uniques[$key], true)) {
-                    $uniques[$key][] = $value;
-                    $uniquesProperty->setValue($this->generator, $uniques);
-
-                    return $value;
-                }
-            }
-
-            throw new OverflowException("Unable to generate unique value for 'enumValue'");
+            return $this->pickUniqueEnum('enumValue', $arguments[0], true);
         }
 
         if ($name === 'enumCase' && count($arguments) === 1) {
-            // Handle enumCase with unique tracking
-            $reflection = new ReflectionObject($this->generator);
-
-            // Get unique values array
-            $uniquesProperty = $reflection->getProperty('uniques');
-            $uniques = $uniquesProperty->getValue($this->generator);
-
-            $maxRetries = 10000;
-            $key = 'enumCase';
-
-            for ($i = 0; $i < $maxRetries; $i++) {
-                // Manually call enumCase on the FakerAdapter
-                $adapter = new FakerAdapter();
-                $element = $adapter->enumCase($arguments[0]);
-
-                if (!isset($uniques[$key]) || !in_array($element, $uniques[$key], true)) {
-                    $uniques[$key][] = $element;
-                    $uniquesProperty->setValue($this->generator, $uniques);
-
-                    return $element;
-                }
-            }
-
-            throw new OverflowException("Unable to generate unique value for 'enumCase'");
+            return $this->pickUniqueEnum('enumCase', $arguments[0], false);
         }
 
         // Backward compatibility: map enumElement to enumCase
@@ -135,6 +94,77 @@ class FakerUniqueAdapter implements UniqueGeneratorInterface
         }
 
         return $this->generator->$name(...$arguments);
+    }
+
+    /**
+     * Manually dedup enum cases against UniqueGenerator's existing tracking.
+     *
+     * Reuses the parent UniqueGenerator's underlying \Faker\Generator (so locale,
+     * seed, and any custom providers carry through) instead of constructing a
+     * fresh FakerAdapter per attempt — that previously dropped seeds and was
+     * wasteful in tight unique loops.
+     *
+     * @param string $key Bucket key in UniqueGenerator::$uniques.
+     * @param mixed $enumClass Enum FQCN provided by the caller.
+     * @param bool $extractValue Whether to return BackedEnum->value or the case itself.
+     *
+     * @throws \InvalidArgumentException
+     * @throws \OverflowException
+     */
+    private function pickUniqueEnum(string $key, mixed $enumClass, bool $extractValue): mixed
+    {
+        if (!is_string($enumClass) || !enum_exists($enumClass)) {
+            throw new InvalidArgumentException("Invalid enum class: `$enumClass`");
+        }
+
+        if ($extractValue && !(new ReflectionEnum($enumClass))->isBacked()) {
+            throw new InvalidArgumentException("Only backed enums are supported: `$enumClass`");
+        }
+
+        /** @var array<\UnitEnum> $cases */
+        $cases = $enumClass::cases();
+        if (!$cases) {
+            throw new InvalidArgumentException("Enum has no cases: `$enumClass`");
+        }
+
+        $reflection = new ReflectionObject($this->generator);
+        $uniquesProperty = $reflection->getProperty('uniques');
+        /** @var array<string, array<mixed>> $uniques */
+        $uniques = $uniquesProperty->getValue($this->generator);
+        $existing = $uniques[$key] ?? [];
+
+        // Naturally bounded: short-circuit once every case has been emitted.
+        if (count($existing) >= count($cases)) {
+            throw new OverflowException("Unable to generate unique value for `$key`: all enum cases exhausted");
+        }
+
+        $underlying = $this->getUnderlyingGenerator();
+        $maxRetries = 10000;
+
+        for ($i = 0; $i < $maxRetries; $i++) {
+            /** @var \UnitEnum $case */
+            $case = $underlying->randomElement($cases);
+            $value = $extractValue && $case instanceof BackedEnum ? $case->value : $case;
+
+            if (!in_array($value, $existing, true)) {
+                $existing[] = $value;
+                $uniques[$key] = $existing;
+                $uniquesProperty->setValue($this->generator, $uniques);
+
+                return $value;
+            }
+        }
+
+        throw new OverflowException("Unable to generate unique value for `$key`");
+    }
+
+    private function getUnderlyingGenerator(): Generator
+    {
+        $reflection = new ReflectionObject($this->generator);
+        /** @var \Faker\Generator $generator */
+        $generator = $reflection->getProperty('generator')->getValue($this->generator);
+
+        return $generator;
     }
 
     /**
@@ -151,13 +181,8 @@ class FakerUniqueAdapter implements UniqueGeneratorInterface
      */
     public function optional(float $weight = 0.5): OptionalGeneratorInterface
     {
-        // This doesn't make sense for unique, but we need to support the interface
-        // We need to get the underlying generator from UniqueGenerator
-        $reflection = new ReflectionObject($this->generator);
-        $generatorProperty = $reflection->getProperty('generator');
-        /** @var \Faker\Generator $generator */
-        $generator = $generatorProperty->getValue($this->generator);
-
-        return new FakerOptionalAdapter($generator->optional($weight));
+        // unique()->optional() is unusual but supported; reuse the underlying
+        // generator so locale + seed flow through.
+        return new FakerOptionalAdapter($this->getUnderlyingGenerator()->optional($weight));
     }
 }

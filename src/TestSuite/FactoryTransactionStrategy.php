@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace CakephpFixtureFactories\TestSuite;
 
 use Cake\Database\Connection;
-use Cake\Log\Log;
 use Cake\TestSuite\Fixture\FixtureStrategyInterface;
+use CakephpFixtureFactories\Error\PersistenceException;
 use CakephpFixtureFactories\Generator\CakeGeneratorFactory;
-use Exception;
+use Throwable;
 
 /**
  * Fixture strategy that uses transactions with automatic table tracking
@@ -116,8 +116,16 @@ class FactoryTransactionStrategy implements FixtureStrategyInterface
             $connection->enableSavePoints();
             $connection->begin();
             $this->connections[$name] = $connection;
-        } catch (Exception $e) {
-            Log::warning("Failed to start transaction on connection '{$name}': {$e->getMessage()}");
+        } catch (Throwable $e) {
+            // Failing silently here would let subsequent factory saves persist
+            // real data outside any transaction, leaking across tests with no
+            // signal. Fail loud instead — a broken transaction strategy is a
+            // setup error, not a recoverable condition.
+            throw new PersistenceException(
+                "Failed to start transaction on connection `{$name}`: {$e->getMessage()}",
+                $e->getCode(),
+                $e,
+            );
         }
     }
 
