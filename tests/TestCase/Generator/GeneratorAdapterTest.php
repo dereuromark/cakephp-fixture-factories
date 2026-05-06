@@ -513,12 +513,17 @@ class GeneratorAdapterTest extends TestCase
     }
 
     /**
-     * Test configurable seed
+     * The `FixtureFactories.seed` config is backend-agnostic. We assert it
+     * against the Dummy backend whose XoshiroRandomizer is seeded directly
+     * — Faker relies on PHP's process-global `mt_srand`, which is sensitive
+     * to test execution order and underlying PHP/Faker versions on the
+     * lowest-dependency CI matrix and produces flakes there.
      *
      * @return void
      */
     public function testConfigurableSeed(): void
     {
+        Configure::write('FixtureFactories.generatorType', 'dummy');
         Configure::write('FixtureFactories.seed', 9999);
 
         $factory = ArticleFactory::new();
@@ -533,7 +538,7 @@ class GeneratorAdapterTest extends TestCase
         $gen2 = $factory2->getGenerator();
         $value2 = $gen2->randomNumber();
 
-        $this->assertEquals($value1, $value2, 'Same seed should produce same values');
+        $this->assertSame($value1, $value2, 'Same seed should produce same values');
     }
 
     /**

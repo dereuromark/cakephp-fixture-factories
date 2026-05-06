@@ -58,6 +58,11 @@ class FactoryAnnotatorTask extends AbstractClassAnnotatorTask implements PathAwa
         if (!preg_match('/^class\s+\w+Factory\b/m', $content)) {
             return false;
         }
+        // Skip abstract base factories: their @extends/@method annotations
+        // would point at a concrete entity FQN that doesn't apply to the base.
+        if (preg_match('/^abstract\s+class\s+\w+Factory\b/m', $content)) {
+            return false;
+        }
 
         return $this->extendsBaseFactory($content);
     }

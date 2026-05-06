@@ -23,11 +23,13 @@ class FactoryTableTracker
     private static ?self $instance = null;
 
     /**
-     * Map of table names to connections
+     * Tables grouped by connection. Multiple connections can hold a table with
+     * the same SQL name (e.g. read/write split, multi-tenant), so the storage
+     * is nested rather than a flat name-to-connection map.
      *
-     * @var array<string, string> Table name => connection name
+     * @var array<string, array<string, true>> Connection name => set of table names.
      */
-    private array $tables = [];
+    private array $tablesByConnection = [];
 
     /**
      * Private constructor to enforce singleton pattern
@@ -62,27 +64,45 @@ class FactoryTableTracker
         $tableName = $table->getTable();
         $connectionName = $table->getConnection()->configName();
 
-        $this->tables[$tableName] = $connectionName;
+        $this->tablesByConnection[$connectionName][$tableName] = true;
     }
 
     /**
-     * Get all tracked tables
+     * Get all tracked tables flattened to a name-to-connection map.
      *
-     * @return array<string, string> Table name => connection name mapping
+     * Note: when the same SQL table name is used on multiple connections, only
+     * one connection wins in this view — use {@see getTablesByConnection()}
+     * for an unambiguous picture.
+     *
+     * @return array<string, string> Table name => connection name mapping.
      */
     public function getTables(): array
     {
-        return $this->tables;
+        $flat = [];
+        foreach ($this->tablesByConnection as $connection => $tables) {
+            foreach (array_keys($tables) as $name) {
+                $flat[$name] = $connection;
+            }
+        }
+
+        return $flat;
     }
 
     /**
-     * Get tracked table names only
+     * Get tracked table names only (deduplicated across connections).
      *
      * @return array<string>
      */
     public function getTableNames(): array
     {
-        return array_keys($this->tables);
+        $names = [];
+        foreach ($this->tablesByConnection as $tables) {
+            foreach (array_keys($tables) as $name) {
+                $names[$name] = true;
+            }
+        }
+
+        return array_keys($names);
     }
 
     /**
@@ -93,11 +113,8 @@ class FactoryTableTracker
     public function getTablesByConnection(): array
     {
         $grouped = [];
-        foreach ($this->tables as $table => $connection) {
-            if (!isset($grouped[$connection])) {
-                $grouped[$connection] = [];
-            }
-            $grouped[$connection][] = $table;
+        foreach ($this->tablesByConnection as $connection => $tables) {
+            $grouped[$connection] = array_keys($tables);
         }
 
         return $grouped;
@@ -110,7 +127,7 @@ class FactoryTableTracker
      */
     public function clear(): void
     {
-        $this->tables = [];
+        $this->tablesByConnection = [];
     }
 
     /**
@@ -120,6 +137,6 @@ class FactoryTableTracker
      */
     public function hasTables(): bool
     {
-        return !empty($this->tables);
+        return $this->tablesByConnection !== [];
     }
 }

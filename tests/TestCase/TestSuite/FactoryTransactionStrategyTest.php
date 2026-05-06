@@ -9,6 +9,7 @@ use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpFixtureFactories\TestSuite\FactoryTableTracker;
 use CakephpFixtureFactories\TestSuite\FactoryTransactionStrategy;
+use ReflectionProperty;
 
 /**
  * Test that the FactoryTransactionStrategy properly manages transactions
@@ -175,6 +176,51 @@ class FactoryTransactionStrategyTest extends TestCase
         // Verify tracking is working
         $this->assertTrue($tracker->hasTables());
         $this->assertContains('cities', $tracker->getTableNames());
+    }
+
+    /**
+     * Regression: when two Tables on different connections share the same SQL
+     * table name (multi-tenant, read/write split), both must be tracked. The
+     * previous flat `[name => connection]` storage collapsed them; nested
+     * `[connection => [name => true]]` keeps both.
+     *
+     * @return void
+     */
+    public function testCrossConnectionSameTableNameKeepsBoth(): void
+    {
+        $tracker = FactoryTableTracker::getInstance();
+        $tracker->clear();
+
+        $cityTable = CityFactory::new()->getTable();
+
+        // Reuse the real `cities` table object but pretend it's on a second
+        // connection by aliasing — we simulate this directly via a stub table
+        // with the same SQL name on a different connection config.
+        $defaultConnection = $cityTable->getConnection()->configName();
+
+        // Simulate a "second" tracking call using a different connection
+        // name without touching real connections.
+        $reflectedStorage = new ReflectionProperty($tracker, 'tablesByConnection');
+
+        // First record: real save (connection = default).
+        CityFactory::new()->save();
+        $afterFirst = $reflectedStorage->getValue($tracker);
+        $this->assertArrayHasKey('cities', $afterFirst[$defaultConnection] ?? []);
+
+        // Second record: inject a synthetic second connection slot manually,
+        // mirroring how a multi-tenant setup with the same table name on a
+        // different connection would land.
+        $existing = $reflectedStorage->getValue($tracker);
+        $existing['second_conn']['cities'] = true;
+        $reflectedStorage->setValue($tracker, $existing);
+
+        $byConn = $tracker->getTablesByConnection();
+        $this->assertArrayHasKey($defaultConnection, $byConn);
+        $this->assertArrayHasKey('second_conn', $byConn);
+        $this->assertContains('cities', $byConn[$defaultConnection]);
+        $this->assertContains('cities', $byConn['second_conn']);
+        // Flat dedupe view returns one row, but the nested view sees both.
+        $this->assertCount(1, $tracker->getTableNames());
     }
 
     /**

@@ -485,9 +485,9 @@ class BakeFixtureFactoryCommand extends BakeCommand
         )
             ->addArgument('model', [
                 'help' => 'Name of the model the factory will create entities from'
-                    . '(plural, without the `Table` suffix). You can use the Foo.Bars notation '
-                    . 'to bake a factory for the model Bars located in the plugin Foo. \n
-                    Factories are located in the folder test\Factory of your app, resp. plugin.',
+                    . ' (plural, without the `Table` suffix). You can use the Foo.Bars notation'
+                    . ' to bake a factory for the model Bars located in the plugin Foo.'
+                    . ' Factories are located in the folder tests/Factory of your app, resp. plugin.',
             ])
             ->addOption('all', [
                 'short' => 'a',
@@ -557,8 +557,11 @@ class BakeFixtureFactoryCommand extends BakeCommand
      */
     protected function guessDefault(string $column, string $modelName, array $columnSchema): mixed
     {
-        // Merge default mappings with custom configuration
-        $map = array_merge_recursive($this->map, (array)Configure::read('FixtureFactories.defaultDataMap'));
+        // Merge default mappings with user overrides. Use array_replace_recursive
+        // rather than array_merge_recursive: the map's leaves are scalar generator
+        // expressions, and array_merge_recursive collapses duplicate keys into
+        // arrays of both values, which would silently corrupt the output.
+        $map = array_replace_recursive($this->map, (array)Configure::read('FixtureFactories.defaultDataMap'));
 
         // Check custom column patterns from configuration first
         $customPatterns = Configure::read('FixtureFactories.columnPatterns', []);

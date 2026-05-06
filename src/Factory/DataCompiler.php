@@ -663,7 +663,10 @@ class DataCompiler
             return;
         }
 
-        $fields = array_keys($entity->toArray());
+        // Exclude virtual fields: they aren't backed by schema columns, so
+        // marking them dirty has no save effect and just confuses isDirty()
+        // callers downstream.
+        $fields = array_diff(array_keys($entity->toArray()), $entity->getVirtual());
         if (!$entity->isDirty()) {
             foreach ($fields as $field) {
                 $entity->setDirty($field, true);
@@ -799,38 +802,27 @@ class DataCompiler
      *
      * @param string $columnType Column type
      *
+     * @throws \CakephpFixtureFactories\Error\FixtureFactoryException
+     *
      * @return string|int
      */
     public function generateRandomPrimaryKey(string $columnType): int|string
     {
-        switch ($columnType) {
-            case 'uuid':
-            case 'string':
-                $res = $this->getFactory()->getGenerator()->uuid();
-
-                break;
-            case 'tinyinteger':
-                $res = mt_rand(0, 127);
-
-                break;
-            case 'smallinteger':
-                $res = mt_rand(0, 32767);
-
-                break;
-            case 'biginteger':
-                // mt_rand() is capped at mt_getrandmax() (typically 2^31 - 1),
-                // which silently truncates biginteger PKs to 32-bit range.
-                $res = random_int(0, PHP_INT_MAX);
-
-                break;
-            case 'integer':
-            default:
-                $res = mt_rand(0, 2147483647);
-
-                break;
-        }
-
-        return $res;
+        return match ($columnType) {
+            'uuid', 'string' => $this->getFactory()->getGenerator()->uuid(),
+            'tinyinteger' => mt_rand(0, 127),
+            'smallinteger' => mt_rand(0, 32767),
+            'mediuminteger' => mt_rand(0, 8388607),
+            // mt_rand() is capped at mt_getrandmax() (typically 2^31 - 1),
+            // which silently truncates biginteger PKs to 32-bit range.
+            'biginteger' => random_int(0, PHP_INT_MAX),
+            'integer' => mt_rand(0, 2147483647),
+            default => throw new FixtureFactoryException(sprintf(
+                'Cannot generate a random primary key for column type `%s`. '
+                . 'Provide an explicit primary key offset via setPrimaryKeyOffset().',
+                $columnType,
+            )),
+        };
     }
 
     /**
@@ -978,10 +970,12 @@ class DataCompiler
      */
     public function addEnforcedFields(array $fields): void
     {
-        $this->enforcedFields = array_merge(
+        // Dedup so repeated state()/patch calls don't grow the list linearly
+        // with redundant entries — each field name appears once.
+        $this->enforcedFields = array_values(array_unique(array_merge(
             array_keys($fields),
             $this->enforcedFields,
-        );
+        )));
     }
 
     /**
