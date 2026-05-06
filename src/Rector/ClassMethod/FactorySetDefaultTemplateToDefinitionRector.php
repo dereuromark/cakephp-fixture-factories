@@ -77,11 +77,12 @@ final class FactorySetDefaultTemplateToDefinitionRector extends AbstractRector
             return null;
         }
 
-        $node->flags = Class_::MODIFIER_PUBLIC;
+        $node->flags = ($node->flags & ~Class_::VISIBILITY_MODIFIER_MASK) | Class_::MODIFIER_PUBLIC;
         $node->name = new Identifier('definition');
         $node->params = [$this->createDefinitionParam($callback->params[0] ?? null)];
         $node->returnType = new Identifier('array');
         $node->stmts = $callback instanceof Closure ? $callback->stmts : [new Return_($callback->expr)];
+        // Strip the original docblock since @return void / @param Faker are no longer accurate.
         $node->setAttribute('comments', []);
 
         return $node;

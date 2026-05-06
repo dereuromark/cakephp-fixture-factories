@@ -53,7 +53,6 @@ class ModelEventsHandler
         'Model.beforeFind',
         'Model.buildValidator',
         'Model.buildRules',
-        'Model.beforeFind',
         'Model.beforeRules',
         'Model.afterRules',
         'Model.beforeSave',
@@ -65,8 +64,8 @@ class ModelEventsHandler
     ];
 
     /**
-     * @param array<string> $listeningModelEvents Model events listened to from instanciation
-     * @param array<string> $listeningBehaviors Behaviors listened to from instanciation
+     * @param array<string> $listeningModelEvents Model events listened to from instantiation
+     * @param array<string> $listeningBehaviors Behaviors listened to from instantiation
      */
     final public function __construct(array $listeningModelEvents, array $listeningBehaviors)
     {

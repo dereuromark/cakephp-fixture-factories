@@ -279,20 +279,21 @@ class BakeFixtureFactoryCommand extends BakeCommand
      * @param \Cake\Console\Arguments $args Arguments
      * @param \Cake\Console\ConsoleIo $io Console
      *
-     * @return string
+     * @return int Exit code: CODE_SUCCESS unless no tables were found.
      */
-    private function bakeAllModels(Arguments $args, ConsoleIo $io): string
+    private function bakeAllModels(Arguments $args, ConsoleIo $io): int
     {
         $tables = $this->getTableList($io);
         if (!$tables) {
             $io->err(sprintf('No tables were found at `%s`', $this->getModelPathString()));
-        } else {
-            foreach ($tables as $table) {
-                $this->bakeFixtureFactory($table, $args, $io);
-            }
+
+            return self::CODE_ERROR;
+        }
+        foreach ($tables as $table) {
+            $this->bakeFixtureFactory($table, $args, $io);
         }
 
-        return '';
+        return self::CODE_SUCCESS;
     }
 
     /**
@@ -305,25 +306,16 @@ class BakeFixtureFactoryCommand extends BakeCommand
      */
     public function execute(Arguments $args, ConsoleIo $io): ?int
     {
+        // Parent extractCommonProperties() already camelizes parts and throws
+        // InvalidArgumentException on backslash separators (i.e. `Foo\Bar`),
+        // so no extra plugin parsing is needed here.
         $this->extractCommonProperties($args);
         $model = $args->getArgument('model') ?? '';
         $model = $this->_getName($model);
         $loud = !$args->getOption('quiet');
 
-        if ($this->plugin) {
-            $parts = explode('/', $this->plugin);
-            $this->plugin = implode('/', array_map([$this, '_camelize'], $parts));
-            if (str_contains($this->plugin, '\\')) {
-                $io->out('Invalid plugin namespace separator, please use / instead of \ for plugins.');
-
-                return self::CODE_SUCCESS;
-            }
-        }
-
         if ($args->getOption('all')) {
-            $this->bakeAllModels($args, $io);
-
-            return self::CODE_SUCCESS;
+            return $this->bakeAllModels($args, $io);
         }
 
         if (!$model) {
@@ -474,38 +466,6 @@ class BakeFixtureFactoryCommand extends BakeCommand
         }
 
         return $associations;
-    }
-
-    /**
-     * @param string $name Name of the factory
-     * @param \Cake\Console\Arguments $args Arguments
-     * @param \Cake\Console\ConsoleIo $io Console
-     *
-     * @return void
-     */
-    public function handleFactoryWithSameName(string $name, Arguments $args, ConsoleIo $io): void
-    {
-        $factoryWithSameName = glob($this->getPath($args) . $name . '.php');
-        if ($factoryWithSameName) {
-            if (!$args->getOption('force')) {
-                $io->abort(
-                    sprintf(
-                        'A factory with the name `%s` already exists.',
-                        $name,
-                    ),
-                );
-            }
-
-            $io->info(sprintf('A factory with the name `%s` already exists, it will be deleted.', $name));
-            foreach ($factoryWithSameName as $factory) {
-                $io->info(sprintf('Deleting factory file `%s`...', $factory));
-                if (unlink($factory)) {
-                    $io->success(sprintf('Deleted `%s`', $factory));
-                } else {
-                    $io->err(sprintf('An error occurred while deleting `%s`', $factory));
-                }
-            }
-        }
     }
 
     /**
@@ -697,9 +657,11 @@ class BakeFixtureFactoryCommand extends BakeCommand
             return '$generator->uuid()';
         }
 
-        // Handle json type (new)
+        // Handle json type (new). CakePHP's JsonType marshaller serialises
+        // arrays itself, so emit a literal array — using json_encode() forces
+        // a re-decode round-trip on save and obscures the structure.
         if ($columnSchema['type'] === 'json') {
-            return 'json_encode(["key" => $generator->word(), "value" => $generator->randomNumber()])';
+            return '["key" => $generator->word(), "value" => $generator->randomNumber()]';
         }
 
         // Handle text type (new) - different from string

@@ -37,9 +37,9 @@ trait ScenarioAwareTrait
     public function loadFixtureScenario(string $scenario, mixed ...$args): mixed
     {
         if (!class_exists($scenario)) {
-            // phpcs:disable
-            @[$scenarioName, $plugin] = array_reverse(explode('.', $scenario));
-            // phpcs:enable
+            $parts = explode('.', $scenario);
+            $scenarioName = (string)array_pop($parts);
+            $plugin = $parts !== [] ? array_pop($parts) : null;
             $factoryNamespace = $this->getFactoryNamespace($plugin);
             if (str_ends_with($factoryNamespace, 'Factory')) {
                 $factoryNamespace = substr($factoryNamespace, 0, -strlen('Factory'));
@@ -57,7 +57,9 @@ trait ScenarioAwareTrait
 
             throw new Exception("`{$scenario}` must implement `" . FixtureScenarioInterface::class . '`');
         } catch (Throwable $e) {
-            throw new FixtureScenarioException($e->getMessage());
+            // Preserve the original exception so the stack trace and file/line
+            // of the actual scenario failure aren't lost when re-raised.
+            throw new FixtureScenarioException($e->getMessage(), $e->getCode(), $e);
         }
     }
 }

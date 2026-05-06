@@ -39,11 +39,21 @@ final class FactoryLegacyMakeToNewRector extends AbstractRector
         }
 
         if ($this->isName($node->name, 'makeMany')) {
-            return $this->createCountCall($this->createNewCall($node->class), $this->resolveArg($node->args[0] ?? null));
+            $countArg = $this->resolveArg($node->args[0] ?? null);
+            if ($countArg === null || $this->hasNamedArgs([$countArg])) {
+                return null;
+            }
+
+            return $this->createCountCall($this->createNewCall($node->class), $countArg);
         }
 
         if ($this->isName($node->name, 'makeWith')) {
-            return $this->createNewCall($node->class, $this->normalizeArgs($node->args));
+            $args = $this->normalizeArgs($node->args);
+            if ($this->hasNamedArgs($args)) {
+                return null;
+            }
+
+            return $this->createNewCall($node->class, $args);
         }
 
         if (!$this->isName($node->name, 'make')) {
@@ -57,12 +67,18 @@ final class FactoryLegacyMakeToNewRector extends AbstractRector
 
         if ($argsCount === 1) {
             $firstArg = $this->resolveArg($node->args[0] ?? null);
-            if (!$firstArg instanceof Arg) {
+            if (!$firstArg instanceof Arg || $this->hasNamedArgs([$firstArg])) {
                 return null;
             }
 
-            if ($this->getType($firstArg->value)->isInteger()->yes()) {
+            $isInteger = $this->getType($firstArg->value)->isInteger();
+            if ($isInteger->yes()) {
                 return $this->createCountCall($this->createNewCall($node->class), $firstArg);
+            }
+
+            // Static type is uncertain (e.g. int|array). Bail rather than guess wrong.
+            if ($isInteger->maybe()) {
+                return null;
             }
 
             $node->name = new Identifier('new');
@@ -77,6 +93,10 @@ final class FactoryLegacyMakeToNewRector extends AbstractRector
                 return null;
             }
 
+            if ($this->hasNamedArgs([$firstArg, $secondArg])) {
+                return null;
+            }
+
             return $this->createCountCall(
                 $this->createNewCall($node->class, [$firstArg]),
                 $secondArg,
@@ -84,6 +104,20 @@ final class FactoryLegacyMakeToNewRector extends AbstractRector
         }
 
         return null;
+    }
+
+    /**
+     * @param array<\PhpParser\Node\Arg> $args
+     */
+    private function hasNamedArgs(array $args): bool
+    {
+        foreach ($args as $arg) {
+            if ($arg->name !== null) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

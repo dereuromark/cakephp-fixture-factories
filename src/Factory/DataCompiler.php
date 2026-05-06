@@ -91,7 +91,12 @@ class DataCompiler
      */
     private array $skippedSetters = [];
 
-    private static bool $inPersistMode = false;
+    /**
+     * Depth counter so nested persist calls (e.g. one factory persisting
+     * another from inside an `afterBuild` callback) don't end persist mode for
+     * the outer flow when the inner one returns.
+     */
+    private static int $persistDepth = 0;
 
     /**
      * @var \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>
@@ -134,7 +139,14 @@ class DataCompiler
     }
 
     /**
-     * Data passed in the instantiation by callable
+     * Data passed in the instantiation by callable.
+     *
+     * The callable is stored as-is and invoked once per build iteration during
+     * compilation. Previously this method invoked the callable eagerly to
+     * "type-check" its return value, which (a) caused side-effecting closures
+     * to fire one extra time and (b) silently discarded the callable when it
+     * returned a non-array. Validation now happens at compile time where it
+     * can produce a useful error.
      *
      * @param callable $fn Injected callable
      *
@@ -142,11 +154,7 @@ class DataCompiler
      */
     public function collectArrayFromCallable(callable $fn): void
     {
-        // if the callable returns an array, add it the the templateData array, so it will be compiled
-        $returnValue = $fn($this->getFactory(), $this->getFactory()->getGenerator());
-        if (is_array($returnValue)) {
-            $this->dataFromInstantiation = $fn;
-        }
+        $this->dataFromInstantiation = $fn;
     }
 
     /**
@@ -372,9 +380,12 @@ class DataCompiler
             }
             $entityValue = $accumulated[$rootKey] ?? $entity->get((string)$rootKey) ?? [];
             if (!is_array($entityValue)) {
-                throw new FixtureFactoryException(
-                    "Value `$entityValue` cannot be merged with array notation `$key => $value`",
-                );
+                throw new FixtureFactoryException(sprintf(
+                    'Value `%s` cannot be merged with array notation `%s => %s`',
+                    var_export($entityValue, true),
+                    $key,
+                    var_export($value, true),
+                ));
             }
             $data[$rootKey] = $accumulated[$rootKey] = array_replace_recursive($entityValue, $subData[$rootKey]);
             unset($data[$key]);
@@ -451,24 +462,34 @@ class DataCompiler
 
     /**
      * Step 2:
-     * Merge with the data injected during the instantiation of the Factory
+     * Merge with the data injected during the instantiation of the Factory.
+     *
+     * EntityInterface input is handled separately in {@see compileEntity()} and
+     * never reaches this method. By the time we get here, $data is always an
+     * array (possibly produced by invoking the original callable).
      *
      * @param \Cake\Datasource\EntityInterface $entity Entity to manipulate.
-     * @param \Cake\Datasource\EntityInterface|callable|array<string, mixed> $data Data from the instantiation.
+     * @param callable|array<string, mixed> $data Data from the instantiation.
+     *
+     * @throws \CakephpFixtureFactories\Error\FixtureFactoryException
      *
      * @return $this
      */
-    private function mergeWithInjectedData(EntityInterface $entity, array|callable|EntityInterface $data)
+    private function mergeWithInjectedData(EntityInterface $entity, array|callable $data)
     {
         if (is_callable($data)) {
             $data = $data(
                 $this->getFactory(),
                 $this->getFactory()->getGenerator(),
             );
-        } elseif (is_array($data)) {
-            $this->addEnforcedFields($data);
+            if (!is_array($data)) {
+                throw new FixtureFactoryException(
+                    'A callable passed to a factory must return an array; got `'
+                    . get_debug_type($data) . '`',
+                );
+            }
         }
-
+        $this->addEnforcedFields($data);
         $this->patchEntity($entity, $data);
 
         return $this;
@@ -864,7 +885,9 @@ class DataCompiler
     private function updatePostgresSequence(array $primaryKeys): void
     {
         $table = $this->getFactory()->getTable();
-        if ($table->getConnection()->config()['driver'] === Postgres::class) {
+        // Use instanceof on the actual driver instance — comparing the class
+        // name string with === would miss Postgres subclasses.
+        if ($table->getConnection()->getDriver() instanceof Postgres) {
             $tableName = $table->getTable();
             $connection = $table->getConnection();
 
@@ -908,15 +931,21 @@ class DataCompiler
      */
     public function isInPersistMode(): bool
     {
-        return self::$inPersistMode;
+        return self::$persistDepth > 0;
     }
 
     /**
+     * Persist mode is intentionally process-wide so nested association builds
+     * pick it up, but a naive boolean flip breaks under nested persist calls
+     * (e.g. an `afterBuild` callback that persists another factory): the inner
+     * `endPersistMode()` flipped the flag off mid-flight for the outer flow.
+     * Counting depth keeps the flag set until the outermost persist returns.
+     *
      * @return void
      */
     public function startPersistMode(): void
     {
-        self::$inPersistMode = true;
+        self::$persistDepth++;
     }
 
     /**
@@ -924,7 +953,9 @@ class DataCompiler
      */
     public function endPersistMode(): void
     {
-        self::$inPersistMode = false;
+        if (self::$persistDepth > 0) {
+            self::$persistDepth--;
+        }
     }
 
     /**

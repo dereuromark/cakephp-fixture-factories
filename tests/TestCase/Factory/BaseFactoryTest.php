@@ -117,6 +117,29 @@ class BaseFactoryTest extends TestCase
         }
     }
 
+    /**
+     * Regression: collectArrayFromCallable() previously invoked the callable
+     * once at collection time (just to type-check its return value) and a
+     * second time per entity at compile time. Closures with side effects (a
+     * counter, a sequence, an external generator step) fired one extra time.
+     * The callable must be invoked exactly once per built entity.
+     */
+    public function testCallbackIsInvokedExactlyOncePerEntity(): void
+    {
+        $invocations = 0;
+        $n = 4;
+        $entities = ArticleFactory::new(function () use (&$invocations) {
+            $invocations++;
+
+            return ['title' => 'count-' . $invocations];
+        }, $n)->buildMany();
+
+        $this->assertCount($n, $entities);
+        $this->assertSame($n, $invocations, 'callable must run exactly once per built entity');
+        $this->assertSame('count-1', $entities[0]->title);
+        $this->assertSame('count-' . $n, $entities[$n - 1]->title);
+    }
+
     public function testGetTable(): void
     {
         $table = ArticleFactory::new()->getTable();

@@ -196,10 +196,32 @@ class BaseFactoryArrayNotationTest extends TestCase
 
     public function testBaseFactoryArrayNotationWithNonArrayValue(): void
     {
+        // The error formatter uses var_export so the message disambiguates
+        // strings (quoted) from ints/arrays/objects.
         $this->expectException(FixtureFactoryException::class);
-        $this->expectExceptionMessage('Value `foo` cannot be merged with array notation `json_field.subField1 => newValue`');
+        $this->expectExceptionMessage(
+            "Value `'foo'` cannot be merged with array notation `json_field.subField1 => 'newValue'`",
+        );
 
         AuthorFactory::new(['json_field' => 'foo'])
+            ->setField('json_field.subField1', 'newValue')
+            ->build();
+    }
+
+    /**
+     * Regression: when the existing entity value is an array (or object) the
+     * exception message must not blow up via implicit __toString — previously
+     * `"Value `$entityValue`"` would emit literal `Array` for arrays and
+     * fatal-error on objects without __toString. var_export() formats both
+     * correctly.
+     */
+    public function testBaseFactoryArrayNotationFormatsNonScalarValuesInError(): void
+    {
+        $this->expectException(FixtureFactoryException::class);
+        // Error must contain the integer (unquoted), proving var_export ran.
+        $this->expectExceptionMessage('Value `42`');
+
+        AuthorFactory::new(['json_field' => 42])
             ->setField('json_field.subField1', 'newValue')
             ->build();
     }
