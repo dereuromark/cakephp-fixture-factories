@@ -68,6 +68,37 @@ or
 $country = CountryFactory::new()->with('Cities', ['Nairobi', 'Mombasa'])->save();
 ```
 
+## Directional helpers: `for()` and `has()`
+
+`with()` is the generic association attach. For the common cases — "this entity belongs to that one" and "this entity has these ones" — the directional helpers make intent explicit at the call site:
+
+```php
+// belongsTo: an article belongs to an author
+$article = ArticleFactory::new()
+    ->for(AuthorFactory::new(['name' => 'Mark']))
+    ->save();
+
+// has-many: an author has 3 articles
+$author = AuthorFactory::new()
+    ->has(ArticleFactory::new()->count(3))
+    ->save();
+```
+
+Both methods auto-resolve which association to attach based on the target factory's table — no association name needed. If the parent table has more than one association pointing at the target table (e.g. `created_by` and `updated_by` both → Users), the call throws an "ambiguous association" exception so you don't accidentally attach to the wrong one. Use the underlying `with('Author', …)` form with the explicit association name when you need to disambiguate.
+
+`has()` accepts an optional `$pivot` array as the second parameter for habtm joins, populating the `_joinData` columns on the join row.
+
+## `from()` — start from an existing entity
+
+Use `from(EntityInterface)` when you already have an entity and want a factory backed by it:
+
+```php
+$article = $articlesTable->newEntity(['title' => 'Existing']);
+$factory = ArticleFactory::from($article);
+```
+
+Unlike `state(EntityInterface)` (which extracts via `toArray()`), `from()` preserves the entity's identity, so `_accessible`/`_virtual`/source-alias stay intact.
+
 ## Factory injection
 
 When building associations, you may simply provide a factory as parameter. Example:

@@ -115,7 +115,7 @@ Configure::write('FixtureFactories.testFixtureNamespace', 'MyApp\Test\Factory');
 
 ## Setters
 
-By default, each entity's setters are applied. Deactivate one or more setters by declaring the protected `skippedSetters` property on the factory, or override the set at call time with `skipSettersFor()`.
+By default, each entity's setters are applied. Deactivate one or more setters by declaring the protected `skippedSetters` property on the factory, or override the set at call time with `skipSetterFor()`.
 
 ```php
 namespace App\Test\Factory;
@@ -210,7 +210,27 @@ Use `->unique()` on individual fields *inside* the factory; use `$uniqueProperti
 
 This and the following sub-sections apply to CakePHP applications.
 
-To persist data as straightforwardly as possible, the plugin deactivates all validation and application rules when creating and saving entities. Re-enable or customize them by overriding `$marshallerOptions` and `$saveOptions` on the factory, or by using the immutable setters `setMarshallerOptions()` and `setSaveOptions()` in custom helper methods.
+To persist data as straightforwardly as possible, the plugin deactivates all validation and application rules when creating and saving entities. Re-enable or customize them by overriding `$marshallerOptions` and `$saveOptions` on the factory, or by using the immutable setters `setMarshallerOptions()` and `setSaveOptions()` in custom helper methods:
+
+```php
+return $this->setMarshallerOptions(['validate' => 'default']);   // merge on top of the defaults
+return $this->setSaveOptions(['atomic' => true], merge: false);  // replace the entire option set
+```
+
+Both setters merge with existing options by default; pass `merge: false` to replace.
+
+## Keeping built entities dirty (`keepDirty`)
+
+By default, the plugin marks built entities clean before returning them so they don't accidentally appear "modified" to user code. If you intend to hand the entity to `$table->save($entity)` yourself — e.g. to test custom save logic — call `keepDirty()` so required fields stay marked dirty:
+
+```php
+$article = ArticleFactory::new()
+    ->keepDirty()
+    ->build();
+$this->Articles->save($article);
+```
+
+`keepDirty()` propagates through associations, so any entity in the result tree stays dirty. Pass `keepDirty(false)` to revert.
 
 ## Model events and behaviors
 
@@ -316,9 +336,9 @@ $article = ArticleFactory::new()
     ->build();
 ```
 
-By default, `setGenerator()` changes the generator globally for all factory instances. This preserves backward compatibility.
+By default, `setGenerator()` changes the generator globally for all factory instances (preserving the v1 default). The fluent return value reflects this — in global mode the call returns `$this`; in instance mode (below) it returns a clone scoped to the new generator.
 
-##### Instance-Level Generators
+#### Instance-Level Generators
 
 If you want `setGenerator()` to only affect the current factory instance, enable the instance-level generator flag:
 

@@ -22,21 +22,11 @@ protected function bootstrapCli(): void
 
 **We recommend using migrations for managing the schema of your test DB with the [CakePHP Migrations plugin](https://book.cakephp.org/migrations/5/index.html#using-migrations-for-tests).**
 
-## Table Truncation
+## Cleaning data between tests
 
-Test data must be cleaned between tests to avoid entity collisions and unexpected results. There are several strategies for this when working with fixtures and fixture factories.
+Test data must be cleaned between tests to avoid entity collisions and unexpected results. CakePHP ships with [Fixture State Managers](https://book.cakephp.org/5/en/development/testing.html#fixture-state-managers) and provides the `TruncateStrategy` (truncate all tables after each test run) as well as the `TransactionStrategy` (create a transaction and roll it back after each test run).
 
-CakePHP ships with [Fixture State Managers](https://book.cakephp.org/5/en/development/testing.html#fixture-state-managers) and provides the `TruncateStrategy` (truncate all tables after each test run) as well as the `TransactionStrategy` (create a transaction and roll it back after each test run).
-
-The [CakePHP test suite light plugin](https://github.com/vierge-noire/cakephp-test-suite-light#cakephp-test-suite-light) provides the `TriggerStrategy`
-which will set up a trigger in your database to clean up the tables after each test run.
-This might require admin/root permission access, so this is not necessarily possible on all setups.
-```php
-// In config/app.php
-    'TestSuite' => [
-        'fixtureStrategy' => \CakephpFixtureFactories\TestSuite\TriggerStrategy::class,
-    ],
-```
+For fixture-factory–driven test suites, this plugin provides a dedicated strategy that pairs cleanly with factories — see below.
 
 ## Factory Transaction Strategy (Recommended)
 

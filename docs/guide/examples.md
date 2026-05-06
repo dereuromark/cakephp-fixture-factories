@@ -55,6 +55,17 @@ $articles = ArticleFactory::new()
     ->buildMany();
 ```
 
+The state at index `$i % count($states)` is applied to the i-th entity, so the example above produces `Draft, Published, Draft, Published`. If `count()` is smaller than the number of states the trailing states are simply unused; if `count()` is `1` only the first state ever applies. Calling `sequence()` again replaces the previously stored states — it is not additive.
+
+A `sequence` state can also be a callable receiving `($factory, $generator, $index)` for index-aware values:
+
+```php
+$articles = ArticleFactory::new()
+    ->count(3)
+    ->sequence(fn ($factory, $generator, int $i) => ['slug' => "article-{$i}"])
+    ->buildMany();
+```
+
 For reusable business states, prefer named methods on the factory:
 ```php
 $article = ArticleFactory::new()
@@ -86,6 +97,8 @@ $article = ArticleFactory::new()->save();
 $articles = ArticleFactory::new()->count(3)->saveMany();
 ```
 
+`save()` and `build()` throw a `RuntimeException` when the factory is configured to produce more than one entity (`count(>1)` or a multi-row instantiation array). Use `saveMany()` / `buildMany()` whenever the count is anything other than exactly one.
+
 You can also build data using an explicit callable:
 ```php
 $article = ArticleFactory::new(function (ArticleFactory $factory, GeneratorInterface $generator) {
@@ -107,6 +120,17 @@ $article = ArticleFactory::new()
 
 `afterBuild()` runs before `build*()` returns and before `save*()` persists.
 `afterSave()` runs after the entity has been saved, so it can adjust the in-memory entity without rewriting the database row.
+
+Both hooks receive `($entity, int $index, BaseFactory $factory)`, so you can vary behavior per row:
+
+```php
+$articles = ArticleFactory::new()
+    ->count(3)
+    ->afterBuild(function (Article $article, int $index): void {
+        $article->title = sprintf('Article #%d', $index + 1);
+    })
+    ->buildMany();
+```
 
 Both hooks fire for nested factories too — when a child factory is persisted as part of its parent's cascading save, its own `afterSave()` callbacks run on the saved child entities:
 

@@ -71,6 +71,7 @@ export default defineConfig({
         {
           text: 'Upgrading',
           items: [
+            { text: 'v1 → v2', link: '/guide/upgrading' },
             { text: 'Migration from vierge-noire', link: '/guide/migration' },
           ],
         },
@@ -111,7 +112,7 @@ export default defineConfig({
     },
 
     outline: {
-      level: [2, 3],
+      level: [2, 4],
     },
   },
 
