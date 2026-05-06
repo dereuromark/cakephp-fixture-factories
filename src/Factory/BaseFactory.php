@@ -210,9 +210,13 @@ abstract class BaseFactory
      */
     public static function new(mixed $makeParameter = [], int $times = 1): static
     {
-        if (is_int($makeParameter) || is_float($makeParameter)) {
+        if (is_int($makeParameter)) {
             $factory = self::makeFromNonCallable();
-            $times = (int)$makeParameter;
+            $times = $makeParameter;
+        } elseif (is_float($makeParameter)) {
+            throw new InvalidArgumentException(
+                '::new() only accepts an integer count as first parameter. Floats are not allowed; use ->count() with a positive integer.',
+            );
         } elseif ($makeParameter === null) {
             $factory = self::makeFromNonCallable();
         } elseif (is_array($makeParameter) || $makeParameter instanceof EntityInterface || is_string($makeParameter)) {
@@ -665,7 +669,7 @@ abstract class BaseFactory
         }
 
         $this->finalizePersistedEntities($saved, $table);
-        $this->replayAssociatedAfterSaveEvents($saved, $this);
+        $saved = $this->replayAssociatedAfterSaveEvents($saved, $this);
         $saved = $this->applyCallbacks($saved, $this->afterSaveCallbacks);
 
         return $saved;
@@ -721,43 +725,94 @@ abstract class BaseFactory
      *
      * @param array<\Cake\Datasource\EntityInterface> $entities
      * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory
+     * @param array<string, bool> $visited Replay guard
      *
-     * @return void
+     * @return array<\Cake\Datasource\EntityInterface>
      */
-    private function replayAssociatedAfterSaveEvents(array $entities, BaseFactory $factory): void
+    private function replayAssociatedAfterSaveEvents(array $entities, BaseFactory $factory, array &$visited = []): array
     {
         foreach ($factory->getAssociationBuilder()->getAssociations() as $associationName => $associationFactory) {
             $property = $factory->getAssociationBuilder()->getAssociation($associationName)->getProperty();
-            $associatedEntities = [];
-            foreach ($entities as $entity) {
+            foreach ($entities as $index => $entity) {
                 $value = $entity->get($property);
                 if ($value instanceof EntityInterface) {
-                    $associatedEntities[] = $value;
+                    $entity->set($property, $this->replayAssociatedAfterSaveForEntity($value, $associationFactory, $visited));
+                    $entity->setDirty($property, false);
+                    $entities[$index] = $entity;
 
                     continue;
                 }
                 if (!is_array($value)) {
                     continue;
                 }
+
+                $updated = [];
                 foreach ($value as $item) {
                     if ($item instanceof EntityInterface) {
-                        $associatedEntities[] = $item;
+                        $updated[] = $this->replayAssociatedAfterSaveForEntity($item, $associationFactory, $visited);
+                    } else {
+                        $updated[] = $item;
                     }
                 }
+                $entity->set($property, $updated);
+                $entity->setDirty($property, false);
+                $entities[$index] = $entity;
             }
-            if ($associatedEntities === []) {
-                continue;
-            }
-
-            $options = new ArrayObject(['associated' => true, 'atomic' => false]);
-            foreach ($associatedEntities as $entity) {
-                $associationFactory->getTable()->dispatchEvent('Model.afterSave', compact('entity', 'options'));
-            }
-            if ($associationFactory->afterSaveCallbacks !== []) {
-                $associationFactory->applyCallbacks($associatedEntities, $associationFactory->afterSaveCallbacks);
-            }
-            $this->replayAssociatedAfterSaveEvents($associatedEntities, $associationFactory);
         }
+
+        return $entities;
+    }
+
+    /**
+     * @param \Cake\Datasource\EntityInterface $entity Associated entity
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $associationFactory Associated factory
+     * @param array<string, bool> $visited Replay guard
+     *
+     * @return \Cake\Datasource\EntityInterface
+     */
+    private function replayAssociatedAfterSaveForEntity(
+        EntityInterface $entity,
+        BaseFactory $associationFactory,
+        array &$visited,
+    ): EntityInterface {
+        $key = $this->buildAssociatedReplayKey($associationFactory, $entity);
+        if (isset($visited[$key])) {
+            return $entity;
+        }
+        $visited[$key] = true;
+
+        $options = new ArrayObject(['associated' => true, 'atomic' => false]);
+        $associationFactory->getTable()->dispatchEvent('Model.afterSave', compact('entity', 'options'));
+
+        $entities = [$entity];
+        if ($associationFactory->afterSaveCallbacks !== []) {
+            $entities = $associationFactory->applyCallbacks($entities, $associationFactory->afterSaveCallbacks);
+        }
+
+        $entities = $this->replayAssociatedAfterSaveEvents($entities, $associationFactory, $visited);
+
+        return $entities[0];
+    }
+
+    /**
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $associationFactory Associated factory
+     * @param \Cake\Datasource\EntityInterface $entity Associated entity
+     *
+     * @return string
+     */
+    private function buildAssociatedReplayKey(BaseFactory $associationFactory, EntityInterface $entity): string
+    {
+        $primaryKey = (array)$associationFactory->getTable()->getPrimaryKey();
+        $primaryKeyValues = [];
+        foreach ($primaryKey as $field) {
+            $value = $entity->get($field);
+            if ($value === null) {
+                return spl_object_id($associationFactory) . ':object:' . spl_object_id($entity);
+            }
+            $primaryKeyValues[] = $value;
+        }
+
+        return spl_object_id($associationFactory) . ':pk:' . json_encode($primaryKeyValues, JSON_THROW_ON_ERROR);
     }
 
     /**
