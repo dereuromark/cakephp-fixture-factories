@@ -176,6 +176,30 @@ PHP;
     }
 
     /**
+     * Regression: abstract base factories must not be annotated. Their generic
+     *
+     * @extends would point at a concrete entity FQN that doesn't apply, and
+     * PHPStan would flag the resulting class as inconsistent.
+     */
+    public function testShouldRunSkipsAbstractFactory(): void
+    {
+        $content = <<<'PHP'
+<?php
+declare(strict_types=1);
+
+namespace App\Test\Factory;
+
+use CakephpFixtureFactories\Factory\BaseFactory;
+
+abstract class AbstractInvoiceFactory extends BaseFactory
+{
+}
+PHP;
+        $result = $this->getTask($content)->shouldRun('/app/tests/Factory/AbstractInvoiceFactory.php', $content);
+        $this->assertFalse($result);
+    }
+
+    /**
      * @return void
      */
     public function testAnnotateInsertsExtendsForFreshAppFactory(): void

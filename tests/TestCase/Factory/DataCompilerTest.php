@@ -17,6 +17,7 @@ namespace CakephpFixtureFactories\Test\TestCase\Factory;
 
 use Cake\ORM\Entity;
 use Cake\TestSuite\TestCase;
+use CakephpFixtureFactories\Error\FixtureFactoryException;
 use CakephpFixtureFactories\Error\PersistenceException;
 use CakephpFixtureFactories\Factory\DataCompiler;
 use CakephpFixtureFactories\Test\Factory\ArticleFactory;
@@ -91,9 +92,22 @@ class DataCompilerTest extends TestCase
         $this->assertTrue(is_string($this->articleDataCompiler->generateRandomPrimaryKey('uuid')));
     }
 
-    public function testGenerateRandomPrimaryKeyWhateverColumnType(): void
+    /**
+     * Unknown column types now throw rather than silently producing a 32-bit
+     * int, which masks misconfigured schemas. Users hitting this should pass
+     * an explicit primary key via setPrimaryKeyOffset().
+     */
+    public function testGenerateRandomPrimaryKeyUnknownColumnTypeThrows(): void
     {
-        $this->assertTrue(is_int($this->articleDataCompiler->generateRandomPrimaryKey('foo')));
+        $this->expectException(FixtureFactoryException::class);
+        $this->expectExceptionMessage('Cannot generate a random primary key for column type `foo`');
+
+        $this->articleDataCompiler->generateRandomPrimaryKey('foo');
+    }
+
+    public function testGenerateRandomPrimaryKeyMediuminteger(): void
+    {
+        $this->assertTrue(is_int($this->articleDataCompiler->generateRandomPrimaryKey('mediuminteger')));
     }
 
     public function testGenerateArrayOfRandomPrimaryKeys(): void

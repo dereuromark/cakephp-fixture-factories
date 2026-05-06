@@ -24,6 +24,7 @@ use CakephpFixtureFactories\Error\FactoryNotFoundException;
 use CakephpFixtureFactories\Error\PersistenceException;
 use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\Factory\FactoryAwareTrait;
+use InvalidArgumentException;
 
 class PersistCommand extends Command
 {
@@ -96,7 +97,7 @@ class PersistCommand extends Command
             $factory = $this->countFactory($args, $factory);
             $factory = $this->with($args, $factory);
             $factory = $this->attachMethod($args, $factory, $io);
-        } catch (FactoryNotFoundException $e) {
+        } catch (FactoryNotFoundException | InvalidArgumentException $e) {
             $io->error($e->getMessage());
             $this->abort();
         }
@@ -134,14 +135,20 @@ class PersistCommand extends Command
      * @param \Cake\Console\Arguments $args Arguments
      * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Factory
      *
+     * @throws \InvalidArgumentException When --number is not a positive integer.
+     *
      * @return \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>
      */
     public function countFactory(Arguments $args, BaseFactory $factory): BaseFactory
     {
-        if ($args->getOption('number')) {
-            $times = (int)$args->getOption('number');
-        } else {
-            $times = 1;
+        $option = $args->getOption('number');
+        $times = $option === null ? 1 : (int)$option;
+
+        if ($times < 1) {
+            throw new InvalidArgumentException(sprintf(
+                '--number must be a positive integer, got `%s`.',
+                (string)$option,
+            ));
         }
 
         return $factory->count($times);

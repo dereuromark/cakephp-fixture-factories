@@ -29,6 +29,7 @@ use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpFixtureFactories\Test\Factory\CustomerFactory;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use TestApp\Model\Entity\Address;
 use TestApp\Model\Entity\Article;
@@ -115,6 +116,35 @@ class BaseFactoryTest extends TestCase
             $this->assertInstanceOf(EntityInterface::class, $entity);
             $this->assertInstanceOf(Article::class, $entity);
         }
+    }
+
+    /**
+     * Regression: ::new() with count <= 0 used to construct a factory whose
+     * downstream build() / save() would throw a cryptic "expected 1, got 0"
+     * later. Reject up-front with a clear message.
+     */
+    public function testNewRejectsNonPositiveCount(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('::new() expects a positive count');
+
+        ArticleFactory::new(0);
+    }
+
+    public function testNewRejectsNegativeCountSecondArg(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('::new() expects a positive count');
+
+        ArticleFactory::new([], -2);
+    }
+
+    public function testCountRejectsNonPositive(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('::count() expects a positive integer');
+
+        ArticleFactory::new()->count(0);
     }
 
     /**
