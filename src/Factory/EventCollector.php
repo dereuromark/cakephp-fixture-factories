@@ -219,13 +219,14 @@ class EventCollector
     private function getScopedRegistryAlias(): string
     {
         $hash = hash('sha256', serialize([
+            'table' => $this->rootTableRegistryName,
             'connection' => $this->connectionName,
             'behaviors' => $this->listeningBehaviors,
             'events' => $this->listeningModelEvents,
             'eventManager' => $this->eventManager ? spl_object_id($this->eventManager) : null,
         ]));
 
-        return sprintf('%s__fixture_factory__%s', $this->rootTableRegistryName, substr($hash, 0, 12));
+        return sprintf('%s__ff_%s', $this->getRootTableAlias(), substr($hash, 0, 8));
     }
 
     /**

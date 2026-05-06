@@ -33,6 +33,7 @@ use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpFixtureFactories\Test\Factory\CustomerFactory;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
 use PHPUnit\Framework\Attributes\DataProvider;
+use ReflectionMethod;
 use TestApp\Model\Entity\Address;
 use TestApp\Model\Entity\Article;
 use TestApp\Model\Entity\City;
@@ -411,5 +412,17 @@ class EventCollectorTest extends TestCase
         $this->assertSame($secondEventManager, $secondFactory->getTable()->getEventManager());
         $this->assertSame('Articles', $firstFactory->getTable()->getAlias());
         $this->assertSame('Articles', $secondFactory->getTable()->getAlias());
+    }
+
+    public function testScopedRegistryAliasStaysShortForLongAssociationAliases(): void
+    {
+        $collector = new EventCollector('PremiumAuthors');
+        $method = new ReflectionMethod($collector, 'getScopedRegistryAlias');
+
+        /** @var string $registryAlias */
+        $registryAlias = $method->invoke($collector);
+
+        $this->assertLessThanOrEqual(30, strlen($registryAlias));
+        $this->assertStringStartsWith('PremiumAuthors__ff_', $registryAlias);
     }
 }
