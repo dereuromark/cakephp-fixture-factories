@@ -35,6 +35,31 @@ The helper names now signal the cardinality at the call site. `->forProject()` r
 
 You don't always know which associations you'll want in tests months from now. Add them all preemptively so nobody has to wire up an association mid-test.
 
+## DO: encode reusable business states as named methods
+
+Prefer this:
+
+```php
+$article = ArticleFactory::new()
+    ->published()
+    ->featured()
+    ->save();
+```
+
+over scattering raw state arrays through unrelated tests:
+
+```php
+$article = ArticleFactory::new()
+    ->state([
+        'is_published' => true,
+        'published' => new FrozenTime('-1 day'),
+        'is_featured' => true,
+    ])
+    ->save();
+```
+
+Named methods make test intent obvious, centralize the state shape in one place, and make later refactors much cheaper. Keep `state()` and `setField()` for local one-offs; reach for `published()`, `draft()`, `archived()`, and similar methods when the meaning belongs to the domain.
+
 ## DON'T: chain helper methods inside your helper methods
 
 Tempting:

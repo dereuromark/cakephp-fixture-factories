@@ -53,6 +53,45 @@ class ArticleFactory extends BaseFactory
 ```
 Add any helper methods that capture your business model — like `setJobTitle()` — to keep factory calls expressive and reusable.
 
+## Named state methods
+
+Prefer small named methods for reusable business states. They read well at the call site and keep one-off inline state arrays from spreading through the test suite.
+
+```php
+class ArticleFactory extends BaseFactory
+{
+    public function published(): static
+    {
+        return $this->state([
+            'is_published' => true,
+            'published' => new FrozenTime('-1 day'),
+        ]);
+    }
+
+    public function featured(): static
+    {
+        return $this->state([
+            'is_featured' => true,
+        ]);
+    }
+}
+```
+
+That gives you a compact, intention-revealing API:
+
+```php
+$article = ArticleFactory::new()
+    ->published()
+    ->featured()
+    ->save();
+```
+
+As a rule of thumb:
+
+- use `definition()` for baseline defaults every entity should get;
+- use `state()` / `setField()` for one-off adjustments local to a single test;
+- use named methods like `published()`, `archived()`, or `featured()` for reusable business semantics.
+
 Factories are immutable. Every fluent call returns a cloned factory, so reusing a base factory in the same test is safe.
 
 ## Required fields
