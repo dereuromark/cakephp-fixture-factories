@@ -81,6 +81,37 @@ class DocumentationExamplesTest extends TestCase
         }
     }
 
+    public function testExampleSequenceData(): void
+    {
+        $articles = ArticleFactory::new()
+            ->count(4)
+            ->sequence(
+                ['title' => 'Draft'],
+                ['title' => 'Published'],
+            )
+            ->buildMany();
+
+        $this->assertSame('Draft', $articles[0]->title);
+        $this->assertSame('Published', $articles[1]->title);
+        $this->assertSame('Draft', $articles[2]->title);
+        $this->assertSame('Published', $articles[3]->title);
+    }
+
+    public function testExampleAfterCallbacks(): void
+    {
+        $article = ArticleFactory::new()
+            ->afterBuild(static function (Article $article): void {
+                $article->set('title', 'Built title');
+            })
+            ->afterSave(static function (Article $article): void {
+                $article->set('title', 'Saved title');
+            })
+            ->save();
+
+        $this->assertSame('Saved title', $article->title);
+        $this->assertSame('Built title', ArticleFactory::table()->get($article->id)->title);
+    }
+
     public function testExampleChainable(): void
     {
         $articleFactory = ArticleFactory::new(['title' => 'Foo']);

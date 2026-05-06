@@ -44,6 +44,17 @@ $articles = ArticleFactory::new([
 ])->buildMany();
 ```
 
+To vary attributes across `count()` calls, use `sequence()`:
+```php
+$articles = ArticleFactory::new()
+    ->count(4)
+    ->sequence(
+        ['title' => 'Draft'],
+        ['title' => 'Published'],
+    )
+    ->buildMany();
+```
+
 When injecting a single string in the factory, the latter will assign the injected string to the
 [display field](https://book.cakephp.org/5/en/orm/retrieving-data-and-resultsets.html#finding-key-value-pairs) of the factory's table:
 ```php
@@ -65,6 +76,21 @@ $article = ArticleFactory::new(function (ArticleFactory $factory, GeneratorInter
     return ['title' => $generator->jobTitle()];
 })->build();
 ```
+
+You can also hook into the lifecycle of generated entities:
+```php
+$article = ArticleFactory::new()
+    ->afterBuild(function (Article $article): void {
+        $article->title = 'Built title';
+    })
+    ->afterSave(function (Article $article): void {
+        $article->title = 'Saved title';
+    })
+    ->save();
+```
+
+`afterBuild()` runs before `build*()` returns and before `save*()` persists.
+`afterSave()` runs after the entity has been saved, so it can adjust the in-memory entity without rewriting the database row.
 
 If you want to manually save an entity using a table instance, keep it dirty so required fields are written:
 ```php

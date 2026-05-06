@@ -178,6 +178,63 @@ class BaseFactoryTest extends TestCase
         }
     }
 
+    public function testSequenceCyclesThroughStates(): void
+    {
+        $articles = ArticleFactory::new()
+            ->count(5)
+            ->sequence(
+                ['title' => 'First'],
+                ['title' => 'Second'],
+            )
+            ->buildMany();
+
+        $this->assertSame('First', $articles[0]->title);
+        $this->assertSame('Second', $articles[1]->title);
+        $this->assertSame('First', $articles[2]->title);
+        $this->assertSame('Second', $articles[3]->title);
+        $this->assertSame('First', $articles[4]->title);
+    }
+
+    public function testSequenceRunsBeforePlainStateOverrides(): void
+    {
+        $articles = ArticleFactory::new()
+            ->count(3)
+            ->sequence(
+                ['title' => 'First'],
+                ['title' => 'Second'],
+            )
+            ->state(['title' => 'Override'])
+            ->buildMany();
+
+        foreach ($articles as $article) {
+            $this->assertSame('Override', $article->title);
+        }
+    }
+
+    public function testAfterBuildRunsBeforeSave(): void
+    {
+        $article = ArticleFactory::new()
+            ->afterBuild(static function (Article $article): void {
+                $article->set('title', 'After build');
+            })
+            ->save();
+
+        $this->assertSame('After build', $article->title);
+        $this->assertSame('After build', ArticleFactory::table()->get($article->id)->title);
+    }
+
+    public function testAfterSaveRunsAfterPersistence(): void
+    {
+        $article = ArticleFactory::new()
+            ->afterSave(static function (Article $article): void {
+                $article->set('title', 'After save');
+            })
+            ->save();
+
+        $this->assertSame('After save', $article->title);
+        $this->assertNotSame('After save', ArticleFactory::table()->get($article->id)->title);
+    }
+
     public function testMakeFromArrayMultipleWithMakeFromArray(): void
     {
         $n = 3;

@@ -60,6 +60,13 @@ class DataCompiler
     private array $dataFromPatch = [];
 
     /**
+     * @var array<int, \Cake\Datasource\EntityInterface|callable|array<string, mixed>>
+     */
+    private array $sequenceData = [];
+
+    private int $sequenceIndex = 0;
+
+    /**
      * @var array<string, array<int, \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>>>
      */
     private array $dataFromAssociations = [];
@@ -150,6 +157,26 @@ class DataCompiler
     public function collectFromPatch(array $data): void
     {
         $this->dataFromPatch = array_merge($this->dataFromPatch, $data);
+    }
+
+    /**
+     * @param array<int, \Cake\Datasource\EntityInterface|callable|array<string, mixed>> $states Sequence states
+     *
+     * @return void
+     */
+    public function collectSequence(array $states): void
+    {
+        $this->sequenceData = $states;
+    }
+
+    /**
+     * @param int $sequenceIndex Current sequence index
+     *
+     * @return void
+     */
+    public function setSequenceIndex(int $sequenceIndex): void
+    {
+        $this->sequenceIndex = $sequenceIndex;
     }
 
     /**
@@ -276,7 +303,9 @@ class DataCompiler
             $this->mergeWithInjectedData($entity, $injectedData);
         }
 
-        $this->mergeWithPatchedData($entity)->mergeWithAssociatedData($entity, $isEntityInjected);
+        $this->mergeWithSequenceData($entity)
+            ->mergeWithPatchedData($entity)
+            ->mergeWithAssociatedData($entity, $isEntityInjected);
 
         if ($this->isInPersistMode() && $this->getModifiedUniqueFields()) {
             $entity->set(self::MODIFIED_UNIQUE_PROPERTIES, $this->getModifiedUniqueFields());
@@ -461,6 +490,37 @@ class DataCompiler
     {
         $this->patchEntity($entity, $this->dataFromPatch);
         $this->addEnforcedFields($this->dataFromPatch);
+
+        return $this;
+    }
+
+    /**
+     * Step 3.5:
+     * Merge with the data gathered by sequence.
+     *
+     * @param \Cake\Datasource\EntityInterface $entity Entity to manipulate.
+     *
+     * @return $this
+     */
+    private function mergeWithSequenceData(EntityInterface $entity)
+    {
+        if (!$this->sequenceData) {
+            return $this;
+        }
+
+        $state = $this->sequenceData[$this->sequenceIndex % count($this->sequenceData)];
+        if (is_callable($state)) {
+            $state = $state(
+                $this->getFactory(),
+                $this->getFactory()->getGenerator(),
+                $this->sequenceIndex,
+            );
+        } elseif ($state instanceof EntityInterface) {
+            $state = $state->toArray();
+        }
+
+        $this->patchEntity($entity, $state);
+        $this->addEnforcedFields($state);
 
         return $this;
     }

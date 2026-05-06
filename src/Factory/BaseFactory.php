@@ -111,6 +111,16 @@ abstract class BaseFactory
     private bool $keepDirty = false;
 
     /**
+     * @var array<int, callable(\Cake\Datasource\EntityInterface, int, static): (\Cake\Datasource\EntityInterface|void)>
+     */
+    private array $afterBuildCallbacks = [];
+
+    /**
+     * @var array<int, callable(\Cake\Datasource\EntityInterface, int, static): (\Cake\Datasource\EntityInterface|void)>
+     */
+    private array $afterSaveCallbacks = [];
+
+    /**
      * The data compiler gathers the data from the
      * default template, the injection and patched data
      * and compiles it to produce the data feeding the
@@ -250,6 +260,8 @@ abstract class BaseFactory
         $this->uniqueProperties = $factory->uniqueProperties;
         $this->skippedSetters = $factory->skippedSetters;
         $this->instanceGenerator = $factory->instanceGenerator;
+        $this->afterBuildCallbacks = $factory->afterBuildCallbacks;
+        $this->afterSaveCallbacks = $factory->afterSaveCallbacks;
         $this->dataCompiler->setFactory($this);
         $this->associationBuilder->setFactory($this);
     }
@@ -477,6 +489,7 @@ abstract class BaseFactory
         $dataCompiler->setSkippedSetters($this->skippedSetters);
         $entities = [];
         for ($i = 0; $i < $this->times; $i++) {
+            $dataCompiler->setSequenceIndex($i);
             $compiledData = $dataCompiler->getCompiledTemplateData();
             if (is_array($compiledData)) {
                 $entities = array_merge($entities, $compiledData);
@@ -485,6 +498,7 @@ abstract class BaseFactory
             }
         }
         UniquenessJanitor::sanitizeEntityArray($this, $entities);
+        $entities = $this->applyCallbacks($entities, $this->afterBuildCallbacks);
 
         // Mark entities as clean so their current state becomes the "original" state
         // Only do this when NOT in persist mode, as clean entities can't be saved
@@ -594,6 +608,7 @@ abstract class BaseFactory
         }
 
         $this->finalizePersistedEntities($saved, $table);
+        $saved = $this->applyCallbacks($saved, $this->afterSaveCallbacks);
 
         return $saved;
     }
@@ -683,6 +698,62 @@ abstract class BaseFactory
             $data = $data->toArray();
         }
         $factory->getDataCompiler()->collectFromPatch($data);
+
+        return $factory;
+    }
+
+    /**
+     * Cycle through the provided states while building multiple entities.
+     *
+     * Sequence data is applied after `definition()` and injected instantiation
+     * data, but before a later plain `state()` override.
+     *
+     * @param \Cake\Datasource\EntityInterface|callable|array<string, mixed> ...$states Sequence states
+     *
+     * @throws \InvalidArgumentException
+     *
+     * @return static
+     */
+    public function sequence(array|callable|EntityInterface ...$states): static
+    {
+        if ($states === []) {
+            throw new InvalidArgumentException('sequence() expects at least one array, entity or callable state.');
+        }
+
+        $factory = clone $this;
+        /** @var array<int, \Cake\Datasource\EntityInterface|callable|array<string, mixed>> $states */
+        $factory->getDataCompiler()->collectSequence($states);
+
+        return $factory;
+    }
+
+    /**
+     * Register a callback to run on each built entity before `build*()` returns
+     * and before `save*()` persists the entity.
+     *
+     * @param callable(\Cake\Datasource\EntityInterface, int, static): (\Cake\Datasource\EntityInterface|void) $callback Callback
+     *
+     * @return static
+     */
+    public function afterBuild(callable $callback): static
+    {
+        $factory = clone $this;
+        $factory->afterBuildCallbacks[] = $callback;
+
+        return $factory;
+    }
+
+    /**
+     * Register a callback to run on each entity after it has been saved.
+     *
+     * @param callable(\Cake\Datasource\EntityInterface, int, static): (\Cake\Datasource\EntityInterface|void) $callback Callback
+     *
+     * @return static
+     */
+    public function afterSave(callable $callback): static
+    {
+        $factory = clone $this;
+        $factory->afterSaveCallbacks[] = $callback;
 
         return $factory;
     }
@@ -1121,6 +1192,31 @@ abstract class BaseFactory
             $sourceTable->getRegistryAlias(),
             $targetRegistryAlias,
         ));
+    }
+
+    /**
+     * @param array<\Cake\Datasource\EntityInterface> $entities Entities
+     * @param array<int, callable(\Cake\Datasource\EntityInterface, int, static): (\Cake\Datasource\EntityInterface|void)> $callbacks Callbacks
+     *
+     * @return array<\Cake\Datasource\EntityInterface>
+     */
+    private function applyCallbacks(array $entities, array $callbacks): array
+    {
+        if ($callbacks === []) {
+            return $entities;
+        }
+
+        foreach ($entities as $index => $entity) {
+            foreach ($callbacks as $callback) {
+                $result = $callback($entity, $index, $this);
+                if ($result instanceof EntityInterface) {
+                    $entity = $result;
+                }
+            }
+            $entities[$index] = $entity;
+        }
+
+        return $entities;
     }
 
     public function __clone(): void
