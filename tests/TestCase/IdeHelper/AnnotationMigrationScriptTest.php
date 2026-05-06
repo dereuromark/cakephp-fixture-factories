@@ -237,6 +237,78 @@ PHP;
         );
     }
 
+    public function testScriptRemovesPartialLegacyAnnotationsAndKeepsOtherMethods(): void
+    {
+        $file = $this->writeFactoryFile(<<<'PHP'
+<?php
+declare(strict_types=1);
+
+namespace App\Test\Factory;
+
+use CakephpFixtureFactories\Factory\BaseFactory;
+
+/**
+ * InvoiceFactory
+ *
+ * @method \App\Model\Entity\Invoice getEntity()
+ * @method \App\Model\Entity\Invoice|array<\App\Model\Entity\Invoice> persist()
+ * @method static \App\Model\Entity\Invoice get(mixed $primaryKey, array<string, mixed> $options = [])
+ */
+class InvoiceFactory extends BaseFactory
+{
+}
+PHP);
+
+        $output = $this->runScript($file);
+        $contents = (string)file_get_contents($file);
+
+        $this->assertStringContainsString('[migrated]', $output);
+        $this->assertStringNotContainsString('@method \App\Model\Entity\Invoice getEntity()', $contents);
+        $this->assertStringNotContainsString('@method \App\Model\Entity\Invoice|array<\App\Model\Entity\Invoice> persist()', $contents);
+        $this->assertStringContainsString(
+            '@method static \App\Model\Entity\Invoice get(mixed $primaryKey, array<string, mixed> $options = [])',
+            $contents,
+        );
+        $this->assertStringContainsString(
+            '@extends \CakephpFixtureFactories\Factory\BaseFactory<\App\Model\Entity\Invoice>',
+            $contents,
+        );
+    }
+
+    public function testScriptDoesNotInsertBlankLineBeforeDocblockClose(): void
+    {
+        $file = $this->writeFactoryFile(<<<'PHP'
+<?php
+declare(strict_types=1);
+
+namespace App\Test\Factory;
+
+use CakephpFixtureFactories\Factory\BaseFactory;
+
+/**
+ * InvoiceFactory
+ *
+ * @method \App\Model\Entity\Invoice getEntity()
+ * @method \App\Model\Entity\Invoice persist()
+ */
+class InvoiceFactory extends BaseFactory
+{
+}
+PHP);
+
+        $this->runScript($file);
+        $contents = (string)file_get_contents($file);
+
+        $this->assertStringContainsString(
+            "@extends \\CakephpFixtureFactories\\Factory\\BaseFactory<\\App\\Model\\Entity\\Invoice>\n */",
+            $contents,
+        );
+        $this->assertStringNotContainsString(
+            "@extends \\CakephpFixtureFactories\\Factory\\BaseFactory<\\App\\Model\\Entity\\Invoice>\n\n */",
+            $contents,
+        );
+    }
+
     protected function writeFactoryFile(string $content, string $name = 'InvoiceFactory.php'): string
     {
         $path = $this->tmpDir . DIRECTORY_SEPARATOR . $name;
