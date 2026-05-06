@@ -18,8 +18,10 @@ namespace CakephpFixtureFactories\Event;
 use Cake\ORM\Behavior;
 use Cake\ORM\Table;
 use CakephpFixtureFactories\Factory\EventCollector;
+use Closure;
 use ReflectionException;
 use ReflectionFunction;
+use TypeError;
 
 /**
  * Class ModelEventsHandler
@@ -110,12 +112,7 @@ class ModelEventsHandler
      */
     private function processListener(Table $table, mixed $listener, string $ormEvent): void
     {
-        try {
-            $reflection = new ReflectionFunction($listener);
-            $obj = $reflection->getClosureThis();
-        } catch (ReflectionException) {
-            $obj = null;
-        }
+        $obj = $this->extractListenerObject($listener);
 
         if ($obj !== null) {
             if ($obj instanceof Table) {
@@ -125,6 +122,29 @@ class ModelEventsHandler
             }
         } else {
             $table->getEventManager()->off($ormEvent, $listener);
+        }
+    }
+
+    /**
+     * @param mixed $listener Listener
+     *
+     * @return object|null
+     */
+    private function extractListenerObject(mixed $listener): ?object
+    {
+        if (is_array($listener) && isset($listener[0]) && is_object($listener[0])) {
+            return $listener[0];
+        }
+        if (is_object($listener) && !$listener instanceof Closure) {
+            return $listener;
+        }
+
+        try {
+            $reflection = new ReflectionFunction(Closure::fromCallable($listener));
+
+            return $reflection->getClosureThis();
+        } catch (ReflectionException | TypeError) {
+            return null;
         }
     }
 

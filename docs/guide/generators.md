@@ -117,9 +117,9 @@ $article = ArticleFactory::new()
     ->build();
 ```
 
-> **Note**: By default, `setGenerator()` changes the generator globally. Enable
-> `FixtureFactories.instanceLevelGenerator` to limit it to the current instance.
-> See [Fixture Factories](factories#instance-level-generators).
+> **Note**: By default, `setGenerator()` only affects the current factory
+> instance. Set `FixtureFactories.instanceLevelGenerator` to `false` if you need
+> the legacy global behavior. See [Fixture Factories](factories#instance-level-generators).
 
 ### Migration Guide: Faker → DummyGenerator
 
@@ -237,8 +237,9 @@ ArticleFactory::new()->setGenerator('dummy')->build();
 BaseFactory::setDefaultGenerator('dummy');
 ```
 
-> **Tip**: Enable `FixtureFactories.instanceLevelGenerator` so that `setGenerator()` only
-> affects the current factory instance. See [Fixture Factories](factories#instance-level-generators).
+> **Tip**: Leave `FixtureFactories.instanceLevelGenerator` enabled so that
+> `setGenerator()` stays scoped to the current factory instance. See
+> [Fixture Factories](factories#instance-level-generators).
 
 ### 3. Test with Both Generators (Optional)
 

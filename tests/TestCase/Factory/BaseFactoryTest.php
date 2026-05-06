@@ -141,6 +141,14 @@ class BaseFactoryTest extends TestCase
         ArticleFactory::new([], -2);
     }
 
+    public function testNewRejectsFloatCount(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('::new() only accepts an integer count as first parameter');
+
+        ArticleFactory::new(1.9);
+    }
+
     public function testCountRejectsNonPositive(): void
     {
         $this->expectException(InvalidArgumentException::class);
@@ -314,6 +322,22 @@ class BaseFactoryTest extends TestCase
         $this->assertSame(['child author'], $captured, 'child afterSave must run exactly once');
         $this->assertNotEmpty($article->authors);
         $this->assertSame('mutated by child afterSave', $article->authors[0]->name);
+    }
+
+    public function testAfterSaveOnChildFactoryCanReplaceEntityWhenSavedThroughParent(): void
+    {
+        $article = ArticleFactory::new(['title' => 'parent'])
+            ->with('Authors', AuthorFactory::new(['name' => 'child author'])
+                ->afterSave(static function (Author $author): Author {
+                    $replacement = clone $author;
+                    $replacement->set('name', 'replaced by child afterSave');
+
+                    return $replacement;
+                }))
+            ->save();
+
+        $this->assertNotEmpty($article->authors);
+        $this->assertSame('replaced by child afterSave', $article->authors[0]->name);
     }
 
     public function testMakeFromArrayMultipleWithMakeFromArray(): void

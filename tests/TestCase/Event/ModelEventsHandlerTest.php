@@ -18,6 +18,7 @@ namespace CakephpFixtureFactories\Test\TestCase\Event;
 use Cake\ORM\TableRegistry;
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Event\ModelEventsHandler;
+use ReflectionMethod;
 
 /**
  * Class ModelEventsHandlerTest
@@ -51,6 +52,21 @@ class ModelEventsHandlerTest extends TestCase
         ModelEventsHandler::handle($Countries, ['Model.beforeMarshal']);
         $country = $Countries->newEntity(['name' => 'Foo']);
         $this->assertTrue($country->get('beforeMarshalTriggered'));
+    }
+
+    public function testBeforeMarshalArrayCallableOnTableIsNotRemovedWhenPermitted(): void
+    {
+        $Countries = TableRegistry::getTableLocator()->get('Countries');
+        $listener = [$Countries, 'beforeMarshalArrayCallable'];
+        $Countries->getEventManager()->on('Model.beforeMarshal', $listener);
+
+        $this->assertCount(2, $Countries->getEventManager()->listeners('Model.beforeMarshal'));
+
+        $method = new ReflectionMethod(ModelEventsHandler::class, 'processListener');
+        $method->setAccessible(true);
+        $method->invoke(new ModelEventsHandler(['Model.beforeMarshal'], []), $Countries, $listener, 'Model.beforeMarshal');
+
+        $this->assertCount(2, $Countries->getEventManager()->listeners('Model.beforeMarshal'));
     }
 
     public function testBeforeSaveInBehaviorOnTable(): void

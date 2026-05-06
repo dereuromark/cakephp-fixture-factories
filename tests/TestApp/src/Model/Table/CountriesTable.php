@@ -61,4 +61,9 @@ class CountriesTable extends Table
     {
         $data['beforeMarshalTriggered'] = true;
     }
+
+    public function beforeMarshalArrayCallable(EventInterface $event, ArrayObject $data, ArrayObject $options): void
+    {
+        $data['beforeMarshalArrayCallableTriggered'] = true;
+    }
 }

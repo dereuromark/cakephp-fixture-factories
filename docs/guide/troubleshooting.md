@@ -89,7 +89,7 @@ Then re-run `bin/cake bake fixture_factory <Model> --force`.
 
 ## `setGenerator()` affects unrelated factories
 
-By default, `setGenerator()` changes the global default — any subsequent factory uses the new generator too. To scope it to one factory instance:
+This only happens if you disabled instance-level generators. Re-enable them to keep `setGenerator()` scoped to one factory instance:
 
 ```php
 Configure::write('FixtureFactories.instanceLevelGenerator', true);

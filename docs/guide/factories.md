@@ -336,17 +336,17 @@ $article = ArticleFactory::new()
     ->build();
 ```
 
-By default, `setGenerator()` changes the generator globally for all factory instances (preserving the v1 default). The fluent return value reflects this — in global mode the call returns `$this`; in instance mode (below) it returns a clone scoped to the new generator.
+By default, `setGenerator()` only affects the current factory instance. It returns a clone scoped to the requested generator, leaving other factories on the shared default.
 
 #### Instance-Level Generators
 
-If you want `setGenerator()` to only affect the current factory instance, enable the instance-level generator flag:
+This is controlled by the instance-level generator flag, which defaults to `true`:
 
 ```php
 Configure::write('FixtureFactories.instanceLevelGenerator', true);
 ```
 
-With this enabled:
+With the default configuration:
 
 ```php
 $factory1 = ArticleFactory::new()->setGenerator('dummy');
@@ -355,7 +355,15 @@ $factory2 = ArticleFactory::new();
 // $factory1 uses DummyGenerator, $factory2 uses the default (Faker)
 ```
 
-To explicitly set the global default regardless of this flag, use the static method:
+If you explicitly need the legacy global behavior, disable the flag:
+
+```php
+Configure::write('FixtureFactories.instanceLevelGenerator', false);
+```
+
+Then `setGenerator()` updates the shared default for subsequent factories.
+
+To set the global default explicitly regardless of this flag, use the static method:
 
 ```php
 use CakephpFixtureFactories\Factory\BaseFactory;
@@ -363,7 +371,7 @@ use CakephpFixtureFactories\Factory\BaseFactory;
 BaseFactory::setDefaultGenerator('dummy');
 ```
 
-We recommend enabling `instanceLevelGenerator` in new projects to avoid surprising side effects when switching generators in individual factories.
+Keep `instanceLevelGenerator` enabled unless you deliberately want the legacy global `setGenerator()` behavior.
 
 #### Seeding
 
