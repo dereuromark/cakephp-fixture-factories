@@ -99,7 +99,7 @@ class BaseFactoryMakeWithEntityTest extends TestCase
     {
         $n = 2;
         $articles = ArticleFactory::new($n)->saveMany();
-        $author = AuthorFactory::new()->withArticles($articles)->save();
+        $author = AuthorFactory::new()->hasArticles($articles)->save();
 
         $this->assertSame($articles, $author->get('articles'));
         $this->assertSame(ArticleFactory::DEFAULT_NUMBER_OF_AUTHORS * $n + 1, AuthorFactory::query()->count());

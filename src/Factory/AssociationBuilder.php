@@ -84,7 +84,7 @@ class AssociationBuilder
         try {
             $association = $this->getTable()->getAssociation($associationName);
         } catch (Exception $e) {
-            throw new AssociationBuilderException($e->getMessage());
+            throw new AssociationBuilderException($e->getMessage(), (int)$e->getCode(), $e);
         }
         if ($this->associationIsToOne($association) || $this->associationIsToMany($association)) {
             return $association;
@@ -227,7 +227,7 @@ class AssociationBuilder
         try {
             return $this->getFactoryInstance($modelName, $data);
         } catch (Throwable $e) {
-            throw new AssociationBuilderException($e->getMessage());
+            throw new AssociationBuilderException($e->getMessage(), (int)$e->getCode(), $e);
         }
     }
 
@@ -259,7 +259,7 @@ class AssociationBuilder
         if (!$res) {
             return null;
         }
-        if (count($res) === 1 && !empty($res[0])) {
+        if (count($res) === 1 && ctype_digit($res[0]) && (int)$res[0] >= 1) {
             return (int)$res[0];
         }
 

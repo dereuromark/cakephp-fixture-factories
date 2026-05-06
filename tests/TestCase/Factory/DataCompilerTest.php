@@ -25,6 +25,7 @@ use CakephpFixtureFactories\Test\Factory\AuthorFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
+use RuntimeException;
 use TestApp\Model\Table\PremiumAuthorsTable;
 
 class DataCompilerTest extends TestCase
@@ -84,7 +85,18 @@ class DataCompilerTest extends TestCase
 
     public function testGenerateRandomPrimaryKeyBigInteger(): void
     {
-        $this->assertTrue(is_int($this->articleDataCompiler->generateRandomPrimaryKey('biginteger')));
+        $values = [];
+        for ($i = 0; $i < 50; $i++) {
+            $values[] = $this->articleDataCompiler->generateRandomPrimaryKey('biginteger');
+        }
+
+        foreach ($values as $value) {
+            $this->assertIsInt($value);
+        }
+        $this->assertTrue(
+            (bool)array_filter($values, static fn (int $value): bool => $value > 2147483647),
+            'biginteger generation must not be truncated to the 32-bit range.',
+        );
     }
 
     public function testGenerateRandomPrimaryKeyUuid(): void
@@ -143,7 +155,7 @@ class DataCompilerTest extends TestCase
      */
     public function testSetPrimaryKeyWithIdSet(): void
     {
-        $id = rand(1, 10000);
+        $id = 9876;
         $entity = new Entity(compact('id'));
         $res = $this->articleDataCompiler->setPrimaryKey($entity);
         $this->assertSame($id, $res['id']);
@@ -204,5 +216,23 @@ class DataCompilerTest extends TestCase
     {
         $country = CountryFactory::new()->build();
         $this->assertSame('Countries', $country->getSource());
+    }
+
+    public function testPersistModeDepthResetsAfterException(): void
+    {
+        $factory = CountryFactory::new()->afterBuild(
+            static function (): void {
+                throw new RuntimeException('Boom');
+            },
+        );
+
+        try {
+            $factory->save();
+            $this->fail('save() should rethrow the afterBuild exception.');
+        } catch (RuntimeException $exception) {
+            $this->assertSame('Boom', $exception->getMessage());
+        }
+
+        $this->assertFalse($this->articleDataCompiler->isInPersistMode());
     }
 }

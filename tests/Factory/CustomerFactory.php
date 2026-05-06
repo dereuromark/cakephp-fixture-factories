@@ -51,15 +51,6 @@ class CustomerFactory extends BaseFactory
         return $this->has(BillFactory::new($parameter)->count($n)->without('Customer'));
     }
 
-    public function withBills($parameter = null, int $n = 1): self
-    {
-        if (is_int($parameter) && $n === 1) {
-            return $this->hasBills($parameter);
-        }
-
-        return $this->hasBills($n, $parameter);
-    }
-
     /**
      * @param array|callable|null|int|\Cake\Datasource\EntityInterface $parameter Injected data
      * @return CustomerFactory
@@ -67,10 +58,5 @@ class CustomerFactory extends BaseFactory
     public function forAddress($parameter = null): self
     {
         return $this->for(AddressFactory::new($parameter));
-    }
-
-    public function withAddress($parameter = null): self
-    {
-        return $this->forAddress($parameter);
     }
 }

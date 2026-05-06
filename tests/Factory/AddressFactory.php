@@ -44,9 +44,4 @@ class AddressFactory extends BaseFactory
     {
         return $this->for(CityFactory::new($parameter));
     }
-
-    public function withCity(mixed $parameter = null): self
-    {
-        return $this->forCity($parameter);
-    }
 }

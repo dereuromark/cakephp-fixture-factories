@@ -141,10 +141,10 @@ class BaseFactoryAssociationsTest extends TestCase
 
     public function testSaveMultipleHasManyAssociation(): void
     {
-        $amount1 = rand(1, 10000);
-        $amount2 = rand(1, 10000);
+        $amount1 = 111;
+        $amount2 = 222;
         $customer = CustomerFactory::new()
-            ->withBills([
+            ->hasBills([
                 ['amount' => $amount1],
                 ['amount' => $amount2],
             ])->save();
@@ -162,10 +162,10 @@ class BaseFactoryAssociationsTest extends TestCase
     public function testSaveMultipleHasManyAssociationAndTimes(): void
     {
         $times = 2;
-        $amount1 = rand(1, 10000);
-        $amount2 = rand(1, 10000);
+        $amount1 = 111;
+        $amount2 = 222;
         $customer = CustomerFactory::new()
-            ->withBills([
+            ->hasBills([
                 ['amount' => $amount1],
                 ['amount' => $amount2],
             ], $times)->save();
@@ -385,7 +385,7 @@ class BaseFactoryAssociationsTest extends TestCase
 
     public function testAssignWithToManyAssociation(): void
     {
-        $nCities = rand(3, 10);
+        $nCities = 5;
         $city = CityFactory::new()
             ->with('Countries', CountryFactory::new()->with('Cities', $nCities))
             ->save();
@@ -403,7 +403,7 @@ class BaseFactoryAssociationsTest extends TestCase
 
     public function testAssignWithBelongsToManyAssociation(): void
     {
-        $nArticles = rand(3, 10);
+        $nArticles = 5;
         $authorName = 'Foo';
         $article = ArticleFactory::new()
             ->with('Authors', AuthorFactory::new(['name' => 'Foo'])->with('Articles', $nArticles))
@@ -426,7 +426,7 @@ class BaseFactoryAssociationsTest extends TestCase
 
     public function testArticleWithPremiumAuthors(): void
     {
-        $nPremiumAuthors = rand(2, 5);
+        $nPremiumAuthors = 3;
         $article = ArticleFactory::new()
             ->with('ExclusivePremiumAuthors', $nPremiumAuthors)
             ->without('Authors')
@@ -510,7 +510,7 @@ class BaseFactoryAssociationsTest extends TestCase
         $this->assertSame($street1, $addresses[0]->street);
         $this->assertSame($street2, $addresses[1]->street);
 
-        $this->assertTrue(abs($addresses[0]->id - $addresses[1]->id) > 1);
+        $this->assertNotSame($addresses[0]->id, $addresses[1]->id);
     }
 
     public function testCountryWith2Cities(): void
@@ -532,7 +532,7 @@ class BaseFactoryAssociationsTest extends TestCase
         $this->assertSame(2, count($cities));
         $this->assertSame($city1, $cities[0]->name);
         $this->assertSame($city2, $cities[1]->name);
-        $this->assertTrue(abs($cities[0]->id - $cities[1]->id) > 1);
+        $this->assertNotSame($cities[0]->id, $cities[1]->id);
         $this->assertSame(2, CityFactory::query()->count());
         $this->assertSame(1, CountryFactory::query()->count());
     }

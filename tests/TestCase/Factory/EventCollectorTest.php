@@ -61,6 +61,8 @@ class EventCollectorTest extends TestCase
 
     public function setUp(): void
     {
+        Configure::write('FixtureFactories.testFixtureGlobalBehaviors', 'SomeBehaviorUsedInMultipleTables');
+
         /** @var \TestApp\Model\Table\CountriesTable $Countries */
         $Countries = TableRegistry::getTableLocator()->get('Countries');
         $this->Countries = $Countries;
@@ -70,6 +72,9 @@ class EventCollectorTest extends TestCase
 
     public function tearDown(): void
     {
+        if ($this->Countries->hasBehavior('SomePlugin')) {
+            $this->Countries->removeBehavior('SomePlugin');
+        }
         Configure::delete('FixtureFactories.testFixtureGlobalBehaviors');
         unset($this->Countries);
 
@@ -217,8 +222,12 @@ class EventCollectorTest extends TestCase
     public function testGetEntityOnNonExistentBehavior(): void
     {
         $behavior = 'Foo';
-        $article = ArticleFactory::new()->listeningToBehaviors($behavior)->build();
+        $factory = ArticleFactory::new()->listeningToBehaviors($behavior);
+        $this->assertFalse($factory->getTable()->hasBehavior($behavior));
+
+        $article = $factory->build();
         $this->assertInstanceOf(Article::class, $article);
+        $this->assertNull($article->get('slug'));
     }
 
     #[DataProvider('runSeveralTimesWithOrWithoutEvents')]
@@ -318,7 +327,7 @@ class EventCollectorTest extends TestCase
         $bill = BillFactory::new()->build();
         $this->assertTrue($bill->get('beforeMarshalTriggeredPerDefault'));
 
-        $bill = CustomerFactory::new()->withBills()->build()->bills[0];
+        $bill = CustomerFactory::new()->hasBills()->build()->bills[0];
         $this->assertTrue($bill->get('beforeMarshalTriggeredPerDefault'));
     }
 
@@ -327,7 +336,7 @@ class EventCollectorTest extends TestCase
         $bill = BillFactory::new()->save();
         $this->assertTrue($bill->get('afterSaveTriggeredPerDefault'));
 
-        $bill = CustomerFactory::new()->withBills()->save()->bills[0];
+        $bill = CustomerFactory::new()->hasBills()->save()->bills[0];
         $this->assertTrue($bill->get('afterSaveTriggeredPerDefault'));
     }
 

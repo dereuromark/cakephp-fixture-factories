@@ -122,7 +122,7 @@ class PersistCommandTest extends TestCase
     public function testPersistWithMethodAndNumber(): void
     {
         $number = '3';
-        $args = new Arguments(['Article'], ['method' => 'withBills', 'number' => $number], [PersistCommand::ARG_NAME]);
+        $args = new Arguments(['Article'], ['method' => 'hasBills', 'number' => $number], [PersistCommand::ARG_NAME]);
 
         $output = $this->command->execute($args, $this->io);
 
@@ -148,7 +148,7 @@ class PersistCommandTest extends TestCase
     public function testPersistWithMethodAndNumberDryRun(): void
     {
         $number = '3';
-        $args = new Arguments(['Article'], ['method' => 'withBills', 'number' => $number, 'dry-run' => true], [PersistCommand::ARG_NAME]);
+        $args = new Arguments(['Article'], ['method' => 'hasBills', 'number' => $number, 'dry-run' => true], [PersistCommand::ARG_NAME]);
 
         $output = $this->command->execute($args, $this->io);
 

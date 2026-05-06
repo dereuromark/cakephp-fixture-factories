@@ -38,7 +38,7 @@ class BaseFactoryDefaultValuesTest extends TestCase
     public function testMakeAuthorWithArticlesWithDefaultTitles(): void
     {
         $n = 2;
-        $author = AuthorFactory::new()->withArticles($n)->build();
+        $author = AuthorFactory::new()->hasArticles($n)->build();
         $this->assertTrue(is_string($author->name));
         foreach ($author->articles as $article) {
             $this->assertTrue(is_string($article->title));
@@ -129,7 +129,7 @@ class BaseFactoryDefaultValuesTest extends TestCase
     public function testDefautlValuesOfArticleAuthorsDifferent(): void
     {
         $n = 5;
-        $article = ArticleFactory::new()->withAuthors($n)->build();
+        $article = ArticleFactory::new()->hasAuthors($n)->build();
         $authorNames = Hash::extract($article, 'authors.{n}.name');
         $this->assertEquals($n, count(array_unique($authorNames)));
     }

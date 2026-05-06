@@ -67,15 +67,6 @@ class ArticleFactory extends BaseFactory
         return $this->has(AuthorFactory::new($parameter)->count($n));
     }
 
-    public function withAuthors(mixed $parameter = null, int $n = 1): self
-    {
-        if (is_int($parameter) && $n === 1) {
-            return $this->hasAuthors($parameter);
-        }
-
-        return $this->hasAuthors($n, $parameter);
-    }
-
     /**
      * It is important here to stop the propagation of the default template of the bills
      * Otherways, each bills get a new Article, which is not the one produced by the present factory
@@ -95,18 +86,9 @@ class ArticleFactory extends BaseFactory
         return $this->has(BillFactory::new($parameter)->count($n)->without('Article'));
     }
 
-    public function withBills(mixed $parameter = null, int $n = 1): self
-    {
-        if (is_int($parameter) && $n === 1) {
-            return $this->hasBills($parameter);
-        }
-
-        return $this->hasBills($n, $parameter);
-    }
-
     /**
      * BAD PRACTICE EXAMPLE
-     * This method will lead to inconsistencies (see $this->withBills())
+     * This method will lead to inconsistencies (see $this->hasBills())
      *
      * @param mixed $parameter
      * @param int $n
@@ -121,15 +103,6 @@ class ArticleFactory extends BaseFactory
         }
 
         return $this->has(BillFactory::new($parameter)->count($n));
-    }
-
-    public function withBillsWithArticle(mixed $parameter = null, int $n = 1): self
-    {
-        if (is_int($parameter) && $n === 1) {
-            return $this->hasBillsWithArticle($parameter);
-        }
-
-        return $this->hasBillsWithArticle($n, $parameter);
     }
 
     /**

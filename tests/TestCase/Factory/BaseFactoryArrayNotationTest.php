@@ -168,7 +168,7 @@ class BaseFactoryArrayNotationTest extends TestCase
 
     public function testBaseFactoryArrayNotationOverwriteOneFieldWithSetFieldOnAssociation(): void
     {
-        $article = ArticleFactory::new()->withAuthors(
+        $article = ArticleFactory::new()->hasAuthors(
             AuthorFactory::new(2)
                     ->setField('json_field.subField1', 'newValue')->buildMany(),
         )->build();

@@ -6,12 +6,18 @@ namespace CakephpFixtureFactories\Test\TestCase\Generator;
 
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
+use CakephpFixtureFactories\Error\FixtureFactoryException;
 use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\Generator\CakeGeneratorFactory;
 use CakephpFixtureFactories\Generator\GeneratorInterface;
 use CakephpFixtureFactories\Test\Factory\AlternativeSeedArticleFactory;
 use CakephpFixtureFactories\Test\Factory\ArticleFactory;
+use InvalidArgumentException;
+use OverflowException;
+use TestApp\Model\Enum\EmptyTestStatus;
+use TestApp\Model\Enum\SingleCaseStatus;
 use TestApp\Model\Enum\TestStatus;
+use TestApp\Model\Enum\UnitTestStatus;
 
 class GeneratorAdapterTest extends TestCase
 {
@@ -633,5 +639,70 @@ class GeneratorAdapterTest extends TestCase
         }
 
         $this->assertSame($sequence1, $sequence2, 'Seeded optional() should produce identical draw sequences');
+    }
+
+    public function testUnknownGeneratorTypeThrows(): void
+    {
+        $this->expectException(FixtureFactoryException::class);
+        $this->expectExceptionMessage('Unknown generator type `unknown`');
+
+        CakeGeneratorFactory::create(null, 'unknown');
+    }
+
+    public function testMissingGeneratorAdapterClassThrows(): void
+    {
+        CakeGeneratorFactory::registerAdapter('missing_class', 'Nope\\MissingGeneratorAdapter');
+
+        $this->expectException(FixtureFactoryException::class);
+        $this->expectExceptionMessage('Generator adapter class `Nope\\MissingGeneratorAdapter` not found');
+
+        CakeGeneratorFactory::create(null, 'missing_class');
+    }
+
+    public function testDummyUniqueBooleanExhaustionThrowsOverflow(): void
+    {
+        Configure::write('FixtureFactories.generatorType', 'dummy');
+        CakeGeneratorFactory::clearInstances();
+
+        $generator = CakeGeneratorFactory::create()->unique();
+        $generator->boolean();
+        $generator->boolean();
+
+        $this->expectException(OverflowException::class);
+        $generator->boolean();
+    }
+
+    public function testFakerUniqueEnumRejectsNonEnumClass(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid enum class');
+
+        CakeGeneratorFactory::create()->unique()->enumValue('not-an-enum');
+    }
+
+    public function testFakerUniqueEnumValueRejectsNonBackedEnum(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Only backed enums are supported');
+
+        CakeGeneratorFactory::create()->unique()->enumValue(UnitTestStatus::class);
+    }
+
+    public function testFakerUniqueEnumRejectsEmptyEnum(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Enum has no cases');
+
+        CakeGeneratorFactory::create()->unique()->enumCase(EmptyTestStatus::class);
+    }
+
+    public function testFakerUniqueEnumExhaustionThrowsOverflow(): void
+    {
+        $generator = CakeGeneratorFactory::create()->unique();
+        $value = $generator->enumValue(SingleCaseStatus::class);
+        $this->assertSame('single', $value);
+
+        $this->expectException(OverflowException::class);
+        $generator->enumValue(SingleCaseStatus::class);
     }
 }

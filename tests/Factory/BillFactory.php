@@ -51,18 +51,8 @@ class BillFactory extends BaseFactory
         return $this->for(ArticleFactory::new($parameter));
     }
 
-    public function withArticle(mixed $parameter = null): self
-    {
-        return $this->forArticle($parameter);
-    }
-
     public function forCustomer(mixed $parameter = null): self
     {
         return $this->for(CustomerFactory::new($parameter));
-    }
-
-    public function withCustomer(mixed $parameter = null): self
-    {
-        return $this->forCustomer($parameter);
     }
 }

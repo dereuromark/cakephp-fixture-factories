@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace CakephpFixtureFactories\Test\TestCase\TestSuite;
 
 use Cake\Core\Configure;
+use Cake\Database\Connection;
+use Cake\ORM\Table;
 use Cake\TestSuite\TestCase;
+use CakephpFixtureFactories\Error\PersistenceException;
 use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\Generator\FakerAdapter;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
@@ -13,7 +16,7 @@ use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpFixtureFactories\TestSuite\FactoryTableTracker;
 use CakephpFixtureFactories\TestSuite\FactoryTransactionStrategy;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
-use ReflectionProperty;
+use RuntimeException;
 
 /**
  * Test that the FactoryTransactionStrategy properly manages transactions
@@ -220,33 +223,28 @@ class FactoryTransactionStrategyTest extends TestCase
         $tracker = FactoryTableTracker::getInstance();
         $tracker->clear();
 
-        $cityTable = CityFactory::new()->getTable();
+        $firstConnection = $this->createConfiguredMock(Connection::class, [
+            'configName' => 'test',
+        ]);
+        $secondConnection = $this->createConfiguredMock(Connection::class, [
+            'configName' => 'second_conn',
+        ]);
+        $firstTable = $this->createConfiguredMock(Table::class, [
+            'getTable' => 'cities',
+            'getConnection' => $firstConnection,
+        ]);
+        $secondTable = $this->createConfiguredMock(Table::class, [
+            'getTable' => 'cities',
+            'getConnection' => $secondConnection,
+        ]);
 
-        // Reuse the real `cities` table object but pretend it's on a second
-        // connection by aliasing — we simulate this directly via a stub table
-        // with the same SQL name on a different connection config.
-        $defaultConnection = $cityTable->getConnection()->configName();
-
-        // Simulate a "second" tracking call using a different connection
-        // name without touching real connections.
-        $reflectedStorage = new ReflectionProperty($tracker, 'tablesByConnection');
-
-        // First record: real save (connection = default).
-        CityFactory::new()->save();
-        $afterFirst = $reflectedStorage->getValue($tracker);
-        $this->assertArrayHasKey('cities', $afterFirst[$defaultConnection] ?? []);
-
-        // Second record: inject a synthetic second connection slot manually,
-        // mirroring how a multi-tenant setup with the same table name on a
-        // different connection would land.
-        $existing = $reflectedStorage->getValue($tracker);
-        $existing['second_conn']['cities'] = true;
-        $reflectedStorage->setValue($tracker, $existing);
+        $tracker->trackTable($firstTable);
+        $tracker->trackTable($secondTable);
 
         $byConn = $tracker->getTablesByConnection();
-        $this->assertArrayHasKey($defaultConnection, $byConn);
+        $this->assertArrayHasKey('test', $byConn);
         $this->assertArrayHasKey('second_conn', $byConn);
-        $this->assertContains('cities', $byConn[$defaultConnection]);
+        $this->assertContains('cities', $byConn['test']);
         $this->assertContains('cities', $byConn['second_conn']);
         // Flat dedupe view returns one row, but the nested view sees both.
         $this->assertCount(1, $tracker->getTableNames());
@@ -320,6 +318,26 @@ class FactoryTransactionStrategyTest extends TestCase
             );
         } finally {
             $strategy->teardownTest();
+        }
+    }
+
+    public function testEnsureTransactionRethrowsPersistenceException(): void
+    {
+        $connection = $this->createMock(Connection::class);
+        $connection->method('configName')->willReturn('failing');
+        $connection->method('inTransaction')->willReturn(false);
+        $connection->expects($this->once())->method('enableSavePoints');
+        $connection->expects($this->once())
+            ->method('begin')
+            ->willThrowException(new RuntimeException('no transaction'));
+
+        $strategy = new FactoryTransactionStrategy();
+
+        try {
+            $strategy->ensureTransaction($connection);
+            $this->fail('Expected PersistenceException to be thrown.');
+        } catch (PersistenceException $exception) {
+            $this->assertSame('no transaction', $exception->getPrevious()?->getMessage());
         }
     }
 }

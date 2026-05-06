@@ -90,7 +90,7 @@ class FactoryTableRegistryTest extends TestCase
     public function testDoNotTouchTheRegularTableRegistry(): void
     {
         TableRegistry::getTableLocator()->clear();
-        CityFactory::new()->withCountries()->save();
+        CityFactory::new()->forCountries()->save();
 
         $this->assertFalse(TableRegistry::getTableLocator()->exists('Cities'));
         $this->assertFalse(TableRegistry::getTableLocator()->exists('Countries'));

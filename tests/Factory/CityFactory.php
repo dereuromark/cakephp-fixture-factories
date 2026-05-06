@@ -61,9 +61,4 @@ class CityFactory extends BaseFactory
     {
         return $this->for(CountryFactory::new($parameter));
     }
-
-    public function withCountries(mixed $parameter = null): self
-    {
-        return $this->forCountries($parameter);
-    }
 }

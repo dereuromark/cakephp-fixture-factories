@@ -64,23 +64,9 @@ class AuthorFactory extends BaseFactory
         return $this->has(ArticleFactory::new($parameter)->count($n)->without('Authors'));
     }
 
-    public function withArticles(mixed $parameter = null, int $n = 1): self
-    {
-        if (is_int($parameter) && $n === 1) {
-            return $this->hasArticles($parameter);
-        }
-
-        return $this->hasArticles($n, $parameter);
-    }
-
     public function forAddress(mixed $parameter = null): self
     {
         return $this->with('Address', AddressFactory::new($parameter));
-    }
-
-    public function withAddress(mixed $parameter = null): self
-    {
-        return $this->forAddress($parameter);
     }
 
     public function fromCountry(string $name): self

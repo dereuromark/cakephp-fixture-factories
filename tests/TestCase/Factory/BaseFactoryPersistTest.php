@@ -61,6 +61,22 @@ class BaseFactoryPersistTest extends TestCase
         $factory->save();
     }
 
+    public function testBuildRejectsCountBasedMultiEntityFactory(): void
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('build() expected to build exactly 1 entity, but 2 were produced');
+
+        CountryFactory::new()->count(2)->build();
+    }
+
+    public function testSaveRejectsCountBasedMultiEntityFactory(): void
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('save() expected to persist exactly 1 entity, but 2 were produced');
+
+        CountryFactory::new()->count(2)->save();
+    }
+
     public function testSaveManyReturnsArrayForMultiEntityFactory(): void
     {
         $countries = CountryFactory::new([

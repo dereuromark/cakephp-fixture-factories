@@ -74,8 +74,12 @@ class AssociationBuilderTest extends TestCase
     {
         $AssociationBuilder = new AssociationBuilder(AuthorFactory::new());
 
-        $this->expectException(AssociationBuilderException::class);
-        $AssociationBuilder->getAssociation('Address.Country');
+        try {
+            $AssociationBuilder->getAssociation('Address.Country');
+            $this->fail('Expected AssociationBuilderException to be thrown.');
+        } catch (AssociationBuilderException $exception) {
+            $this->assertNotNull($exception->getPrevious());
+        }
     }
 
     public function testGetFactoryFromTableName(): void
@@ -96,8 +100,12 @@ class AssociationBuilderTest extends TestCase
     {
         $AssociationBuilder = new AssociationBuilder(AuthorFactory::new());
 
-        $this->expectException(AssociationBuilderException::class);
-        $AssociationBuilder->getFactoryFromTableName('Address.UnknownAssociation');
+        try {
+            $AssociationBuilder->getFactoryFromTableName('Address.UnknownAssociation');
+            $this->fail('Expected AssociationBuilderException to be thrown.');
+        } catch (AssociationBuilderException $exception) {
+            $this->assertNotNull($exception->getPrevious());
+        }
     }
 
     public function testGetAssociatedFactoryWithNoDepth(): void
@@ -179,6 +187,20 @@ class AssociationBuilderTest extends TestCase
         $AssociationBuilder->getTimeBetweenBrackets('Authors[1][2]');
     }
 
+    public function testGetTimeBetweenBracketsWithZeroThrows(): void
+    {
+        $AssociationBuilder = new AssociationBuilder(AuthorFactory::new());
+        $this->expectException(AssociationBuilderException::class);
+        $AssociationBuilder->getTimeBetweenBrackets('Authors[0]');
+    }
+
+    public function testGetTimeBetweenBracketsWithNonNumericThrows(): void
+    {
+        $AssociationBuilder = new AssociationBuilder(AuthorFactory::new());
+        $this->expectException(AssociationBuilderException::class);
+        $AssociationBuilder->getTimeBetweenBrackets('Authors[abc]');
+    }
+
     public function testGetAssociatedFactory(): void
     {
         $AssociationBuilder = new AssociationBuilder(CityFactory::new());
@@ -194,7 +216,7 @@ class AssociationBuilderTest extends TestCase
     {
         $AddressFactory = AddressFactory::new()->with(
             'City',
-            CityFactory::new()->withCountries(),
+            CityFactory::new()->forCountries(),
         );
 
         $expected = [
@@ -401,7 +423,7 @@ class AssociationBuilderTest extends TestCase
         $cityName = 'Foo';
         $CountryFactory = CountryFactory::new()->with(
             'Cities',
-            CityFactory::new(['name' => $cityName])->withCountries(),
+            CityFactory::new(['name' => $cityName])->forCountries(),
         );
 
         // Countries is removed from Cities to prevent circular reference

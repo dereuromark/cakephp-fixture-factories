@@ -208,7 +208,7 @@ abstract class BaseFactory
      *
      * @return static
      */
-    public static function new(mixed $makeParameter = [], int $times = 1): self
+    public static function new(mixed $makeParameter = [], int $times = 1): static
     {
         if (is_int($makeParameter) || is_float($makeParameter)) {
             $factory = self::makeFromNonCallable();
@@ -233,9 +233,7 @@ abstract class BaseFactory
             ));
         }
 
-        $factory->setUp($factory, $times);
-
-        return $factory;
+        return $factory->setUp($times);
     }
 
     /**
@@ -245,7 +243,7 @@ abstract class BaseFactory
      *
      * @return static
      */
-    public static function from(EntityInterface $entity): self
+    public static function from(EntityInterface $entity): static
     {
         return static::new($entity);
     }
@@ -254,32 +252,22 @@ abstract class BaseFactory
      * Collect the number of entities to be created
      * Apply the default template in the factory
      *
-     * @param \CakephpFixtureFactories\Factory\BaseFactory<TEntity> $factory Factory
      * @param int $times Number of entities created
      *
-     * @return void
+     * @return static
      */
-    protected function setUp(BaseFactory $factory, int $times): void
+    protected function setUp(int $times): static
     {
-        $factory->initialize();
-        $factory = $factory->configure();
+        $this->initialize();
+        $factory = $this->configure();
         $factory->times = $times;
-        $factory->setDefaultData(fn (GeneratorInterface $generator): array => $factory->definition($generator));
+        $definitionFactory = $factory;
+        $factory = $factory->setDefaultData(
+            fn (GeneratorInterface $generator): array => $definitionFactory->definition($generator),
+        );
         $factory->getDataCompiler()->collectAssociationsFromDefaultTemplate();
-        $this->times = $factory->times;
-        $this->keepDirty = $factory->keepDirty;
-        $this->dataCompiler = $factory->dataCompiler;
-        $this->associationBuilder = $factory->associationBuilder;
-        $this->eventCompiler = $factory->eventCompiler;
-        $this->marshallerOptions = $factory->marshallerOptions;
-        $this->saveOptions = $factory->saveOptions;
-        $this->uniqueProperties = $factory->uniqueProperties;
-        $this->skippedSetters = $factory->skippedSetters;
-        $this->instanceGenerator = $factory->instanceGenerator;
-        $this->afterBuildCallbacks = $factory->afterBuildCallbacks;
-        $this->afterSaveCallbacks = $factory->afterSaveCallbacks;
-        $this->dataCompiler->setFactory($this);
-        $this->associationBuilder->setFactory($this);
+
+        return $factory;
     }
 
     /**
@@ -308,7 +296,7 @@ abstract class BaseFactory
      *
      * @return static
      */
-    private static function makeFromNonCallable(EntityInterface|array|string $data = []): self
+    private static function makeFromNonCallable(EntityInterface|array|string $data = []): static
     {
         $factory = new static();
         $factory->getDataCompiler()->collectFromInstantiation($data);
@@ -321,7 +309,7 @@ abstract class BaseFactory
      *
      * @return static
      */
-    private static function makeFromCallable(callable $fn): self
+    private static function makeFromCallable(callable $fn): static
     {
         $factory = new static();
         $factory->getDataCompiler()->collectArrayFromCallable($fn);
@@ -556,13 +544,13 @@ abstract class BaseFactory
      * `new($entity)` or `from($entity)` — i.e. exactly one entity will be
      * produced. For multi-entity factories use `saveMany()` instead.
      *
-     * @param \Cake\Datasource\EntityInterface|array<string, mixed> $data Last-mile override data
+     * @param array<string, mixed> $data Last-mile override data
      *
      * @throws \RuntimeException if the factory is configured to produce more than one entity.
      *
      * @return TEntity
      */
-    public function save(array|EntityInterface $data = []): EntityInterface
+    public function save(array $data = []): EntityInterface
     {
         $factory = $data ? $this->state($data) : $this;
         $entities = $factory->doPersist();
@@ -586,11 +574,11 @@ abstract class BaseFactory
      * array, so it is the right choice when callers iterate or assert on
      * counts regardless of how the factory was configured.
      *
-     * @param \Cake\Datasource\EntityInterface|array<string, mixed> $data Last-mile override data
+     * @param array<string, mixed> $data Last-mile override data
      *
      * @return array<TEntity>
      */
-    public function saveMany(array|EntityInterface $data = []): array
+    public function saveMany(array $data = []): array
     {
         $factory = $data ? $this->state($data) : $this;
 
@@ -1082,9 +1070,10 @@ abstract class BaseFactory
      */
     protected function setDefaultData(callable $fn): static
     {
-        $this->getDataCompiler()->collectFromDefaultTemplate($fn);
+        $factory = clone $this;
+        $factory->getDataCompiler()->collectFromDefaultTemplate($fn);
 
-        return $this;
+        return $factory;
     }
 
     /**
