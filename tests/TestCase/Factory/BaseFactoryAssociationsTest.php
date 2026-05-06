@@ -21,6 +21,7 @@ use Cake\ORM\Query\SelectQuery;
 use Cake\TestSuite\TestCase;
 use Cake\Utility\Hash;
 use CakephpFixtureFactories\Error\AssociationBuilderException;
+use CakephpFixtureFactories\Error\FixtureFactoryException;
 use CakephpFixtureFactories\ORM\FactoryTableRegistry;
 use CakephpFixtureFactories\Test\Factory\AddressFactory;
 use CakephpFixtureFactories\Test\Factory\ArticleFactory;
@@ -348,20 +349,17 @@ class BaseFactoryAssociationsTest extends TestCase
         $this->assertSame(1, CountryFactory::query()->count());
     }
 
-    public function testSaveMultiplesToOneAssociationShouldSaveOnlyOne(): void
+    public function testSaveMultiplesToOneAssociationRejectsMultipleAssociatedEntities(): void
     {
-        $city = CityFactory::new()->with('Countries', [
+        $this->expectException(FixtureFactoryException::class);
+        $this->expectExceptionMessage('expects exactly 1 entity');
+
+        CityFactory::new()->with('Countries', [
             ['name' => 'Foo1'],
             ['name' => 'Foo2'],
             ['name' => 'Foo3'],
             ['name' => 'Foo4'],
         ])->save();
-
-        $city = CityFactory::table()->get($city->id, contain: ['Countries']);
-
-        $this->assertSame('Foo1', $city->country->name);
-        $this->assertSame(1, CountryFactory::query()->count());
-        $this->assertSame(1, CityFactory::query()->count());
     }
 
     public function testAssignWithoutToManyAssociation(): void

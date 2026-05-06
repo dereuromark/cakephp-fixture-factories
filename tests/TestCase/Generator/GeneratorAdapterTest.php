@@ -9,6 +9,7 @@ use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\Generator\CakeGeneratorFactory;
 use CakephpFixtureFactories\Generator\GeneratorInterface;
+use CakephpFixtureFactories\Test\Factory\AlternativeSeedArticleFactory;
 use CakephpFixtureFactories\Test\Factory\ArticleFactory;
 use TestApp\Model\Enum\TestStatus;
 
@@ -510,6 +511,19 @@ class GeneratorAdapterTest extends TestCase
         $gen2 = $factory2->getGenerator();
 
         $this->assertNotSame($gen1, $gen2);
+    }
+
+    public function testDifferentFactorySeedsDoNotPoisonSharedDefaultGeneratorCache(): void
+    {
+        Configure::write('FixtureFactories.generatorType', 'dummy');
+        CakeGeneratorFactory::clearInstances();
+        BaseFactory::resetDefaultGenerator();
+
+        $defaultGenerator = ArticleFactory::new()->getGenerator();
+        $alternativeGenerator = AlternativeSeedArticleFactory::new()->getGenerator();
+
+        $this->assertNotSame($defaultGenerator, $alternativeGenerator);
+        $this->assertNotSame($defaultGenerator->randomNumber(), $alternativeGenerator->randomNumber());
     }
 
     /**

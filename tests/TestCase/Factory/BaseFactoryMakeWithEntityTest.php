@@ -17,6 +17,7 @@ namespace CakephpFixtureFactories\Test\TestCase\Factory;
 
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
+use CakephpFixtureFactories\Error\FixtureFactoryException;
 use CakephpFixtureFactories\Test\Factory\AddressFactory;
 use CakephpFixtureFactories\Test\Factory\ArticleFactory;
 use CakephpFixtureFactories\Test\Factory\AuthorFactory;
@@ -87,11 +88,11 @@ class BaseFactoryMakeWithEntityTest extends TestCase
     {
         $n = 2;
         $addresses = AddressFactory::new($n)->saveMany();
-        $author = AuthorFactory::new()->with('Address', $addresses)->save();
-        $this->assertSame($addresses[0], $author->get('address'));
-        $this->assertSame($author->get('address_id'), $addresses[0]->get('id'));
-        $this->assertSame(1, AuthorFactory::query()->count());
-        $this->assertSame(2, AddressFactory::query()->count());
+
+        $this->expectException(FixtureFactoryException::class);
+        $this->expectExceptionMessage('expects exactly 1 entity');
+
+        AuthorFactory::new()->with('Address', $addresses)->save();
     }
 
     public function testWithToManyWithEntities(): void

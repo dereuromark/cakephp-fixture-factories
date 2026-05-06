@@ -455,7 +455,7 @@ class DataCompiler
             $data = $data($this->getFactory()->getGenerator());
         }
         $entityClassName = $this->getFactory()->getTable()->getEntityClass();
-        $entity = new $entityClassName([], ['source' => $this->getFactory()->getTable()->getRegistryAlias()]);
+        $entity = new $entityClassName([], ['source' => $this->getFactory()->getTable()->getAlias()]);
 
         return $this->patchEntity($entity, $data);
     }
@@ -587,6 +587,8 @@ class DataCompiler
      * @param string $associationName Association
      * @param array<int, \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>> $data Data to inject
      *
+     * @throws \CakephpFixtureFactories\Error\FixtureFactoryException
+     *
      * @return void
      */
     private function mergeWithToOne(EntityInterface $entity, string $associationName, array $data): void
@@ -596,6 +598,14 @@ class DataCompiler
         $factory = $data[$count - 1];
 
         $associatedEntities = $factory->buildMany();
+        if (count($associatedEntities) !== 1) {
+            throw new FixtureFactoryException(sprintf(
+                'Association `%s` expects exactly 1 entity, but `%s` produced %d. Use a singular factory for to-one associations.',
+                $associationName,
+                $factory::class,
+                count($associatedEntities),
+            ));
+        }
         $associatedEntity = $associatedEntities[0];
         if ($this->isInPersistMode()) {
             $associatedEntity->set(self::IS_ASSOCIATED, true);

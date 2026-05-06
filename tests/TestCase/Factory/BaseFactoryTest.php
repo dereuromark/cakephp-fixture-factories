@@ -19,6 +19,7 @@ use Cake\Datasource\EntityInterface;
 use Cake\ORM\TableRegistry;
 use Cake\TestSuite\TestCase;
 use Cake\Utility\Inflector;
+use CakephpFixtureFactories\Error\FixtureFactoryException;
 use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\Generator\GeneratorInterface;
 use CakephpFixtureFactories\Test\Factory\AddressFactory;
@@ -31,6 +32,7 @@ use CakephpFixtureFactories\Test\Factory\CustomerFactory;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
+use RuntimeException;
 use TestApp\Model\Entity\Address;
 use TestApp\Model\Entity\Article;
 use TestApp\Model\Entity\Author;
@@ -918,6 +920,18 @@ class BaseFactoryTest extends TestCase
         $this->assertTrue($article->authors[1]->isDirty('name'));
     }
 
+    public function testKeepDirtyFalseResetsPropagatedAssociationDirtyState(): void
+    {
+        $article = ArticleFactory::new()
+            ->keepDirty()
+            ->keepDirty(false)
+            ->build();
+
+        $this->assertFalse($article->isDirty('title'));
+        $this->assertFalse($article->authors[0]->isDirty('name'));
+        $this->assertFalse($article->authors[0]->address->isDirty('street'));
+    }
+
     public function testKeepDirtyPreservesMultipleFactoriesForTheSameToManyAssociation(): void
     {
         $article = ArticleFactory::new()
@@ -1084,5 +1098,32 @@ class BaseFactoryTest extends TestCase
             ->save();
 
         $this->assertCount(5, $article->authors);
+    }
+
+    public function testForThrowsWhenDirectionalBelongsToAssociationIsAmbiguous(): void
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Ambiguous belongsTo association');
+
+        AuthorFactory::new()->for(AddressFactory::new());
+    }
+
+    public function testHasThrowsWhenDirectionalToManyAssociationIsAmbiguous(): void
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Ambiguous has* association');
+
+        CountryFactory::new()->has(CityFactory::new());
+    }
+
+    public function testToOneAssociationRejectsFactoriesThatProduceMultipleEntities(): void
+    {
+        $this->expectException(FixtureFactoryException::class);
+        $this->expectExceptionMessage('expects exactly 1 entity');
+
+        AuthorFactory::new()->with('Address', AddressFactory::new([
+            ['street' => 'First'],
+            ['street' => 'Second'],
+        ]))->build();
     }
 }

@@ -47,9 +47,9 @@ class UniquenessJanitor
 
         // Remove associated fields and non-unique fields
         foreach ($entities as &$entity) {
-            $entity = $entity->setHidden([])->toArray();
+            $entity = (clone $entity)->setHidden([])->toArray();
             foreach ($entity as $k => $v) {
-                if (is_array($v) || !in_array($k, $factory->getUniqueProperties())) {
+                if (is_array($v) || !in_array($k, $factory->getUniqueProperties(), true)) {
                     unset($entity[$k]);
                 }
             }
@@ -84,18 +84,21 @@ class UniquenessJanitor
             return in_array($property, array_merge(
                 $factory->getUniqueProperties(),
                 (array)$factory->getTable()->getPrimaryKey(),
-            ));
+            ), true);
         };
 
         $indexesToRemove = [];
-        foreach ($entities as $k1 => &$v1) {
-            unset($entities[$k1]);
+        foreach ($entities as $k1 => $v1) {
             if (!$v1) {
                 continue;
             }
             $property = $getPropertyName($k1);
+            $entityIndex = $getIndex($k1);
             foreach ($entities as $k2 => $v2) {
-                if ($v1 == $v2 && $property === $getPropertyName($k2) && $propertyIsUnique($property)) {
+                if ($k1 === $k2 || $entityIndex >= $getIndex($k2)) {
+                    continue;
+                }
+                if ($v1 === $v2 && $property === $getPropertyName($k2) && $propertyIsUnique($property)) {
                     if ($isStrict) {
                         $factoryName = get_class($factory);
 

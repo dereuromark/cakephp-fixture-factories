@@ -50,7 +50,7 @@ class {{ factory }} extends CakephpBaseFactory
      */
     public function for{{ association }}($parameter = null): static
     {
-        return $this->for({{ associationData.className }}::new($parameter));
+        return $this->with('{{ association }}', {{ associationData.className }}::new($parameter));
     }
 {% endfor %}
 {% for association, associationData in oneToMany %}
@@ -63,7 +63,7 @@ class {{ factory }} extends CakephpBaseFactory
      */
     public function has{{ association }}(int $n = 1, $parameter = null): static
     {
-        return $this->has({{ associationData.className }}::new($parameter)->count($n));
+        return $this->with('{{ association }}', {{ associationData.className }}::new($parameter)->count($n));
     }
 {% endfor %}
 {% for association, associationData in manyToMany %}
@@ -76,7 +76,7 @@ class {{ factory }} extends CakephpBaseFactory
      */
     public function has{{ association }}(int $n = 1, $parameter = null): static
     {
-        return $this->has({{ associationData.className }}::new($parameter)->count($n)->without('{{ modelName }}'));
+        return $this->with('{{ association }}', {{ associationData.className }}::new($parameter)->count($n)->without('{{ modelName }}'));
     }
 {% endfor %}
 }

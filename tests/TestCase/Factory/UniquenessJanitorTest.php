@@ -117,4 +117,49 @@ class UniquenessJanitorTest extends TestCase
 
         $this->assertSame($expectOutput, $entities);
     }
+
+    public function testSanitizeEntityArrayDoesNotMutateHiddenFieldsOnOriginalEntity(): void
+    {
+        $factoryStub = $this->getMockBuilder(BaseFactory::class)->disableOriginalConstructor()->getMock();
+        $factoryStub->method('getUniqueProperties')->willReturn(['property_1']);
+
+        $entity = new Entity(['property_1' => 'foo', 'secret' => 'value']);
+        $entity->setHidden(['secret']);
+
+        UniquenessJanitor::sanitizeEntityArray($factoryStub, [$entity], false);
+
+        $this->assertSame(['secret'], $entity->getHidden());
+    }
+
+    public function testSanitizeEntityArrayUsesStrictComparisonForUniqueValues(): void
+    {
+        $factoryStub = $this->getMockBuilder(BaseFactory::class)->disableOriginalConstructor()->getMock();
+        $factoryStub->method('getUniqueProperties')->willReturn(['property_1']);
+
+        $entities = [
+            new Entity(['property_1' => '0']),
+            new Entity(['property_1' => '']),
+        ];
+
+        $result = UniquenessJanitor::sanitizeEntityArray($factoryStub, $entities, false);
+
+        $this->assertCount(2, $result);
+    }
+
+    public function testSanitizeEntityArrayRemovesAllLaterDuplicatesInNonStrictMode(): void
+    {
+        $factoryStub = $this->getMockBuilder(BaseFactory::class)->disableOriginalConstructor()->getMock();
+        $factoryStub->method('getUniqueProperties')->willReturn(['property_1']);
+
+        $entities = [
+            new Entity(['property_1' => 'foo']),
+            new Entity(['property_1' => 'foo']),
+            new Entity(['property_1' => 'foo']),
+        ];
+
+        $result = UniquenessJanitor::sanitizeEntityArray($factoryStub, $entities, false);
+
+        $this->assertCount(1, $result);
+        $this->assertSame('foo', $result[0]->get('property_1'));
+    }
 }

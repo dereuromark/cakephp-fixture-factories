@@ -21,7 +21,6 @@ use Cake\ORM\Association\BelongsToMany;
 use Cake\ORM\Association\HasMany;
 use Cake\ORM\Association\HasOne;
 use Cake\ORM\Table;
-use Cake\Utility\Inflector;
 use CakephpFixtureFactories\Error\AssociationBuilderException;
 use Exception;
 use Throwable;
@@ -127,8 +126,9 @@ class AssociationBuilder
      */
     public function removeAssociationForToOneFactory(string $associationName, BaseFactory $associatedFactory): BaseFactory
     {
-        if ($this->associationIsToMany($this->getAssociation($associationName))) {
-            $backAssociation = $this->findBackAssociation($associatedFactory->getTable());
+        $association = $this->getAssociation($associationName);
+        if ($this->associationIsToMany($association)) {
+            $backAssociation = $this->findBackAssociation($associatedFactory->getTable(), $association);
             if ($backAssociation !== null) {
                 return $associatedFactory->without($backAssociation->getName());
             }
@@ -156,35 +156,23 @@ class AssociationBuilder
      * Find a belongsTo association on the associated table that targets the current table.
      *
      * @param \Cake\ORM\Table $associatedTable The associated table
+     * @param \Cake\ORM\Association $forwardAssociation The forward association from the current table
      *
      * @return \Cake\ORM\Association|null
      */
-    private function findBackAssociation(Table $associatedTable): ?Association
+    private function findBackAssociation(Table $associatedTable, Association $forwardAssociation): ?Association
     {
-        $currentTableName = $this->getTable()->getRegistryAlias();
-
-        // First try the conventional singular name
-        $singularName = Inflector::singularize($currentTableName);
-        if ($associatedTable->hasAssociation($singularName)) {
-            $association = $associatedTable->getAssociation($singularName);
-            if ($association instanceof BelongsTo) {
-                return $association;
-            }
-        }
-
-        // Also try the plural name (for unconventional belongsTo naming)
-        if ($associatedTable->hasAssociation($currentTableName)) {
-            $association = $associatedTable->getAssociation($currentTableName);
-            if ($association instanceof BelongsTo) {
-                return $association;
-            }
-        }
-
-        // Search through all associations to find a belongsTo that targets this table
+        $currentTableName = $this->getTable()->getAlias();
+        $forwardForeignKey = (array)$forwardAssociation->getForeignKey();
         foreach ($associatedTable->associations() as $association) {
             if (
                 $association instanceof BelongsTo &&
-                $association->getTarget()->getRegistryAlias() === $currentTableName
+                (
+                    $association->getClassName() === $currentTableName ||
+                    $association->getTarget()->getAlias() === $currentTableName ||
+                    $association->getTarget()->getRegistryAlias() === $currentTableName
+                ) &&
+                (array)$association->getForeignKey() === $forwardForeignKey
             ) {
                 return $association;
             }
@@ -337,7 +325,7 @@ class AssociationBuilder
             $result[$name] = $associatedFactory->getMarshallerOptions();
         }
 
-        return array_merge_recursive($result, $this->manualAssociations);
+        return array_replace_recursive($result, $this->manualAssociations);
     }
 
     /**
@@ -388,6 +376,6 @@ class AssociationBuilder
      */
     public function addManualAssociations(array $associations): void
     {
-        $this->manualAssociations = array_merge_recursive($this->manualAssociations, $associations);
+        $this->manualAssociations = array_replace_recursive($this->manualAssociations, $associations);
     }
 }

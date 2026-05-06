@@ -75,7 +75,7 @@ class AuthorFactory extends BaseFactory
 
     public function forAddress(mixed $parameter = null): self
     {
-        return $this->for(AddressFactory::new($parameter));
+        return $this->with('Address', AddressFactory::new($parameter));
     }
 
     public function withAddress(mixed $parameter = null): self

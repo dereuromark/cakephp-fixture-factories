@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace CakephpFixtureFactories\Factory;
 
+use ArrayObject;
 use Cake\Core\Configure;
 use Cake\Datasource\EntityInterface;
 use Cake\Event\EventManagerInterface;
@@ -54,11 +55,18 @@ use function is_array;
 abstract class BaseFactory
 {
     /**
-     * Shared default generator used by all factory instances.
+     * Explicit global generator override shared by all factory instances.
      *
      * @var \CakephpFixtureFactories\Generator\GeneratorInterface|null
      */
     private static ?GeneratorInterface $defaultGenerator = null;
+
+    /**
+     * Lazily-created default generators keyed by factory class / locale / seed / configured type.
+     *
+     * @var array<string, \CakephpFixtureFactories\Generator\GeneratorInterface>
+     */
+    private static array $defaultGenerators = [];
 
     /**
      * Per-instance generator override.
@@ -335,13 +343,24 @@ abstract class BaseFactory
             return $this->instanceGenerator;
         }
 
-        if (self::$defaultGenerator === null) {
-            $locale = I18n::getLocale();
-            self::$defaultGenerator = CakeGeneratorFactory::create($locale);
-            self::$defaultGenerator->seed(static::getGeneratorSeed());
+        if (self::$defaultGenerator !== null) {
+            return self::$defaultGenerator;
         }
 
-        return self::$defaultGenerator;
+        $cacheKey = implode('|', [
+            static::class,
+            I18n::getLocale(),
+            (string)static::getGeneratorSeed(),
+            (string)Configure::read('FixtureFactories.generatorType', ''),
+        ]);
+        if (!isset(self::$defaultGenerators[$cacheKey])) {
+            $locale = I18n::getLocale();
+            $generator = clone CakeGeneratorFactory::create($locale);
+            $generator->seed(static::getGeneratorSeed());
+            self::$defaultGenerators[$cacheKey] = $generator;
+        }
+
+        return self::$defaultGenerators[$cacheKey];
     }
 
     /**
@@ -359,7 +378,7 @@ abstract class BaseFactory
     {
         $factory = clone $this;
         $locale = $locale ?? I18n::getLocale();
-        $generator = CakeGeneratorFactory::create($locale, $type);
+        $generator = clone CakeGeneratorFactory::create($locale, $type);
         $generator->seed(static::getGeneratorSeed());
 
         if (Configure::read('FixtureFactories.instanceLevelGenerator', false)) {
@@ -385,7 +404,7 @@ abstract class BaseFactory
     public static function setDefaultGenerator(string $type, ?string $locale = null): void
     {
         $locale = $locale ?? I18n::getLocale();
-        self::$defaultGenerator = CakeGeneratorFactory::create($locale, $type);
+        self::$defaultGenerator = clone CakeGeneratorFactory::create($locale, $type);
         self::$defaultGenerator->seed(static::getGeneratorSeed());
     }
 
@@ -400,6 +419,7 @@ abstract class BaseFactory
     public static function resetDefaultGenerator(): void
     {
         self::$defaultGenerator = null;
+        self::$defaultGenerators = [];
     }
 
     /**
@@ -620,6 +640,7 @@ abstract class BaseFactory
         }
 
         $this->finalizePersistedEntities($saved, $table);
+        $this->replayAssociatedAfterSaveEvents($saved, $this);
         $saved = $this->applyCallbacks($saved, $this->afterSaveCallbacks);
 
         return $saved;
@@ -652,11 +673,52 @@ abstract class BaseFactory
             return;
         }
 
-        $alias = $table->getRegistryAlias();
+        $alias = $table->getAlias();
         foreach ($entities as $entity) {
             $entity->clean();
             $entity->setNew(false);
             $entity->setSource($alias);
+        }
+    }
+
+    /**
+     * Replay child-factory Model.afterSave listeners for saved associated entities.
+     *
+     * @param array<\Cake\Datasource\EntityInterface> $entities
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory
+     *
+     * @return void
+     */
+    private function replayAssociatedAfterSaveEvents(array $entities, BaseFactory $factory): void
+    {
+        foreach ($factory->getAssociationBuilder()->getAssociations() as $associationName => $associationFactory) {
+            $property = $factory->getAssociationBuilder()->getAssociation($associationName)->getProperty();
+            $associatedEntities = [];
+            foreach ($entities as $entity) {
+                $value = $entity->get($property);
+                if ($value instanceof EntityInterface) {
+                    $associatedEntities[] = $value;
+
+                    continue;
+                }
+                if (!is_array($value)) {
+                    continue;
+                }
+                foreach ($value as $item) {
+                    if ($item instanceof EntityInterface) {
+                        $associatedEntities[] = $item;
+                    }
+                }
+            }
+            if ($associatedEntities === []) {
+                continue;
+            }
+
+            $options = new ArrayObject(['associated' => true, 'atomic' => false]);
+            foreach ($associatedEntities as $entity) {
+                $associationFactory->getTable()->dispatchEvent('Model.afterSave', compact('entity', 'options'));
+            }
+            $this->replayAssociatedAfterSaveEvents($associatedEntities, $associationFactory);
         }
     }
 
@@ -867,14 +929,12 @@ abstract class BaseFactory
     {
         $factory = clone $this;
         $factory->keepDirty = $keepDirty;
-        if ($keepDirty) {
-            $factory->getAssociationBuilder()->mapAssociations(
-                static fn (BaseFactory $associationFactory): BaseFactory => $associationFactory->keepDirty(),
-            );
-            $factory->getDataCompiler()->mapAssociationFactories(
-                static fn (BaseFactory $associationFactory): BaseFactory => $associationFactory->keepDirty(),
-            );
-        }
+        $factory->getAssociationBuilder()->mapAssociations(
+            static fn (BaseFactory $associationFactory): BaseFactory => $associationFactory->keepDirty($keepDirty),
+        );
+        $factory->getDataCompiler()->mapAssociationFactories(
+            static fn (BaseFactory $associationFactory): BaseFactory => $associationFactory->keepDirty($keepDirty),
+        );
 
         return $factory;
     }
@@ -1064,9 +1124,8 @@ abstract class BaseFactory
             $associationName,
             $associatedFactory,
         );
-        $isToOne = $factory->getAssociationBuilder()->associationIsToOne(
-            $factory->getAssociationBuilder()->getAssociation($associationName),
-        );
+        $association = $factory->getAssociationBuilder()->getAssociation($associationName);
+        $isToOne = $factory->getAssociationBuilder()->associationIsToOne($association);
         $factory->getDataCompiler()->collectAssociation($associationName, $associatedFactory, $isToOne);
 
         $factory->getAssociationBuilder()->addAssociation($associationName, $associatedFactory);
@@ -1191,6 +1250,7 @@ abstract class BaseFactory
     {
         $sourceTable = $this->getTable();
         $targetRegistryAlias = $factory->getRootTableRegistryName();
+        $matches = [];
         foreach ($sourceTable->associations() as $association) {
             $associationTargetsFactory = $association->getClassName() === $targetRegistryAlias
                 || $association->getTarget()->getRegistryAlias() === $targetRegistryAlias
@@ -1199,11 +1259,24 @@ abstract class BaseFactory
                 continue;
             }
             if ($belongsTo && $association instanceof BelongsTo) {
-                return $association->getName();
+                $matches[] = $association->getName();
             }
             if (!$belongsTo && !$association instanceof BelongsTo) {
-                return $association->getName();
+                $matches[] = $association->getName();
             }
+        }
+
+        if (count($matches) === 1) {
+            return $matches[0];
+        }
+        if ($matches !== []) {
+            throw new RuntimeException(sprintf(
+                'Ambiguous %s association from `%s` to `%s`: %s. Use with() to select the explicit association name.',
+                $belongsTo ? 'belongsTo' : 'has*',
+                $sourceTable->getRegistryAlias(),
+                $targetRegistryAlias,
+                implode(', ', $matches),
+            ));
         }
 
         throw new RuntimeException(sprintf(

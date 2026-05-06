@@ -321,8 +321,8 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
         unset($article['id']);
 
         $bill = BillFactory::new(['amount' => 100])
-            ->with('Customer', CustomerFactory::new($customer->toArray()))
-            ->with('Article', ArticleFactory::new($article->toArray()))
+            ->with('Customer', CustomerFactory::from($customer))
+            ->with('Article', ArticleFactory::from($article))
             ->save();
 
         $this->assertInstanceOf(Article::class, $article);

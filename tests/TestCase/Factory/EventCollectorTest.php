@@ -386,4 +386,21 @@ class EventCollectorTest extends TestCase
         $this->assertNotSame($originalEventManager, $factory->getTable()->getEventManager());
         $this->assertSame($customEventManager, $factory->getTable()->getEventManager());
     }
+
+    public function testDifferentFactoriesDoNotShareScopedTableWhenEventManagersDiffer(): void
+    {
+        FactoryTableRegistry::getTableLocator()->clear();
+
+        $firstEventManager = new EventManager();
+        $secondEventManager = new EventManager();
+
+        $firstFactory = ArticleFactory::new()->setEventManager($firstEventManager);
+        $secondFactory = ArticleFactory::new()->setEventManager($secondEventManager);
+
+        $this->assertNotSame($firstFactory->getTable(), $secondFactory->getTable());
+        $this->assertSame($firstEventManager, $firstFactory->getTable()->getEventManager());
+        $this->assertSame($secondEventManager, $secondFactory->getTable()->getEventManager());
+        $this->assertSame('Articles', $firstFactory->getTable()->getAlias());
+        $this->assertSame('Articles', $secondFactory->getTable()->getAlias());
+    }
 }

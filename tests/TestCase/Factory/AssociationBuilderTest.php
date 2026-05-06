@@ -20,6 +20,7 @@ use Cake\ORM\Association;
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Error\AssociationBuilderException;
 use CakephpFixtureFactories\Factory\AssociationBuilder;
+use CakephpFixtureFactories\ORM\FactoryTableRegistry;
 use CakephpFixtureFactories\Test\Factory\AddressFactory;
 use CakephpFixtureFactories\Test\Factory\ArticleFactory;
 use CakephpFixtureFactories\Test\Factory\AuthorFactory;
@@ -27,6 +28,7 @@ use CakephpFixtureFactories\Test\Factory\BillFactory;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use ReflectionMethod;
 
 class AssociationBuilderTest extends TestCase
 {
@@ -40,6 +42,18 @@ class AssociationBuilderTest extends TestCase
     public static function tearDownAfterClass(): void
     {
         Configure::delete('FixtureFactories.testFixtureNamespace');
+    }
+
+    public function setUp(): void
+    {
+        parent::setUp();
+        FactoryTableRegistry::getTableLocator()->clear();
+    }
+
+    public function tearDown(): void
+    {
+        FactoryTableRegistry::getTableLocator()->clear();
+        parent::tearDown();
     }
 
     public function testCheckAssociationWithCorrectAssociation(): void
@@ -332,6 +346,49 @@ class AssociationBuilderTest extends TestCase
                 ],
             ],
         ], $ArticleFactory->getAssociatedFactories());
+    }
+
+    public function testPrepareAssociationFactoryMatchesBackAssociationByForeignKey(): void
+    {
+        $addressFactory = AddressFactory::new();
+        if (!$addressFactory->getTable()->hasAssociation('BusinessAuthors')) {
+            $addressFactory->getTable()->hasMany('BusinessAuthors', [
+                'className' => 'Authors',
+                'foreignKey' => 'business_address_id',
+            ]);
+        }
+        $authorFactory = AuthorFactory::new();
+        $authorTable = $authorFactory->getTable();
+        $authorTable->associations()->remove('BusinessAddress');
+        $authorTable->belongsTo('BusinessAddress', [
+            'className' => 'Addresses',
+            'foreignKey' => 'business_address_id',
+        ]);
+
+        $AssociationBuilder = new AssociationBuilder($addressFactory);
+        $method = new ReflectionMethod(AssociationBuilder::class, 'findBackAssociation');
+        $method->setAccessible(true);
+
+        $backAssociation = $method->invoke(
+            $AssociationBuilder,
+            $authorTable,
+            $addressFactory->getTable()->getAssociation('BusinessAuthors'),
+        );
+
+        $this->assertNotNull($backAssociation);
+        $this->assertSame('BusinessAddress', $backAssociation->getName());
+    }
+
+    public function testManualAssociationsReplaceMarshallerScalarsInsteadOfMergingIntoArrays(): void
+    {
+        $factory = AddressFactory::new()
+            ->with('City')
+            ->mergeAssociated(['City' => ['validate' => true]]);
+
+        $associated = $factory->getAssociatedFactories();
+
+        $this->assertTrue($associated['City']['validate']);
+        $this->assertIsBool($associated['City']['validate']);
     }
 
     /**
