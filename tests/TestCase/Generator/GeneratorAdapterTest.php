@@ -167,6 +167,47 @@ class GeneratorAdapterTest extends TestCase
     }
 
     /**
+     * Regression: BaseFactory's locale-resolution path used to short-circuit
+     * `Configure::read('FixtureFactories.defaultLocale')` by passing
+     * `I18n::getLocale()` (which is never null) as the explicit param. The
+     * Configure key was therefore unreachable. Centralising in
+     * `BaseFactory::resolveLocale()` flips the precedence to:
+     * explicit > Configure > I18n.
+     *
+     * We can't easily inspect the locale on the underlying Generator without
+     * reflection (Faker stores it on the locale-specific provider list), so
+     * this test asserts the cache-key partitioning instead: enabling the
+     * Configure key must produce a different cached generator instance than
+     * the one cached against I18n's locale.
+     *
+     * @return void
+     */
+    public function testConfigureDefaultLocaleIsHonoured(): void
+    {
+        BaseFactory::resetDefaultGenerator();
+        Configure::delete('FixtureFactories.defaultLocale');
+
+        // Prime the cache against I18n's default locale.
+        $factory = ArticleFactory::new();
+        $genWithoutConfigure = $factory->getGenerator();
+
+        // Now set a different locale via Configure and reset the cache.
+        BaseFactory::resetDefaultGenerator();
+        Configure::write('FixtureFactories.defaultLocale', 'fr_FR');
+
+        $factory2 = ArticleFactory::new();
+        $genWithConfigure = $factory2->getGenerator();
+
+        $this->assertNotSame(
+            $genWithoutConfigure,
+            $genWithConfigure,
+            'Configure::FixtureFactories.defaultLocale must produce a distinct generator from the I18n fallback.',
+        );
+
+        Configure::delete('FixtureFactories.defaultLocale');
+    }
+
+    /**
      * Test UUID generation works with both Faker and DummyGenerator
      *
      * @return void

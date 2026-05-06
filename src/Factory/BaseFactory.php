@@ -335,14 +335,14 @@ abstract class BaseFactory
             return self::$defaultGenerator;
         }
 
+        $locale = self::resolveLocale();
         $cacheKey = implode('|', [
             static::class,
-            I18n::getLocale(),
+            $locale,
             (string)static::getGeneratorSeed(),
             (string)Configure::read('FixtureFactories.generatorType', ''),
         ]);
         if (!isset(self::$defaultGenerators[$cacheKey])) {
-            $locale = I18n::getLocale();
             $generator = clone CakeGeneratorFactory::create($locale);
             $generator->seed(static::getGeneratorSeed());
             self::$defaultGenerators[$cacheKey] = $generator;
@@ -352,10 +352,40 @@ abstract class BaseFactory
     }
 
     /**
+     * Resolve the locale used by all generator-creation paths.
+     *
+     * Precedence:
+     * 1. explicit `$override` (e.g. from `setGenerator($type, $locale)`),
+     * 2. `Configure::read('FixtureFactories.defaultLocale')`,
+     * 3. `I18n::getLocale()` as the final fallback.
+     *
+     * Centralising this prevents the `defaultLocale` Configure key from being
+     * silently bypassed by callers that pre-default to `I18n::getLocale()`.
+     *
+     * @param string|null $override Caller-supplied locale, if any.
+     */
+    private static function resolveLocale(?string $override = null): string
+    {
+        if ($override !== null) {
+            return $override;
+        }
+        $configured = Configure::read('FixtureFactories.defaultLocale');
+        if (is_string($configured) && $configured !== '') {
+            return $configured;
+        }
+
+        return I18n::getLocale();
+    }
+
+    /**
      * Set the generator type to use.
      *
-     * When `FixtureFactories.instanceLevelGenerator` is enabled, this only affects
-     * the current factory instance. Otherwise it sets the global default for all factories.
+     * When `FixtureFactories.instanceLevelGenerator` is enabled, this clones the
+     * factory and scopes the override to the returned instance. Otherwise it
+     * mutates the process-wide default generator and returns `$this` — every
+     * other factory in the process is also affected. The fluent return value is
+     * preserved in both modes for ergonomics, but is only meaningful (i.e.
+     * scoped) in instance mode.
      *
      * @param string $type The generator type ('faker' or 'dummy')
      * @param string|null $locale Optional locale override
@@ -364,18 +394,20 @@ abstract class BaseFactory
      */
     public function setGenerator(string $type, ?string $locale = null): static
     {
-        $factory = clone $this;
-        $locale = $locale ?? I18n::getLocale();
-        $generator = clone CakeGeneratorFactory::create($locale, $type);
+        $resolvedLocale = self::resolveLocale($locale);
+        $generator = clone CakeGeneratorFactory::create($resolvedLocale, $type);
         $generator->seed(static::getGeneratorSeed());
 
         if (Configure::read('FixtureFactories.instanceLevelGenerator', false)) {
+            $factory = clone $this;
             $factory->instanceGenerator = $generator;
-        } else {
-            self::$defaultGenerator = $generator;
+
+            return $factory;
         }
 
-        return $factory;
+        self::$defaultGenerator = $generator;
+
+        return $this;
     }
 
     /**
@@ -384,6 +416,11 @@ abstract class BaseFactory
      * Unlike `setGenerator()`, this always sets the global default regardless of
      * the `instanceLevelGenerator` configuration.
      *
+     * Note: the static slot is shared across every `BaseFactory` subclass in the
+     * process. Calls from different subclasses race for it — the last call wins
+     * for everyone. Use the `instanceLevelGenerator` flag with `setGenerator()`
+     * if you need per-factory generators.
+     *
      * @param string $type The generator type ('faker' or 'dummy')
      * @param string|null $locale Optional locale override
      *
@@ -391,8 +428,8 @@ abstract class BaseFactory
      */
     public static function setDefaultGenerator(string $type, ?string $locale = null): void
     {
-        $locale = $locale ?? I18n::getLocale();
-        self::$defaultGenerator = clone CakeGeneratorFactory::create($locale, $type);
+        $resolvedLocale = self::resolveLocale($locale);
+        self::$defaultGenerator = clone CakeGeneratorFactory::create($resolvedLocale, $type);
         self::$defaultGenerator->seed(static::getGeneratorSeed());
     }
 
@@ -670,7 +707,17 @@ abstract class BaseFactory
     }
 
     /**
-     * Replay child-factory Model.afterSave listeners for saved associated entities.
+     * Replay child-factory Model.afterSave listeners and afterSave callbacks
+     * for saved associated entities.
+     *
+     * Cake's cascading save persists child entities as part of the parent's
+     * save, but it does not invoke any user-registered `afterSave()` callbacks
+     * on child factories (those callbacks live on the child `BaseFactory`
+     * instance, never reached by the parent's persist flow). We re-fire both
+     * the Cake event (so behaviors run) and the child factory's own
+     * `afterSaveCallbacks` here so a chain like
+     * `ArticleFactory::new()->with('Author', AuthorFactory::new()->afterSave(...))`
+     * behaves the same regardless of nesting depth.
      *
      * @param array<\Cake\Datasource\EntityInterface> $entities
      * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory
@@ -705,6 +752,9 @@ abstract class BaseFactory
             $options = new ArrayObject(['associated' => true, 'atomic' => false]);
             foreach ($associatedEntities as $entity) {
                 $associationFactory->getTable()->dispatchEvent('Model.afterSave', compact('entity', 'options'));
+            }
+            if ($associationFactory->afterSaveCallbacks !== []) {
+                $associationFactory->applyCallbacks($associatedEntities, $associationFactory->afterSaveCallbacks);
             }
             $this->replayAssociatedAfterSaveEvents($associatedEntities, $associationFactory);
         }
@@ -742,7 +792,13 @@ abstract class BaseFactory
     }
 
     /**
-     * Assigns the values of $data to the $keys of the entities generated
+     * Overlay the supplied $data onto the entities the factory will produce.
+     *
+     * Note: when an `EntityInterface` is passed, only its field values are
+     * extracted via `toArray()` — the entity's identity (class, source,
+     * dirty/new flags, internal `_fields`/`_original` state) is not preserved.
+     * Pass an entity to `::new($entity)` or `::from($entity)` instead if you
+     * need the actual entity to flow through the factory.
      *
      * @param callable(\CakephpFixtureFactories\Factory\BaseFactory<TEntity>, \CakephpFixtureFactories\Generator\GeneratorInterface): array<string, mixed>|\Cake\Datasource\EntityInterface|array<string, mixed> $data Data to inject
      *
@@ -769,6 +825,15 @@ abstract class BaseFactory
      *
      * Sequence data is applied after `definition()` and injected instantiation
      * data, but before a later plain `state()` override.
+     *
+     * The state at index `$i % count($states)` is applied to the i-th entity,
+     * so:
+     * - if `times > count($states)` the sequence wraps around (cycles),
+     * - if `times < count($states)` the trailing states are simply not used,
+     * - if `times === 1` only the first state ever applies.
+     *
+     * Calling `sequence()` again replaces the previously stored states; it is
+     * not additive.
      *
      * @param \Cake\Datasource\EntityInterface|callable|array<string, mixed> ...$states Sequence states
      *

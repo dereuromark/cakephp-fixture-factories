@@ -290,6 +290,32 @@ class BaseFactoryTest extends TestCase
         $this->assertNotSame('After save', ArticleFactory::table()->get($article->id)->title);
     }
 
+    /**
+     * Regression: a child factory's `afterSave` callbacks must fire when the
+     * child is persisted as part of the parent's cascading save. Cake itself
+     * only dispatches the `Model.afterSave` event on the child table — the
+     * child factory's own callback array (registered via `->afterSave(...)`)
+     * is invoked only by `replayAssociatedAfterSaveEvents`, which previously
+     * forgot to apply it.
+     */
+    public function testAfterSaveOnChildFactoryFiresWhenSavedThroughParent(): void
+    {
+        $captured = [];
+        $authorFactory = AuthorFactory::new(['name' => 'child author'])
+            ->afterSave(static function (Author $author) use (&$captured): void {
+                $captured[] = $author->name;
+                $author->set('name', 'mutated by child afterSave');
+            });
+
+        $article = ArticleFactory::new(['title' => 'parent'])
+            ->with('Authors', $authorFactory)
+            ->save();
+
+        $this->assertSame(['child author'], $captured, 'child afterSave must run exactly once');
+        $this->assertNotEmpty($article->authors);
+        $this->assertSame('mutated by child afterSave', $article->authors[0]->name);
+    }
+
     public function testMakeFromArrayMultipleWithMakeFromArray(): void
     {
         $n = 3;
