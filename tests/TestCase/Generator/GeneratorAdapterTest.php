@@ -484,39 +484,35 @@ class GeneratorAdapterTest extends TestCase
     }
 
     /**
-     * Test that setGenerator affects all factories globally by default (BC)
+     * Test that setGenerator only affects the current factory instance by default
      *
      * @return void
      */
-    public function testSetGeneratorGlobalByDefault(): void
+    public function testSetGeneratorInstanceLevelByDefault(): void
     {
         $factory1 = ArticleFactory::new();
-        $factory1->setGenerator('dummy');
+        $factory1 = $factory1->setGenerator('dummy');
 
-        // A different factory instance should also get the dummy generator
         $factory2 = ArticleFactory::new();
 
-        // Both should return the same generator instance (global default)
-        $this->assertSame($factory1->getGenerator(), $factory2->getGenerator());
+        $this->assertNotSame($factory1->getGenerator(), $factory2->getGenerator());
     }
 
     /**
-     * Test that setGenerator only affects current instance when feature flag is enabled
+     * Test that legacy global behavior can still be enabled explicitly
      *
      * @return void
      */
-    public function testSetGeneratorInstanceLevel(): void
+    public function testSetGeneratorGlobalWhenConfigured(): void
     {
-        Configure::write('FixtureFactories.instanceLevelGenerator', true);
+        Configure::write('FixtureFactories.instanceLevelGenerator', false);
 
         $factory1 = ArticleFactory::new();
         $factory1 = $factory1->setGenerator('dummy');
 
         $factory2 = ArticleFactory::new();
 
-        // factory1 should have its own generator
-        // factory2 should fall back to the default (faker)
-        $this->assertNotSame($factory1->getGenerator(), $factory2->getGenerator());
+        $this->assertSame($factory1->getGenerator(), $factory2->getGenerator());
     }
 
     /**
