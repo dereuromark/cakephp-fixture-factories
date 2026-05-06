@@ -20,6 +20,7 @@ return static function (RectorConfig $rectorConfig): void {
         new MethodCallRename(BaseFactory::class, 'persistEntity', 'save'),
         new MethodCallRename(BaseFactory::class, 'persistEntities', 'saveMany'),
         new MethodCallRename(BaseFactory::class, 'setTimes', 'count'),
+        new MethodCallRename(BaseFactory::class, 'patchData', 'state'),
     ]);
 
     $rectorConfig->rule(FactoryLegacyMakeToNewRector::class);
