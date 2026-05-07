@@ -29,8 +29,15 @@ return [
 
 Generator adapter to use for fake data.
 
-- `'faker'` (default) — [FakerPHP/Faker](https://github.com/FakerPHP/Faker). Requires `composer require --dev fakerphp/faker`.
+- `'faker'` — [FakerPHP/Faker](https://github.com/FakerPHP/Faker). Requires `composer require --dev fakerphp/faker`.
 - `'dummy'` — [johnykvsky/dummygenerator](https://github.com/johnykvsky/dummygenerator). Requires `composer require --dev johnykvsky/dummygenerator`. PHP 8.3+.
+
+When this key is unset, the plugin auto-detects which library is installed.
+Precedence: explicit `Configure::write('FixtureFactories.generatorType', ...)`
+beats auto-detect; auto-detect prefers `'faker'` when both libraries are
+installed and falls back to `'dummy'` when only DummyGenerator is present.
+If neither library is installed a `FixtureFactoryException` is thrown with
+installation guidance.
 
 See [Generators](/guide/generators) for the full comparison.
 

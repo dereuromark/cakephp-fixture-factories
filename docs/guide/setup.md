@@ -8,9 +8,37 @@ Define your DB connections in your test `bootstrap.php` as described in the [Cak
 
 ## CakePHP apps
 
-To be able to bake your factories,
-load the CakephpFixtureFactories plugin in your `plugins.php` file or your `src/Application.php` file:
+To be able to bake your factories, load the CakephpFixtureFactories plugin.
+This plugin is dev-only (factories live under `tests/Factory/`), so you have
+three load patterns to choose from depending on how strict you want to be
+about keeping it out of production:
+
+### 1. Quickest — `bin/cake plugin load` (loads everywhere)
+
+```bash
+bin/cake plugin load CakephpFixtureFactories
+```
+
+This edits `config/plugins.php` for you. Fine if your production build strips
+dev dependencies — the plugin can't be loaded if its files aren't deployed.
+
+### 2. Manual `config/plugins.php` (loads everywhere, declarative)
+
 ```php
+// config/plugins.php
+return [
+    'CakephpFixtureFactories' => [],
+];
+```
+
+Same effective behavior as the CLI command, but the change is explicit in your
+diff. Use this if you prefer hand-edited config or you want to add lifecycle
+flags (e.g. `routes => false`).
+
+### 3. Dev-only via `bootstrapCli()` (recommended if production might see dev deps)
+
+```php
+// src/Application.php
 protected function bootstrapCli(): void
 {
     // Load more plugins here
@@ -19,6 +47,11 @@ protected function bootstrapCli(): void
     }
 }
 ```
+
+The `Configure::read('debug')` gate combined with `bootstrapCli()` ensures the
+plugin only loads on CLI, in debug mode — so it stays out of production HTTP
+requests even if dev dependencies are accidentally shipped. Pick this if you
+have any concern about prod behavior.
 
 **We recommend using migrations for managing the schema of your test DB with the [CakePHP Migrations plugin](https://book.cakephp.org/migrations/5/index.html#using-migrations-for-tests).**
 

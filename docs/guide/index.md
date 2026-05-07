@@ -40,9 +40,25 @@ composer require --dev johnykvsky/dummygenerator
 
 ## Load the plugin
 
-In `src/Application.php`:
+This plugin is dev-only — factories live under `tests/Factory/` and are never
+called from production code paths. Pick the loading pattern that matches how
+strict you want to be about that:
 
-```php
+::: code-group
+
+```bash [Quickest — loads everywhere]
+bin/cake plugin load CakephpFixtureFactories
+```
+
+```php [Manual plugins.php — loads everywhere]
+// config/plugins.php
+return [
+    'CakephpFixtureFactories' => [],
+];
+```
+
+```php [Dev-only via bootstrapCli() — recommended for prod-bound apps]
+// src/Application.php
 protected function bootstrapCli(): void
 {
     if (Configure::read('debug')) {
@@ -50,6 +66,15 @@ protected function bootstrapCli(): void
     }
 }
 ```
+
+:::
+
+The `bin/cake plugin load` command edits `config/plugins.php` for you and is
+the easiest path. Both that and the manual `plugins.php` form load the plugin
+in all environments — fine if your production deploy strips dev dependencies,
+but if there's any chance dev deps end up on a production box, prefer the
+`bootstrapCli()` form: it gates loading on CLI plus `debug` mode, so the
+plugin is never bootstrapped in production HTTP requests.
 
 ## Configure the fixture strategy (recommended)
 

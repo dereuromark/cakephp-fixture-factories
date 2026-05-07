@@ -11,9 +11,13 @@ return [
         /**
          * Generator type to use for generating fake data.
          *
-         * Available types: 'faker' (default), 'dummy'
+         * Available types: 'faker', 'dummy'
          * - 'faker': Uses fakerphp/faker (requires `fakerphp/faker` package)
          * - 'dummy': Uses johnykvsky/dummygenerator (requires `johnykvsky/dummygenerator` package)
+         *
+         * Leave this commented out to auto-detect: faker is preferred when
+         * both libraries are installed; dummy is used when only DummyGenerator
+         * is present. An explicit value here always wins over auto-detect.
          *
          * @see \CakephpFixtureFactories\Generator\CakeGeneratorFactory
          */
