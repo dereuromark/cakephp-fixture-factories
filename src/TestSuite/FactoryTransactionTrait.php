@@ -29,7 +29,7 @@ use Cake\TestSuite\Fixture\FixtureStrategyInterface;
  * ```
  *
  * Important notes:
- * - Table tracking only captures tables written via factory->persist()
+ * - Table tracking only captures tables written via factory->save()
  * - Transaction rollback handles ALL data (factory and application code)
  * - Unique generator state is reset regardless of table usage
  *
@@ -45,7 +45,7 @@ use Cake\TestSuite\Fixture\FixtureStrategyInterface;
  *     public function testSomething()
  *     {
  *         // Factory data is tracked and rolled back
- *         $article = ArticleFactory::make()->persist();
+ *         $article = ArticleFactory::new()->save();
  *
  *         // Application code saves are also rolled back (but not tracked)
  *         $this->Articles->save($article);

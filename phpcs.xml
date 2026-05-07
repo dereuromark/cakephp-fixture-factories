@@ -9,6 +9,7 @@
     <file>tests/TestApp/plugins/TestPlugin/tests/Factory/</file>
 
     <exclude-pattern>/templates/</exclude-pattern>
+    <exclude-pattern>/tests/TestCase/Rector/Fixture/</exclude-pattern>
 
     <rule ref="PhpCollective"/>
 

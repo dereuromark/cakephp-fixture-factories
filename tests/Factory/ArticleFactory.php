@@ -21,9 +21,6 @@ use TestApp\Model\Entity\Article;
  * Class ArticleFactory
  *
  * @extends BaseFactory<\TestApp\Model\Entity\Article>
- *
- * @method static \TestApp\Model\Entity\Article get(mixed $primaryKey, array $options = [])
- * @method static \TestApp\Model\Entity\Article firstOrFail($conditions = null)
  */
 class ArticleFactory extends BaseFactory
 {
@@ -47,19 +44,27 @@ class ArticleFactory extends BaseFactory
      *
      * @return void
      */
-    protected function setDefaultTemplate(): void
+    public function definition(GeneratorInterface $generator): array
     {
-        $this->setDefaultData(function (GeneratorInterface $generator) {
-            return [
-                'title' => $generator->text(120),
-            ];
-        })
-        ->withAuthors(null, self::DEFAULT_NUMBER_OF_AUTHORS);
+        return [
+            'title' => $generator->text(120),
+        ];
     }
 
-    public function withAuthors(mixed $parameter = null, int $n = 1): self
+    protected function configure(): static
     {
-        return $this->with('Authors', AuthorFactory::make($parameter, $n));
+        return $this->hasAuthors(self::DEFAULT_NUMBER_OF_AUTHORS);
+    }
+
+    public function hasAuthors(mixed $n = 1, mixed $parameter = null): self
+    {
+        if (!is_int($n)) {
+            $originalParameter = $n;
+            $n = is_int($parameter) ? $parameter : 1;
+            $parameter = $originalParameter;
+        }
+
+        return $this->has(AuthorFactory::new($parameter)->count($n));
     }
 
     /**
@@ -70,22 +75,34 @@ class ArticleFactory extends BaseFactory
      * @param int $n
      * @return ArticleFactory
      */
-    public function withBills(mixed $parameter = null, int $n = 1): self
+    public function hasBills(mixed $n = 1, mixed $parameter = null): self
     {
-        return $this->with('Bills', BillFactory::make($parameter, $n)->without('Article'));
+        if (!is_int($n)) {
+            $originalParameter = $n;
+            $n = is_int($parameter) ? $parameter : 1;
+            $parameter = $originalParameter;
+        }
+
+        return $this->has(BillFactory::new($parameter)->count($n)->without('Article'));
     }
 
     /**
      * BAD PRACTICE EXAMPLE
-     * This method will lead to inconsistencies (see $this->withBills())
+     * This method will lead to inconsistencies (see $this->hasBills())
      *
      * @param mixed $parameter
      * @param int $n
      * @return ArticleFactory
      */
-    public function withBillsWithArticle(mixed $parameter = null, int $n = 1): self
+    public function hasBillsWithArticle(mixed $n = 1, mixed $parameter = null): self
     {
-        return $this->with('Bills', BillFactory::make($parameter, $n));
+        if (!is_int($n)) {
+            $originalParameter = $n;
+            $n = is_int($parameter) ? $parameter : 1;
+            $parameter = $originalParameter;
+        }
+
+        return $this->has(BillFactory::new($parameter)->count($n));
     }
 
     /**
@@ -96,7 +113,7 @@ class ArticleFactory extends BaseFactory
      */
     public function withTitle(string $title): self
     {
-        return $this->patchData(compact('title'));
+        return $this->state(compact('title'));
     }
 
     /**

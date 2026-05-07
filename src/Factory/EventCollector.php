@@ -98,22 +98,27 @@ class EventCollector
         $options = [
             self::MODEL_EVENTS => $this->getListeningModelEvents(),
             self::MODEL_BEHAVIORS => $this->getListeningBehaviors(),
+            'className' => $this->rootTableRegistryName,
         ];
+        if ($this->eventManager !== null) {
+            $options['eventManager'] = $this->eventManager;
+        }
+        $registryAlias = $this->getScopedRegistryAlias();
 
         if ($this->connectionName !== null) {
             $options['connection'] = ConnectionManager::get($this->connectionName);
         }
 
         try {
-            $table = FactoryTableRegistry::getTableLocator()->get($this->rootTableRegistryName, $options);
+            $table = FactoryTableRegistry::getTableLocator()->get($registryAlias, $options);
         } catch (RuntimeException $exception) {
-            FactoryTableRegistry::getTableLocator()->remove($this->rootTableRegistryName);
-            $table = FactoryTableRegistry::getTableLocator()->get($this->rootTableRegistryName, $options);
+            if (!FactoryTableRegistry::getTableLocator()->exists($registryAlias)) {
+                throw $exception;
+            }
+            FactoryTableRegistry::getTableLocator()->remove($registryAlias);
+            $table = FactoryTableRegistry::getTableLocator()->get($registryAlias, $options);
         }
-
-        if ($this->eventManager !== null) {
-            $table->setEventManager($this->eventManager);
-        }
+        $table->setAlias($this->getRootTableAlias());
 
         return $this->table = $table;
     }
@@ -205,5 +210,37 @@ class EventCollector
     public function getDefaultListeningBehaviors(): array
     {
         return $this->defaultListeningBehaviors;
+    }
+
+    /**
+     * Scope factory tables by listening options so different factories do not
+     * share and mutate the same stripped-down Table instance.
+     *
+     * @return string
+     */
+    private function getScopedRegistryAlias(): string
+    {
+        $hash = hash('sha256', serialize([
+            'table' => $this->rootTableRegistryName,
+            'connection' => $this->connectionName,
+            'behaviors' => $this->listeningBehaviors,
+            'events' => $this->listeningModelEvents,
+            'eventManager' => $this->eventManager ? spl_object_id($this->eventManager) : null,
+        ]));
+
+        return sprintf('%s__ff_%s', $this->getRootTableAlias(), substr($hash, 0, 8));
+    }
+
+    /**
+     * Keep the public table alias aligned with Cake's conventional alias, even
+     * when the registry key is scoped for factory options.
+     *
+     * @return string
+     */
+    private function getRootTableAlias(): string
+    {
+        $parts = explode('.', $this->rootTableRegistryName);
+
+        return (string)end($parts);
     }
 }

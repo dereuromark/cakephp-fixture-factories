@@ -36,10 +36,8 @@ class ArticlesAuthorFactory extends BaseFactory
      *
      * @return void
      */
-    protected function setDefaultTemplate(): void
+    public function definition(GeneratorInterface $generator): array
     {
-        $this->setDefaultData(function (GeneratorInterface $generator) {
-            return [];
-        });
+        return [];
     }
 }

@@ -20,8 +20,6 @@ use CakephpFixtureFactories\Generator\GeneratorInterface;
  * Class CountryFactory
  *
  * @extends BaseFactory<\TestApp\Model\Entity\Country>
- *
- * @method static \TestApp\Model\Entity\Country get(mixed $primaryKey, array $options = [])
  */
 class CountryFactory extends BaseFactory
 {
@@ -34,13 +32,11 @@ class CountryFactory extends BaseFactory
         return 'Countries';
     }
 
-    protected function setDefaultTemplate(): void
+    public function definition(GeneratorInterface $generator): array
     {
-        $this->setDefaultData(function (GeneratorInterface $generator) {
-            return [
-                'name' => $generator->country(),
-                'unique_stamp' => $generator->uuid(),
-            ];
-        });
+        return [
+            'name' => $generator->country(),
+            'unique_stamp' => $generator->uuid(),
+        ];
     }
 }

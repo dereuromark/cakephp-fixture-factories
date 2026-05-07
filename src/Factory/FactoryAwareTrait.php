@@ -26,9 +26,9 @@ trait FactoryAwareTrait
     /**
      * Returns a factory instance from factory or model name
      *
-     * Additional arguments are passed *as is* to `BaseFactory::make`
+     * Additional arguments are passed to the v2 entry surface.
      *
-     * @see \CakephpFixtureFactories\Factory\BaseFactory::make
+     * @see \CakephpFixtureFactories\Factory\BaseFactory::new
      *
      * @param string $name Factory or model name
      * @param \Cake\Datasource\EntityInterface|callable|array<string, mixed>|string|int|null $makeParameter Injected data
@@ -46,7 +46,12 @@ trait FactoryAwareTrait
         $factoryClassName = $this->getFactoryClassName($name);
 
         if (class_exists($factoryClassName)) {
-            return $factoryClassName::make($makeParameter, $times);
+            $factory = $factoryClassName::new($makeParameter);
+            if ($times !== 1) {
+                $factory = $factory->count($times);
+            }
+
+            return $factory;
         }
 
         throw new FactoryNotFoundException("Unable to locate factory class `$factoryClassName`");

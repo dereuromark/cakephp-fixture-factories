@@ -37,7 +37,7 @@ final class FactoryTableBeforeSave
     protected EntityInterface $entity;
 
     /**
-     * @param \Cake\ORM\Table $table Table on which the beforeFind actions are taken.
+     * @param \Cake\ORM\Table $table Table on which the beforeSave actions are taken.
      * @param \Cake\Datasource\EntityInterface $entity Entity concerned by the saving.
      */
     public function __construct(Table $table, EntityInterface $entity)
@@ -47,7 +47,7 @@ final class FactoryTableBeforeSave
     }
 
     /**
-     * @param \Cake\ORM\Table $table Table on which the beforeFind actions are taken.
+     * @param \Cake\ORM\Table $table Table on which the beforeSave actions are taken.
      * @param \Cake\Datasource\EntityInterface $entity Entity concerned by the saving.
      *
      * @return void
@@ -83,7 +83,7 @@ final class FactoryTableBeforeSave
 
     /**
      * Get the entities that the datacompiler marked as dirty
-     * while creating then entity
+     * while creating the entity
      *
      * @see DataCompiler::compileEntity()
      *

@@ -38,7 +38,15 @@ class BaseFactoryDisplayFieldTest extends TestCase
     public function testUseDisplayFieldIfFieldIsNotSpecified(): void
     {
         $title = 'Some title';
-        $article = ArticleFactory::make('Some title')->getEntity();
+        $article = ArticleFactory::new('Some title')->build();
+
+        $this->assertSame($title, $article->title);
+    }
+
+    public function testNumericStringUsesDisplayFieldInsteadOfCount(): void
+    {
+        $title = '12345';
+        $article = ArticleFactory::new($title)->build();
 
         $this->assertSame($title, $article->title);
     }
@@ -46,7 +54,7 @@ class BaseFactoryDisplayFieldTest extends TestCase
     public function testUseDisplayFieldIfFieldIsNotSpecifiedMultiple(): void
     {
         $titles = ['Some title 1', 'Some title 2'];
-        $articles = ArticleFactory::make($titles)->getEntities();
+        $articles = ArticleFactory::new($titles)->buildMany();
 
         foreach ($titles as $i => $title) {
             $this->assertSame($title, $articles[$i]->title);
@@ -56,7 +64,7 @@ class BaseFactoryDisplayFieldTest extends TestCase
     public function testUseDisplayFieldInAssociationIfFieldIsNotSpecified(): void
     {
         $country = 'India';
-        $address = AddressFactory::make()->with('City.Countries', $country)->getEntity();
+        $address = AddressFactory::new()->with('City.Countries', $country)->build();
 
         $this->assertSame($country, $address->city->country->name);
     }
@@ -64,7 +72,7 @@ class BaseFactoryDisplayFieldTest extends TestCase
     public function testUseDisplayFieldInAssociationIfFieldIsNotSpecifiedMultiple(): void
     {
         $cities = ['Chennai', 'Jodhpur', 'Kolkata'];
-        $country = CountryFactory::make()->with('Cities', $cities)->getEntity();
+        $country = CountryFactory::new()->with('Cities', $cities)->build();
 
         foreach ($cities as $i => $city) {
             $this->assertSame($city, $country->cities[$i]->name);
@@ -83,6 +91,6 @@ class BaseFactoryDisplayFieldTest extends TestCase
         $this->expectException(FixtureFactoryException::class);
         $expectedMessage = "The display field of a table must be a string when injecting a string into its factory. You injected `Some bill` in `CakephpFixtureFactories\Test\Factory\BillFactory` but `TestPlugin\Model\Table\BillsTable`'s display field is not a string.";
         $this->expectExceptionMessage($expectedMessage);
-        BillFactory::make('Some bill')->persist();
+        BillFactory::new('Some bill')->save();
     }
 }

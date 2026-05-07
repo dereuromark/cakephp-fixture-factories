@@ -30,7 +30,7 @@ class SelectQueryMockerTest extends TestCase
     public function testSelectQueryMocker(): void
     {
         $names = ['Foo', 'Bar'];
-        $countryFactory = CountryFactory::make([
+        $countryFactory = CountryFactory::new([
             ['name' => $names[0]],
             ['name' => $names[1]],
         ]);
@@ -43,18 +43,18 @@ class SelectQueryMockerTest extends TestCase
             $this->assertSame($names[$i], $country['name']);
         }
 
-        $this->assertSame(0, CountryFactory::count());
+        $this->assertSame(0, CountryFactory::query()->count());
     }
 
     public function testSelectQueryMockerWithDataInDb(): void
     {
         $names = ['Foo', 'Bar'];
-        $countryFactory = CountryFactory::make([
+        $countryFactory = CountryFactory::new([
             ['name' => $names[0]],
             ['name' => $names[1]],
         ]);
-        $nCountriesInDB = rand(2, 5);
-        CountryFactory::make($nCountriesInDB)->persist();
+        $nCountriesInDB = 4;
+        CountryFactory::new($nCountriesInDB)->saveMany();
         SelectQueryMocker::mock($this, $countryFactory);
 
         $CountriesTable = TableRegistry::getTableLocator()->get('Countries');
@@ -64,16 +64,16 @@ class SelectQueryMockerTest extends TestCase
             $this->assertSame($names[$i], $country['name']);
         }
 
-        $this->assertSame($nCountriesInDB, CountryFactory::count());
+        $this->assertSame($nCountriesInDB, CountryFactory::query()->count());
     }
 
     public function testSelectQueryMockerWithAssociations(): void
     {
         $names = ['Foo', 'Bar'];
-        $cityFactory = CityFactory::make([
+        $cityFactory = CityFactory::new([
             ['name' => $names[0]],
             ['name' => $names[1]],
-        ])->withCountries();
+        ])->forCountries();
         SelectQueryMocker::mock($this, $cityFactory);
 
         $CountriesTable = TableRegistry::getTableLocator()->get('Countries');
@@ -90,7 +90,7 @@ class SelectQueryMockerTest extends TestCase
         $this->assertSame(0, $countries->count());
         $this->assertSame([], $countries->toArray());
 
-        $this->assertSame(0, CountryFactory::count());
-        $this->assertSame(0, CityFactory::count());
+        $this->assertSame(0, CountryFactory::query()->count());
+        $this->assertSame(0, CityFactory::query()->count());
     }
 }

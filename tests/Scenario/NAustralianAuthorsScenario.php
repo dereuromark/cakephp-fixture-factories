@@ -29,6 +29,6 @@ class NAustralianAuthorsScenario implements FixtureScenarioInterface
     public function load(...$args): mixed
     {
         $n = $args[0];
-        return AuthorFactory::make($n)->fromCountry(self::COUNTRY_NAME)->persist();
+        return AuthorFactory::new($n)->fromCountry(self::COUNTRY_NAME)->saveMany();
     }
 }

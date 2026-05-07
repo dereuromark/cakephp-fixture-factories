@@ -24,6 +24,9 @@ use CakephpFixtureFactories\Error\FactoryNotFoundException;
 use CakephpFixtureFactories\Error\PersistenceException;
 use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\Factory\FactoryAwareTrait;
+use InvalidArgumentException;
+use ReflectionException;
+use ReflectionMethod;
 
 class PersistCommand extends Command
 {
@@ -93,15 +96,15 @@ class PersistCommand extends Command
         try {
             $factory = $this->parseFactory($args);
             // The following order is important, as methods may overwrite $times
-            $this->setTimes($args, $factory);
-            $this->with($args, $factory);
-            $this->attachMethod($args, $factory, $io);
-        } catch (FactoryNotFoundException $e) {
+            $factory = $this->countFactory($args, $factory);
+            $factory = $this->with($args, $factory);
+            $factory = $this->attachMethod($args, $factory, $io);
+        } catch (FactoryNotFoundException | InvalidArgumentException $e) {
             $io->error($e->getMessage());
             $this->abort();
         }
         if ($args->getOption('dry-run')) {
-            $this->dryRun($factory, $io);
+            $this->dryRun($factory, $args, $io);
         } else {
             $this->persist($factory, $args, $io);
         }
@@ -114,12 +117,12 @@ class PersistCommand extends Command
      *
      * @return \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>
      */
-    public function parseFactory(Arguments $args): BaseFactory
+    protected function parseFactory(Arguments $args): BaseFactory
     {
         $factoryString = (string)$args->getArgument(self::ARG_NAME);
 
         if (is_subclass_of($factoryString, BaseFactory::class)) {
-            return $factoryString::make();
+            return $factoryString::new();
         }
 
         $plugin = $args->getOption('plugin');
@@ -134,17 +137,34 @@ class PersistCommand extends Command
      * @param \Cake\Console\Arguments $args Arguments
      * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Factory
      *
+     * @throws \InvalidArgumentException When --number is not a positive integer.
+     *
      * @return \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>
      */
-    public function setTimes(Arguments $args, BaseFactory $factory): BaseFactory
+    protected function countFactory(Arguments $args, BaseFactory $factory): BaseFactory
     {
-        if ($args->getOption('number')) {
-            $times = (int)$args->getOption('number');
-        } else {
-            $times = 1;
+        $option = $args->getOption('number');
+        if ($option === null) {
+            return $factory->count(1);
         }
 
-        return $factory->setTimes($times);
+        if (is_string($option) && ctype_digit($option)) {
+            $times = (int)$option;
+        } else {
+            throw new InvalidArgumentException(sprintf(
+                '--number must be a positive integer, got `%s`.',
+                (string)$option,
+            ));
+        }
+
+        if ($times < 1) {
+            throw new InvalidArgumentException(sprintf(
+                '--number must be a positive integer, got `%s`.',
+                (string)$option,
+            ));
+        }
+
+        return $factory->count($times);
     }
 
     /**
@@ -156,7 +176,7 @@ class PersistCommand extends Command
      *
      * @return \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>
      */
-    public function attachMethod(Arguments $args, BaseFactory $factory, ConsoleIo $io): BaseFactory
+    protected function attachMethod(Arguments $args, BaseFactory $factory, ConsoleIo $io): BaseFactory
     {
         /** @var string|null $method */
         $method = $args->getOption('method');
@@ -164,14 +184,41 @@ class PersistCommand extends Command
         if ($method === null) {
             return $factory;
         }
-        if (!method_exists($factory, $method)) {
+
+        try {
+            $reflectionMethod = new ReflectionMethod($factory, $method);
+        } catch (ReflectionException) {
             $className = get_class($factory);
             $io->error("The method {$method} was not found in {$className}.");
 
             throw new FactoryNotFoundException();
         }
 
-        return $factory->{$method}();
+        if (!$reflectionMethod->isPublic()) {
+            throw new InvalidArgumentException(sprintf(
+                'The method `%s` on `%s` must be public to be called from persist command.',
+                $method,
+                get_class($factory),
+            ));
+        }
+        if ($reflectionMethod->getNumberOfRequiredParameters() > 0) {
+            throw new InvalidArgumentException(sprintf(
+                'The method `%s` on `%s` must not require arguments when called from persist command.',
+                $method,
+                get_class($factory),
+            ));
+        }
+
+        $result = $factory->{$method}();
+        if (!$result instanceof BaseFactory) {
+            throw new InvalidArgumentException(sprintf(
+                'The method `%s` on `%s` must return a BaseFactory when called from persist command.',
+                $method,
+                get_class($factory),
+            ));
+        }
+
+        return $result;
     }
 
     /**
@@ -180,7 +227,7 @@ class PersistCommand extends Command
      *
      * @return \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>
      */
-    public function with(Arguments $args, BaseFactory $factory): BaseFactory
+    protected function with(Arguments $args, BaseFactory $factory): BaseFactory
     {
         $with = $args->getOption('with');
 
@@ -202,14 +249,22 @@ class PersistCommand extends Command
      * @param string $connection Connection name
      * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Factory
      *
-     * @return void
+     * @return callable Restore callback
      */
-    public function aliasConnection(string $connection, BaseFactory $factory): void
+    protected function aliasConnection(string $connection, BaseFactory $factory): callable
     {
-        ConnectionManager::alias(
-            $connection,
-            $factory->getTable()->getConnection()->configName(),
-        );
+        $targetAlias = $factory->getTable()->getConnection()->configName();
+        $existingAliases = ConnectionManager::aliases();
+        $previousSource = $existingAliases[$targetAlias] ?? null;
+
+        ConnectionManager::alias($connection, $targetAlias);
+
+        return static function () use ($targetAlias, $previousSource): void {
+            ConnectionManager::dropAlias($targetAlias);
+            if ($previousSource !== null) {
+                ConnectionManager::alias($previousSource, $targetAlias);
+            }
+        };
     }
 
     /**
@@ -219,42 +274,49 @@ class PersistCommand extends Command
      *
      * @return void
      */
-    public function persist(BaseFactory $factory, Arguments $args, ConsoleIo $io): void
+    protected function persist(BaseFactory $factory, Arguments $args, ConsoleIo $io): void
     {
         $connection = $args->getOption('connection') ?? 'test';
         if (!is_string($connection)) {
             $connection = 'test';
         }
-        $this->aliasConnection($connection, $factory);
+        $restoreConnectionAlias = $this->aliasConnection($connection, $factory);
 
         $entities = [];
         try {
-            $entities = $factory->persist();
+            $entities = $factory->saveMany();
         } catch (PersistenceException $e) {
             $io->error($e->getMessage());
             $this->abort();
+        } finally {
+            $restoreConnectionAlias();
         }
 
-        if (!is_iterable($entities)) {
-            $times = 1;
-        } elseif (is_countable($entities)) {
-            $times = count($entities);
-        } else {
-            $times = iterator_count($entities);
-        }
+        $times = count($entities);
         $factory = get_class($factory);
         $io->success("{$times} {$factory} persisted on '{$connection}' connection.");
     }
 
     /**
      * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Factory
+     * @param \Cake\Console\Arguments $args Arguments
      * @param \Cake\Console\ConsoleIo $io Console
      *
      * @return void
      */
-    public function dryRun(BaseFactory $factory, ConsoleIo $io): void
+    protected function dryRun(BaseFactory $factory, Arguments $args, ConsoleIo $io): void
     {
-        $entities = $factory->getEntities();
+        $connection = $args->getOption('connection') ?? 'test';
+        if (!is_string($connection)) {
+            $connection = 'test';
+        }
+        $restoreConnectionAlias = $this->aliasConnection($connection, $factory);
+
+        try {
+            $entities = $factory->buildMany();
+        } finally {
+            $restoreConnectionAlias();
+        }
         $times = count($entities);
         $factory = get_class($factory);
 

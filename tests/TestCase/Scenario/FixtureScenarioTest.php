@@ -80,6 +80,25 @@ class FixtureScenarioTest extends TestCase
     }
 
     /**
+     * Regression: when wrapping a Throwable into FixtureScenarioException, the
+     * trait must pass it as `previous` so the original stack trace and
+     * file/line of the actual scenario failure are preserved. Previously only
+     * the message was forwarded, making real scenario errors hard to diagnose.
+     */
+    public function testLoadScenarioExceptionPreservesPrevious(): void
+    {
+        try {
+            $this->loadFixtureScenario(self::class);
+            $this->fail('Expected FixtureScenarioException to be thrown');
+        } catch (FixtureScenarioException $e) {
+            $this->assertNotNull(
+                $e->getPrevious(),
+                'FixtureScenarioException should chain the original Throwable as previous',
+            );
+        }
+    }
+
+    /**
      * Regression: scenario namespace must strip the literal `Factory` suffix
      * via substring, not via `trim()` character-mask. For a configured
      * factory namespace whose char immediately before `Factory` is also a
@@ -116,7 +135,7 @@ class FixtureScenarioTest extends TestCase
 
     private function countAustralianAuthors(): int
     {
-        return AuthorFactory::find()
+        return AuthorFactory::query()
             ->innerJoinWith('Address.City.Countries', function (SelectQuery $q) {
                 return $q->where(['Countries.name' => NAustralianAuthorsScenario::COUNTRY_NAME]);
             })

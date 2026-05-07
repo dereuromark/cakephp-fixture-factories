@@ -27,7 +27,7 @@ bin/cake bake fixture_factory Articles
 # All models in your app
 bin/cake bake fixture_factory -a
 
-# Include association helpers (->withAuthors(), ->withCountry(), …)
+# Include association helpers (->hasAuthors(), ->forCountry(), …)
 bin/cake bake fixture_factory Articles -m
 
 # Bake into a plugin's namespace
@@ -39,7 +39,7 @@ bin/cake bake fixture_factory Articles -p MyPlugin
 | Flag        | Effect |
 |-------------|--------|
 | `-a`        | Bake every model in the app |
-| `-m`        | Add `with…()` helpers based on associations |
+| `-m`        | Add directional helpers based on associations (`for…()` for to-one, `has…()` for to-many) |
 | `-p Plugin` | Bake into a plugin's namespace |
 | `-h`        | Show all available options |
 
@@ -47,8 +47,8 @@ bin/cake bake fixture_factory Articles -p MyPlugin
 
 Two configuration keys influence what `bake` writes:
 
-- **`defaultDataMap`** — map column types to generator method calls.
-- **`columnPatterns`** — map column-name regexes to generator method calls.
+- **`defaultDataMap`** — map column types to generator method fragments, call fragments with arguments, or `$generator->...` calls.
+- **`columnPatterns`** — map column-name regexes to generator method fragments, call fragments with arguments, or `$generator->...` calls.
 
 Both let you teach `bake` what `phone`, `zip`, `email`, etc. should look like in your domain. See the [Configuration Reference](configuration#defaultdatamap).
 
@@ -56,8 +56,8 @@ Both let you teach `bake` what `phone`, `zip`, `email`, etc. should look like in
 // config/app.php
 'FixtureFactories' => [
     'columnPatterns' => [
-        '/^phone/' => '$generator->phoneNumber()',
-        '/^zip/'   => '$generator->postcode()',
+        '/^phone/' => 'phoneNumber()',
+        '/^zip/'   => 'postcode()',
     ],
 ],
 ```

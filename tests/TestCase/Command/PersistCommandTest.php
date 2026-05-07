@@ -23,6 +23,7 @@ use Cake\Datasource\ConnectionManager;
 use Cake\ORM\TableRegistry;
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Command\PersistCommand;
+use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\Test\Factory\AddressFactory;
 use CakephpFixtureFactories\Test\Factory\ArticleFactory;
 use CakephpFixtureFactories\Test\Factory\BillFactory;
@@ -84,7 +85,7 @@ class PersistCommandTest extends TestCase
         $output = $this->command->execute($args, $this->io);
 
         $this->assertSame(PersistCommand::CODE_SUCCESS, $output);
-        $this->assertSame(1, ArticleFactory::count());
+        $this->assertSame(1, ArticleFactory::query()->count());
     }
 
     public static function dataProviderForStringPluginFactories(): array
@@ -104,7 +105,7 @@ class PersistCommandTest extends TestCase
         $output = $this->command->execute($args, $this->io);
 
         $this->assertSame(PersistCommand::CODE_SUCCESS, $output);
-        $this->assertSame(1, BillFactory::count());
+        $this->assertSame(1, BillFactory::query()->count());
     }
 
     #[DataProvider('dataProviderForStringFactories')]
@@ -116,19 +117,19 @@ class PersistCommandTest extends TestCase
         $output = $this->command->execute($args, $this->io);
 
         $this->assertSame(PersistCommand::CODE_SUCCESS, $output);
-        $this->assertEquals($number, ArticleFactory::count());
+        $this->assertEquals($number, ArticleFactory::query()->count());
     }
 
     public function testPersistWithMethodAndNumber(): void
     {
         $number = '3';
-        $args = new Arguments(['Article'], ['method' => 'withBills', 'number' => $number], [PersistCommand::ARG_NAME]);
+        $args = new Arguments(['Article'], ['method' => 'hasBills', 'number' => $number], [PersistCommand::ARG_NAME]);
 
         $output = $this->command->execute($args, $this->io);
 
         $this->assertSame(PersistCommand::CODE_SUCCESS, $output);
-        $this->assertEquals($number, ArticleFactory::count());
-        $this->assertEquals($number, BillFactory::count());
+        $this->assertEquals($number, ArticleFactory::query()->count());
+        $this->assertEquals($number, BillFactory::query()->count());
     }
 
     public function testPersistWithAssociation(): void
@@ -140,21 +141,21 @@ class PersistCommandTest extends TestCase
         $output = $this->command->execute($args, $this->io);
 
         $this->assertSame(PersistCommand::CODE_SUCCESS, $output);
-        $this->assertEquals(1, CountryFactory::count());
-        $this->assertEquals($numberOfCities, CityFactory::count());
-        $this->assertEquals($numberOfCities * $numberOfAddresses, AddressFactory::count());
+        $this->assertEquals(1, CountryFactory::query()->count());
+        $this->assertEquals($numberOfCities, CityFactory::query()->count());
+        $this->assertEquals($numberOfCities * $numberOfAddresses, AddressFactory::query()->count());
     }
 
     public function testPersistWithMethodAndNumberDryRun(): void
     {
         $number = '3';
-        $args = new Arguments(['Article'], ['method' => 'withBills', 'number' => $number, 'dry-run' => true], [PersistCommand::ARG_NAME]);
+        $args = new Arguments(['Article'], ['method' => 'hasBills', 'number' => $number, 'dry-run' => true], [PersistCommand::ARG_NAME]);
 
         $output = $this->command->execute($args, $this->io);
 
         $this->assertSame(PersistCommand::CODE_SUCCESS, $output);
-        $this->assertSame(0, ArticleFactory::count());
-        $this->assertSame(0, BillFactory::count());
+        $this->assertSame(0, ArticleFactory::query()->count());
+        $this->assertSame(0, BillFactory::query()->count());
     }
 
     public function testPersistWithWrongFactory(): void
@@ -176,11 +177,63 @@ class PersistCommandTest extends TestCase
         $this->command->execute($args, $this->io);
     }
 
+    public function testPersistWithProtectedMethod(): void
+    {
+        $className = ArticleFactory::class;
+        $method = 'getRootTableRegistryName';
+        $args = new Arguments([$className], compact('method'), [PersistCommand::ARG_NAME]);
+
+        $this->expectException(StopException::class);
+        $this->command->execute($args, $this->io);
+    }
+
+    public function testPersistWithMethodRequiringArguments(): void
+    {
+        $className = ArticleFactory::class;
+        $method = 'withTitle';
+        $args = new Arguments([$className], compact('method'), [PersistCommand::ARG_NAME]);
+
+        $this->expectException(StopException::class);
+        $this->command->execute($args, $this->io);
+    }
+
+    public function testPersistWithMethodReturningNonFactory(): void
+    {
+        $className = ArticleFactory::class;
+        $method = 'getTable';
+        $args = new Arguments([$className], compact('method'), [PersistCommand::ARG_NAME]);
+
+        $this->expectException(StopException::class);
+        $this->command->execute($args, $this->io);
+    }
+
+    public function testPersistWithInvalidNumberString(): void
+    {
+        $className = ArticleFactory::class;
+        $number = '3foo';
+        $args = new Arguments([$className], compact('number'), [PersistCommand::ARG_NAME]);
+
+        $this->expectException(StopException::class);
+        $this->command->execute($args, $this->io);
+    }
+
+    public function testPersistWithFloatNumberString(): void
+    {
+        $className = ArticleFactory::class;
+        $number = '1.9';
+        $args = new Arguments([$className], compact('number'), [PersistCommand::ARG_NAME]);
+
+        $this->expectException(StopException::class);
+        $this->command->execute($args, $this->io);
+    }
+
     /**
      * @see /tests/bootstrap.php
      */
     public function testAliasedConnection(): void
     {
+        $aliasesBefore = ConnectionManager::aliases();
+
         $output = $this->command->execute(new Arguments([ArticleFactory::class], [], [PersistCommand::ARG_NAME]), $this->io);
         $this->assertSame(PersistCommand::CODE_SUCCESS, $output);
         $configName = TableRegistry::getTableLocator()->get('TestPlugin.Bills')->getConnection()->configName();
@@ -188,7 +241,41 @@ class PersistCommandTest extends TestCase
 
         $output = $this->command->execute(new Arguments([ArticleFactory::class], ['connection' => 'dummy'], [PersistCommand::ARG_NAME]), $this->io);
         $this->assertSame(PersistCommand::CODE_SUCCESS, $output);
-        $dummyKeyValue = ConnectionManager::get('test')->config()['dummy_key'];
-        $this->assertSame('DummyKeyValue', $dummyKeyValue);
+        $this->assertSame($aliasesBefore, ConnectionManager::aliases());
+    }
+
+    public function testAliasedConnectionIsRestoredAfterPersist(): void
+    {
+        $beforeAliases = ConnectionManager::aliases();
+
+        $output = $this->command->execute(
+            new Arguments([ArticleFactory::class], ['connection' => 'dummy'], [PersistCommand::ARG_NAME]),
+            $this->io,
+        );
+
+        $this->assertSame(PersistCommand::CODE_SUCCESS, $output);
+        $this->assertSame($beforeAliases, ConnectionManager::aliases());
+    }
+
+    public function testDryRunAlsoAppliesConnectionAliasPath(): void
+    {
+        $command = new class () extends PersistCommand {
+            public int $aliasCalls = 0;
+
+            public function aliasConnection(string $connection, BaseFactory $factory): callable
+            {
+                $this->aliasCalls++;
+
+                return parent::aliasConnection($connection, $factory);
+            }
+        };
+
+        $output = $command->execute(
+            new Arguments([ArticleFactory::class], ['connection' => 'dummy', 'dry-run' => true], [PersistCommand::ARG_NAME]),
+            $this->io,
+        );
+
+        $this->assertSame(PersistCommand::CODE_SUCCESS, $output);
+        $this->assertSame(1, $command->aliasCalls);
     }
 }

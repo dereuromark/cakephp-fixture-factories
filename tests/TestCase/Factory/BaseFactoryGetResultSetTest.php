@@ -17,6 +17,7 @@ namespace CakephpFixtureFactories\Test\TestCase\Factory;
 
 use Cake\Core\Configure;
 use Cake\Datasource\EntityInterface;
+use Cake\ORM\ResultSet;
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Test\Factory\ArticleFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
@@ -50,13 +51,13 @@ class BaseFactoryGetResultSetTest extends TestCase
         $name1 = 'Name 1';
         $name2 = 'Name 2';
         $street = 'Street';
-        $factory = ArticleFactory::make([
+        $factory = ArticleFactory::new([
             ['name' => $name1],
             ['name' => $name2],
         ])
         ->with('Authors.Address', compact('street'));
 
-        $articles = $isPersisted ? $factory->getPersistedResultSet() : $factory->getResultSet();
+        $articles = new ResultSet($isPersisted ? $factory->saveMany() : $factory->buildMany());
         $this->assertSame(2, $articles->count());
         $this->assertSame(!$isPersisted, $articles->first()->get('id') === null);
         $this->assertSame($name1, $articles->first()->get('name'));
@@ -64,33 +65,33 @@ class BaseFactoryGetResultSetTest extends TestCase
         $this->assertSame($name2, $articles->last()->get('name'));
         $this->assertSame($street, $articles->last()['authors'][0]['address']['street']);
         $this->assertInstanceOf(Address::class, $articles->first()['authors'][0]['address']);
-        $this->assertSame($isPersisted ? 2 : 0, ArticleFactory::count());
+        $this->assertSame($isPersisted ? 2 : 0, ArticleFactory::query()->count());
     }
 
     #[DataProvider('isPersisted')]
     public function testBaseFactoryGetResultSetWithSingleEntity(bool $isPersisted): void
     {
         $name = 'Single';
-        $factory = CountryFactory::make(['name' => $name]);
+        $factory = CountryFactory::new(['name' => $name]);
 
-        $countries = $isPersisted ? $factory->getPersistedResultSet() : $factory->getResultSet();
+        $countries = new ResultSet($isPersisted ? $factory->saveMany() : $factory->buildMany());
 
         $this->assertSame(1, $countries->count());
         $this->assertInstanceOf(Country::class, $countries->first());
         $this->assertInstanceOf(EntityInterface::class, $countries->first());
         $this->assertSame($name, $countries->first()->get('name'));
         $this->assertSame(!$isPersisted, $countries->first()->get('id') === null);
-        $this->assertSame($isPersisted ? 1 : 0, CountryFactory::count());
+        $this->assertSame($isPersisted ? 1 : 0, CountryFactory::query()->count());
     }
 
     public function testBaseFactoryGetResultSetWithIds(): void
     {
         $id1 = 5;
         $id2 = 10;
-        $countries = CountryFactory::make([
+        $countries = new ResultSet(CountryFactory::new([
             ['id' => $id1],
             ['id' => $id2],
-        ])->getResultSet();
+        ])->buildMany());
 
         $this->assertSame($id1, $countries->first()->get('id'));
         $this->assertSame($id2, $countries->last()->get('id'));

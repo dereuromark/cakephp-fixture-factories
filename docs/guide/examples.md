@@ -9,94 +9,208 @@ Here are some examples of how to use the fixture factories.
 
 One article with a random title, as defined in the factory [on the previous page](factories):
 ```php
-$article = ArticleFactory::make()->getEntity();
+$article = ArticleFactory::new()->build();
 ```
 Two articles with different random titles:
 ```php
-$articles = ArticleFactory::make(2)->getEntities();
-```
-Two articles using the explicit make-many alias:
-```php
-$articles = ArticleFactory::makeMany(2)->getEntities();
+$articles = ArticleFactory::new()->count(2)->buildMany();
 ```
 One article with title set to 'Foo':
 ```php
-$article = ArticleFactory::make(['title' => 'Foo'])->getEntity();
+$article = ArticleFactory::new(['title' => 'Foo'])->build();
 ```
 Three articles with the title set to 'Foo':
 ```php
-$articles = ArticleFactory::make(['title' => 'Foo'], 3)->getEntities();
+$articles = ArticleFactory::new(['title' => 'Foo'])->count(3)->buildMany();
 ```
 or
 ```php
-$articles = ArticleFactory::make(3)->patchData(['title' => 'Foo'])->getEntities();
+$articles = ArticleFactory::new()->count(3)->state(['title' => 'Foo'])->buildMany();
 ```
 or
 ```php
-$articles = ArticleFactory::make(3)->setField('title', 'Foo')->getEntities();
+$articles = ArticleFactory::new()->count(3)->setField('title', 'Foo')->buildMany();
 ```
 or
 ```php
-$articles = ArticleFactory::make()->setField('title', 'Foo')->setTimes(3)->getEntities();
+$articles = ArticleFactory::new()->setField('title', 'Foo')->count(3)->buildMany();
 ```
 or
 ```php
-$articles = ArticleFactory::make([
+$articles = ArticleFactory::new([
  ['title' => 'Foo'],
  ['title' => 'Bar'],
  ['title' => 'Baz'],
-])->getEntities();
+])->buildMany();
+```
+
+To vary attributes across `count()` calls, use `sequence()`:
+```php
+$articles = ArticleFactory::new()
+    ->count(4)
+    ->sequence(
+        ['title' => 'Draft'],
+        ['title' => 'Published'],
+    )
+    ->buildMany();
+```
+
+The state at index `$i % count($states)` is applied to the i-th entity, so the example above produces `Draft, Published, Draft, Published`. If `count()` is smaller than the number of states the trailing states are simply unused; if `count()` is `1` only the first state ever applies. Calling `sequence()` again replaces the previously stored states — it is not additive.
+
+A `sequence` state can also be a callable receiving `($factory, $generator, $index)` for index-aware values:
+
+```php
+$articles = ArticleFactory::new()
+    ->count(3)
+    ->sequence(fn ($factory, $generator, int $i) => ['slug' => "article-{$i}"])
+    ->buildMany();
+```
+
+When you only want to vary one column at a time, `sequenceField()` is the focused alternative. It accepts any value the column supports — scalars, arrays, enum cases, anything Cake's marshaller handles for that field:
+
+```php
+$articles = ArticleFactory::new()
+    ->count(4)
+    ->sequenceField('status', Status::Draft, Status::Published, Status::Archived)
+    ->buildMany();
+
+// or, equivalently, with an enum's ::cases():
+$articles = ArticleFactory::new()
+    ->count(4)
+    ->sequenceField('status', ...Status::cases())
+    ->buildMany();
+```
+
+`sequenceField()` calls **stack across different fields**: each column cycles independently at its own period, so two cycles with different lengths compose without interference.
+
+```php
+$articles = ArticleFactory::new()
+    ->count(6)
+    ->sequenceField('status', 'draft', 'published')   // 2-cycle
+    ->sequenceField('priority', 1, 5, 10)             // 3-cycle
+    ->buildMany();
+// row 0: draft / 1
+// row 1: published / 5
+// row 2: draft / 10
+// row 3: published / 1
+// row 4: draft / 5
+// row 5: published / 10
+```
+
+Calling `sequenceField()` twice for the **same field** replaces that field's cycle (last-write-wins per field, matching normal map semantics). When mixed with `sequence()`, the row-level `sequence()` is applied first and `sequenceField()` overlays its column on top — so for any field appearing in both, the per-field overlay wins.
+
+For reusable business states, prefer named methods on the factory:
+```php
+$article = ArticleFactory::new()
+    ->published()
+    ->featured()
+    ->save();
+```
+
+Use inline `state()` or `setField()` when the adjustment is specific to this test only:
+```php
+$article = ArticleFactory::new()
+    ->published()
+    ->state(['reviewed_by' => 'qa-user'])
+    ->save();
 ```
 
 When injecting a single string in the factory, the latter will assign the injected string to the
 [display field](https://book.cakephp.org/5/en/orm/retrieving-data-and-resultsets.html#finding-key-value-pairs) of the factory's table:
 ```php
-$articles = ArticleFactory::make('Foo')->getEntity();
-$articles = ArticleFactory::make('Foo', 3)->getEntities();
-$articles = ArticleFactory::make(['Foo', 'Bar', 'Baz'])->getEntities();
+$article = ArticleFactory::new('Foo')->build();
+$articles = ArticleFactory::new('Foo')->count(3)->buildMany();
+$articles = ArticleFactory::new(['Foo', 'Bar', 'Baz'])->buildMany();
 ```
 
 
-To persist the generated data, use `persistEntity()` (single entity) or `persistEntities()` (multiple entities) instead of `getEntity()` or `getEntities()`:
+To persist the generated data, use `save()` (single entity) or `saveMany()` (multiple entities) instead of `build()` or `buildMany()`:
 ```php
-$article = ArticleFactory::make()->persistEntity();
-$articles = ArticleFactory::make(3)->persistEntities();
+$article = ArticleFactory::new()->save();
+$articles = ArticleFactory::new()->count(3)->saveMany();
 ```
 
-`persist()` is still available for backwards compatibility but is deprecated; its return type depends on whether the factory was configured for one or many entities, which makes it awkward for static analysis.
+`save()` and `build()` throw a `RuntimeException` when the factory is configured to produce more than one entity (`count(>1)` or a multi-row instantiation array). Use `saveMany()` / `buildMany()` whenever the count is anything other than exactly one.
+
 You can also build data using an explicit callable:
 ```php
-$article = ArticleFactory::makeWith(function (ArticleFactory $factory, GeneratorInterface $generator) {
+$article = ArticleFactory::new(function (ArticleFactory $factory, GeneratorInterface $generator) {
     return ['title' => $generator->jobTitle()];
-})->getEntity();
+})->build();
+```
+
+You can also hook into the lifecycle of generated entities:
+```php
+$article = ArticleFactory::new()
+    ->afterBuild(function (Article $article): void {
+        $article->title = 'Built title';
+    })
+    ->afterSave(function (Article $article): void {
+        $article->title = 'Saved title';
+    })
+    ->save();
+```
+
+`afterBuild()` runs before `build*()` returns and before `save*()` persists.
+`afterSave()` runs after the entity has been saved, so it can adjust the in-memory entity without rewriting the database row.
+
+Both hooks receive `($entity, int $index, BaseFactory $factory)`, so you can vary behavior per row:
+
+```php
+$articles = ArticleFactory::new()
+    ->count(3)
+    ->afterBuild(function (Article $article, int $index): void {
+        $article->title = sprintf('Article #%d', $index + 1);
+    })
+    ->buildMany();
+```
+
+> **Caveat — `Model.afterSaveCommit`.** Cake fires `afterSaveCommit` only after the outer transaction commits. Under `FactoryTransactionStrategy` (the recommended setup) the outer transaction always rolls back at teardown, so `afterSaveCommit` listeners do not fire for factory-created entities. If your behavior depends on `afterSaveCommit`, exercise it through application code instead, or run the relevant test under a non-transactional strategy.
+
+Both hooks fire for nested factories too — when a child factory is persisted as part of its parent's cascading save, its own `afterSave()` callbacks run on the saved child entities:
+
+```php
+ArticleFactory::new()
+    ->with('Authors', AuthorFactory::new()->afterSave(function (Author $author) {
+        // runs once per saved author, even though save() was called on the article factory
+    }))
+    ->save();
 ```
 
 If you want to manually save an entity using a table instance, keep it dirty so required fields are written:
 ```php
-$article = ArticleFactory::make()
+$article = ArticleFactory::new()
     ->keepDirty()
-    ->getEntity();
+    ->build();
 $this->Articles->save($article);
 ```
 
 When you add associations, `keepDirty()` also propagates to them:
 ```php
-$article = ArticleFactory::make()
+$article = ArticleFactory::new()
     ->keepDirty()
-    ->withAuthors()
-    ->getEntity();
+    ->hasAuthors()
+    ->build();
 $this->Articles->save($article, ['associated' => ['Authors']]);
 ```
 
-You may want to retrieve your entities as a result set, allowing you to conveniently query the entities created:
+If a test wants CakePHP `ResultSet` semantics, wrap the array returned by
+`buildMany()` or `saveMany()` explicitly. There are no dedicated factory
+`ResultSet` helpers in v2:
 ```php
-$articles = ArticleFactory::make(3)->getResultSet(); // Will not persist in the DB
-$articles = ArticleFactory::make(3)->getPersistedResultSet(); // Will persist in the DB
+$articles = new \Cake\ORM\ResultSet(
+    ArticleFactory::new()->count(3)->buildMany()
+); // In-memory only
+
+$articles = new \Cake\ORM\ResultSet(
+    ArticleFactory::new()->count(3)->saveMany()
+); // Persisted rows
 ```
 
-A single entity is returned wrapped in a result set as well, so the contract is the same regardless of count:
+A single entity can be normalized the same way when a caller expects a
+`ResultSet` contract:
 ```php
-$article = ArticleFactory::make()->getPersistedResultSet()->first(); // Cake\Datasource\EntityInterface
+$article = (new \Cake\ORM\ResultSet(ArticleFactory::new()->saveMany()))->first(); // Cake\Datasource\EntityInterface
 ```
 
 Do not forget to check the [plugin's tests](https://github.com/dereuromark/cakephp-fixture-factories/tree/main/tests) for
@@ -105,7 +219,7 @@ more insights!
 ### Using `FactoryAwareTrait`
 All examples above use the static getter to fetch a factory instance. As syntactic sugar, you can use `FactoryAwareTrait::getFactory` instead.
 
-`getFactory` is more tolerant on provided name, as you can use plurals or lowercased names. All arguments passed after factory name will be cast to `BaseFactory::make`.
+`getFactory` is more tolerant on provided name, as you can use plurals or lowercased names. All arguments passed after factory name will be cast to `BaseFactory::new`.
 
 ```php
 use App\Test\Factory\ArticleFactory;
@@ -118,16 +232,16 @@ class MyTest extends TestCase
     public function myTest(): void
     {
         // Static getter style
-        $article = ArticleFactory::make()->getEntity();
-        $article = ArticleFactory::make(['title' => 'Foo'])->getEntity();
-        $articles = ArticleFactory::make(3)->getEntities();
-        $articles = ArticleFactory::make(['title' => 'Foo'], 3)->getEntities();
+        $article = ArticleFactory::new()->build();
+        $article = ArticleFactory::new(['title' => 'Foo'])->build();
+        $articles = ArticleFactory::new()->count(3)->buildMany();
+        $articles = ArticleFactory::new(['title' => 'Foo'])->count(3)->buildMany();
 
         // Exactly the same in FactoryAwareTrait style
-        $article = $this->getFactory('Article')->getEntity();
-        $article = $this->getFactory('Article', ['title' => 'Foo'])->getEntity();
-        $articles = $this->getFactory('Article', 3)->getEntities();
-        $articles = $this->getFactory('Article', ['title' => 'Foo'], 3)->getEntities();
+        $article = $this->getFactory('Article')->build();
+        $article = $this->getFactory('Article', ['title' => 'Foo'])->build();
+        $articles = $this->getFactory('Article', 3)->buildMany();
+        $articles = $this->getFactory('Article', ['title' => 'Foo'])->count(3)->buildMany();
     }
 }
 ```
@@ -138,26 +252,35 @@ Factories let you express business semantics by chaining methods. Any method tha
 
 The example below uses a custom method on `ArticleFactory` to set a job-title body. It's deliberately simple — your real chains will encode whatever business patterns you have.
 ```php
-$articleFactory = ArticleFactory::make(['title' => 'Foo']);
-$articleFoo1 = $articleFactory->persistEntity();
-$articleFoo2 = $articleFactory->persistEntity();
-$articleJobOffer = $articleFactory->setJobTitle()->persistEntity();
+$articleFactory = ArticleFactory::new(['title' => 'Foo']);
+$articleFoo1 = $articleFactory->save();
+$articleFoo2 = $articleFactory->save();
+$articleJobOffer = $articleFactory->setJobTitle()->save();
 ```
 
 The first two articles have a title set to 'Foo'. The third has a job title, randomly generated by the configured generator as defined in the `ArticleFactory`.
 
+The same chaining style works especially well for named state methods:
+```php
+$article = ArticleFactory::new()
+    ->published()
+    ->featured()
+    ->hasAuthors(2)
+    ->save();
+```
+
 ### With a callable
 
-If a field is not specified via the generator inside `setDefaultTemplate`, all the generated rows for that factory will share the same value. The example below generates three articles with three different random titles:
+If a field is not specified via the generator inside `definition()`, all the generated rows for that factory will share the same value. The example below generates three articles with three different random titles:
 ```php
 use App\Test\Factory\ArticleFactory;
 use CakephpFixtureFactories\Generator\GeneratorInterface;
 ...
-$articles = ArticleFactory::make(function(ArticleFactory $factory, GeneratorInterface $generator) {
+$articles = ArticleFactory::new(function (ArticleFactory $factory, GeneratorInterface $generator) {
    return [
        'title' => $generator->text(),
    ];
-}, 3)->persistEntities();
+})->count(3)->saveMany();
 ```
 
 ### Dot notation for array fields
@@ -171,14 +294,14 @@ overwrite the value of `key2` only and keep the default value of `key1` as follo
 ```php
 use App\Test\Factory\ArticleFactory;
 ...
-$article = ArticleFactory::make(['array_field.key2' => 'newValue'])->getEntity();
+$article = ArticleFactory::new(['array_field.key2' => 'newValue'])->build();
 // or
-$article = ArticleFactory::make([
+$article = ArticleFactory::new([
    'array_field.key1' => 'foo',
    'array_field.key2' => 'bar',
-])->getEntity();
+])->build();
 // or
-$article = ArticleFactory::make()->setField('array_field.key2', 'newValue')->getEntity();
+$article = ArticleFactory::new()->setField('array_field.key2', 'newValue')->build();
 ```
 
 ### Mocking select queries
@@ -191,7 +314,7 @@ For example in a `ArticlesIndexController` you want to emulate a query returning
 
 In your test, where `$this` is the TestCase extending [CakePHP's TestCase](https://book.cakephp.org/5/en/development/testing.html#mocking-model-methods):
 ```php
-$articleFactory = ArticleFactory::make(10)->withAuthors();
+$articleFactory = ArticleFactory::new()->count(10)->hasAuthors();
 \CakephpFixtureFactories\ORM\SelectQueryMocker::mock($this, $articleFactory);
 ```
 

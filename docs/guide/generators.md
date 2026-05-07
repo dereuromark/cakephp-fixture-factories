@@ -112,14 +112,14 @@ Configure::write('FixtureFactories.generatorType', 'dummy');
 Or set it per-factory:
 
 ```php
-$article = ArticleFactory::make()
+$article = ArticleFactory::new()
     ->setGenerator('dummy')
-    ->getEntity();
+    ->build();
 ```
 
-> **Note**: By default, `setGenerator()` changes the generator globally. Enable
-> `FixtureFactories.instanceLevelGenerator` to limit it to the current instance.
-> See [Fixture Factories](factories#instance-level-generators).
+> **Note**: By default, `setGenerator()` only affects the current factory
+> instance. Set `FixtureFactories.instanceLevelGenerator` to `false` if you need
+> the legacy global behavior. See [Fixture Factories](factories#instance-level-generators).
 
 ### Migration Guide: Faker → DummyGenerator
 
@@ -231,14 +231,15 @@ Don't hardcode generator selection in factories:
 Configure::write('FixtureFactories.generatorType', 'dummy');
 
 // Good - per-factory override
-ArticleFactory::make()->setGenerator('dummy')->getEntity();
+ArticleFactory::new()->setGenerator('dummy')->build();
 
 // Good - set global default explicitly
 BaseFactory::setDefaultGenerator('dummy');
 ```
 
-> **Tip**: Enable `FixtureFactories.instanceLevelGenerator` so that `setGenerator()` only
-> affects the current factory instance. See [Fixture Factories](factories#instance-level-generators).
+> **Tip**: Leave `FixtureFactories.instanceLevelGenerator` enabled so that
+> `setGenerator()` stays scoped to the current factory instance. See
+> [Fixture Factories](factories#instance-level-generators).
 
 ### 3. Test with Both Generators (Optional)
 

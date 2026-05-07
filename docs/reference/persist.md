@@ -8,10 +8,10 @@ Populate the database from the CLI — useful for manually browsing the app with
 bin/cake fixture_factories persist <Model> [options]
 ```
 
-Example: persist 5 articles, each with 3 Irish authors, by calling the `withThreeIrishAuthors()` factory method:
+Example: persist 5 articles, each with 3 Irish authors, by calling the `hasThreeIrishAuthors()` factory method:
 
 ```bash
-bin/cake fixture_factories persist Articles -n 5 -m withThreeIrishAuthors
+bin/cake fixture_factories persist Articles -n 5 -m hasThreeIrishAuthors
 ```
 
 ## Arguments
@@ -23,7 +23,7 @@ bin/cake fixture_factories persist Articles -n 5 -m withThreeIrishAuthors
 | Flag                 | Effect |
 |----------------------|--------|
 | `-n`, `--number`     | How many entities to persist. Default: `1` |
-| `-m`, `--method`     | A factory method to apply (e.g. `withThreeIrishAuthors`) |
+| `-m`, `--method`     | A factory method to apply (e.g. `hasThreeIrishAuthors`) |
 | `-c`, `--connection` | Connection to persist into. Default: `test` |
 | `-w`, `--with`       | Also create associated fixtures |
 | `-d`, `--dry-run`    | Print what would happen without writing to the DB |

@@ -13,7 +13,7 @@ return [
         'generatorType' => 'faker',
         'defaultLocale' => 'en_US',
         'seed' => 1234,
-        'instanceLevelGenerator' => false,
+        'instanceLevelGenerator' => true,
         'testFixtureNamespace' => 'App\\Test\\Factory',
         'testFixtureOutputDir' => 'Factory/',
         'testFixtureGlobalBehaviors' => [],
@@ -48,9 +48,9 @@ Seed for the generator's RNG. A fixed seed produces reproducible test data acros
 
 When `true`, `setGenerator()` only affects the current factory instance instead of globally changing the generator for all factories. Use `BaseFactory::setDefaultGenerator()` to set the global default explicitly.
 
-Default: `false` (BC — `setGenerator()` affects all factories globally).
+Default: `true` (`setGenerator()` only affects the current factory instance).
 
-> Recommended `true` for new projects to avoid surprising side effects when switching generators per-factory.
+> Set this to `false` only if you explicitly need the legacy global `setGenerator()` behavior.
 
 ### `testFixtureNamespace`
 
@@ -76,15 +76,28 @@ Provide the behavior name only — not the plugin-prefixed form (use `BehaviorNa
 
 ### `defaultDataMap`
 
-Custom data mapping for the bake command. Maps column names/types to generator method calls. See [Bake command](bake).
+Custom data mapping for the bake command. Maps column names/types to generator
+method fragments, generator call fragments with arguments, or full generator
+calls starting with `$generator->`. Both of these are valid:
+
+```php
+'defaultDataMap' => [
+    'string' => [
+        'sku' => 'ean13',
+        'status' => "randomElement(['draft', 'live'])",
+    ],
+],
+```
 
 ### `columnPatterns`
 
-Custom column-name regex patterns for the bake command, mapped to generator method calls.
+Custom column-name regex patterns for the bake command, mapped to generator
+method fragments, generator call fragments with arguments, or full generator
+calls starting with `$generator->`.
 
 ```php
 'columnPatterns' => [
-    '/^phone/' => '$generator->phoneNumber()',
-    '/^zip/'   => '$generator->postcode()',
+    '/^phone/' => 'phoneNumber()',
+    '/^zip/'   => 'postcode()',
 ],
 ```

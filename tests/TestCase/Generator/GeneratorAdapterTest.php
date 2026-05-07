@@ -6,11 +6,18 @@ namespace CakephpFixtureFactories\Test\TestCase\Generator;
 
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
+use CakephpFixtureFactories\Error\FixtureFactoryException;
 use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\Generator\CakeGeneratorFactory;
 use CakephpFixtureFactories\Generator\GeneratorInterface;
+use CakephpFixtureFactories\Test\Factory\AlternativeSeedArticleFactory;
 use CakephpFixtureFactories\Test\Factory\ArticleFactory;
+use InvalidArgumentException;
+use OverflowException;
+use TestApp\Model\Enum\EmptyTestStatus;
+use TestApp\Model\Enum\SingleCaseStatus;
 use TestApp\Model\Enum\TestStatus;
+use TestApp\Model\Enum\UnitTestStatus;
 
 class GeneratorAdapterTest extends TestCase
 {
@@ -157,6 +164,47 @@ class GeneratorAdapterTest extends TestCase
 
         // The name should work regardless of locale
         $this->assertIsString($generator->name());
+    }
+
+    /**
+     * Regression: BaseFactory's locale-resolution path used to short-circuit
+     * `Configure::read('FixtureFactories.defaultLocale')` by passing
+     * `I18n::getLocale()` (which is never null) as the explicit param. The
+     * Configure key was therefore unreachable. Centralizing in
+     * `BaseFactory::resolveLocale()` flips the precedence to:
+     * explicit > Configure > I18n.
+     *
+     * We can't easily inspect the locale on the underlying Generator without
+     * reflection (Faker stores it on the locale-specific provider list), so
+     * this test asserts the cache-key partitioning instead: enabling the
+     * Configure key must produce a different cached generator instance than
+     * the one cached against I18n's locale.
+     *
+     * @return void
+     */
+    public function testConfigureDefaultLocaleIsHonored(): void
+    {
+        BaseFactory::resetDefaultGenerator();
+        Configure::delete('FixtureFactories.defaultLocale');
+
+        // Prime the cache against I18n's default locale.
+        $factory = ArticleFactory::new();
+        $genWithoutConfigure = $factory->getGenerator();
+
+        // Now set a different locale via Configure and reset the cache.
+        BaseFactory::resetDefaultGenerator();
+        Configure::write('FixtureFactories.defaultLocale', 'fr_FR');
+
+        $factory2 = ArticleFactory::new();
+        $genWithConfigure = $factory2->getGenerator();
+
+        $this->assertNotSame(
+            $genWithoutConfigure,
+            $genWithConfigure,
+            'Configure::FixtureFactories.defaultLocale must produce a distinct generator from the I18n fallback.',
+        );
+
+        Configure::delete('FixtureFactories.defaultLocale');
     }
 
     /**
@@ -436,39 +484,35 @@ class GeneratorAdapterTest extends TestCase
     }
 
     /**
-     * Test that setGenerator affects all factories globally by default (BC)
+     * Test that setGenerator only affects the current factory instance by default
      *
      * @return void
      */
-    public function testSetGeneratorGlobalByDefault(): void
+    public function testSetGeneratorInstanceLevelByDefault(): void
     {
-        $factory1 = ArticleFactory::make();
-        $factory1->setGenerator('dummy');
+        $factory1 = ArticleFactory::new();
+        $factory1 = $factory1->setGenerator('dummy');
 
-        // A different factory instance should also get the dummy generator
-        $factory2 = ArticleFactory::make();
+        $factory2 = ArticleFactory::new();
 
-        // Both should return the same generator instance (global default)
-        $this->assertSame($factory1->getGenerator(), $factory2->getGenerator());
+        $this->assertNotSame($factory1->getGenerator(), $factory2->getGenerator());
     }
 
     /**
-     * Test that setGenerator only affects current instance when feature flag is enabled
+     * Test that legacy global behavior can still be enabled explicitly
      *
      * @return void
      */
-    public function testSetGeneratorInstanceLevel(): void
+    public function testSetGeneratorGlobalWhenConfigured(): void
     {
-        Configure::write('FixtureFactories.instanceLevelGenerator', true);
+        Configure::write('FixtureFactories.instanceLevelGenerator', false);
 
-        $factory1 = ArticleFactory::make();
-        $factory1->setGenerator('dummy');
+        $factory1 = ArticleFactory::new();
+        $factory1 = $factory1->setGenerator('dummy');
 
-        $factory2 = ArticleFactory::make();
+        $factory2 = ArticleFactory::new();
 
-        // factory1 should have its own generator
-        // factory2 should fall back to the default (faker)
-        $this->assertNotSame($factory1->getGenerator(), $factory2->getGenerator());
+        $this->assertSame($factory1->getGenerator(), $factory2->getGenerator());
     }
 
     /**
@@ -483,7 +527,7 @@ class GeneratorAdapterTest extends TestCase
         // setDefaultGenerator should set the global default even with flag enabled
         BaseFactory::setDefaultGenerator('dummy');
 
-        $factory = ArticleFactory::make();
+        $factory = ArticleFactory::new();
         $generator = $factory->getGenerator();
 
         // Should use the default generator (dummy) since no instance override
@@ -498,7 +542,7 @@ class GeneratorAdapterTest extends TestCase
     public function testResetDefaultGenerator(): void
     {
         // Get a generator to cache it
-        $factory1 = ArticleFactory::make();
+        $factory1 = ArticleFactory::new();
         $gen1 = $factory1->getGenerator();
 
         // Reset
@@ -506,22 +550,40 @@ class GeneratorAdapterTest extends TestCase
         CakeGeneratorFactory::clearInstances();
 
         // Getting again should create a new instance
-        $factory2 = ArticleFactory::make();
+        $factory2 = ArticleFactory::new();
         $gen2 = $factory2->getGenerator();
 
         $this->assertNotSame($gen1, $gen2);
     }
 
+    public function testDifferentFactorySeedsDoNotPoisonSharedDefaultGeneratorCache(): void
+    {
+        Configure::write('FixtureFactories.generatorType', 'dummy');
+        CakeGeneratorFactory::clearInstances();
+        BaseFactory::resetDefaultGenerator();
+
+        $defaultGenerator = ArticleFactory::new()->getGenerator();
+        $alternativeGenerator = AlternativeSeedArticleFactory::new()->getGenerator();
+
+        $this->assertNotSame($defaultGenerator, $alternativeGenerator);
+        $this->assertNotSame($defaultGenerator->randomNumber(), $alternativeGenerator->randomNumber());
+    }
+
     /**
-     * Test configurable seed
+     * The `FixtureFactories.seed` config is backend-agnostic. We assert it
+     * against the Dummy backend whose XoshiroRandomizer is seeded directly
+     * — Faker relies on PHP's process-global `mt_srand`, which is sensitive
+     * to test execution order and underlying PHP/Faker versions on the
+     * lowest-dependency CI matrix and produces flakes there.
      *
      * @return void
      */
     public function testConfigurableSeed(): void
     {
+        Configure::write('FixtureFactories.generatorType', 'dummy');
         Configure::write('FixtureFactories.seed', 9999);
 
-        $factory = ArticleFactory::make();
+        $factory = ArticleFactory::new();
         $gen = $factory->getGenerator();
         $value1 = $gen->randomNumber();
 
@@ -529,10 +591,155 @@ class GeneratorAdapterTest extends TestCase
         CakeGeneratorFactory::clearInstances();
         BaseFactory::resetDefaultGenerator();
 
-        $factory2 = ArticleFactory::make();
+        $factory2 = ArticleFactory::new();
         $gen2 = $factory2->getGenerator();
         $value2 = $gen2->randomNumber();
 
-        $this->assertEquals($value1, $value2, 'Same seed should produce same values');
+        $this->assertSame($value1, $value2, 'Same seed should produce same values');
+    }
+
+    /**
+     * Regression: $gen->name (Faker-style property access) must work on the
+     * Dummy adapter too. Previously DummyGeneratorAdapter::__get gated on
+     * method_exists() against the underlying DummyGenerator — but DummyGenerator
+     * dispatches via __call, so method_exists returns false for almost
+     * everything and __get threw. Cross-backend definition() code broke.
+     *
+     * @return void
+     */
+    public function testDummyGeneratorPropertyAccess(): void
+    {
+        Configure::write('FixtureFactories.generatorType', 'dummy');
+        CakeGeneratorFactory::clearInstances();
+
+        $generator = CakeGeneratorFactory::create();
+
+        $this->assertIsString($generator->name);
+        $this->assertIsString($generator->email);
+        $this->assertIsString($generator->word);
+    }
+
+    /**
+     * Regression: $gen->optional()->unique() on the Dummy adapter must
+     * actually deduplicate. Previously DummyOptionalAdapter::unique() returned
+     * a fresh DummyUniqueAdapter wrapping the parent generator without setting
+     * its isUnique flag, so duplicates leaked through.
+     *
+     * @return void
+     */
+    public function testDummyOptionalUniqueDoesDedup(): void
+    {
+        Configure::write('FixtureFactories.generatorType', 'dummy');
+        CakeGeneratorFactory::clearInstances();
+
+        $generator = CakeGeneratorFactory::create();
+        $unique = $generator->optional(1.0)->unique();
+
+        $values = [];
+        for ($i = 0; $i < 10; $i++) {
+            $values[] = $unique->randomDigit();
+        }
+
+        // randomDigit() has 10 possible values; with optional(1.0) all return
+        // a value (never null) so unique() must dedup all 10.
+        $this->assertCount(10, array_unique($values));
+    }
+
+    /**
+     * Regression: DummyOptionalAdapter::shouldReturnValue previously used
+     * mt_rand() which bypassed the seeded randomizer. Two generators with the
+     * same seed must produce the same optional() draw sequence.
+     *
+     * @return void
+     */
+    public function testDummyOptionalRespectsSeed(): void
+    {
+        Configure::write('FixtureFactories.generatorType', 'dummy');
+        CakeGeneratorFactory::clearInstances();
+
+        $gen1 = CakeGeneratorFactory::create();
+        $gen1->seed(42);
+        $optional1 = $gen1->optional(0.5);
+        $sequence1 = [];
+        for ($i = 0; $i < 20; $i++) {
+            $sequence1[] = $optional1->randomDigit();
+        }
+
+        CakeGeneratorFactory::clearInstances();
+
+        $gen2 = CakeGeneratorFactory::create();
+        $gen2->seed(42);
+        $optional2 = $gen2->optional(0.5);
+        $sequence2 = [];
+        for ($i = 0; $i < 20; $i++) {
+            $sequence2[] = $optional2->randomDigit();
+        }
+
+        $this->assertSame($sequence1, $sequence2, 'Seeded optional() should produce identical draw sequences');
+    }
+
+    public function testUnknownGeneratorTypeThrows(): void
+    {
+        $this->expectException(FixtureFactoryException::class);
+        $this->expectExceptionMessage('Unknown generator type `unknown`');
+
+        CakeGeneratorFactory::create(null, 'unknown');
+    }
+
+    public function testMissingGeneratorAdapterClassThrows(): void
+    {
+        CakeGeneratorFactory::registerAdapter('missing_class', 'Nope\\MissingGeneratorAdapter');
+
+        $this->expectException(FixtureFactoryException::class);
+        $this->expectExceptionMessage('Generator adapter class `Nope\\MissingGeneratorAdapter` not found');
+
+        CakeGeneratorFactory::create(null, 'missing_class');
+    }
+
+    public function testDummyUniqueBooleanExhaustionThrowsOverflow(): void
+    {
+        Configure::write('FixtureFactories.generatorType', 'dummy');
+        CakeGeneratorFactory::clearInstances();
+
+        $generator = CakeGeneratorFactory::create()->unique();
+        $generator->boolean();
+        $generator->boolean();
+
+        $this->expectException(OverflowException::class);
+        $generator->boolean();
+    }
+
+    public function testFakerUniqueEnumRejectsNonEnumClass(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid enum class');
+
+        CakeGeneratorFactory::create()->unique()->enumValue('not-an-enum');
+    }
+
+    public function testFakerUniqueEnumValueRejectsNonBackedEnum(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Only backed enums are supported');
+
+        CakeGeneratorFactory::create()->unique()->enumValue(UnitTestStatus::class);
+    }
+
+    public function testFakerUniqueEnumRejectsEmptyEnum(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Enum has no cases');
+
+        CakeGeneratorFactory::create()->unique()->enumCase(EmptyTestStatus::class);
+    }
+
+    public function testFakerUniqueEnumExhaustionThrowsOverflow(): void
+    {
+        $generator = CakeGeneratorFactory::create()->unique();
+        $value = $generator->enumValue(SingleCaseStatus::class);
+        $this->assertSame('single', $value);
+
+        $this->expectException(OverflowException::class);
+        $generator->enumValue(SingleCaseStatus::class);
     }
 }

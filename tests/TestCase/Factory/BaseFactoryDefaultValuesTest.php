@@ -28,7 +28,7 @@ class BaseFactoryDefaultValuesTest extends TestCase
 {
     public function testMakeAuthorWithDefaultName(): void
     {
-        $author = AuthorFactory::make()->getEntity();
+        $author = AuthorFactory::new()->build();
         $this->assertTrue(is_string($author->name));
         $this->assertTrue(is_string($author->address->street));
         $this->assertTrue(is_string($author->address->city->name));
@@ -38,7 +38,7 @@ class BaseFactoryDefaultValuesTest extends TestCase
     public function testMakeAuthorWithArticlesWithDefaultTitles(): void
     {
         $n = 2;
-        $author = AuthorFactory::make()->withArticles($n)->getEntity();
+        $author = AuthorFactory::new()->hasArticles($n)->build();
         $this->assertTrue(is_string($author->name));
         foreach ($author->articles as $article) {
             $this->assertTrue(is_string($article->title));
@@ -47,7 +47,7 @@ class BaseFactoryDefaultValuesTest extends TestCase
 
     public function testPersistAddressWithCityAndCountry(): void
     {
-        $address = AddressFactory::make()->persist();
+        $address = AddressFactory::new()->save();
 
         $this->assertTrue(is_string($address->street));
         $this->assertTrue(is_string($address->city->name));
@@ -58,7 +58,7 @@ class BaseFactoryDefaultValuesTest extends TestCase
 
     public function testChildAssociation(): void
     {
-        $article = ArticleWithFiveBillsFactory::make()->getEntity();
+        $article = ArticleWithFiveBillsFactory::new()->build();
 
         $this->assertInstanceOf(Author::class, $article->authors[0]);
         $this->assertSame(5, count($article->bills));
@@ -72,12 +72,12 @@ class BaseFactoryDefaultValuesTest extends TestCase
     {
         $n = 2;
         $title = 'Some title';
-        $articles = ArticleFactory::make(function (ArticleFactory $factory, GeneratorInterface $generator) {
+        $articles = ArticleFactory::new(function (ArticleFactory $factory, GeneratorInterface $generator) {
             return [
                 'title' => $generator->jobTitle(),
                 'body' => $generator->realText(100),
             ];
-        }, $n)->withTitle($title)->persist();
+        }, $n)->withTitle($title)->saveMany();
         foreach ($articles as $article) {
             $this->assertEquals($title, $article->title);
         }
@@ -86,25 +86,25 @@ class BaseFactoryDefaultValuesTest extends TestCase
     public function testPatchDataAndDefaultValue(): void
     {
         $title = 'Some title';
-        $article = ArticleFactory::make()->patchData(compact('title'))->persist();
+        $article = ArticleFactory::new()->state(compact('title'))->save();
         $this->assertSame($title, $article->title);
     }
 
     public function testPatchDataAndStaticValue(): void
     {
         $title = 'Some title';
-        $article = ArticleFactory::make(['title' => 'Some other title'])->patchData(compact('title'))->persist();
+        $article = ArticleFactory::new(['title' => 'Some other title'])->state(compact('title'))->save();
         $this->assertSame($title, $article->title);
     }
 
     public function testTitleModifiedInMultipleCreationWithCallback(): void
     {
         $n = 3;
-        $articles = ArticleFactory::make(function (ArticleFactory $factory, GeneratorInterface $generator) {
+        $articles = ArticleFactory::new(function (ArticleFactory $factory, GeneratorInterface $generator) {
             return [
                 'body' => $generator->realText(100),
             ];
-        }, $n)->persist();
+        }, $n)->saveMany();
         $firstTitle = $articles[0]->title;
         $firstBody = $articles[0]->body;
         unset($articles[0]);
@@ -117,7 +117,7 @@ class BaseFactoryDefaultValuesTest extends TestCase
     public function testDefaultValuesOfArticleDifferent(): void
     {
         $n = 5;
-        $articles = ArticleFactory::make($n)->getEntities();
+        $articles = ArticleFactory::new($n)->buildMany();
         $titles = Hash::extract($articles, '{n}.title');
         $this->assertEquals($n, count(array_unique($titles)));
     }
@@ -129,7 +129,7 @@ class BaseFactoryDefaultValuesTest extends TestCase
     public function testDefautlValuesOfArticleAuthorsDifferent(): void
     {
         $n = 5;
-        $article = ArticleFactory::make()->withAuthors($n)->getEntity();
+        $article = ArticleFactory::new()->hasAuthors($n)->build();
         $authorNames = Hash::extract($article, 'authors.{n}.name');
         $this->assertEquals($n, count(array_unique($authorNames)));
     }

@@ -31,17 +31,18 @@
         "cakephp/orm": "^5.0"
     },
     "require-dev": {
-        "vierge-noire/cakephp-test-suite-light": "^3.0",
-        "johnykvsky/dummygenerator": "^0.1.0 || ^0.2.0",
-        "fakerphp/faker": "^1.23",
         "cakephp/bake": "^3.0.0",
+        "cakephp/migrations": "^4.7.0 || ^5.0.0",
         "cakephp/twig-view": "^2.0.2",
         "dereuromark/cakephp-ide-helper": "^2.17",
-        "php-collective/code-sniffer": "dev-master",
-        "cakephp/migrations": "^4.7.0 || ^5.0.0",
+        "fakerphp/faker": "^1.23",
+        "johnykvsky/dummygenerator": "^0.1.0 || ^0.2.0",
         "josegonzalez/dotenv": "^4.0.0",
+        "php-collective/code-sniffer": "dev-master",
         "phpstan/phpstan": "^2.1",
-        "phpunit/phpunit": "^11.5 || ^12.1 || ^13.0"
+        "phpunit/phpunit": "^11.5 || ^12.1 || ^13.0",
+        "rector/rector": "^2.1",
+        "vierge-noire/cakephp-test-suite-light": "^3.0"
     },
     "suggest": {
         "dereuromark/cakephp-ide-helper": "Lets `bin/cake annotate classes` (and `annotate all`) keep your Factory subclass docblocks in sync via the bundled FactoryAnnotatorTask. Requires version with PathAwareClassAnnotatorTaskInterface support."
@@ -65,6 +66,8 @@
         "mysql": "bash run_tests.sh Mysql \"$@\"",
         "pgsql": "bash run_tests.sh Postgres \"$@\"",
         "sqlite": "bash run_tests.sh Sqlite \"$@\"",
+        "rector": "rector process --config rector.php",
+        "rector-dry-run": "rector process --dry-run --config rector.php",
         "stan": "phpstan analyze --memory-limit=-1",
         "cs-check": "phpcs --colors --parallel=16",
         "cs-fix": "phpcbf --colors --parallel=16"

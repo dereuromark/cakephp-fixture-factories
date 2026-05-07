@@ -23,7 +23,7 @@ class Issue226Test extends TestCase
     public function testMakeWithNullValuePreservesOriginal(): void
     {
         // Create a factory with null value for 'title'
-        $article = ArticleFactory::make(['title' => null])->getEntity();
+        $article = ArticleFactory::new(['title' => null])->build();
 
         // Store the original value before modification
         $originalBeforeChange = $article->getOriginal('title');
@@ -48,7 +48,7 @@ class Issue226Test extends TestCase
     public function testMakeWithNullValueForNonDefaultField(): void
     {
         // Create a factory with null value for 'body' (which has no default in factory)
-        $article = ArticleFactory::make(['body' => null])->getEntity();
+        $article = ArticleFactory::new(['body' => null])->build();
 
         // Store the original value before modification
         $originalBeforeChange = $article->getOriginal('body');
@@ -73,7 +73,7 @@ class Issue226Test extends TestCase
     public function testPersistWithNullValuePreservesOriginal(): void
     {
         // Create and persist a factory with null value for 'body' (nullable field)
-        $article = ArticleFactory::make(['body' => null])->persist();
+        $article = ArticleFactory::new(['body' => null])->save();
 
         // Store the original value before modification
         $originalBeforeChange = $article->getOriginal('body');
@@ -98,7 +98,7 @@ class Issue226Test extends TestCase
     public function testMakeWithNonNullValuePreservesOriginal(): void
     {
         // Create a factory with a non-null value
-        $article = ArticleFactory::make(['title' => 'Original Title'])->getEntity();
+        $article = ArticleFactory::new(['title' => 'Original Title'])->build();
 
         // Change the value
         $article->title = 'Modified Title';

@@ -20,8 +20,6 @@ use CakephpFixtureFactories\Generator\GeneratorInterface;
  * Class CityFactory
  *
  * @extends BaseFactory<\TestApp\Model\Entity\City>
- *
- * @method static \TestApp\Model\Entity\City get(mixed $primaryKey, array $options = [])
  */
 class CityFactory extends BaseFactory
 {
@@ -43,22 +41,24 @@ class CityFactory extends BaseFactory
         return 'Cities';
     }
 
-    protected function setDefaultTemplate(): void
+    public function definition(GeneratorInterface $generator): array
     {
-        $this->setDefaultData(function (GeneratorInterface $generator) {
-            return [
-                'name' => $generator->city(),
-            ];
-        })
-        ->withCountries();
+        return [
+            'name' => $generator->city(),
+        ];
     }
 
     /**
      * @param array|callable|null|int $parameter
      * @return $this
      */
-    public function withCountries(mixed $parameter = null): self
+    protected function configure(): static
     {
-        return $this->with('Countries', CountryFactory::make($parameter));
+        return $this->forCountries();
+    }
+
+    public function forCountries(mixed $parameter = null): self
+    {
+        return $this->for(CountryFactory::new($parameter));
     }
 }

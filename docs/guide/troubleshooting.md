@@ -49,7 +49,7 @@ Symptoms: prior test's `Authors` rows show up in the next test's queries.
 
 ## Validation errors when persisting
 
-Factories deactivate validation by default. If you're seeing rule/validation failures from `persist()`, something is overriding that — check whether you've set `$marshallerOptions` or `$saveOptions` on the factory.
+Factories deactivate validation by default. If you're seeing rule or validation failures from `save()` / `saveMany()`, something is overriding that — check whether you've set `$marshallerOptions` or `$saveOptions` on the factory.
 
 To re-enable validation deliberately:
 
@@ -80,8 +80,8 @@ The bake command uses `defaultDataMap` and `columnPatterns` to choose generator 
 
 ```php
 'columnPatterns' => [
-    '/^phone/' => '$generator->phoneNumber()',
-    '/^zip/'   => '$generator->postcode()',
+    '/^phone/' => 'phoneNumber()',
+    '/^zip/'   => 'postcode()',
 ],
 ```
 
@@ -89,7 +89,7 @@ Then re-run `bin/cake bake fixture_factory <Model> --force`.
 
 ## `setGenerator()` affects unrelated factories
 
-By default, `setGenerator()` changes the global default — any subsequent factory uses the new generator too. To scope it to one factory instance:
+This only happens if you disabled instance-level generators. Re-enable them to keep `setGenerator()` scoped to one factory instance:
 
 ```php
 Configure::write('FixtureFactories.instanceLevelGenerator', true);

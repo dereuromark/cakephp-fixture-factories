@@ -15,13 +15,13 @@ declare(strict_types=1);
 
 namespace CakephpFixtureFactories\Factory;
 
+use ArrayObject;
 use Cake\Core\Configure;
-use Cake\Database\ExpressionInterface;
 use Cake\Datasource\EntityInterface;
 use Cake\Event\EventManagerInterface;
 use Cake\I18n\I18n;
+use Cake\ORM\Association\BelongsTo;
 use Cake\ORM\Query\SelectQuery;
-use Cake\ORM\ResultSet;
 use Cake\ORM\Table;
 use CakephpFixtureFactories\Error\FixtureFactoryException;
 use CakephpFixtureFactories\Error\PersistenceException;
@@ -29,20 +29,15 @@ use CakephpFixtureFactories\Generator\CakeGeneratorFactory;
 use CakephpFixtureFactories\Generator\GeneratorInterface;
 use CakephpFixtureFactories\TestSuite\FactoryTableTracker;
 use CakephpFixtureFactories\TestSuite\FactoryTransactionStrategy;
-use Closure;
 use InvalidArgumentException;
-use Psr\SimpleCache\CacheInterface;
 use RuntimeException;
 use Throwable;
-use function array_merge;
-use function is_array;
 
 /**
  * Class BaseFactory
  *
  * Subclasses should declare the entity type via PHPStan generics so that
- * `getEntity()`, `getEntities()`, `getResultSet()`, `getPersistedResultSet()`,
- * `persistEntity()` and `persistEntities()` resolve to the concrete entity class:
+ * `build()`, `buildMany()`, `save()` and `saveMany()` resolve to the concrete entity class:
  *
  * ```
  * /**
@@ -58,11 +53,18 @@ use function is_array;
 abstract class BaseFactory
 {
     /**
-     * Shared default generator used by all factory instances.
+     * Explicit global generator override shared by all factory instances.
      *
      * @var \CakephpFixtureFactories\Generator\GeneratorInterface|null
      */
     private static ?GeneratorInterface $defaultGenerator = null;
+
+    /**
+     * Lazily-created default generators keyed by factory class / locale / seed / configured type.
+     *
+     * @var array<string, \CakephpFixtureFactories\Generator\GeneratorInterface>
+     */
+    private static array $defaultGenerators = [];
 
     /**
      * Per-instance generator override.
@@ -113,6 +115,25 @@ abstract class BaseFactory
      * @var bool
      */
     private bool $keepDirty = false;
+
+    /**
+     * Internal bootstrap mode for static read helpers.
+     * During this phase configure()/initialize() may set connection or listener
+     * defaults, but association-building fluent calls should be ignored.
+     *
+     * @var bool
+     */
+    private bool $readBootstrapMode = false;
+
+    /**
+     * @var array<int, callable(\Cake\Datasource\EntityInterface, int, static): (\Cake\Datasource\EntityInterface|void)>
+     */
+    private array $afterBuildCallbacks = [];
+
+    /**
+     * @var array<int, callable(\Cake\Datasource\EntityInterface, int, static): (\Cake\Datasource\EntityInterface|void)>
+     */
+    private array $afterSaveCallbacks = [];
 
     /**
      * The data compiler gathers the data from the
@@ -180,25 +201,29 @@ abstract class BaseFactory
     abstract protected function getRootTableRegistryName(): string;
 
     /**
-     * @return void
+     * @param \CakephpFixtureFactories\Generator\GeneratorInterface $generator Generator
+     *
+     * @return array<string, mixed>
      */
-    abstract protected function setDefaultTemplate(): void;
+    abstract public function definition(GeneratorInterface $generator): array;
 
     /**
      * @param mixed $makeParameter Injected data
-     * @param int $times Number of entities created
+     * @param int $times Number of entities to produce. Prefer `->count()` in userland.
      *
      * @throws \InvalidArgumentException
      *
      * @return static
      */
-    public static function make(
-        mixed $makeParameter = [],
-        int $times = 1,
-    ): self {
-        if (is_numeric($makeParameter)) {
+    public static function new(mixed $makeParameter = [], int $times = 1): static
+    {
+        if (is_int($makeParameter)) {
             $factory = self::makeFromNonCallable();
             $times = $makeParameter;
+        } elseif (is_float($makeParameter)) {
+            throw new InvalidArgumentException(
+                '::new() only accepts an integer count as first parameter. Floats are not allowed; use ->count() with a positive integer.',
+            );
         } elseif ($makeParameter === null) {
             $factory = self::makeFromNonCallable();
         } elseif (is_array($makeParameter) || $makeParameter instanceof EntityInterface || is_string($makeParameter)) {
@@ -206,38 +231,20 @@ abstract class BaseFactory
         } elseif (is_callable($makeParameter)) {
             $factory = self::makeFromCallable($makeParameter);
         } else {
-            throw new InvalidArgumentException('
-                ::make only accepts an array, an integer, an EntityInterface, a string or a callable as first parameter.
-            ');
+            throw new InvalidArgumentException(
+                '::new only accepts an array, an integer, an EntityInterface, a string or a callable as first parameter.',
+            );
         }
 
-        $factory->setUp($factory, (int)$times);
+        $times = (int)$times;
+        if ($times < 1) {
+            throw new InvalidArgumentException(sprintf(
+                '::new() expects a positive count, got `%d`. Use ->count() with a positive integer to change the number of entities produced.',
+                $times,
+            ));
+        }
 
-        return $factory;
-    }
-
-    /**
-     * Create a factory that will generate many entities.
-     *
-     * @param int $times Number of entities.
-     *
-     * @return static
-     */
-    public static function makeMany(int $times): self
-    {
-        return static::make($times);
-    }
-
-    /**
-     * Create a factory with a callable data provider.
-     *
-     * @param callable $fn Callable returning array data.
-     *
-     * @return static
-     */
-    public static function makeWith(callable $fn): self
-    {
-        return static::make($fn);
+        return $factory->setUp($times);
     }
 
     /**
@@ -247,26 +254,57 @@ abstract class BaseFactory
      *
      * @return static
      */
-    public static function makeFrom(EntityInterface $entity): self
+    public static function from(EntityInterface $entity): static
     {
-        return static::make($entity);
+        return static::new($entity);
     }
 
     /**
      * Collect the number of entities to be created
      * Apply the default template in the factory
      *
-     * @param \CakephpFixtureFactories\Factory\BaseFactory<TEntity> $factory Factory
      * @param int $times Number of entities created
      *
-     * @return void
+     * @throws \RuntimeException When $times > 1 is combined with a factory
+     *   instantiated from an existing entity.
+     *
+     * @return static
      */
-    protected function setUp(BaseFactory $factory, int $times): void
+    protected function setUp(int $times): static
     {
-        $factory->initialize();
-        $factory->setTimes($times);
-        $factory->setDefaultTemplate();
+        $this->initialize();
+        $factory = $this->configure();
+        if ($times > 1 && $factory->getDataCompiler()->isInstantiatedFromEntity()) {
+            throw new RuntimeException(
+                self::entityWithMultipleCountMessage(static::class, $times),
+            );
+        }
+        $factory->times = $times;
+        $definitionFactory = $factory;
+        $factory = $factory->setDefaultData(
+            fn (GeneratorInterface $generator): array => $definitionFactory->definition($generator),
+        );
         $factory->getDataCompiler()->collectAssociationsFromDefaultTemplate();
+
+        return $factory;
+    }
+
+    /**
+     * Compose the message used by the entity-with-count guards in setUp() and
+     * count(). Both error sites point users at the same workaround so the fix
+     * is discoverable from either entry point.
+     */
+    private static function entityWithMultipleCountMessage(string $factory, int $times): string
+    {
+        return sprintf(
+            '%s cannot produce %d entities from a single injected entity — `new($entity)` and `from($entity)` wrap exactly one existing entity. '
+            . 'To produce N entities seeded from an existing one, extract its data and pass it through `new()` instead: '
+            . '%s::new($entity->toArray())->count(%d).',
+            $factory,
+            $times,
+            $factory,
+            $times,
+        );
     }
 
     /**
@@ -281,11 +319,21 @@ abstract class BaseFactory
     }
 
     /**
+     * Configure immutable defaults such as associations or listeners.
+     *
+     * @return static
+     */
+    protected function configure(): static
+    {
+        return $this;
+    }
+
+    /**
      * @param \Cake\Datasource\EntityInterface|array<\Cake\Datasource\EntityInterface>|string $data Injected data
      *
      * @return static
      */
-    private static function makeFromNonCallable(EntityInterface|array|string $data = []): self
+    private static function makeFromNonCallable(EntityInterface|array|string $data = []): static
     {
         $factory = new static();
         $factory->getDataCompiler()->collectFromInstantiation($data);
@@ -298,7 +346,7 @@ abstract class BaseFactory
      *
      * @return static
      */
-    private static function makeFromCallable(callable $fn): self
+    private static function makeFromCallable(callable $fn): static
     {
         $factory = new static();
         $factory->getDataCompiler()->collectArrayFromCallable($fn);
@@ -320,49 +368,81 @@ abstract class BaseFactory
             return $this->instanceGenerator;
         }
 
-        if (self::$defaultGenerator === null) {
-            $locale = I18n::getLocale();
-            self::$defaultGenerator = CakeGeneratorFactory::create($locale);
-            self::$defaultGenerator->seed(static::getGeneratorSeed());
+        if (self::$defaultGenerator !== null) {
+            return self::$defaultGenerator;
         }
 
-        return self::$defaultGenerator;
+        $locale = self::resolveLocale();
+        $cacheKey = implode('|', [
+            static::class,
+            $locale,
+            (string)static::getGeneratorSeed(),
+            (string)Configure::read('FixtureFactories.generatorType', ''),
+        ]);
+        if (!isset(self::$defaultGenerators[$cacheKey])) {
+            $generator = clone CakeGeneratorFactory::create($locale);
+            $generator->seed(static::getGeneratorSeed());
+            self::$defaultGenerators[$cacheKey] = $generator;
+        }
+
+        return self::$defaultGenerators[$cacheKey];
     }
 
     /**
-     * Get the generator instance, using the locale from I18n
+     * Resolve the locale used by all generator-creation paths.
      *
-     * @deprecated 3.1.0 Use getGenerator() instead. Will be removed in v4.0
+     * Precedence:
+     * 1. explicit `$override` (e.g. from `setGenerator($type, $locale)`),
+     * 2. `Configure::read('FixtureFactories.defaultLocale')`,
+     * 3. `I18n::getLocale()` as the final fallback.
      *
-     * @return \CakephpFixtureFactories\Generator\GeneratorInterface
+     * Centralizing this prevents the `defaultLocale` Configure key from being
+     * silently bypassed by callers that pre-default to `I18n::getLocale()`.
+     *
+     * @param string|null $override Caller-supplied locale, if any.
      */
-    public function getFaker(): GeneratorInterface
+    private static function resolveLocale(?string $override = null): string
     {
-        return $this->getGenerator();
+        if ($override !== null) {
+            return $override;
+        }
+        $configured = Configure::read('FixtureFactories.defaultLocale');
+        if (is_string($configured) && $configured !== '') {
+            return $configured;
+        }
+
+        return I18n::getLocale();
     }
 
     /**
      * Set the generator type to use.
      *
-     * When `FixtureFactories.instanceLevelGenerator` is enabled, this only affects
-     * the current factory instance. Otherwise it sets the global default for all factories.
+     * When `FixtureFactories.instanceLevelGenerator` is enabled, this clones the
+     * factory and scopes the override to the returned instance. Otherwise it
+     * mutates the process-wide default generator and returns `$this` — every
+     * other factory in the process is also affected. The fluent return value is
+     * preserved in both modes for ergonomics, but is only meaningful (i.e.
+     * scoped) in instance mode.
      *
      * @param string $type The generator type ('faker' or 'dummy')
      * @param string|null $locale Optional locale override
      *
-     * @return $this
+     * @return static
      */
-    public function setGenerator(string $type, ?string $locale = null)
+    public function setGenerator(string $type, ?string $locale = null): static
     {
-        $locale = $locale ?? I18n::getLocale();
-        $generator = CakeGeneratorFactory::create($locale, $type);
+        $resolvedLocale = self::resolveLocale($locale);
+        $generator = clone CakeGeneratorFactory::create($resolvedLocale, $type);
         $generator->seed(static::getGeneratorSeed());
 
-        if (Configure::read('FixtureFactories.instanceLevelGenerator', false)) {
-            $this->instanceGenerator = $generator;
-        } else {
-            self::$defaultGenerator = $generator;
+        if (Configure::read('FixtureFactories.instanceLevelGenerator', true)) {
+            $factory = clone $this;
+            $factory->instanceGenerator = $generator;
+
+            return $factory;
         }
+
+        self::$defaultGenerator = $generator;
 
         return $this;
     }
@@ -373,6 +453,11 @@ abstract class BaseFactory
      * Unlike `setGenerator()`, this always sets the global default regardless of
      * the `instanceLevelGenerator` configuration.
      *
+     * Note: the static slot is shared across every `BaseFactory` subclass in the
+     * process. Calls from different subclasses race for it — the last call wins
+     * for everyone. Use the `instanceLevelGenerator` flag with `setGenerator()`
+     * if you need per-factory generators.
+     *
      * @param string $type The generator type ('faker' or 'dummy')
      * @param string|null $locale Optional locale override
      *
@@ -380,8 +465,8 @@ abstract class BaseFactory
      */
     public static function setDefaultGenerator(string $type, ?string $locale = null): void
     {
-        $locale = $locale ?? I18n::getLocale();
-        self::$defaultGenerator = CakeGeneratorFactory::create($locale, $type);
+        $resolvedLocale = self::resolveLocale($locale);
+        self::$defaultGenerator = clone CakeGeneratorFactory::create($resolvedLocale, $type);
         self::$defaultGenerator->seed(static::getGeneratorSeed());
     }
 
@@ -396,6 +481,7 @@ abstract class BaseFactory
     public static function resetDefaultGenerator(): void
     {
         self::$defaultGenerator = null;
+        self::$defaultGenerators = [];
     }
 
     /**
@@ -411,15 +497,27 @@ abstract class BaseFactory
     /**
      * Produce one entity from the present factory.
      *
-     * Use this when the factory was created via `make()`, `make([...singleRow])`,
-     * `make($entity)` or `makeFrom($entity)` — i.e. exactly one entity will be
-     * produced. For multi-entity factories use `getEntities()` instead.
+     * Use this when the factory was created via `new()`, `new([...singleRow])`,
+     * `new($entity)` or `from($entity)` — i.e. exactly one entity will be
+     * produced. For multi-entity factories use `buildMany()` instead.
+     *
+     * @throws \RuntimeException if the factory is configured to produce more than one entity.
      *
      * @return TEntity
      */
-    public function getEntity(): EntityInterface
+    public function build(): EntityInterface
     {
-        return $this->toArray()[0];
+        $entities = $this->toArray();
+        $count = count($entities);
+        if ($count !== 1) {
+            throw new RuntimeException(sprintf(
+                '%s::build() expected to build exactly 1 entity, but %d were produced. Use buildMany() for factories that produce multiple entities.',
+                static::class,
+                $count,
+            ));
+        }
+
+        return $entities[0];
     }
 
     /**
@@ -431,37 +529,9 @@ abstract class BaseFactory
      *
      * @return array<TEntity>
      */
-    public function getEntities(): array
+    public function buildMany(): array
     {
         return $this->toArray();
-    }
-
-    /**
-     * Creates a result set of non-persisted entities
-     *
-     * @return \Cake\ORM\ResultSet<int, TEntity>
-     */
-    public function getResultSet(): ResultSet
-    {
-        return new ResultSet($this->toArray());
-    }
-
-    /**
-     * Creates a result set of persisted entities
-     *
-     * @return \Cake\ORM\ResultSet<int, TEntity>
-     */
-    public function getPersistedResultSet(): ResultSet
-    {
-        $result = $this->persist();
-        if ($result instanceof EntityInterface) {
-            return new ResultSet([$result]);
-        }
-        if ($result instanceof ResultSet) {
-            return $result;
-        }
-
-        return new ResultSet(is_array($result) ? $result : iterator_to_array($result));
     }
 
     /**
@@ -478,13 +548,24 @@ abstract class BaseFactory
     }
 
     /**
-     * @deprecated will be removed in v4
+     * Override marshaller options with immutable semantics.
      *
-     * @return array<string, mixed>
+     * By default options are merged on top of the existing defaults. Pass
+     * `$merge = false` to replace the entire option set.
+     *
+     * @param array<string, mixed> $marshallerOptions Marshaller options
+     * @param bool $merge Whether to merge with existing options
+     *
+     * @return static
      */
-    public function getAssociated(): array
+    public function setMarshallerOptions(array $marshallerOptions, bool $merge = true): static
     {
-        return $this->getAssociationBuilder()->getAssociated();
+        $factory = clone $this;
+        $factory->marshallerOptions = $merge
+            ? array_merge($factory->marshallerOptions, $marshallerOptions)
+            : $marshallerOptions;
+
+        return $factory;
     }
 
     /**
@@ -495,11 +576,10 @@ abstract class BaseFactory
     protected function toArray(): array
     {
         $dataCompiler = $this->getDataCompiler();
-        // Casts the default property to array
-        $this->skipSetterFor($this->skippedSetters);
         $dataCompiler->setSkippedSetters($this->skippedSetters);
         $entities = [];
         for ($i = 0; $i < $this->times; $i++) {
+            $dataCompiler->setSequenceIndex($i);
             $compiledData = $dataCompiler->getCompiledTemplateData();
             if (is_array($compiledData)) {
                 $entities = array_merge($entities, $compiledData);
@@ -508,6 +588,7 @@ abstract class BaseFactory
             }
         }
         UniquenessJanitor::sanitizeEntityArray($this, $entities);
+        $entities = $this->applyCallbacks($entities, $this->afterBuildCallbacks);
 
         // Mark entities as clean so their current state becomes the "original" state
         // Only do this when NOT in persist mode, as clean entities can't be saved
@@ -533,22 +614,25 @@ abstract class BaseFactory
     /**
      * Persist a single entity and return it.
      *
-     * Use this when the factory was created via `make()`, `make([...singleRow])`,
-     * `make($entity)` or `makeFrom($entity)` — i.e. exactly one entity will be
-     * produced. For multi-entity factories use `persistEntities()` instead.
+     * Use this when the factory was created via `new()`, `new([...singleRow])`,
+     * `new($entity)` or `from($entity)` — i.e. exactly one entity will be
+     * produced. For multi-entity factories use `saveMany()` instead.
+     *
+     * @param array<string, mixed> $data Last-mile override data
      *
      * @throws \RuntimeException if the factory is configured to produce more than one entity.
      *
      * @return TEntity
      */
-    public function persistEntity(): EntityInterface
+    public function save(array $data = []): EntityInterface
     {
-        $entities = $this->doPersist();
+        $factory = $data ? $this->state($data) : $this;
+        $entities = $factory->doPersist();
         $count = count($entities);
         if ($count !== 1) {
             throw new RuntimeException(sprintf(
-                '%s::persistEntity() expected to persist exactly 1 entity, but %d were produced. '
-                . 'Use persistEntities() for factories that produce multiple entities.',
+                '%s::save() expected to persist exactly 1 entity, but %d were produced. '
+                . 'Use saveMany() for factories that produce multiple entities.',
                 static::class,
                 $count,
             ));
@@ -564,24 +648,15 @@ abstract class BaseFactory
      * array, so it is the right choice when callers iterate or assert on
      * counts regardless of how the factory was configured.
      *
+     * @param array<string, mixed> $data Last-mile override data
+     *
      * @return array<TEntity>
      */
-    public function persistEntities(): array
+    public function saveMany(array $data = []): array
     {
-        return $this->doPersist();
-    }
+        $factory = $data ? $this->state($data) : $this;
 
-    /**
-     * @deprecated Use persistEntity() (single entity) or persistEntities() (multiple entities)
-     *             for sharper return types. Will be removed in v4.
-     *
-     * @return TEntity|iterable<TEntity>
-     */
-    public function persist(): EntityInterface|iterable
-    {
-        $entities = $this->doPersist();
-
-        return count($entities) === 1 ? $entities[0] : $entities;
+        return $factory->doPersist();
     }
 
     /**
@@ -619,10 +694,16 @@ abstract class BaseFactory
             $factory = static::class;
             $message = $exception->getMessage();
 
-            throw new PersistenceException("Error in Factory `$factory`.\n Message: $message \n");
+            throw new PersistenceException(
+                "Error in Factory `$factory`.\n Message: $message \n",
+                (int)$exception->getCode(),
+                $exception,
+            );
         }
 
         $this->finalizePersistedEntities($saved, $table);
+        $saved = $this->replayAssociatedAfterSaveEvents($saved, $this);
+        $saved = $this->applyCallbacks($saved, $this->afterSaveCallbacks);
 
         return $saved;
     }
@@ -654,12 +735,122 @@ abstract class BaseFactory
             return;
         }
 
-        $alias = $table->getRegistryAlias();
+        $alias = $table->getAlias();
         foreach ($entities as $entity) {
             $entity->clean();
             $entity->setNew(false);
             $entity->setSource($alias);
         }
+    }
+
+    /**
+     * Replay child-factory Model.afterSave listeners and afterSave callbacks
+     * for saved associated entities.
+     *
+     * Cake's cascading save persists child entities as part of the parent's
+     * save, but it does not invoke any user-registered `afterSave()` callbacks
+     * on child factories (those callbacks live on the child `BaseFactory`
+     * instance, never reached by the parent's persist flow). We re-fire both
+     * the Cake event (so behaviors run) and the child factory's own
+     * `afterSaveCallbacks` here so a chain like
+     * `ArticleFactory::new()->with('Author', AuthorFactory::new()->afterSave(...))`
+     * behaves the same regardless of nesting depth.
+     *
+     * @param array<\Cake\Datasource\EntityInterface> $entities
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory
+     * @param array<string, bool> $visited Replay guard
+     *
+     * @return array<\Cake\Datasource\EntityInterface>
+     */
+    private function replayAssociatedAfterSaveEvents(array $entities, BaseFactory $factory, array &$visited = []): array
+    {
+        foreach ($factory->getAssociationBuilder()->getAssociations() as $associationName => $associationFactory) {
+            $property = $factory->getAssociationBuilder()->getAssociation($associationName)->getProperty();
+            foreach ($entities as $index => $entity) {
+                $value = $entity->get($property);
+                if ($value instanceof EntityInterface) {
+                    $entity->set($property, $this->replayAssociatedAfterSaveForEntity($value, $associationFactory, $visited));
+                    $entity->setDirty($property, false);
+                    $entities[$index] = $entity;
+
+                    continue;
+                }
+                if (!is_array($value)) {
+                    continue;
+                }
+
+                $updated = [];
+                foreach ($value as $item) {
+                    if ($item instanceof EntityInterface) {
+                        $updated[] = $this->replayAssociatedAfterSaveForEntity($item, $associationFactory, $visited);
+                    } else {
+                        $updated[] = $item;
+                    }
+                }
+                $entity->set($property, $updated);
+                $entity->setDirty($property, false);
+                $entities[$index] = $entity;
+            }
+        }
+
+        return $entities;
+    }
+
+    /**
+     * @param \Cake\Datasource\EntityInterface $entity Associated entity
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $associationFactory Associated factory
+     * @param array<string, bool> $visited Replay guard
+     *
+     * @return \Cake\Datasource\EntityInterface
+     */
+    private function replayAssociatedAfterSaveForEntity(
+        EntityInterface $entity,
+        BaseFactory $associationFactory,
+        array &$visited,
+    ): EntityInterface {
+        $key = $this->buildAssociatedReplayKey($associationFactory, $entity);
+        if (isset($visited[$key])) {
+            return $entity;
+        }
+        $visited[$key] = true;
+
+        // Keep nested callbacks/listeners aligned with the top-level persist
+        // contract under outer transactions: child entities must already be
+        // finalized before any afterSave logic inspects them.
+        $associationFactory->finalizePersistedEntities([$entity], $associationFactory->getTable());
+
+        $options = new ArrayObject(['associated' => true, 'atomic' => false]);
+        $associationFactory->getTable()->dispatchEvent('Model.afterSave', compact('entity', 'options'));
+
+        $entities = [$entity];
+        if ($associationFactory->afterSaveCallbacks !== []) {
+            $entities = $associationFactory->applyCallbacks($entities, $associationFactory->afterSaveCallbacks);
+        }
+
+        $entities = $this->replayAssociatedAfterSaveEvents($entities, $associationFactory, $visited);
+
+        return $entities[0];
+    }
+
+    /**
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $associationFactory Associated factory
+     * @param \Cake\Datasource\EntityInterface $entity Associated entity
+     *
+     * @return string
+     */
+    private function buildAssociatedReplayKey(BaseFactory $associationFactory, EntityInterface $entity): string
+    {
+        $primaryKey = (array)$associationFactory->getTable()->getPrimaryKey();
+        $primaryKeyValues = [];
+        foreach ($primaryKey as $field) {
+            $value = $entity->get($field);
+            if ($value === null) {
+                return spl_object_id($associationFactory) . ':object:' . spl_object_id($entity);
+            }
+            $primaryKeyValues[] = $value;
+        }
+
+        return spl_object_id($associationFactory) . ':pk:' . json_encode($primaryKeyValues, JSON_THROW_ON_ERROR);
     }
 
     /**
@@ -673,20 +864,165 @@ abstract class BaseFactory
     }
 
     /**
-     * Assigns the values of $data to the $keys of the entities generated
+     * Override save options with immutable semantics.
      *
-     * @param \Cake\Datasource\EntityInterface|array<string, mixed> $data Data to inject
+     * By default options are merged on top of the existing defaults. Pass
+     * `$merge = false` to replace the entire option set.
      *
-     * @return $this
+     * @param array<string, mixed> $saveOptions Save options
+     * @param bool $merge Whether to merge with existing options
+     *
+     * @return static
      */
-    public function patchData(array|EntityInterface $data)
+    public function setSaveOptions(array $saveOptions, bool $merge = true): static
     {
+        $factory = clone $this;
+        $factory->saveOptions = $merge
+            ? array_merge($factory->saveOptions, $saveOptions)
+            : $saveOptions;
+
+        return $factory;
+    }
+
+    /**
+     * Overlay the supplied $data onto the entities the factory will produce.
+     *
+     * Note: when an `EntityInterface` is passed, only its field values are
+     * extracted via `toArray()` — the entity's identity (class, source,
+     * dirty/new flags, internal `_fields`/`_original` state) is not preserved.
+     * Pass an entity to `::new($entity)` or `::from($entity)` instead if you
+     * need the actual entity to flow through the factory.
+     *
+     * @param callable(\CakephpFixtureFactories\Factory\BaseFactory<TEntity>, \CakephpFixtureFactories\Generator\GeneratorInterface): array<string, mixed>|\Cake\Datasource\EntityInterface|array<string, mixed> $data Data to inject
+     *
+     * @return static
+     */
+    public function state(array|callable|EntityInterface $data): static
+    {
+        $factory = clone $this;
+        if (is_callable($data)) {
+            $factory->getDataCompiler()->collectArrayFromCallable($data);
+
+            return $factory;
+        }
         if ($data instanceof EntityInterface) {
             $data = $data->toArray();
         }
-        $this->getDataCompiler()->collectFromPatch($data);
+        $factory->getDataCompiler()->collectFromPatch($data);
 
-        return $this;
+        return $factory;
+    }
+
+    /**
+     * Cycle through the provided states while building multiple entities.
+     *
+     * Sequence data is applied after `definition()` and injected instantiation
+     * data, but before a later plain `state()` override.
+     *
+     * The state at index `$i % count($states)` is applied to the i-th entity,
+     * so:
+     * - if `times > count($states)` the sequence wraps around (cycles),
+     * - if `times < count($states)` the trailing states are simply not used,
+     * - if `times === 1` only the first state ever applies.
+     *
+     * Calling `sequence()` again replaces the previously stored states; it is
+     * not additive.
+     *
+     * @param \Cake\Datasource\EntityInterface|callable|array<string, mixed> ...$states Sequence states
+     *
+     * @throws \InvalidArgumentException
+     *
+     * @return static
+     */
+    public function sequence(array|callable|EntityInterface ...$states): static
+    {
+        if ($states === []) {
+            throw new InvalidArgumentException('sequence() expects at least one array, entity or callable state.');
+        }
+
+        $factory = clone $this;
+        /** @var array<int, \Cake\Datasource\EntityInterface|callable|array<string, mixed>> $states */
+        $factory->getDataCompiler()->collectSequence($states);
+
+        return $factory;
+    }
+
+    /**
+     * Cycle the values of a single column across the entities the factory
+     * produces. A focused alternative to {@see self::sequence()} when you
+     * only want to vary one field — the value can be any scalar, array,
+     * `BackedEnum`/`UnitEnum` case, or anything Cake's marshaller accepts
+     * for the target column.
+     *
+     * Stacking and ordering rules:
+     * - Calls for **different fields** stack: each field cycles independently
+     *   at its own period (`index % count(values)`), so two cycles with
+     *   different cardinalities compose without interference.
+     * - Calls for the **same field** replace that field's cycle (last-write-
+     *   wins per field, matching normal map semantics).
+     * - Plays nicely with `sequence()`: the row-level sequence runs first,
+     *   then `sequenceField()` overlays its column. So if a field appears in
+     *   both, the per-field overlay wins for that column.
+     *
+     * Example:
+     * ```
+     * ArticleFactory::new()
+     *     ->count(6)
+     *     ->sequenceField('status', 'draft', 'published') // 2-cycle
+     *     ->sequenceField('priority', 1, 5, 10) // 3-cycle
+     *     ->buildMany();
+     * ```
+     *
+     * @param string $field Column to cycle.
+     * @param mixed ...$values Values cycled in order. At least one is required.
+     *
+     * @throws \InvalidArgumentException When no values are provided.
+     *
+     * @return static
+     */
+    public function sequenceField(string $field, mixed ...$values): static
+    {
+        if ($values === []) {
+            throw new InvalidArgumentException(
+                'sequenceField() expects at least one value to cycle through.',
+            );
+        }
+
+        $factory = clone $this;
+        $factory->getDataCompiler()->collectFieldSequence($field, $values);
+
+        return $factory;
+    }
+
+    /**
+     * Register a callback to run on each built entity before `build*()` returns
+     * and before `save*()` persists the entity.
+     *
+     * @param callable(\Cake\Datasource\EntityInterface, int, static): (\Cake\Datasource\EntityInterface|void) $callback Callback
+     *
+     * @return static
+     */
+    public function afterBuild(callable $callback): static
+    {
+        $factory = clone $this;
+        $factory->afterBuildCallbacks[] = $callback;
+
+        return $factory;
+    }
+
+    /**
+     * Register a callback to run on each entity after it has been saved.
+     *
+     * @param callable(\Cake\Datasource\EntityInterface, int, static): (\Cake\Datasource\EntityInterface|void) $callback Callback
+     *
+     * @return static
+     */
+    public function afterSave(callable $callback): static
+    {
+        $factory = clone $this;
+        $factory->afterSaveCallbacks[] = $callback;
+
+        return $factory;
     }
 
     /**
@@ -695,13 +1031,11 @@ abstract class BaseFactory
      * @param string $field to set
      * @param mixed $value to assign
      *
-     * @return $this
+     * @return static
      */
-    public function setField(string $field, mixed $value)
+    public function setField(string $field, mixed $value): static
     {
-        $this->patchData([$field => $value]);
-
-        return $this;
+        return $this->state([$field => $value]);
     }
 
     /**
@@ -725,6 +1059,16 @@ abstract class BaseFactory
     }
 
     /**
+     * Expose normalized association marshalling config for advanced use cases.
+     *
+     * @return array<string, mixed>
+     */
+    public function getAssociatedFactories(): array
+    {
+        return $this->getAssociationBuilder()->getAssociated();
+    }
+
+    /**
      * A protected class to manage the Model Events inherent to the creation of fixtures
      *
      * @return \CakephpFixtureFactories\Factory\EventCollector
@@ -745,17 +1089,35 @@ abstract class BaseFactory
     }
 
     /**
-     * Set the amount of entities generated by the factory
+     * Set the amount of entities generated by the factory.
      *
-     * @param int $times Number if entities created
+     * @param int $times Number of entities to create. Must be at least 1.
      *
-     * @return $this
+     * @throws \InvalidArgumentException When $times is less than 1.
+     * @throws \RuntimeException When called with $times > 1 on a factory that
+     *   was instantiated from an existing entity (via `new($entity)` or
+     *   `from($entity)`). Use `new($entity->toArray())->count($times)`
+     *   instead — wrapping a single entity cannot produce N distinct ones.
+     *
+     * @return static
      */
-    public function setTimes(int $times)
+    public function count(int $times): static
     {
-        $this->times = $times;
+        if ($times < 1) {
+            throw new InvalidArgumentException(sprintf(
+                '::count() expects a positive integer, got `%d`.',
+                $times,
+            ));
+        }
+        if ($times > 1 && $this->getDataCompiler()->isInstantiatedFromEntity()) {
+            throw new RuntimeException(
+                self::entityWithMultipleCountMessage(static::class, $times),
+            );
+        }
+        $factory = clone $this;
+        $factory->times = $times;
 
-        return $this;
+        return $factory;
     }
 
     /**
@@ -763,18 +1125,20 @@ abstract class BaseFactory
      *
      * @param bool $keepDirty Whether to keep entities dirty.
      *
-     * @return $this
+     * @return static
      */
-    public function keepDirty(bool $keepDirty = true)
+    public function keepDirty(bool $keepDirty = true): static
     {
-        $this->keepDirty = $keepDirty;
-        if ($keepDirty) {
-            foreach ($this->getAssociationBuilder()->getAssociations() as $associationFactory) {
-                $associationFactory->keepDirty();
-            }
-        }
+        $factory = clone $this;
+        $factory->keepDirty = $keepDirty;
+        $factory->getAssociationBuilder()->mapAssociations(
+            static fn (BaseFactory $associationFactory): BaseFactory => $associationFactory->keepDirty($keepDirty),
+        );
+        $factory->getDataCompiler()->mapAssociationFactories(
+            static fn (BaseFactory $associationFactory): BaseFactory => $associationFactory->keepDirty($keepDirty),
+        );
 
-        return $this;
+        return $factory;
     }
 
     /**
@@ -782,17 +1146,18 @@ abstract class BaseFactory
      *
      * @throws \CakephpFixtureFactories\Error\FixtureFactoryException on argument passed error
      *
-     * @return $this
+     * @return static
      */
-    public function listeningToBehaviors(array|string $activeBehaviors)
+    public function listeningToBehaviors(array|string $activeBehaviors): static
     {
+        $factory = clone $this;
         $activeBehaviors = (array)$activeBehaviors;
         if (!$activeBehaviors) {
             throw new FixtureFactoryException('Expecting a non empty string or an array of string.');
         }
-        $this->getEventCompiler()->listeningToBehaviors($activeBehaviors);
+        $factory->getEventCompiler()->listeningToBehaviors($activeBehaviors);
 
-        return $this;
+        return $factory;
     }
 
     /**
@@ -800,13 +1165,14 @@ abstract class BaseFactory
      *
      * @param string $connectionName Name of the database connection
      *
-     * @return $this
+     * @return static
      */
-    public function setConnection(string $connectionName)
+    public function setConnection(string $connectionName): static
     {
-        $this->getEventCompiler()->setConnection($connectionName);
+        $factory = clone $this;
+        $factory->getEventCompiler()->setConnection($connectionName);
 
-        return $this;
+        return $factory;
     }
 
     /**
@@ -814,13 +1180,14 @@ abstract class BaseFactory
      *
      * @param \Cake\Event\EventManagerInterface $eventManager The event manager instance
      *
-     * @return $this
+     * @return static
      */
-    public function setEventManager(EventManagerInterface $eventManager)
+    public function setEventManager(EventManagerInterface $eventManager): static
     {
-        $this->getEventCompiler()->setEventManager($eventManager);
+        $factory = clone $this;
+        $factory->getEventCompiler()->setEventManager($eventManager);
 
-        return $this;
+        return $factory;
     }
 
     /**
@@ -828,17 +1195,18 @@ abstract class BaseFactory
      *
      * @throws \CakephpFixtureFactories\Error\FixtureFactoryException on argument passed error
      *
-     * @return $this
+     * @return static
      */
-    public function listeningToModelEvents(array|string $activeModelEvents)
+    public function listeningToModelEvents(array|string $activeModelEvents): static
     {
+        $factory = clone $this;
         $activeModelEvents = (array)$activeModelEvents;
         if (!$activeModelEvents) {
             throw new FixtureFactoryException('Expecting a non empty string or an array of string.');
         }
-        $this->getEventCompiler()->listeningToModelEvents($activeModelEvents);
+        $factory->getEventCompiler()->listeningToModelEvents($activeModelEvents);
 
-        return $this;
+        return $factory;
     }
 
     /**
@@ -853,25 +1221,27 @@ abstract class BaseFactory
      *
      * @param array<string, int|string>|string|int $primaryKeyOffset Offset
      *
-     * @return $this
+     * @return static
      */
-    public function setPrimaryKeyOffset(int|string|array $primaryKeyOffset)
+    public function setPrimaryKeyOffset(int|string|array $primaryKeyOffset): static
     {
-        $this->getDataCompiler()->setPrimaryKeyOffset($primaryKeyOffset);
+        $factory = clone $this;
+        $factory->getDataCompiler()->setPrimaryKeyOffset($primaryKeyOffset);
 
-        return $this;
+        return $factory;
     }
 
     /**
      * Will not set primary key when saving the entity, instead SQL engine can handle that.
      *
-     * @return $this
+     * @return static
      */
-    public function disablePrimaryKeyOffset()
+    public function disablePrimaryKeyOffset(): static
     {
-        $this->getDataCompiler()->disablePrimaryKeyOffset();
+        $factory = clone $this;
+        $factory->getDataCompiler()->disablePrimaryKeyOffset();
 
-        return $this;
+        return $factory;
     }
 
     /**
@@ -895,13 +1265,14 @@ abstract class BaseFactory
      *
      * @param array<string>|string|null $fields Unique fields set on the fly.
      *
-     * @return $this
+     * @return static
      */
-    public function setUniqueProperties(array|string|null $fields)
+    public function setUniqueProperties(array|string|null $fields): static
     {
-        $this->uniqueProperties = (array)$fields;
+        $factory = clone $this;
+        $factory->uniqueProperties = (array)$fields;
 
-        return $this;
+        return $factory;
     }
 
     /**
@@ -909,13 +1280,14 @@ abstract class BaseFactory
      *
      * @param callable $fn Callable delivering injected data
      *
-     * @return $this
+     * @return static
      */
-    protected function setDefaultData(callable $fn)
+    protected function setDefaultData(callable $fn): static
     {
-        $this->getDataCompiler()->collectFromDefaultTemplate($fn);
+        $factory = clone $this;
+        $factory->getDataCompiler()->collectFromDefaultTemplate($fn);
 
-        return $this;
+        return $factory;
     }
 
     /**
@@ -926,19 +1298,24 @@ abstract class BaseFactory
      * @param string $associationName Association name
      * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>|\Cake\Datasource\EntityInterface|callable|array<string, mixed>|string|int $data Injected data
      *
-     * @return $this
+     * @return static
      */
-    public function with(string $associationName, array|int|callable|BaseFactory|EntityInterface|string $data = [])
+    public function with(string $associationName, array|int|callable|BaseFactory|EntityInterface|string $data = []): static
     {
-        $this->getAssociationBuilder()->getAssociation($associationName);
+        if ($this->readBootstrapMode) {
+            return clone $this;
+        }
+
+        $factory = clone $this;
+        $factory->getAssociationBuilder()->getAssociation($associationName);
 
         if (!str_contains($associationName, '.') && $data instanceof BaseFactory) {
-            $factory = $data;
+            $associatedFactory = $data;
         } else {
-            $factory = $this->getAssociationBuilder()->getAssociatedFactory($associationName, $data);
+            $associatedFactory = $factory->getAssociationBuilder()->getAssociatedFactory($associationName, $data);
         }
-        if ($this->keepDirty) {
-            $factory->keepDirty();
+        if ($factory->keepDirty) {
+            $associatedFactory = $associatedFactory->keepDirty();
         }
 
         // Extract the first Association in the string
@@ -948,14 +1325,19 @@ abstract class BaseFactory
         }
 
         // Remove the brackets in the association
-        $associationName = $this->getAssociationBuilder()->removeBrackets($associationName);
+        $associationName = $factory->getAssociationBuilder()->removeBrackets($associationName);
 
-        $isToOne = $this->getAssociationBuilder()->processToOneAssociation($associationName, $factory);
-        $this->getDataCompiler()->collectAssociation($associationName, $factory, $isToOne);
+        $associatedFactory = $factory->getAssociationBuilder()->prepareAssociationFactory(
+            $associationName,
+            $associatedFactory,
+        );
+        $association = $factory->getAssociationBuilder()->getAssociation($associationName);
+        $isToOne = $factory->getAssociationBuilder()->associationIsToOne($association);
+        $factory->getDataCompiler()->collectAssociation($associationName, $associatedFactory, $isToOne);
 
-        $this->getAssociationBuilder()->addAssociation($associationName, $factory);
+        $factory->getAssociationBuilder()->addAssociation($associationName, $associatedFactory);
 
-        return $this;
+        return $factory;
     }
 
     /**
@@ -964,14 +1346,15 @@ abstract class BaseFactory
      *
      * @param string $association Association name
      *
-     * @return $this
+     * @return static
      */
-    public function without(string $association)
+    public function without(string $association): static
     {
-        $this->getDataCompiler()->dropAssociation($association);
-        $this->getAssociationBuilder()->dropAssociation($association);
+        $factory = clone $this;
+        $factory->getDataCompiler()->dropAssociation($association);
+        $factory->getAssociationBuilder()->dropAssociation($association);
 
-        return $this;
+        return $factory;
     }
 
     /**
@@ -979,13 +1362,14 @@ abstract class BaseFactory
      *
      * @param array<string, mixed> $data Data to merge
      *
-     * @return $this
+     * @return static
      */
-    public function mergeAssociated(array $data)
+    public function mergeAssociated(array $data): static
     {
-        $this->getAssociationBuilder()->addManualAssociations($data);
+        $factory = clone $this;
+        $factory->getAssociationBuilder()->addManualAssociations($data);
 
-        return $this;
+        return $factory;
     }
 
     /**
@@ -995,17 +1379,18 @@ abstract class BaseFactory
      * @param array<string>|string $skippedSetters Field or list of fields for which setters ought to be skipped
      * @param bool $merge Merge the first argument with the setters already skipped. False by default.
      *
-     * @return $this
+     * @return static
      */
-    public function skipSetterFor(array|string $skippedSetters, bool $merge = false)
+    public function skipSetterFor(array|string $skippedSetters, bool $merge = false): static
     {
+        $factory = clone $this;
         $skippedSetters = (array)$skippedSetters;
         if ($merge) {
-            $skippedSetters = array_unique(array_merge($this->skippedSetters, $skippedSetters));
+            $skippedSetters = array_unique(array_merge($factory->skippedSetters, $skippedSetters));
         }
-        $this->skippedSetters = $skippedSetters;
+        $factory->skippedSetters = $skippedSetters;
 
-        return $this;
+        return $factory;
     }
 
     /**
@@ -1013,91 +1398,158 @@ abstract class BaseFactory
      *
      * @see \Cake\ORM\Query\SelectQuery::find()
      *
-     * @param string $type the type of query to perform
-     * @param mixed ...$options Options passed to the finder
-     *
      * @return \Cake\ORM\Query\SelectQuery<\Cake\Datasource\EntityInterface> The query builder
      */
-    public static function find(string $type = 'all', mixed ...$options): SelectQuery
+    public static function query(): SelectQuery
     {
-        return (new static())->getTable()->find($type, ...$options);
+        return self::configuredFactory()->getTable()->find();
     }
 
     /**
-     * Get from primary key the factory's related table entries, without before find.
+     * Access the factory's related table directly.
      *
-     * @see Table::get()
+     * Useful for table-level operations like `Table::get()`.
      *
-     * @param mixed $primaryKey primary key value to find
-     * @param array<string, mixed>|string $finder The finder to use. Passing an options array is deprecated.
-     * @param \Psr\SimpleCache\CacheInterface|string|null $cache The cache config to use.
-     *   Defaults to `null`, i.e. no caching.
-     * @param \Closure|string|null $cacheKey The cache key to use. If not provided
-     *   one will be autogenerated if `$cache` is not null.
-     * @param mixed ...$args Arguments that query options or finder specific parameters.
-     *
-     * @return \Cake\Datasource\EntityInterface
+     * @return \Cake\ORM\Table
      */
-    public static function get(
-        mixed $primaryKey,
-        array|string $finder = 'all',
-        CacheInterface|string|null $cache = null,
-        Closure|string|null $cacheKey = null,
-        mixed ...$args,
-    ): EntityInterface {
-        // Handle backward compatibility for options array
-        if (is_array($finder)) {
-            $options = $finder;
-            $finder = 'all';
+    public static function table(): Table
+    {
+        return self::configuredFactory()->getTable();
+    }
 
-            // Convert common options to named parameters
-            $table = (new static())->getTable();
+    /**
+     * Boot a factory through the normal initialize/configure path for static
+     * read helpers like query() and table().
+     *
+     * @return static
+     */
+    private static function configuredFactory(): static
+    {
+        $factory = new static();
+        $factory->readBootstrapMode = true;
+        $factory->initialize();
+        $factory = $factory->configure();
+        $factory->readBootstrapMode = false;
 
-            // Extract contain option if present
-            if (isset($options['contain'])) {
-                // Use named parameters for contain
-                if (!$args) {
-                    return $table->get($primaryKey, finder: $finder, contain: $options['contain'], cache: $cache, cacheKey: $cacheKey);
-                }
+        return $factory;
+    }
 
-                // If there are additional args, we need to use the old style
-                return $table->get($primaryKey, $finder, $cache, $cacheKey, ...$options, ...$args);
+    /**
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Associated belongsTo factory
+     *
+     * @return static
+     */
+    public function for(BaseFactory $factory): static
+    {
+        if ($this->readBootstrapMode) {
+            return clone $this;
+        }
+
+        $association = $this->resolveDirectionalAssociation($factory, true);
+
+        return $this->with($association, $factory);
+    }
+
+    /**
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Associated factory
+     * @param array<string, mixed> $pivot Pivot data for belongsToMany joins
+     *
+     * @return static
+     */
+    public function has(BaseFactory $factory, array $pivot = []): static
+    {
+        if ($this->readBootstrapMode) {
+            return clone $this;
+        }
+
+        $association = $this->resolveDirectionalAssociation($factory, false);
+        if ($pivot !== []) {
+            $factory = $factory->mergeAssociated(['_joinData' => $pivot]);
+        }
+
+        return $this->with($association, $factory);
+    }
+
+    /**
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Related factory
+     * @param bool $belongsTo Whether to resolve a belongsTo association
+     *
+     * @throws \RuntimeException if no matching directional association can be found.
+     *
+     * @return string
+     */
+    protected function resolveDirectionalAssociation(BaseFactory $factory, bool $belongsTo): string
+    {
+        $sourceTable = $this->getTable();
+        $targetRegistryAlias = $factory->getRootTableRegistryName();
+        $matches = [];
+        foreach ($sourceTable->associations() as $association) {
+            $associationTargetsFactory = $association->getClassName() === $targetRegistryAlias
+                || $association->getTarget()->getRegistryAlias() === $targetRegistryAlias
+                || $association->getName() === $targetRegistryAlias;
+            if (!$associationTargetsFactory) {
+                continue;
             }
-
-            // For other options, pass them through args (this will still trigger deprecation)
-            return $table->get($primaryKey, $finder, $cache, $cacheKey, ...$options, ...$args);
+            if ($belongsTo && $association instanceof BelongsTo) {
+                $matches[] = $association->getName();
+            }
+            if (!$belongsTo && !$association instanceof BelongsTo) {
+                $matches[] = $association->getName();
+            }
         }
 
-        // Use named parameters for cleaner calls
-        if (!$args) {
-            return (new static())->getTable()->get($primaryKey, finder: $finder, cache: $cache, cacheKey: $cacheKey);
+        if (count($matches) === 1) {
+            return $matches[0];
+        }
+        if ($matches !== []) {
+            throw new RuntimeException(sprintf(
+                'Ambiguous %s association from `%s` to `%s`: %s. Use with() to select the explicit association name.',
+                $belongsTo ? 'belongsTo' : 'has*',
+                $sourceTable->getRegistryAlias(),
+                $targetRegistryAlias,
+                implode(', ', $matches),
+            ));
         }
 
-        return (new static())->getTable()->get($primaryKey, $finder, $cache, $cacheKey, ...$args);
+        throw new RuntimeException(sprintf(
+            'Unable to resolve %s association from `%s` to `%s`.',
+            $belongsTo ? 'belongsTo' : 'has*',
+            $sourceTable->getRegistryAlias(),
+            $targetRegistryAlias,
+        ));
     }
 
     /**
-     * Count the factory's related table entries without before find.
+     * @param array<\Cake\Datasource\EntityInterface> $entities Entities
+     * @param array<int, callable(\Cake\Datasource\EntityInterface, int, static): (\Cake\Datasource\EntityInterface|void)> $callbacks Callbacks
      *
-     * @see Query::count()
-     *
-     * @return int
+     * @return array<\Cake\Datasource\EntityInterface>
      */
-    public static function count(): int
+    private function applyCallbacks(array $entities, array $callbacks): array
     {
-        return self::find()->count();
+        if ($callbacks === []) {
+            return $entities;
+        }
+
+        foreach ($entities as $index => $entity) {
+            foreach ($callbacks as $callback) {
+                $result = $callback($entity, $index, $this);
+                if ($result instanceof EntityInterface) {
+                    $entity = $result;
+                }
+            }
+            $entities[$index] = $entity;
+        }
+
+        return $entities;
     }
 
-    /**
-     * Count the factory's related table entries without before find.
-     *
-     * @param \Cake\Database\ExpressionInterface|\Closure|array<string, mixed>|string|null $conditions The conditions to filter on.
-     *
-     * @return \Cake\Datasource\EntityInterface|array<string, mixed> The first result from the ResultSet.
-     */
-    public static function firstOrFail(
-        ExpressionInterface|Closure|array|string|null $conditions = null,
-    ): EntityInterface|array {
-        return self::find()->where($conditions)->firstOrFail();
+    public function __clone(): void
+    {
+        $this->dataCompiler = clone $this->dataCompiler;
+        $this->dataCompiler->setFactory($this);
+        $this->associationBuilder = clone $this->associationBuilder;
+        $this->associationBuilder->setFactory($this);
+        $this->eventCompiler = clone $this->eventCompiler;
     }
 }

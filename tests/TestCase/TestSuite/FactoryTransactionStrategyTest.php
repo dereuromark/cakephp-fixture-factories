@@ -4,11 +4,22 @@ declare(strict_types=1);
 
 namespace CakephpFixtureFactories\Test\TestCase\TestSuite;
 
+use Cake\Core\Configure;
+use Cake\Database\Connection;
+use Cake\ORM\Table;
 use Cake\TestSuite\TestCase;
+use CakephpFixtureFactories\Error\PersistenceException;
+use CakephpFixtureFactories\Factory\BaseFactory;
+use CakephpFixtureFactories\Generator\FakerAdapter;
+use CakephpFixtureFactories\Test\Factory\ArticleFactory;
+use CakephpFixtureFactories\Test\Factory\AuthorFactory;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpFixtureFactories\TestSuite\FactoryTableTracker;
 use CakephpFixtureFactories\TestSuite\FactoryTransactionStrategy;
+use CakephpFixtureFactories\TestSuite\LazyFactoryTransactionStrategy;
+use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use RuntimeException;
 
 /**
  * Test that the FactoryTransactionStrategy properly manages transactions
@@ -16,6 +27,8 @@ use CakephpFixtureFactories\TestSuite\FactoryTransactionStrategy;
  */
 class FactoryTransactionStrategyTest extends TestCase
 {
+    use TruncateDirtyTables;
+
     /**
      * We don't use the FactoryTransactionTrait here because we're testing
      * the strategy itself and need more control
@@ -31,6 +44,8 @@ class FactoryTransactionStrategyTest extends TestCase
     protected function tearDown(): void
     {
         FactoryTableTracker::getInstance()->clear();
+        Configure::delete('FixtureFactories.generatorType');
+        BaseFactory::resetDefaultGenerator();
 
         parent::tearDown();
     }
@@ -48,7 +63,7 @@ class FactoryTransactionStrategyTest extends TestCase
         $this->assertFalse($tracker->hasTables(), 'Tracker should start empty');
 
         // Persist a city
-        CityFactory::make()->persist();
+        CityFactory::new()->save();
 
         $this->assertTrue($tracker->hasTables(), 'Tracker should have tables after persist');
         $tables = $tracker->getTableNames();
@@ -66,8 +81,8 @@ class FactoryTransactionStrategyTest extends TestCase
         $tracker->clear();
 
         // Persist cities and countries
-        CityFactory::make()->persist();
-        CountryFactory::make()->persist();
+        CityFactory::new()->save();
+        CountryFactory::new()->save();
 
         $tables = $tracker->getTableNames();
         $this->assertContains('cities', $tables);
@@ -84,7 +99,7 @@ class FactoryTransactionStrategyTest extends TestCase
     {
         $tracker = FactoryTableTracker::getInstance();
 
-        CityFactory::make()->persist();
+        CityFactory::new()->save();
         $this->assertTrue($tracker->hasTables());
 
         $tracker->clear();
@@ -93,33 +108,72 @@ class FactoryTransactionStrategyTest extends TestCase
     }
 
     /**
-     * Test that FactoryTransactionStrategy uses lazy transactions
-     *
-     * Transactions are NOT started upfront in setupTest(), but only when
-     * a factory actually persists data.
+     * Default {@see FactoryTransactionStrategy} eagerly wraps the primary
+     * test connection in setupTest() so direct $table->save() calls inside
+     * the test are rolled back at teardown alongside Factory operations.
      *
      * @return void
      */
-    public function testTransactionStrategyLazySetup(): void
+    public function testEagerDefaultWrapsPrimaryConnection(): void
     {
-        $strategy = new FactoryTransactionStrategy();
+        // The package's test bootstrap aliases connection names such that
+        // ConnectionManager::get('test') resolves to the connection
+        // registered as 'dummy' in some matrix variants. Inject the exact
+        // Connection CityFactory's table reports so begin() and the
+        // assertion target the same instance regardless of alias shape.
+        $connection = CityFactory::new()->getTable()->getConnection();
+        $strategy = new class ($connection) extends FactoryTransactionStrategy {
+            public function __construct(private Connection $eagerConnection)
+            {
+            }
 
-        // Get the connection the factory will actually use
-        $connection = CityFactory::make()->getTable()->getConnection();
+            public function setupTest(array $fixtureNames): void
+            {
+                $this->primaryConnection = '';
+                parent::setupTest($fixtureNames);
+                $this->ensureTransaction($this->eagerConnection);
+            }
+        };
 
-        // Setup should NOT start transactions (lazy strategy)
+        $strategy->setupTest([]);
+
+        $this->assertTrue(
+            $connection->inTransaction(),
+            'Connection should be in transaction after eager (default) setup',
+        );
+        $this->assertSame($strategy, FactoryTransactionStrategy::getActiveInstance());
+
+        $strategy->teardownTest();
+
+        $this->assertFalse(
+            $connection->inTransaction(),
+            'Connection should be released after teardown',
+        );
+        $this->assertNull(FactoryTransactionStrategy::getActiveInstance());
+    }
+
+    /**
+     * {@see LazyFactoryTransactionStrategy} skips the eager begin in
+     * setupTest(); a connection only joins the rollback set after a
+     * Factory persists on it via ensureTransaction().
+     *
+     * @return void
+     */
+    public function testLazyStrategyDefersTransactionUntilPersist(): void
+    {
+        $strategy = new LazyFactoryTransactionStrategy();
+
+        $connection = CityFactory::new()->getTable()->getConnection();
+
         $strategy->setupTest([]);
 
         $this->assertFalse(
             $connection->inTransaction(),
             'Connection should NOT be in transaction after setup (lazy)',
         );
-
-        // The active instance should be set
         $this->assertSame($strategy, FactoryTransactionStrategy::getActiveInstance());
 
-        // Persist data — this should lazily start the transaction
-        $city = CityFactory::make(['name' => 'Test City'])->persist();
+        $city = CityFactory::new(['name' => 'Lazy City'])->save();
         $this->assertNotEmpty($city->id);
 
         $this->assertTrue(
@@ -127,16 +181,38 @@ class FactoryTransactionStrategyTest extends TestCase
             'Connection should be in transaction after persist',
         );
 
-        // Verify table is tracked
         $tracker = FactoryTableTracker::getInstance();
         $this->assertTrue($tracker->hasTables());
         $this->assertContains('cities', $tracker->getTableNames());
 
-        // Teardown should rollback and clear
         $strategy->teardownTest();
 
         $this->assertFalse($tracker->hasTables());
         $this->assertNull(FactoryTransactionStrategy::getActiveInstance());
+    }
+
+    /**
+     * Setting $primaryConnection to '' on a FactoryTransactionStrategy
+     * subclass disables the eager begin — equivalent to
+     * LazyFactoryTransactionStrategy.
+     *
+     * @return void
+     */
+    public function testEmptyPrimaryConnectionDisablesEagerBegin(): void
+    {
+        $strategy = new class () extends FactoryTransactionStrategy {
+            protected string $primaryConnection = '';
+        };
+        $connection = CityFactory::new()->getTable()->getConnection();
+
+        $strategy->setupTest([]);
+
+        $this->assertFalse(
+            $connection->inTransaction(),
+            'Connection should NOT be in transaction when $primaryConnection is empty',
+        );
+
+        $strategy->teardownTest();
     }
 
     /**
@@ -146,13 +222,34 @@ class FactoryTransactionStrategyTest extends TestCase
      */
     public function testTeardownWithoutPersist(): void
     {
-        $strategy = new FactoryTransactionStrategy();
+        // Use the lazy variant so setupTest doesn't try to open a real
+        // connection (the package's name-based 'test' resolution can be
+        // ambiguous in this test app — see other tests in this class).
+        $strategy = new LazyFactoryTransactionStrategy();
 
         $strategy->setupTest([]);
         // No persist calls — teardown should still work
         $strategy->teardownTest();
 
         $this->assertNull(FactoryTransactionStrategy::getActiveInstance());
+    }
+
+    public function testStrategyResetsSharedDefaultGenerator(): void
+    {
+        Configure::write('FixtureFactories.generatorType', 'faker');
+        BaseFactory::setDefaultGenerator('dummy');
+
+        // Use the lazy variant — the generator-reset check is independent
+        // of the eager begin and we don't need a primary-connection
+        // transaction for the assertion.
+        $strategy = new LazyFactoryTransactionStrategy();
+        $strategy->setupTest([]);
+
+        $generator = CityFactory::new()->getGenerator();
+
+        $this->assertInstanceOf(FakerAdapter::class, $generator);
+
+        $strategy->teardownTest();
     }
 
     /**
@@ -164,10 +261,16 @@ class FactoryTransactionStrategyTest extends TestCase
     {
         $tracker = FactoryTableTracker::getInstance();
         $tracker->clear();
+        $country = CountryFactory::new(['name' => 'Tracked country'])->save();
+        $tracker->clear();
 
         // Create some data
-        $city1 = CityFactory::make(['name' => 'City 1'])->persist();
-        $city2 = CityFactory::make(['name' => 'City 2'])->persist();
+        $city1 = CityFactory::new(['name' => 'City 1', 'country_id' => $country->id])
+            ->without('Countries')
+            ->save();
+        $city2 = CityFactory::new(['name' => 'City 2', 'country_id' => $country->id])
+            ->without('Countries')
+            ->save();
 
         $this->assertNotEmpty($city1->id);
         $this->assertNotEmpty($city2->id);
@@ -175,6 +278,46 @@ class FactoryTransactionStrategyTest extends TestCase
         // Verify tracking is working
         $this->assertTrue($tracker->hasTables());
         $this->assertContains('cities', $tracker->getTableNames());
+    }
+
+    /**
+     * Regression: when two Tables on different connections share the same SQL
+     * table name (multi-tenant, read/write split), both must be tracked. The
+     * previous flat `[name => connection]` storage collapsed them; nested
+     * `[connection => [name => true]]` keeps both.
+     *
+     * @return void
+     */
+    public function testCrossConnectionSameTableNameKeepsBoth(): void
+    {
+        $tracker = FactoryTableTracker::getInstance();
+        $tracker->clear();
+
+        $firstConnection = $this->createConfiguredMock(Connection::class, [
+            'configName' => 'test',
+        ]);
+        $secondConnection = $this->createConfiguredMock(Connection::class, [
+            'configName' => 'second_conn',
+        ]);
+        $firstTable = $this->createConfiguredMock(Table::class, [
+            'getTable' => 'cities',
+            'getConnection' => $firstConnection,
+        ]);
+        $secondTable = $this->createConfiguredMock(Table::class, [
+            'getTable' => 'cities',
+            'getConnection' => $secondConnection,
+        ]);
+
+        $tracker->trackTable($firstTable);
+        $tracker->trackTable($secondTable);
+
+        $byConn = $tracker->getTablesByConnection();
+        $this->assertArrayHasKey('test', $byConn);
+        $this->assertArrayHasKey('second_conn', $byConn);
+        $this->assertContains('cities', $byConn['test']);
+        $this->assertContains('cities', $byConn['second_conn']);
+        // Flat dedupe view returns one row, but the nested view sees both.
+        $this->assertCount(1, $tracker->getTableNames());
     }
 
     /**
@@ -186,11 +329,13 @@ class FactoryTransactionStrategyTest extends TestCase
     {
         $tracker = FactoryTableTracker::getInstance();
         $tracker->clear();
+        $country = CountryFactory::new(['name' => 'Tracked country'])->save();
+        $tracker->clear();
 
         // Persist multiple cities
-        CityFactory::make()->persist();
-        CityFactory::make()->persist();
-        CityFactory::make()->persist();
+        CityFactory::new(['name' => 'City 1', 'country_id' => $country->id])->without('Countries')->save();
+        CityFactory::new(['name' => 'City 2', 'country_id' => $country->id])->without('Countries')->save();
+        CityFactory::new(['name' => 'City 3', 'country_id' => $country->id])->without('Countries')->save();
 
         $tables = $tracker->getTableNames();
         $this->assertCount(1, $tables, 'Same table should only be tracked once');
@@ -219,7 +364,7 @@ class FactoryTransactionStrategyTest extends TestCase
         $strategy->setupTest([]);
 
         try {
-            $city = CityFactory::make(['name' => 'Berlin'])->persist();
+            $city = CityFactory::new(['name' => 'Berlin'])->save();
 
             $this->assertNotEmpty($city->id, 'Entity should have an id after persist');
             $this->assertFalse(
@@ -236,13 +381,65 @@ class FactoryTransactionStrategyTest extends TestCase
 
             // Connection is in transaction (lazy-started by persist),
             // mirroring the runtime conditions of the bug.
-            $connection = CityFactory::make()->getTable()->getConnection();
+            $connection = CityFactory::new()->getTable()->getConnection();
             $this->assertTrue(
                 $connection->inTransaction(),
                 'Sanity check: the bug only manifests inside an outer transaction.',
             );
         } finally {
             $strategy->teardownTest();
+        }
+    }
+
+    public function testPersistFinalizesNestedAssociatedEntityStateBeforeAfterSaveCallbacks(): void
+    {
+        $strategy = new FactoryTransactionStrategy();
+        $strategy->setupTest([]);
+
+        $captured = [];
+        try {
+            $article = ArticleFactory::new()
+                ->has(
+                    AuthorFactory::new()
+                        ->afterSave(static function ($author) use (&$captured): void {
+                            $captured = [
+                                'isNew' => $author->isNew(),
+                                'isDirty' => $author->isDirty(),
+                                'source' => $author->getSource(),
+                            ];
+                        }),
+                )
+                ->save();
+
+            $this->assertSame(
+                ['isNew' => false, 'isDirty' => false, 'source' => 'Authors'],
+                $captured,
+            );
+            $this->assertFalse($article->authors[0]->isNew());
+            $this->assertFalse($article->authors[0]->isDirty());
+            $this->assertSame('Authors', $article->authors[0]->getSource());
+        } finally {
+            $strategy->teardownTest();
+        }
+    }
+
+    public function testEnsureTransactionRethrowsPersistenceException(): void
+    {
+        $connection = $this->createMock(Connection::class);
+        $connection->method('configName')->willReturn('failing');
+        $connection->method('inTransaction')->willReturn(false);
+        $connection->expects($this->once())->method('enableSavePoints');
+        $connection->expects($this->once())
+            ->method('begin')
+            ->willThrowException(new RuntimeException('no transaction'));
+
+        $strategy = new FactoryTransactionStrategy();
+
+        try {
+            $strategy->ensureTransaction($connection);
+            $this->fail('Expected PersistenceException to be thrown.');
+        } catch (PersistenceException $exception) {
+            $this->assertSame('no transaction', $exception->getPrevious()?->getMessage());
         }
     }
 }

@@ -41,9 +41,10 @@ composer require --dev dereuromark/cakephp-fixture-factories
 ## Quick Example
 
 ```php
-ArticleFactory::make(5)
+ArticleFactory::new()
+    ->count(5)
     ->with('Authors[3].Address.City.Country')
-    ->persist();
+    ->saveMany();
 ```
 
 Five articles, each with three authors, each with an address chain — persisted, in one expression.

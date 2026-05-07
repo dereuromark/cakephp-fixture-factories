@@ -17,6 +17,7 @@ namespace CakephpFixtureFactories\Test\TestCase\Factory;
 
 use Cake\ORM\Entity;
 use Cake\TestSuite\TestCase;
+use CakephpFixtureFactories\Error\FixtureFactoryException;
 use CakephpFixtureFactories\Error\PersistenceException;
 use CakephpFixtureFactories\Factory\DataCompiler;
 use CakephpFixtureFactories\Test\Factory\ArticleFactory;
@@ -24,6 +25,7 @@ use CakephpFixtureFactories\Test\Factory\AuthorFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
+use RuntimeException;
 use TestApp\Model\Table\PremiumAuthorsTable;
 
 class DataCompilerTest extends TestCase
@@ -40,8 +42,8 @@ class DataCompilerTest extends TestCase
 
     public function setUp(): void
     {
-        $this->authorDataCompiler = new DataCompiler(AuthorFactory::make());
-        $this->articleDataCompiler = new DataCompiler(ArticleFactory::make());
+        $this->authorDataCompiler = new DataCompiler(AuthorFactory::new());
+        $this->articleDataCompiler = new DataCompiler(ArticleFactory::new());
 
         parent::setUp();
     }
@@ -81,9 +83,28 @@ class DataCompilerTest extends TestCase
         $this->assertTrue(is_int($this->articleDataCompiler->generateRandomPrimaryKey('integer')));
     }
 
+    public function testGenerateRandomPrimaryKeyIntegerProducesDistinctValues(): void
+    {
+        $value1 = $this->articleDataCompiler->generateRandomPrimaryKey('integer');
+        $value2 = $this->articleDataCompiler->generateRandomPrimaryKey('integer');
+
+        $this->assertNotSame($value1, $value2);
+    }
+
     public function testGenerateRandomPrimaryKeyBigInteger(): void
     {
-        $this->assertTrue(is_int($this->articleDataCompiler->generateRandomPrimaryKey('biginteger')));
+        $values = [];
+        for ($i = 0; $i < 50; $i++) {
+            $values[] = $this->articleDataCompiler->generateRandomPrimaryKey('biginteger');
+        }
+
+        foreach ($values as $value) {
+            $this->assertIsInt($value);
+        }
+        $this->assertTrue(
+            (bool)array_filter($values, static fn (int $value): bool => $value > 2147483647),
+            'biginteger generation must not be truncated to the 32-bit range.',
+        );
     }
 
     public function testGenerateRandomPrimaryKeyUuid(): void
@@ -91,9 +112,22 @@ class DataCompilerTest extends TestCase
         $this->assertTrue(is_string($this->articleDataCompiler->generateRandomPrimaryKey('uuid')));
     }
 
-    public function testGenerateRandomPrimaryKeyWhateverColumnType(): void
+    /**
+     * Unknown column types now throw rather than silently producing a 32-bit
+     * int, which masks misconfigured schemas. Users hitting this should pass
+     * an explicit primary key via setPrimaryKeyOffset().
+     */
+    public function testGenerateRandomPrimaryKeyUnknownColumnTypeThrows(): void
     {
-        $this->assertTrue(is_int($this->articleDataCompiler->generateRandomPrimaryKey('foo')));
+        $this->expectException(FixtureFactoryException::class);
+        $this->expectExceptionMessage('Cannot generate a random primary key for column type `foo`');
+
+        $this->articleDataCompiler->generateRandomPrimaryKey('foo');
+    }
+
+    public function testGenerateRandomPrimaryKeyMediuminteger(): void
+    {
+        $this->assertTrue(is_int($this->articleDataCompiler->generateRandomPrimaryKey('mediuminteger')));
     }
 
     public function testGenerateArrayOfRandomPrimaryKeys(): void
@@ -115,7 +149,7 @@ class DataCompilerTest extends TestCase
 
     public function testSetPrimaryKey(): void
     {
-        $data = CountryFactory::make()->getEntity();
+        $data = CountryFactory::new()->build();
 
         $this->articleDataCompiler->startPersistMode();
         $res = $this->articleDataCompiler->setPrimaryKey($data);
@@ -129,7 +163,7 @@ class DataCompilerTest extends TestCase
      */
     public function testSetPrimaryKeyWithIdSet(): void
     {
-        $id = rand(1, 10000);
+        $id = 9876;
         $entity = new Entity(compact('id'));
         $res = $this->articleDataCompiler->setPrimaryKey($entity);
         $this->assertSame($id, $res['id']);
@@ -137,10 +171,10 @@ class DataCompilerTest extends TestCase
 
     public function testSetPrimaryKeyOnEntity(): void
     {
-        $countries = CountryFactory::make(2)->getEntity();
+        $country = CountryFactory::new()->build();
 
         $this->articleDataCompiler->startPersistMode();
-        $res = $this->articleDataCompiler->setPrimaryKey($countries);
+        $res = $this->articleDataCompiler->setPrimaryKey($country);
 
         $this->assertTrue(is_int($res['id']));
 
@@ -164,7 +198,7 @@ class DataCompilerTest extends TestCase
     #[DataProvider('dataForGetModifiedUniqueFields')]
     public function testGetModifiedUniqueFields(array $injectedData, array $expected): void
     {
-        $dataCompiler = new DataCompiler(CountryFactory::make($injectedData));
+        $dataCompiler = new DataCompiler(CountryFactory::new($injectedData));
         $dataCompiler->compileEntity($injectedData);
         $this->assertSame($dataCompiler->getModifiedUniqueFields(), $expected);
     }
@@ -172,7 +206,7 @@ class DataCompilerTest extends TestCase
     public function testCompileEntityWithoutSetters(): void
     {
         $value = 'Foo';
-        $dataCompiler = new DataCompiler(AuthorFactory::make()->without('Address'));
+        $dataCompiler = new DataCompiler(AuthorFactory::new()->without('Address'));
         $dataCompiler->setSkippedSetters(['field_with_setter_1']);
         /** @var \TestApp\Model\Entity\Author $author */
         $author = $dataCompiler->compileEntity([
@@ -188,7 +222,25 @@ class DataCompilerTest extends TestCase
 
     public function testEntityHasRegistryAlias(): void
     {
-        $country = CountryFactory::make()->getEntity();
+        $country = CountryFactory::new()->build();
         $this->assertSame('Countries', $country->getSource());
+    }
+
+    public function testPersistModeDepthResetsAfterException(): void
+    {
+        $factory = CountryFactory::new()->afterBuild(
+            static function (): void {
+                throw new RuntimeException('Boom');
+            },
+        );
+
+        try {
+            $factory->save();
+            $this->fail('save() should rethrow the afterBuild exception.');
+        } catch (RuntimeException $exception) {
+            $this->assertSame('Boom', $exception->getMessage());
+        }
+
+        $this->assertFalse($this->articleDataCompiler->isInPersistMode());
     }
 }

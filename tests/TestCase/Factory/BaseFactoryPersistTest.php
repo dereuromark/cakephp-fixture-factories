@@ -36,70 +36,82 @@ class BaseFactoryPersistTest extends TestCase
         Configure::delete('FixtureFactories.testFixtureNamespace');
     }
 
-    public function testPersistEntityReturnsTheEntity(): void
+    public function testSaveReturnsTheEntity(): void
     {
         $name = 'Foo';
 
-        $country = CountryFactory::make(['name' => $name])->persistEntity();
+        $country = CountryFactory::new(['name' => $name])->save();
 
         $this->assertInstanceOf(Country::class, $country);
         $this->assertSame($name, $country->get('name'));
         $this->assertNotNull($country->get('id'));
-        $this->assertSame(1, CountryFactory::count());
+        $this->assertSame(1, CountryFactory::query()->count());
     }
 
-    public function testPersistEntityRejectsMultiEntityFactory(): void
+    public function testSaveRejectsMultiEntityFactory(): void
     {
-        $factory = CountryFactory::make([
+        $factory = CountryFactory::new([
             ['name' => 'Foo'],
             ['name' => 'Bar'],
         ]);
 
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('persistEntity() expected to persist exactly 1 entity, but 2 were produced');
+        $this->expectExceptionMessage('save() expected to persist exactly 1 entity, but 2 were produced');
 
-        $factory->persistEntity();
+        $factory->save();
     }
 
-    public function testPersistEntitiesReturnsArrayForMultiEntityFactory(): void
+    public function testBuildRejectsCountBasedMultiEntityFactory(): void
     {
-        $countries = CountryFactory::make([
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('build() expected to build exactly 1 entity, but 2 were produced');
+
+        CountryFactory::new()->count(2)->build();
+    }
+
+    public function testSaveRejectsCountBasedMultiEntityFactory(): void
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('save() expected to persist exactly 1 entity, but 2 were produced');
+
+        CountryFactory::new()->count(2)->save();
+    }
+
+    public function testSaveManyReturnsArrayForMultiEntityFactory(): void
+    {
+        $countries = CountryFactory::new([
             ['name' => 'Foo'],
             ['name' => 'Bar'],
-        ])->persistEntities();
+        ])->saveMany();
 
         $this->assertIsArray($countries);
         $this->assertCount(2, $countries);
         $this->assertContainsOnlyInstancesOf(Country::class, $countries);
         $this->assertSame('Foo', $countries[0]->get('name'));
         $this->assertSame('Bar', $countries[1]->get('name'));
-        $this->assertSame(2, CountryFactory::count());
+        $this->assertSame(2, CountryFactory::query()->count());
     }
 
-    public function testPersistEntitiesReturnsArrayForSingleEntityFactory(): void
+    public function testSaveManyReturnsArrayForSingleEntityFactory(): void
     {
-        $countries = CountryFactory::make(['name' => 'Foo'])->persistEntities();
+        $countries = CountryFactory::new(['name' => 'Foo'])->saveMany();
 
         $this->assertIsArray($countries);
         $this->assertCount(1, $countries);
         $this->assertInstanceOf(Country::class, $countries[0]);
         $this->assertSame('Foo', $countries[0]->get('name'));
-        $this->assertSame(1, CountryFactory::count());
+        $this->assertSame(1, CountryFactory::query()->count());
     }
 
-    /**
-     * The deprecated persist() must still return a single entity for the
-     * singular call shape and an iterable for the multi-entity call shape.
-     */
-    public function testDeprecatedPersistKeepsLegacyReturnShape(): void
+    public function testSaveAndSaveManyHaveExplicitReturnShapes(): void
     {
-        $singular = CountryFactory::make(['name' => 'Foo'])->persist();
+        $singular = CountryFactory::new(['name' => 'Foo'])->save();
         $this->assertInstanceOf(Country::class, $singular);
 
-        $multiple = CountryFactory::make([['name' => 'Bar'], ['name' => 'Baz']])->persist();
-        $this->assertIsIterable($multiple);
+        $multiple = CountryFactory::new([['name' => 'Bar'], ['name' => 'Baz']])->saveMany();
+        $this->assertIsArray($multiple);
         $this->assertNotInstanceOf(Country::class, $multiple);
 
-        $this->assertSame(3, CountryFactory::count());
+        $this->assertSame(3, CountryFactory::query()->count());
     }
 }

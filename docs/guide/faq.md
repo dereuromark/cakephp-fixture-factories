@@ -11,7 +11,7 @@ Factories are programmatic — you describe data in code, with helper methods, a
 
 - No test pulls in 30 unrelated rows just to satisfy FK constraints — each test builds exactly what it needs.
 - Associations are first-class: `->with('Authors[3].Address.City.Country')` is one line; the equivalent fixture file is dozens.
-- Defaults live in one place per model. Override per test with `make(['title' => 'Foo'])`.
+- Defaults live in one place per model. Override per test with `new(['title' => 'Foo'])`.
 
 See [Why factories?](why-factories) for a full side-by-side comparison.
 
@@ -19,7 +19,7 @@ See [Why factories?](why-factories) for a full side-by-side comparison.
 
 Technically yes — useful when you're migrating a project incrementally. **It is not recommended as a long-term setup.**
 
-The `FactoryTransactionStrategy` only tracks tables written via `factory->persist()`. When you mix in classic `$fixtures`, the two state machines can drift apart easily — the strategy may not know about rows seeded from a fixture file, and a fixture file may not be aware of rows a factory left behind. Symptoms: unexplained FK collisions, ordering-sensitive tests, leaks between cases.
+The `FactoryTransactionStrategy` only tracks tables written via the factory save methods. When you mix in classic `$fixtures`, the two state machines can drift apart easily — the strategy may not know about rows seeded from a fixture file, and a fixture file may not be aware of rows a factory left behind. Symptoms: unexplained FK collisions, ordering-sensitive tests, leaks between cases.
 
 If you have to mix during a migration, keep classic fixtures only for stable reference data (e.g. countries, roles), and move everything tied to test logic into factories or [scenarios](scenarios). Aim to retire the remaining fixtures as soon as you can.
 

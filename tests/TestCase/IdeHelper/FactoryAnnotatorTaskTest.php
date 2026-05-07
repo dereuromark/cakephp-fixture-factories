@@ -176,6 +176,30 @@ PHP;
     }
 
     /**
+     * Regression: abstract base factories must not be annotated. Their generic
+     *
+     * @extends would point at a concrete entity FQN that doesn't apply, and
+     * PHPStan would flag the resulting class as inconsistent.
+     */
+    public function testShouldRunSkipsAbstractFactory(): void
+    {
+        $content = <<<'PHP'
+<?php
+declare(strict_types=1);
+
+namespace App\Test\Factory;
+
+use CakephpFixtureFactories\Factory\BaseFactory;
+
+abstract class AbstractInvoiceFactory extends BaseFactory
+{
+}
+PHP;
+        $result = $this->getTask($content)->shouldRun('/app/tests/Factory/AbstractInvoiceFactory.php', $content);
+        $this->assertFalse($result);
+    }
+
+    /**
      * @return void
      */
     public function testAnnotateInsertsExtendsForFreshAppFactory(): void
@@ -262,7 +286,6 @@ use CakephpFixtureFactories\Factory\BaseFactory as CakephpBaseFactory;
  * @method \App\Model\Entity\Invoice getEntity()
  * @method array<\App\Model\Entity\Invoice> getEntities()
  * @method \App\Model\Entity\Invoice|array<\App\Model\Entity\Invoice> persist()
- * @method static \App\Model\Entity\Invoice get(mixed $primaryKey, array $options = [])
  */
 class InvoiceFactory extends CakephpBaseFactory
 {
@@ -280,10 +303,6 @@ PHP;
             $this->assertStringNotContainsString('persist()', $newContent);
             $this->assertStringContainsString(
                 '@extends \CakephpFixtureFactories\Factory\BaseFactory<\App\Model\Entity\Invoice>',
-                $newContent,
-            );
-            $this->assertStringContainsString(
-                '@method static \App\Model\Entity\Invoice get(mixed $primaryKey, array $options = [])',
                 $newContent,
             );
         } finally {
@@ -308,7 +327,6 @@ use CakephpFixtureFactories\Factory\BaseFactory as CakephpBaseFactory;
  * InvoiceFactory
  *
  * @extends \CakephpFixtureFactories\Factory\BaseFactory<\App\Model\Entity\Invoice>
- * @method static \App\Model\Entity\Invoice get(mixed $primaryKey, array $options = [])
  */
 class InvoiceFactory extends CakephpBaseFactory
 {

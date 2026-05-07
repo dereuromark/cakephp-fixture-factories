@@ -20,8 +20,6 @@ use CakephpFixtureFactories\Generator\GeneratorInterface;
  * Class BillFactory
  *
  * @extends BaseFactory<\TestPlugin\Model\Entity\Bill>
- *
- * @method static \TestPlugin\Model\Entity\Bill get(mixed $primaryKey, array $options = [])
  */
 class BillFactory extends BaseFactory
 {
@@ -30,28 +28,31 @@ class BillFactory extends BaseFactory
         return 'TestPlugin.Bills';
     }
 
-    protected function setDefaultTemplate(): void
+    public function definition(GeneratorInterface $generator): array
     {
-        $this->setDefaultData(function (GeneratorInterface $generator) {
-            return [
-                'amount' => $generator->numberBetween(0, 1000),
-            ];
-        })
-        ->withArticle()
-        ->withCustomer()
-        ->listeningToModelEvents([
-            'Model.beforeMarshal',
-            'Model.afterSave',
-        ]);
+        return [
+            'amount' => $generator->numberBetween(0, 1000),
+        ];
     }
 
-    public function withArticle(mixed $parameter = null): self
+    protected function configure(): static
     {
-        return $this->with('Article', ArticleFactory::make($parameter));
+        return $this
+            ->forArticle()
+            ->forCustomer()
+            ->listeningToModelEvents([
+                'Model.beforeMarshal',
+                'Model.afterSave',
+            ]);
     }
 
-    public function withCustomer(mixed $parameter = null): self
+    public function forArticle(mixed $parameter = null): self
     {
-        return $this->with('Customer', CustomerFactory::make($parameter));
+        return $this->for(ArticleFactory::new($parameter));
+    }
+
+    public function forCustomer(mixed $parameter = null): self
+    {
+        return $this->for(CustomerFactory::new($parameter));
     }
 }

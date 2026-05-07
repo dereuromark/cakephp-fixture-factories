@@ -62,43 +62,43 @@ class BaseFactoryStaticFinderTest extends TestCase
     public function testBaseFactoryStaticFind(): void
     {
         $n = 2;
-        ArticleFactory::make(2)->unpublished()->persist();
+        ArticleFactory::new(2)->unpublished()->saveMany();
         $this->assertSame([], $this->Articles->find()->toArray());
-        $this->assertSame($n, ArticleFactory::find()->count());
-        $this->assertSame(0, ArticleFactory::find('published')->count());
-        $this->assertSame($n, ArticleFactory::count());
+        $this->assertSame($n, ArticleFactory::query()->count());
+        $this->assertSame(0, ArticleFactory::query()->find('published')->count());
+        $this->assertSame($n, ArticleFactory::query()->count());
     }
 
     public function testBaseFactoryStaticFirstOrFail(): void
     {
-        $articles = ArticleFactory::make([
+        $articles = ArticleFactory::new([
             ['title' => 'title 1'],
             ['title' => 'title 2'],
-        ])->persist();
+        ])->saveMany();
 
         $firstArticleId = $articles[0]['id'];
 
-        $retrievedArticle = ArticleFactory::firstOrFail(['title' => 'title 1']);
+        $retrievedArticle = ArticleFactory::query()->where(['title' => 'title 1'])->firstOrFail();
         $this->assertSame($firstArticleId, $retrievedArticle->id);
-        $this->assertSame(2, ArticleFactory::count());
+        $this->assertSame(2, ArticleFactory::query()->count());
     }
 
     public function testBaseFactoryStaticFirstOrFailNoParameters(): void
     {
-        $article = ArticleFactory::make()->persist();
+        $article = ArticleFactory::new()->save();
 
-        $retrievedArticle = ArticleFactory::firstOrFail();
+        $retrievedArticle = ArticleFactory::query()->firstOrFail();
         $this->assertSame($article->id, $retrievedArticle->id);
     }
 
     public function testBaseFactoryStaticFirstOrFailNotFound(): void
     {
-        ArticleFactory::make([
+        ArticleFactory::new([
             ['title' => 'title 1'],
             ['title' => 'title 2'],
-        ])->persist();
+        ])->saveMany();
 
         $this->expectException(RecordNotFoundException::class);
-        ArticleFactory::firstOrFail(['title' => 'title 3']);
+        ArticleFactory::query()->where(['title' => 'title 3'])->firstOrFail();
     }
 }

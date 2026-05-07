@@ -21,7 +21,6 @@ use Cake\ORM\Association\BelongsToMany;
 use Cake\ORM\Association\HasMany;
 use Cake\ORM\Association\HasOne;
 use Cake\ORM\Table;
-use Cake\Utility\Inflector;
 use CakephpFixtureFactories\Error\AssociationBuilderException;
 use Exception;
 use Throwable;
@@ -61,6 +60,16 @@ class AssociationBuilder
     }
 
     /**
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Associated factory
+     *
+     * @return void
+     */
+    public function setFactory(BaseFactory $factory): void
+    {
+        $this->factory = $factory;
+    }
+
+    /**
      * Makes sure that a given association is well defined in the
      * builder's factory's table
      *
@@ -75,7 +84,7 @@ class AssociationBuilder
         try {
             $association = $this->getTable()->getAssociation($associationName);
         } catch (Exception $e) {
-            throw new AssociationBuilderException($e->getMessage());
+            throw new AssociationBuilderException($e->getMessage(), (int)$e->getCode(), $e);
         }
         if ($this->associationIsToOne($association) || $this->associationIsToMany($association)) {
             return $association;
@@ -86,20 +95,6 @@ class AssociationBuilder
         throw new AssociationBuilderException(
             "Unknown association type `$associationType` on table `{$this->getTable()->getAlias()}`",
         );
-    }
-
-    /**
-     * @param string $associationName Name of the association
-     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $associationFactory Factory
-     *
-     * @return bool
-     */
-    public function processToOneAssociation(string $associationName, BaseFactory $associationFactory): bool
-    {
-        $this->validateToOneAssociation($associationName, $associationFactory);
-        $this->removeAssociationForToOneFactory($associationName, $associationFactory);
-
-        return $this->associationIsToOne($this->getAssociation($associationName));
     }
 
     /**
@@ -127,51 +122,57 @@ class AssociationBuilder
      * @param string $associationName Association name
      * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $associatedFactory Factory
      *
-     * @return void
+     * @return \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>
      */
-    public function removeAssociationForToOneFactory(string $associationName, BaseFactory $associatedFactory): void
+    public function removeAssociationForToOneFactory(string $associationName, BaseFactory $associatedFactory): BaseFactory
     {
-        if ($this->associationIsToMany($this->getAssociation($associationName))) {
-            $backAssociation = $this->findBackAssociation($associatedFactory->getTable());
+        $association = $this->getAssociation($associationName);
+        if ($this->associationIsToMany($association)) {
+            $backAssociation = $this->findBackAssociation($associatedFactory->getTable(), $association);
             if ($backAssociation !== null) {
-                $associatedFactory->without($backAssociation->getName());
+                return $associatedFactory->without($backAssociation->getName());
             }
         }
+
+        return $associatedFactory;
+    }
+
+    /**
+     * Normalize the associated factory for to-one relations.
+     *
+     * @param string $associationName Association name
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $associationFactory Factory
+     *
+     * @return \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>
+     */
+    public function prepareAssociationFactory(string $associationName, BaseFactory $associationFactory): BaseFactory
+    {
+        $this->validateToOneAssociation($associationName, $associationFactory);
+
+        return $this->removeAssociationForToOneFactory($associationName, $associationFactory);
     }
 
     /**
      * Find a belongsTo association on the associated table that targets the current table.
      *
      * @param \Cake\ORM\Table $associatedTable The associated table
+     * @param \Cake\ORM\Association $forwardAssociation The forward association from the current table
      *
      * @return \Cake\ORM\Association|null
      */
-    private function findBackAssociation(Table $associatedTable): ?Association
+    private function findBackAssociation(Table $associatedTable, Association $forwardAssociation): ?Association
     {
-        $currentTableName = $this->getTable()->getRegistryAlias();
-
-        // First try the conventional singular name
-        $singularName = Inflector::singularize($currentTableName);
-        if ($associatedTable->hasAssociation($singularName)) {
-            $association = $associatedTable->getAssociation($singularName);
-            if ($association instanceof BelongsTo) {
-                return $association;
-            }
-        }
-
-        // Also try the plural name (for unconventional belongsTo naming)
-        if ($associatedTable->hasAssociation($currentTableName)) {
-            $association = $associatedTable->getAssociation($currentTableName);
-            if ($association instanceof BelongsTo) {
-                return $association;
-            }
-        }
-
-        // Search through all associations to find a belongsTo that targets this table
+        $currentTableName = $this->getTable()->getAlias();
+        $forwardForeignKey = (array)$forwardAssociation->getForeignKey();
         foreach ($associatedTable->associations() as $association) {
             if (
                 $association instanceof BelongsTo &&
-                $association->getTarget()->getRegistryAlias() === $currentTableName
+                (
+                    $association->getClassName() === $currentTableName ||
+                    $association->getTarget()->getAlias() === $currentTableName ||
+                    $association->getTarget()->getRegistryAlias() === $currentTableName
+                ) &&
+                (array)$association->getForeignKey() === $forwardForeignKey
             ) {
                 return $association;
             }
@@ -198,16 +199,19 @@ class AssociationBuilder
         $times = $this->getTimeBetweenBrackets($firstAssociation);
         $firstAssociation = $this->removeBrackets($firstAssociation);
 
-        $table = $this->getTable()->getAssociation($firstAssociation)->getClassName();
+        // Route through $this->getAssociation() so a typo surfaces as the
+        // documented AssociationBuilderException with the previous chain
+        // preserved, instead of Cake's raw InvalidArgumentException.
+        $table = $this->getAssociation($firstAssociation)->getClassName();
 
         if ($associations) {
             $factory = $this->getFactoryFromTableName($table);
-            $factory->with(implode('.', $associations), $data);
+            $factory = $factory->with(implode('.', $associations), $data);
         } else {
             $factory = $this->getFactoryFromTableName($table, $data);
         }
         if ($times) {
-            $factory->setTimes($times);
+            $factory = $factory->count($times);
         }
 
         return $factory;
@@ -226,7 +230,7 @@ class AssociationBuilder
         try {
             return $this->getFactoryInstance($modelName, $data);
         } catch (Throwable $e) {
-            throw new AssociationBuilderException($e->getMessage());
+            throw new AssociationBuilderException($e->getMessage(), (int)$e->getCode(), $e);
         }
     }
 
@@ -258,7 +262,7 @@ class AssociationBuilder
         if (!$res) {
             return null;
         }
-        if (count($res) === 1 && !empty($res[0])) {
+        if (count($res) === 1 && ctype_digit($res[0]) && (int)$res[0] >= 1) {
             return (int)$res[0];
         }
 
@@ -310,7 +314,7 @@ class AssociationBuilder
         if (count($explode) === 0) {
             unset($this->associations[$baseAssociationName]);
         } else {
-            $this->associations[$baseAssociationName]->without(implode('.', $explode));
+            $this->associations[$baseAssociationName] = $this->associations[$baseAssociationName]->without(implode('.', $explode));
         }
     }
 
@@ -324,7 +328,7 @@ class AssociationBuilder
             $result[$name] = $associatedFactory->getMarshallerOptions();
         }
 
-        return array_merge_recursive($result, $this->manualAssociations);
+        return array_replace_recursive($result, $this->manualAssociations);
     }
 
     /**
@@ -349,6 +353,18 @@ class AssociationBuilder
     }
 
     /**
+     * @param callable(\CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>): \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $callback Mapper
+     *
+     * @return void
+     */
+    public function mapAssociations(callable $callback): void
+    {
+        foreach ($this->associations as $associationName => $associatedFactory) {
+            $this->associations[$associationName] = $callback($associatedFactory);
+        }
+    }
+
+    /**
      * @return \Cake\ORM\Table
      */
     public function getTable(): Table
@@ -363,6 +379,6 @@ class AssociationBuilder
      */
     public function addManualAssociations(array $associations): void
     {
-        $this->manualAssociations = array_merge_recursive($this->manualAssociations, $associations);
+        $this->manualAssociations = array_replace_recursive($this->manualAssociations, $associations);
     }
 }

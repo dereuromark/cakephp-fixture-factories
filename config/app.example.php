@@ -38,9 +38,9 @@ return [
          *
          * Use setDefaultGenerator() to explicitly set the global default when this is enabled.
          *
-         * Default: false (setGenerator() affects all factories globally for BC)
+         * Default: true (setGenerator() is scoped to the current factory instance)
          */
-        // 'instanceLevelGenerator' => false,
+        // 'instanceLevelGenerator' => true,
 
         /**
          * Namespace where factory classes are located.

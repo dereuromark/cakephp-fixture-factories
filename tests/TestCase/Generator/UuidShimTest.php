@@ -22,7 +22,7 @@ class UuidShimTest extends TestCase
     public function testCountryFactoryWorksWithBothGenerators(): void
     {
         // Test with Faker (default)
-        $country1 = CountryFactory::make()->getEntity();
+        $country1 = CountryFactory::new()->build();
         $this->assertIsString($country1->unique_stamp);
         $this->assertNotEmpty($country1->unique_stamp);
 
@@ -30,7 +30,7 @@ class UuidShimTest extends TestCase
         Configure::write('FixtureFactories.generatorType', 'dummy');
         CakeGeneratorFactory::clearInstances();
 
-        $country2 = CountryFactory::make()->getEntity();
+        $country2 = CountryFactory::new()->build();
         $this->assertIsString($country2->unique_stamp);
         $this->assertNotEmpty($country2->unique_stamp);
 
@@ -50,7 +50,7 @@ class UuidShimTest extends TestCase
     public function testCountryFactoryPersistWorksWithBothGenerators(): void
     {
         // Test persisting with Faker (default)
-        $country1 = CountryFactory::make()->persist();
+        $country1 = CountryFactory::new()->save();
         $this->assertIsString($country1->unique_stamp);
         $this->assertNotNull($country1->id);
 
@@ -58,7 +58,7 @@ class UuidShimTest extends TestCase
         Configure::write('FixtureFactories.generatorType', 'dummy');
         CakeGeneratorFactory::clearInstances();
 
-        $country2 = CountryFactory::make()->persist();
+        $country2 = CountryFactory::new()->save();
         $this->assertIsString($country2->unique_stamp);
         $this->assertNotNull($country2->id);
 

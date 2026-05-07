@@ -5,7 +5,7 @@ description: Quick start guide for CakePHP Fixture Factories
 
 # Getting Started
 
-This guide walks you through installing the plugin, baking your first factory, and persisting test data.
+This guide walks you through installing the plugin, baking your first factory, and saving test data.
 
 ## What is this?
 
@@ -14,9 +14,10 @@ CakePHP Fixture Factories replaces the static `$fixtures` array workflow with a 
 You write a factory class per table; tests then build exactly the data they need:
 
 ```php
-$articles = ArticleFactory::make(5)
+$articles = ArticleFactory::new()
+    ->count(5)
     ->with('Authors[3].Address.City.Country')
-    ->persistEntities();
+    ->saveMany();
 ```
 
 Five articles, each with three authors, each with a full address chain — persisted, in one expression.
@@ -85,14 +86,12 @@ class ArticleFactory extends BaseFactory
         return 'Articles';
     }
 
-    protected function setDefaultTemplate(): void
+    public function definition(GeneratorInterface $generator): array
     {
-        $this->setDefaultData(function (GeneratorInterface $generator) {
-            return [
-                'title' => $generator->text(30),
-                'body'  => $generator->text(1000),
-            ];
-        });
+        return [
+            'title' => $generator->text(30),
+            'body'  => $generator->text(1000),
+        ];
     }
 }
 ```
@@ -103,21 +102,21 @@ class ArticleFactory extends BaseFactory
 use App\Test\Factory\ArticleFactory;
 
 // Build (in memory only)
-$article = ArticleFactory::make()->getEntity();
+$article = ArticleFactory::new()->build();
 
-// Or persist to DB
-$article = ArticleFactory::make()->persistEntity();
+// Or save to DB
+$article = ArticleFactory::new()->save();
 
 // With overrides
-$article = ArticleFactory::make(['title' => 'Hello'])->persistEntity();
+$article = ArticleFactory::new(['title' => 'Hello'])->save();
 
 // With associations
-$article = ArticleFactory::make()
-    ->with('Authors', AuthorFactory::make(3))
-    ->persistEntity();
+$article = ArticleFactory::new()
+    ->hasAuthors(3)
+    ->save();
 
 // Multiple entities
-$articles = ArticleFactory::make(5)->persistEntities();
+$articles = ArticleFactory::new()->count(5)->saveMany();
 ```
 
 That's it — your test now has data without touching a fixture file.

@@ -83,14 +83,14 @@ class FactoryTableRegistryTest extends TestCase
 
         $this->assertSame($expectedPluginsLoaded, $CountriesTable->behaviors()->loaded());
 
-        $CountryFactory = CountryFactory::make();
+        $CountryFactory = CountryFactory::new();
         $this->assertSame($expectedPluginsLoaded, $CountryFactory->getTable()->behaviors()->loaded());
     }
 
     public function testDoNotTouchTheRegularTableRegistry(): void
     {
         TableRegistry::getTableLocator()->clear();
-        CityFactory::make()->withCountries()->persist();
+        CityFactory::new()->forCountries()->save();
 
         $this->assertFalse(TableRegistry::getTableLocator()->exists('Cities'));
         $this->assertFalse(TableRegistry::getTableLocator()->exists('Countries'));

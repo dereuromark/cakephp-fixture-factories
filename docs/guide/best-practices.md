@@ -7,7 +7,7 @@ description: Patterns and anti-patterns for building maintainable factories
 
 This page collects patterns that hold up well in real test suites — and the anti-patterns that cause pain over time. Most of it is distilled from Kevin Pfeifer's ([@LordSimal](https://github.com/LordSimal)) write-up [*My learnings after using this plugin for 2 years*](https://github.com/vierge-noire/cakephp-fixture-factories/discussions/242).
 
-## DO: Add a `withXyz()` method for every association
+## DO: Add directional helper methods for every association
 
 When you bake factories with `-m`, helper methods are added based on your associations. Add them yourself for any association the bake misses — your future self (and your colleagues) will thank you.
 
@@ -15,59 +15,84 @@ When you bake factories with `-m`, helper methods are added based on your associ
 class StaffMemberFactory extends BaseFactory
 {
     // hasMany Projects → plural
-    public function withProjects(mixed $parameter = null, int $n = 1): self
+    public function hasProjects(int $n = 1, mixed $parameter = null): static
     {
-        return $this->with('Projects', ProjectFactory::make($parameter, $n));
+        return $this->has(ProjectFactory::new($parameter)->count($n));
     }
 }
 
 class TicketFactory extends BaseFactory
 {
     // belongsTo Project → singular
-    public function withProject(mixed $parameter = null, int $n = 1): self
+    public function forProject(mixed $parameter = null): static
     {
-        return $this->with('Projects', ProjectFactory::make($parameter, $n));
+        return $this->for(ProjectFactory::new($parameter));
     }
 }
 ```
 
-The two methods are functionally identical, but the singular/plural name signals the cardinality at the call site. `->withProject()` reads as "with a project"; `->withProjects()` reads as "with projects" — the test code immediately tells you what shape you're building.
+The helper names now signal the cardinality at the call site. `->forProject()` reads as "belongs to this project"; `->hasProjects()` reads as "has projects" — the test code immediately tells you what shape you're building.
 
 You don't always know which associations you'll want in tests months from now. Add them all preemptively so nobody has to wire up an association mid-test.
 
-## DON'T: chain `withXyz()` calls inside your factory's helper methods
+## DO: encode reusable business states as named methods
+
+Prefer this:
+
+```php
+$article = ArticleFactory::new()
+    ->published()
+    ->featured()
+    ->save();
+```
+
+over scattering raw state arrays through unrelated tests:
+
+```php
+$article = ArticleFactory::new()
+    ->state([
+        'is_published' => true,
+        'published' => new FrozenTime('-1 day'),
+        'is_featured' => true,
+    ])
+    ->save();
+```
+
+Named methods make test intent obvious, centralize the state shape in one place, and make later refactors much cheaper. Keep `state()` and `setField()` for local one-offs; reach for `published()`, `draft()`, `archived()`, and similar methods when the meaning belongs to the domain.
+
+## DON'T: chain helper methods inside your helper methods
 
 Tempting:
 
 ```php
-public function withDomains(mixed $parameter = null, int $n = 1): self
+public function hasDomains(int $n = 1, mixed $parameter = null): static
 {
-    return $this->with(
-        'FtpDomains',
-        FtpDomainFactory::make($parameter, $n)->withFtpLoginData(),
+    return $this->has(
+        FtpDomainFactory::new($parameter)->count($n)->forFtpLoginData(),
     );
 }
 ```
 
-It looks clever — one short call in the test (`->withDomains()`) builds two layers at once. But the `withFtpLoginData()` is now invisible from the test, and the `FtpLoginData` shape is uncontrollable from the outside. If a test needs custom login data, it has to fight the helper.
+It looks clever, but `forFtpLoginData()` is now invisible from the test, and the `FtpLoginData` shape is uncontrollable from the outside. If a test needs custom login data, it has to fight the helper.
 
 Keep helpers single-layer. Build deeper graphs at the call site.
 
-## DON'T: add `withXyz()` calls to `setDefaultTemplate()` — with one exception
+## DON'T: add optional associations to `definition()` — with one exception
 
 Same problem, one level out:
 
 ```php
-protected function setDefaultTemplate(): void
+public function definition(GeneratorInterface $generator): array
 {
-    $this->setDefaultData(function (GeneratorInterface $generator) {
-        return [/* ... */];
-    })
-    ->withFtpLoginData(); // ❌ creates an FtpLoginData on every persist
+    return [/* ... */];
 }
 ```
 
-Every persisted entity now drags an `FtpLoginData` along, whether the test asked for it or not. You can scrub it with `->without('FtpLoginData')`, but that's paying tax to undo something you set up by mistake.
+Then add the optional association only at the call site:
+
+```php
+FtpDomainFactory::new()->forFtpLoginData()->save();
+```
 
 **The exception: required associations.**
 If a column has a `NOT NULL` foreign key (e.g. `addresses.country_id`), the entity simply can't persist without an associated row. In that case, attach the *minimum* the schema demands — and only that:
@@ -75,35 +100,37 @@ If a column has a `NOT NULL` foreign key (e.g. `addresses.country_id`), the enti
 ```php
 class AddressFactory extends BaseFactory
 {
-    protected function setDefaultTemplate(): void
+    public function definition(GeneratorInterface $generator): array
     {
-        $this->setDefaultData(function (GeneratorInterface $generator) {
-            return ['street' => $generator->streetAddress()];
-        })
-        ->withCountry(); // ✅ NOT NULL FK on addresses.country_id
+        return ['street' => $generator->streetAddress()];
+    }
+
+    protected function configure(): static
+    {
+        return $this->forCountry();
     }
 }
 ```
 
-The same rule applies to required associations inside `withXyz()` helpers — if persisting `FtpDomain` strictly requires an `FtpLoginData`, the helper has to materialize one. The asymmetry is unavoidable; just keep it minimal and document the why.
+The same rule applies to required associations inside helper methods — if persisting `FtpDomain` strictly requires an `FtpLoginData`, the helper has to materialize one. The asymmetry is unavoidable; just keep it minimal and document the why.
 
 Rule of thumb: "what does the schema require?" goes in the template. "What does this particular test want?" goes at the call site.
 
 ## DON'T: nest `with()` calls in test cases
 
 ```php
-$entity = ProjectFactory::make([
+$entity = ProjectFactory::new([
     'project_end' => null,
     'is_duedate_notification_sent' => 0,
     'duedate' => Carbon::now()->subDays(5),
 ])
     ->with(
         'StaffMembersProjects',
-        StaffMembersProjectFactory::make()
+        StaffMembersProjectFactory::new()
             ->without('Projects')
             ->with('ProjectRoles', ['id' => 1]),
     )
-    ->persistEntity();
+    ->save();
 ```
 
 This is hard to read, hard to refactor, and the `->without('Projects')` is a smell that the join model's defaults don't match what the test wants.
@@ -115,62 +142,63 @@ Build the join row exactly the way you want it, then pass it to the parent:
 ::: code-group
 
 ```php [One association with custom data]
-$staffMembersProject = StaffMembersProjectFactory::make()
-    ->withStaffMember()
-    ->withProjectRole(['id' => 1])
-    ->getEntity();
+$staffMembersProject = StaffMembersProjectFactory::new()
+    ->forStaffMember()
+    ->forProjectRole(['id' => 1])
+    ->build();
 
-$project = ProjectFactory::make([
+$project = ProjectFactory::new([
     'project_end' => null,
     'is_duedate_notification_sent' => 0,
     'duedate' => Carbon::now()->subDays(5),
 ])
-    ->withStaffMembersProjects($staffMembersProject)
-    ->persistEntity();
+    ->hasStaffMembersProjects(1, $staffMembersProject)
+    ->save();
 ```
 
 ```php [Two associations, one shared entity]
-$customer = EasybillCustomerFactory::make()->persistEntity();
+$customer = EasybillCustomerFactory::new()->save();
 
-$charge = EasybillChargeFactory::make()
-    ->withEasybillCustomer($customer)
-    ->persistEntity();
+$charge = EasybillChargeFactory::new()
+    ->forEasybillCustomer($customer)
+    ->save();
 
-$project = ProjectFactory::make()
-    ->withEasybillCustomer($customer)
-    ->withEasybillCharges($charge)
-    ->persistEntity();
+$project = ProjectFactory::new()
+    ->forEasybillCustomer($customer)
+    ->hasEasybillCharges(1, $charge)
+    ->save();
 ```
 
 ```php [Multiple generated children]
-$staffMembersProjects = StaffMembersProjectFactory::make(3)
-    ->withStaffMember()
-    ->withProjectRole()
-    ->getEntities();
+$staffMembersProjects = StaffMembersProjectFactory::new()
+    ->count(3)
+    ->forStaffMember()
+    ->forProjectRole()
+    ->buildMany();
 
-$project = ProjectFactory::make()
-    ->withEasybillCustomer()
-    ->withStaffMembersProjects($staffMembersProjects)
-    ->persistEntity();
+$project = ProjectFactory::new()
+    ->forEasybillCustomer()
+    ->hasStaffMembersProjects(3, $staffMembersProjects)
+    ->save();
 ```
 
 ```php [Three levels with a shared entity]
-$customer = EasybillCustomerFactory::make()->persistEntity();
+$customer = EasybillCustomerFactory::new()->save();
 
-$easybillDocument = EasybillDocumentFactory::make()
-    ->withEasybillCustomer($customer)
-    ->withEasybillDocumentType()
-    ->persistEntity();
+$easybillDocument = EasybillDocumentFactory::new()
+    ->forEasybillCustomer($customer)
+    ->forEasybillDocumentType()
+    ->save();
 
-$projectsEasybillDocument = ProjectsEasybillDocumentFactory::make()
-    ->withProjectDocumentType()
-    ->withEasybillDocument($easybillDocument)
-    ->getEntity();
+$projectsEasybillDocument = ProjectsEasybillDocumentFactory::new()
+    ->forProjectDocumentType()
+    ->forEasybillDocument($easybillDocument)
+    ->build();
 
-$project = ProjectFactory::make()
-    ->withEasybillCustomer($customer)
-    ->withProjectsEasybillDocuments($projectsEasybillDocument)
-    ->persistEntity();
+$project = ProjectFactory::new()
+    ->forEasybillCustomer($customer)
+    ->hasProjectsEasybillDocuments(1, $projectsEasybillDocument)
+    ->save();
 ```
 
 :::
@@ -181,49 +209,47 @@ The shape of every sub-entity is right there in the test. No nested `with()`, no
 
 If you've followed the rules above, `->without()` becomes unnecessary almost everywhere. Each sub-entity is built explicitly and attached only where it's wanted, so there's nothing to subtract. When you do reach for `->without()`, treat it as a sign that some helper or default is doing too much, and consider trimming it.
 
-## Know when to use `getEntity()` vs `persistEntity()` / `persistEntities()`
+## Know when to use `build()` vs `save()` / `saveMany()`
 
 Both walk the same association graph. The difference is whether they touch the database:
 
-- **`getEntity()` / `getEntities()`** — build entities in memory only. Use these when the test doesn't need DB rows: unit-testing a service that takes an entity, or generating fixtures for a select-query mock.
-- **`persistEntity()`** — save a single configured entity and return it (typed). Use it whenever the factory was created with `make()` or `make([oneRow])`.
-- **`persistEntities()`** — save all configured entities and return them as a typed array. Works for any factory shape; pick it when the factory produces multiple entities, or when callers iterate / assert on counts.
-
-`persist()` is still available for backwards compatibility but is deprecated — it returns either an entity or an iterable depending on the factory shape, which is hard for static analysis. Prefer `persistEntity()` / `persistEntities()`.
+- **`build()` / `buildMany()`** — build entities in memory only. Use these when the test doesn't need DB rows: unit-testing a service that takes an entity, or generating fixtures for a select-query mock.
+- **`save()`** — save a single configured entity and return it (typed).
+- **`saveMany()`** — save all configured entities and return them as a typed array. Use it whenever the factory produces multiple entities, or when callers iterate / assert on counts.
 
 ```php
 // Unit test: no DB needed
-$article = ArticleFactory::make()->withAuthors(2)->getEntity();
+$article = ArticleFactory::new()->hasAuthors(2)->build();
 $result = $this->ArticlesService->summarize($article);
 $this->assertSame('…', $result);
 
 // Integration test: needs DB, single entity
-$article = ArticleFactory::make()->withAuthors(2)->persistEntity();
+$article = ArticleFactory::new()->hasAuthors(2)->save();
 $this->get(['controller' => 'Articles', 'action' => 'view', $article->id]);
 
 // Integration test: needs DB, many entities
-ArticleFactory::make(5)->withAuthors(2)->persistEntities();
+ArticleFactory::new()->count(5)->hasAuthors(2)->saveMany();
 $this->get(['controller' => 'Articles', 'action' => 'index']);
 $this->assertResponseContains('5 articles');
 ```
 
-If you're not sure which you need, default to `getEntity()` — fewer DB writes mean faster, cleaner tests.
+If you're not sure which you need, default to `build()` — fewer DB writes mean faster, cleaner tests.
 
 ## Build a fresh factory per test
 
-Factory state is mutable. A factory configured in `setUp()` and reused across multiple `test*` methods can leak state — especially when you've used `->unique()`, `setGenerator()`, or `->without()`. Build the factory inside the test that needs it, not as a shared instance variable.
+Factories are immutable, so reuse is much safer than before. Even so, building the factory inside the test that needs it usually keeps intent clearer and avoids over-sharing setup.
 
 ```php
 // Avoid
 protected function setUp(): void
 {
-    $this->articleFactory = ArticleFactory::make()->withAuthors(2);
+    $this->articleFactory = ArticleFactory::new()->hasAuthors(2);
 }
 
 // Prefer
 public function testIndex(): void
 {
-    $article = ArticleFactory::make()->withAuthors(2)->persistEntity();
+    $article = ArticleFactory::new()->hasAuthors(2)->save();
     // ...
 }
 ```
@@ -250,12 +276,12 @@ The "build sub-entities first" pattern handles one-off graphs well. When the *sa
 
 ## Recap
 
-- One `withXyz()` per association — name signals cardinality.
+- One directional helper per association — `forXyz()` for to-one, `hasXyz()` for to-many.
 - Helpers stay single-layer; don't chain associations inside them, except where the schema demands it.
-- `setDefaultTemplate()` sets fields and any *required* associations — never optional ones.
+- `definition()` sets fields; `configure()` is where required default associations belong.
 - In tests, build the graph bottom-up: leaf entities first, parents last.
 - `->without()` is a smell; aim to make it unnecessary.
-- Pick `getEntity()` vs `persistEntity()` / `persistEntities()` deliberately; default to in-memory.
+- Pick `build()` vs `save()` / `saveMany()` deliberately; default to in-memory.
 - Build a fresh factory per test — never share instances.
 - `->unique()` is for high-cardinality fields; promote shared setups to scenarios.
 

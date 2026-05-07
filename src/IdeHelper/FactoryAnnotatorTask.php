@@ -16,9 +16,8 @@ use IdeHelper\Annotator\ClassAnnotatorTask\PathAwareClassAnnotatorTaskInterface;
  *     extends \CakephpFixtureFactories\Factory\BaseFactory<\App\Model\Entity\X>
  *
  * Without this annotation, IDEs and PHPStan/Psalm cannot resolve the
- * TEntity template on BaseFactory, so getEntity(), getEntities(),
- * persistEntity(), persistEntities(), getResultSet() and
- * getPersistedResultSet() all fall back to EntityInterface.
+ * TEntity template on BaseFactory, so build(), buildMany(),
+ * save() and saveMany() all fall back to EntityInterface.
  *
  * Implements `PathAwareClassAnnotatorTaskInterface` so that the standard
  * `bin/cake annotate classes` command (and `annotate all`) reach
@@ -57,6 +56,11 @@ class FactoryAnnotatorTask extends AbstractClassAnnotatorTask implements PathAwa
             return false;
         }
         if (!preg_match('/^class\s+\w+Factory\b/m', $content)) {
+            return false;
+        }
+        // Skip abstract base factories: their @extends/@method annotations
+        // would point at a concrete entity FQN that doesn't apply to the base.
+        if (preg_match('/^abstract\s+class\s+\w+Factory\b/m', $content)) {
             return false;
         }
 

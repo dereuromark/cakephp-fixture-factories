@@ -20,8 +20,6 @@ use CakephpFixtureFactories\Generator\GeneratorInterface;
  * Class CustomerFactory
  *
  * @extends BaseFactory<\TestPlugin\Model\Entity\Customer>
- *
- * @method static \TestPlugin\Model\Entity\Customer get(mixed $primaryKey, array $options = [])
  */
 class CustomerFactory extends BaseFactory
 {
@@ -30,13 +28,11 @@ class CustomerFactory extends BaseFactory
         return 'TestPlugin.Customers';
     }
 
-    protected function setDefaultTemplate(): void
+    public function definition(GeneratorInterface $generator): array
     {
-        $this->setDefaultData(function (GeneratorInterface $generator) {
-            return [
-                'name' => $generator->lastName(),
-            ];
-        });
+        return [
+            'name' => $generator->lastName(),
+        ];
     }
 
     /**
@@ -44,17 +40,23 @@ class CustomerFactory extends BaseFactory
      * @param int $n
      * @return CustomerFactory
      */
-    public function withBills($parameter = null, int $n = 1): self
+    public function hasBills($n = 1, $parameter = null): self
     {
-        return $this->with('Bills', BillFactory::make($parameter, $n)->without('Customer'));
+        if (!is_int($n)) {
+            $originalParameter = $n;
+            $n = is_int($parameter) ? $parameter : 1;
+            $parameter = $originalParameter;
+        }
+
+        return $this->has(BillFactory::new($parameter)->count($n)->without('Customer'));
     }
 
     /**
      * @param array|callable|null|int|\Cake\Datasource\EntityInterface $parameter Injected data
      * @return CustomerFactory
      */
-    public function withAddress($parameter = null): self
+    public function forAddress($parameter = null): self
     {
-        return $this->with('Address', AddressFactory::make($parameter));
+        return $this->for(AddressFactory::new($parameter));
     }
 }

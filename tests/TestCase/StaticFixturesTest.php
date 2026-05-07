@@ -28,7 +28,7 @@ class StaticFixturesTest extends TestCase
 
     public function testLoadStaticFixtures(): void
     {
-        $article = ArticleFactory::find()->firstOrFail();
+        $article = ArticleFactory::query()->firstOrFail();
         $this->assertInstanceOf(Entity::class, $article);
     }
 }

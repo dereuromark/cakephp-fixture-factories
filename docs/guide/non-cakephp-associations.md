@@ -38,24 +38,21 @@ class CityFactory extends BaseFactory
         return 'Cities';
     }
 
-    protected function setDefaultTemplate(): void
+    public function definition(GeneratorInterface $generator): array
     {
-        $this->setDefaultData(function (GeneratorInterface $generator) {
-            return [
-                'name' => $generator->city(),
-            ];
-        })
-        ->withCountries();
+        return [
+            'name' => $generator->city(),
+        ];
     }
 }
 ```
 
 Once this is defined, you may then call:
 ```php
-$city = CityFactory::make()
+$city = CityFactory::new()
     ->with('Addresses', 4)
-    ->with('Countries', ['name' => 'India'])
-    ->getEntity();
+    ->for(CountryFactory::new(['name' => 'India']))
+    ->build();
 ```
 which will set the city's country, and provide 4 random addresses.
 

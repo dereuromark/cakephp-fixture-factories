@@ -33,6 +33,8 @@ use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpFixtureFactories\Test\Factory\CustomerFactory;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
 use PHPUnit\Framework\Attributes\DataProvider;
+use ReflectionMethod;
+use RuntimeException;
 use TestApp\Model\Entity\Address;
 use TestApp\Model\Entity\Article;
 use TestApp\Model\Entity\City;
@@ -61,6 +63,8 @@ class EventCollectorTest extends TestCase
 
     public function setUp(): void
     {
+        Configure::write('FixtureFactories.testFixtureGlobalBehaviors', 'SomeBehaviorUsedInMultipleTables');
+
         /** @var \TestApp\Model\Table\CountriesTable $Countries */
         $Countries = TableRegistry::getTableLocator()->get('Countries');
         $this->Countries = $Countries;
@@ -70,6 +74,9 @@ class EventCollectorTest extends TestCase
 
     public function tearDown(): void
     {
+        if ($this->Countries->hasBehavior('SomePlugin')) {
+            $this->Countries->removeBehavior('SomePlugin');
+        }
         Configure::delete('FixtureFactories.testFixtureGlobalBehaviors');
         unset($this->Countries);
 
@@ -108,13 +115,13 @@ class EventCollectorTest extends TestCase
     public static function provideFactories(): array
     {
         return [
-            [ArticleFactory::make()],
-            [AuthorFactory::make()],
-            [AddressFactory::make()],
-            [CityFactory::make()],
-            [CountryFactory::make()],
-            [BillFactory::make()],
-            [CustomerFactory::make()],
+            [ArticleFactory::new()],
+            [AuthorFactory::new()],
+            [AddressFactory::new()],
+            [CityFactory::new()],
+            [CountryFactory::new()],
+            [BillFactory::new()],
+            [CustomerFactory::new()],
         ];
     }
 
@@ -124,7 +131,7 @@ class EventCollectorTest extends TestCase
     #[DataProvider('provideFactories')]
     public function testTimestamp(BaseFactory $factory): void
     {
-        $entity = $factory->persist();
+        $entity = $factory->save();
         $this->assertNotNull($entity->get('created'));
     }
 
@@ -151,19 +158,19 @@ class EventCollectorTest extends TestCase
         $country = $this->Countries->newEntity(compact('name'));
         $this->assertSame($applyEvent, $country->get('eventApplied'));
 
-        $factory = CountryFactory::make();
+        $factory = CountryFactory::new();
         $factory->getTable()->getEventManager()->on('Model.beforeMarshal', function (EventInterface $event, ArrayObject $entity) use ($applyEvent) {
             $entity['eventApplied'] = $applyEvent;
         });
-        $country = $factory->getEntity();
+        $country = $factory->build();
         $this->assertSame($applyEvent, $country->get('eventApplied'));
         FactoryTableRegistry::getTableLocator()->clear();
 
         // Event should be skipped
-        $country = CountryFactory::make()->getEntity();
+        $country = CountryFactory::new()->build();
         $this->assertNull($country->get('eventApplied'));
 
-        $country = CountryFactory::make()->listeningToModelEvents('Model.beforeMarshal')->getEntity();
+        $country = CountryFactory::new()->listeningToModelEvents('Model.beforeMarshal')->build();
         $this->assertNull($country->get('eventApplied'));
     }
 
@@ -173,14 +180,14 @@ class EventCollectorTest extends TestCase
         $name = 'Foo';
 
         // Event should be skipped
-        $country = CountryFactory::make()->getEntity();
+        $country = CountryFactory::new()->build();
         $this->assertNull($country->get('beforeMarshalTriggered'));
 
         // Event should apply
         $country = $this->Countries->newEntity(compact('name'));
         $this->assertTrue($country->get('beforeMarshalTriggered'));
 
-        $country = CountryFactory::make()->listeningToModelEvents('Model.beforeMarshal')->getEntity();
+        $country = CountryFactory::new()->listeningToModelEvents('Model.beforeMarshal')->build();
         $this->assertTrue($country->get('beforeMarshalTriggered'));
     }
 
@@ -190,10 +197,10 @@ class EventCollectorTest extends TestCase
         $title = 'This Article';
         $slug = 'This-Article';
 
-        $article = ArticleFactory::make(compact('title'))->persist();
+        $article = ArticleFactory::new(compact('title'))->save();
         $this->assertEquals(null, $article->get('slug'));
 
-        $article = ArticleFactory::make(compact('title'))->listeningToBehaviors('Sluggable')->persist();
+        $article = ArticleFactory::new(compact('title'))->listeningToBehaviors('Sluggable')->save();
         $this->assertEquals($slug, $article->get('slug'));
     }
 
@@ -217,8 +224,12 @@ class EventCollectorTest extends TestCase
     public function testGetEntityOnNonExistentBehavior(): void
     {
         $behavior = 'Foo';
-        $article = ArticleFactory::make()->listeningToBehaviors($behavior)->getEntity();
+        $factory = ArticleFactory::new()->listeningToBehaviors($behavior);
+        $this->assertFalse($factory->getTable()->hasBehavior($behavior));
+
+        $article = $factory->build();
         $this->assertInstanceOf(Article::class, $article);
+        $this->assertNull($article->get('slug'));
     }
 
     #[DataProvider('runSeveralTimesWithOrWithoutEvents')]
@@ -227,12 +238,12 @@ class EventCollectorTest extends TestCase
         $name = 'Some Country';
         $slug = 'Some-Country';
 
-        $country = CountryFactory::make(compact('name'))->persist();
+        $country = CountryFactory::new(compact('name'))->save();
         $this->assertNull($country->get('slug'));
 
-        $country = CountryFactory::make(compact('name'))
+        $country = CountryFactory::new(compact('name'))
             ->listeningToBehaviors('Sluggable')
-            ->persist();
+            ->save();
         $this->assertEquals($slug, $country->get('slug'));
     }
 
@@ -244,35 +255,35 @@ class EventCollectorTest extends TestCase
         $this->Countries->addBehavior('TestPlugin.SomePlugin');
 
         // The behavior should not apply
-        $country = CountryFactory::make()->persist();
+        $country = CountryFactory::new()->save();
         $this->assertNull($country->get($field));
 
         // The behavior should apply
-        $country = CountryFactory::make()->listeningToBehaviors('SomePlugin')->persist();
+        $country = CountryFactory::new()->listeningToBehaviors('SomePlugin')->save();
         $this->assertTrue($country->get($field));
 
         // The behavior should not apply
-        $country = CountryFactory::make()->persist();
+        $country = CountryFactory::new()->save();
         $this->assertNull($country->get($field));
 
         // The behavior should apply
         Configure::write('FixtureFactories.testFixtureGlobalBehaviors', ['SomePlugin']);
-        $country = CountryFactory::make()->persist();
+        $country = CountryFactory::new()->save();
         $this->assertTrue($country->get($field));
     }
 
     public function testSkipValidation(): void
     {
-        $city = CityFactory::make()->without('Countries')->getEntity();
+        $city = CityFactory::new()->without('Countries')->build();
         $this->assertInstanceOf(City::class, $city);
         $this->assertEmpty($city->getErrors());
     }
 
     public function testSkipValidationInAssociation(): void
     {
-        $address = AddressFactory::make()
-            ->with('City', CityFactory::make()->without('Countries'))
-            ->getEntity();
+        $address = AddressFactory::new()
+            ->with('City', CityFactory::new()->without('Countries'))
+            ->build();
         $this->assertInstanceOf(Address::class, $address);
         $this->assertInstanceOf(City::class, $address->city);
         $this->assertNull($address->city->country);
@@ -281,14 +292,14 @@ class EventCollectorTest extends TestCase
 
     public function testApplyValidationInAssociation(): void
     {
-        $address = AddressFactory::make()
+        $address = AddressFactory::new()
             ->with(
                 'City',
-                CityFactory::make()
+                CityFactory::new()
                     ->listeningToModelEvents('Model.beforeMarshal')
                     ->without('Countries'),
             )
-            ->getEntity();
+            ->build();
         $this->assertInstanceOf(Address::class, $address);
         $this->assertInstanceOf(City::class, $address->city);
         $this->assertNull($address->city->country);
@@ -300,14 +311,14 @@ class EventCollectorTest extends TestCase
      */
     public function testSkipRules(): void
     {
-        $city = CityFactory::make()->persist();
+        $city = CityFactory::new()->save();
         $this->assertInstanceOf(City::class, $city);
         $this->assertEmpty($city->getErrors());
     }
 
     public function testSkipRuleInAssociation(): void
     {
-        $address = AddressFactory::make()->getEntity();
+        $address = AddressFactory::new()->build();
         $this->assertInstanceOf(Address::class, $address);
         $this->assertInstanceOf(City::class, $address->city);
         $this->assertEmpty($address->getErrors());
@@ -315,30 +326,30 @@ class EventCollectorTest extends TestCase
 
     public function testBeforeMarshalIsTriggeredInAssociationWhenDefinedInDefaultTemplate(): void
     {
-        $bill = BillFactory::make()->getEntity();
+        $bill = BillFactory::new()->build();
         $this->assertTrue($bill->get('beforeMarshalTriggeredPerDefault'));
 
-        $bill = CustomerFactory::make()->withBills()->getEntity()->bills[0];
+        $bill = CustomerFactory::new()->hasBills()->build()->bills[0];
         $this->assertTrue($bill->get('beforeMarshalTriggeredPerDefault'));
     }
 
     public function testAfterSaveIsTriggeredInAssociationWhenDefinedInDefaultTemplate(): void
     {
-        $bill = BillFactory::make()->persist();
+        $bill = BillFactory::new()->save();
         $this->assertTrue($bill->get('afterSaveTriggeredPerDefault'));
 
-        $bill = CustomerFactory::make()->withBills()->persist()->bills[0];
+        $bill = CustomerFactory::new()->hasBills()->save()->bills[0];
         $this->assertTrue($bill->get('afterSaveTriggeredPerDefault'));
     }
 
     public function testSetConnection(): void
     {
-        $factory = ArticleFactory::make();
+        $factory = ArticleFactory::new();
         $originalConnectionName = $factory->getTable()->getConnection()->configName();
 
         // Set a different connection and verify it's applied
         // Note: CakePHP prefixes connection names with 'test_' during testing
-        $factory->setConnection('dummy');
+        $factory = $factory->setConnection('dummy');
         $newConnectionName = $factory->getTable()->getConnection()->configName();
 
         $this->assertNotSame($originalConnectionName, $newConnectionName);
@@ -347,16 +358,16 @@ class EventCollectorTest extends TestCase
 
     public function testSetConnectionChaining(): void
     {
-        $article = ArticleFactory::make()
+        $article = ArticleFactory::new()
             ->setConnection('dummy')
             ->listeningToBehaviors('Sluggable')
-            ->getEntity();
+            ->build();
 
         $this->assertInstanceOf(Article::class, $article);
 
         // Verify the connection was set correctly
         // Note: CakePHP prefixes connection names with 'test_' during testing
-        $factory = ArticleFactory::make()->setConnection('dummy');
+        $factory = ArticleFactory::new()->setConnection('dummy');
         $this->assertSame('test_dummy', $factory->getTable()->getConnection()->configName());
     }
 
@@ -367,23 +378,97 @@ class EventCollectorTest extends TestCase
             $entity['customEventManagerApplied'] = true;
         });
 
-        $article = ArticleFactory::make()
+        $article = ArticleFactory::new()
             ->setEventManager($customEventManager)
             ->listeningToModelEvents('Model.beforeMarshal')
-            ->getEntity();
+            ->build();
 
         $this->assertTrue($article->get('customEventManagerApplied'));
     }
 
     public function testSetEventManagerResetsTableCache(): void
     {
-        $factory = ArticleFactory::make();
+        $factory = ArticleFactory::new();
         $originalEventManager = $factory->getTable()->getEventManager();
 
         $customEventManager = new EventManager();
-        $factory->setEventManager($customEventManager);
+        $factory = $factory->setEventManager($customEventManager);
 
         $this->assertNotSame($originalEventManager, $factory->getTable()->getEventManager());
         $this->assertSame($customEventManager, $factory->getTable()->getEventManager());
+    }
+
+    public function testSetEventManagerPreservesFactoryBeforeSaveListener(): void
+    {
+        $customEventManager = new EventManager();
+
+        $factory = CountryFactory::new()->setEventManager($customEventManager);
+
+        $this->assertSame($customEventManager, $factory->getTable()->getEventManager());
+        $this->assertNotEmpty($customEventManager->listeners('Model.beforeSave'));
+    }
+
+    public function testSetEventManagerParticipatesInModelInitialize(): void
+    {
+        $customEventManager = new EventManager();
+        $triggered = false;
+        $customEventManager->on('Model.initialize', static function () use (&$triggered): void {
+            $triggered = true;
+        });
+
+        ArticleFactory::new()->setEventManager($customEventManager)->getTable();
+
+        $this->assertTrue($triggered);
+    }
+
+    public function testSetEventManagerDoesNotRetryRuntimeInitializeFailures(): void
+    {
+        FactoryTableRegistry::getTableLocator()->clear();
+
+        $customEventManager = new EventManager();
+        $calls = 0;
+        $customEventManager->on('Model.initialize', static function () use (&$calls): void {
+            $calls++;
+
+            throw new RuntimeException('boom');
+        });
+
+        try {
+            ArticleFactory::new()->setEventManager($customEventManager)->getTable();
+            $this->fail('Expected RuntimeException to be thrown.');
+        } catch (RuntimeException $exception) {
+            $this->assertSame('boom', $exception->getMessage());
+        }
+
+        $this->assertSame(1, $calls);
+    }
+
+    public function testDifferentFactoriesDoNotShareScopedTableWhenEventManagersDiffer(): void
+    {
+        FactoryTableRegistry::getTableLocator()->clear();
+
+        $firstEventManager = new EventManager();
+        $secondEventManager = new EventManager();
+
+        $firstFactory = ArticleFactory::new()->setEventManager($firstEventManager);
+        $secondFactory = ArticleFactory::new()->setEventManager($secondEventManager);
+
+        $this->assertNotSame($firstFactory->getTable(), $secondFactory->getTable());
+        $this->assertSame($firstEventManager, $firstFactory->getTable()->getEventManager());
+        $this->assertSame($secondEventManager, $secondFactory->getTable()->getEventManager());
+        $this->assertSame('Articles', $firstFactory->getTable()->getAlias());
+        $this->assertSame('Articles', $secondFactory->getTable()->getAlias());
+    }
+
+    public function testScopedRegistryAliasStaysShortForLongAssociationAliases(): void
+    {
+        $collector = new EventCollector('PremiumAuthors');
+        $method = new ReflectionMethod($collector, 'getScopedRegistryAlias');
+
+        /** @var string $registryAlias */
+        $registryAlias = $method->invoke($collector);
+
+        $this->assertLessThanOrEqual(30, strlen($registryAlias));
+        $this->assertStringStartsWith('PremiumAuthors__ff_', $registryAlias);
     }
 }

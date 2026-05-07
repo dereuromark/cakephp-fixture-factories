@@ -42,10 +42,10 @@ class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
     public function testDisablePrimaryKeyOffset(int $cityOffset): void
     {
         $n = 10;
-        $cities = CityFactory::make($n)
+        $cities = CityFactory::new($n)
             ->setPrimaryKeyOffset($cityOffset)
             ->disablePrimaryKeyOffset()
-            ->persist();
+            ->saveMany();
 
         foreach ($cities as $city) {
             $this->assertIsInt($city->id);
@@ -64,12 +64,12 @@ class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
     public function testDisablePrimaryKeyOffsetInAssociation(int $countryOffset): void
     {
         $n = 5;
-        $cities = CityFactory::make($n)
+        $cities = CityFactory::new($n)
             ->with(
                 'Countries',
-                CountryFactory::make()->setPrimaryKeyOffset($countryOffset)->disablePrimaryKeyOffset(),
+                CountryFactory::new()->setPrimaryKeyOffset($countryOffset)->disablePrimaryKeyOffset(),
             )
-            ->persist();
+            ->saveMany();
 
         $cityOffset = $cities[0]->id;
 
@@ -86,14 +86,14 @@ class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
         $cityOffset = rand(1, 100000);
         $countryOffset = rand(1, 100000);
 
-        $cities = CityFactory::make($nCities)
+        $cities = CityFactory::new($nCities)
             ->with(
                 'Countries',
-                CountryFactory::make()->setPrimaryKeyOffset($countryOffset)->disablePrimaryKeyOffset(),
+                CountryFactory::new()->setPrimaryKeyOffset($countryOffset)->disablePrimaryKeyOffset(),
             )
             ->setPrimaryKeyOffset($cityOffset)
             ->disablePrimaryKeyOffset()
-            ->persist();
+            ->saveMany();
 
         $this->assertNotSame($cityOffset + $nCities - 1, $cities[$nCities - 1]->id);
         $this->assertIsInt($cities[$nCities - 1]->id);
@@ -108,14 +108,14 @@ class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
         $countryOffset = rand(1, 100000);
 
         /** @var \TestApp\Model\Entity\Country $country */
-        $country = CountryFactory::make()
+        $country = CountryFactory::new()
             ->with(
                 'Cities',
-                CityFactory::make($nCities)->setPrimaryKeyOffset($cityOffset)->disablePrimaryKeyOffset(),
+                CityFactory::new($nCities)->setPrimaryKeyOffset($cityOffset)->disablePrimaryKeyOffset(),
             )
             ->setPrimaryKeyOffset($countryOffset)
             ->disablePrimaryKeyOffset()
-            ->persist();
+            ->save();
 
         $this->assertNotSame($countryOffset, $country->id);
         $this->assertIsInt($country->id);
@@ -126,11 +126,11 @@ class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
     public function testDisablePrimaryKeyOffsetOnMultipleCalls(): void
     {
         /** @var \TestApp\Model\Entity\Country $country1 */
-        $country1 = CountryFactory::make()->persist();
+        $country1 = CountryFactory::new()->save();
         /** @var \TestApp\Model\Entity\Country $country2 */
-        $country2 = CountryFactory::make()->disablePrimaryKeyOffset()->persist();
+        $country2 = CountryFactory::new()->disablePrimaryKeyOffset()->save();
         /** @var \TestApp\Model\Entity\Country $country3 */
-        $country3 = CountryFactory::make()->disablePrimaryKeyOffset()->persist();
+        $country3 = CountryFactory::new()->disablePrimaryKeyOffset()->save();
 
         $this->assertNotSame($country1->id, $country2->id);
         $this->assertNotSame($country2->id, $country3->id);
@@ -146,13 +146,13 @@ class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
         $nCountries = rand(3, 5);
         $iterations = rand(3, 5);
 
-        $factory = CountryFactory::make($nCountries)
-            ->with('Cities', CityFactory::make($nCitiesPerCountry)->disablePrimaryKeyOffset())
+        $factory = CountryFactory::new($nCountries)
+            ->with('Cities', CityFactory::new($nCitiesPerCountry)->disablePrimaryKeyOffset())
             ->disablePrimaryKeyOffset();
 
         $countries = [];
         for ($i = 0; $i < $iterations; $i++) {
-            $countries = $factory->persist();
+            $countries = $factory->saveMany();
         }
 
         foreach ($countries as $country) {
@@ -162,10 +162,10 @@ class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
 
     public function testDisablePrimaryKeyOffsetWithCollectedAssociation(): void
     {
-        $country = CountryFactory::make()
-            ->with('Cities', CityFactory::make()->disablePrimaryKeyOffset())
-            ->with('Cities', CityFactory::make()->disablePrimaryKeyOffset())
-            ->persist();
+        $country = CountryFactory::new()
+            ->with('Cities', CityFactory::new()->disablePrimaryKeyOffset())
+            ->with('Cities', CityFactory::new()->disablePrimaryKeyOffset())
+            ->save();
 
         $this->assertNotSame($country->cities[0]->id, $country->cities[1]->id);
         $this->assertIsInt($country->cities[0]->id);
@@ -176,12 +176,12 @@ class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
     {
         $id = 2;
         /** @var \TestApp\Model\Entity\Country $country */
-        $country = CountryFactory::make()->patchData(compact('id'))->disablePrimaryKeyOffset()->persist();
+        $country = CountryFactory::new()->state(compact('id'))->disablePrimaryKeyOffset()->save();
         $this->assertSame($id, $country->id);
 
         $id = rand(1, 100000);
         /** @var \TestApp\Model\Entity\Country $country */
-        $country = CountryFactory::make()->patchData(compact('id'))->disablePrimaryKeyOffset()->persist();
+        $country = CountryFactory::new()->state(compact('id'))->disablePrimaryKeyOffset()->save();
         $this->assertSame($id, $country->id);
     }
 
@@ -189,12 +189,12 @@ class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase
     {
         $id = 2;
         /** @var \TestPlugin\Model\Entity\Bill $bill */
-        $bill = BillFactory::make()->patchData(compact('id'))->disablePrimaryKeyOffset()->persist();
+        $bill = BillFactory::new()->state(compact('id'))->disablePrimaryKeyOffset()->save();
         $this->assertSame($id, $bill->id);
 
         $id = rand(1, 100000);
         /** @var \TestPlugin\Model\Entity\Bill $bill */
-        $bill = BillFactory::make()->patchData(compact('id'))->disablePrimaryKeyOffset()->persist();
+        $bill = BillFactory::new()->state(compact('id'))->disablePrimaryKeyOffset()->save();
         $this->assertSame($id, $bill->id);
     }
 }

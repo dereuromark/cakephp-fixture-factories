@@ -20,9 +20,6 @@ use CakephpFixtureFactories\Generator\GeneratorInterface;
  * Class AuthorFactory
  *
  * @extends BaseFactory<\TestApp\Model\Entity\Author>
- *
- * @method static \TestApp\Model\Entity\Author get(mixed $primaryKey, array $options = [])
- * @method static \TestApp\Model\Entity\Author firstOrFail($conditions = null)
  */
 class AuthorFactory extends BaseFactory
 {
@@ -40,33 +37,40 @@ class AuthorFactory extends BaseFactory
         return 'Authors';
     }
 
-    protected function setDefaultTemplate(): void
+    public function definition(GeneratorInterface $generator): array
     {
-        $this
-            ->setDefaultData(function (GeneratorInterface $generator) {
-                return [
-                    'name' => $generator->name(),
-                    'field_with_setter_1' => $generator->word(),
-                    'field_with_setter_2' => $generator->word(),
-                    'field_with_setter_3' => $generator->word(),
-                    'json_field' => self::JSON_FIELD_DEFAULT_VALUE,
-                ];
-            })
-            ->withAddress();
+        return [
+            'name' => $generator->name(),
+            'field_with_setter_1' => $generator->word(),
+            'field_with_setter_2' => $generator->word(),
+            'field_with_setter_3' => $generator->word(),
+            'json_field' => self::JSON_FIELD_DEFAULT_VALUE,
+        ];
     }
 
-    public function withArticles(mixed $parameter = null, int $n = 1): self
+    protected function configure(): static
     {
-        return $this->with('Articles', ArticleFactory::make($parameter, $n)->without('Authors'));
+        return $this->forAddress();
     }
 
-    public function withAddress(mixed $parameter = null): self
+    public function hasArticles(mixed $n = 1, mixed $parameter = null): self
     {
-        return $this->with('Address', AddressFactory::make($parameter));
+        if (!is_int($n)) {
+            $originalParameter = $n;
+            $n = is_int($parameter) ? $parameter : 1;
+            $parameter = $originalParameter;
+        }
+
+        return $this->has(ArticleFactory::new($parameter)->count($n)->without('Authors'));
+    }
+
+    public function forAddress(mixed $parameter = null): self
+    {
+        return $this->with('Address', AddressFactory::new($parameter));
     }
 
     public function fromCountry(string $name): self
     {
-        return $this->with('Address.City.Countries', CountryFactory::make(compact('name')));
+        return $this->with('Address.City.Countries', CountryFactory::new(compact('name')));
     }
 }

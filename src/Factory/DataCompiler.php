@@ -60,6 +60,22 @@ class DataCompiler
     private array $dataFromPatch = [];
 
     /**
+     * @var array<int, \Cake\Datasource\EntityInterface|callable|array<string, mixed>>
+     */
+    private array $sequenceData = [];
+
+    /**
+     * Per-field cycle map populated by `BaseFactory::sequenceField()`. Each
+     * entry is a list of values cycled at its own period during compilation,
+     * applied AFTER `sequence()` so a per-field overlay wins for that column.
+     *
+     * @var array<string, array<int, mixed>>
+     */
+    private array $fieldSequences = [];
+
+    private int $sequenceIndex = 0;
+
+    /**
      * @var array<string, array<int, \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>>>
      */
     private array $dataFromAssociations = [];
@@ -84,7 +100,12 @@ class DataCompiler
      */
     private array $skippedSetters = [];
 
-    private static bool $inPersistMode = false;
+    /**
+     * Depth counter so nested persist calls (e.g. one factory persisting
+     * another from inside an `afterBuild` callback) don't end persist mode for
+     * the outer flow when the inner one returns.
+     */
+    private static int $persistDepth = 0;
 
     /**
      * @var \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>
@@ -105,6 +126,16 @@ class DataCompiler
     }
 
     /**
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Master factory
+     *
+     * @return void
+     */
+    public function setFactory(BaseFactory $factory): void
+    {
+        $this->factory = $factory;
+    }
+
+    /**
      * Data passed in the instantiation by array
      *
      * @param \Cake\Datasource\EntityInterface|array<\Cake\Datasource\EntityInterface>|string $data Injected data.
@@ -117,7 +148,27 @@ class DataCompiler
     }
 
     /**
-     * Data passed in the instantiation by callable
+     * Whether the factory was instantiated from a single existing entity
+     * (via `BaseFactory::new($entity)` or `BaseFactory::from($entity)`).
+     *
+     * Used by the count guards: combining an entity payload with `times > 1`
+     * would return N references to the same mutated entity, which is never
+     * what callers want.
+     */
+    public function isInstantiatedFromEntity(): bool
+    {
+        return $this->dataFromInstantiation instanceof EntityInterface;
+    }
+
+    /**
+     * Data passed in the instantiation by callable.
+     *
+     * The callable is stored as-is and invoked once per build iteration during
+     * compilation. Previously this method invoked the callable eagerly to
+     * "type-check" its return value, which (a) caused side-effecting closures
+     * to fire one extra time and (b) silently discarded the callable when it
+     * returned a non-array. Validation now happens at compile time where it
+     * can produce a useful error.
      *
      * @param callable $fn Injected callable
      *
@@ -125,11 +176,7 @@ class DataCompiler
      */
     public function collectArrayFromCallable(callable $fn): void
     {
-        // if the callable returns an array, add it the the templateData array, so it will be compiled
-        $returnValue = $fn($this->getFactory(), $this->getFactory()->getGenerator());
-        if (is_array($returnValue)) {
-            $this->dataFromInstantiation = $fn;
-        }
+        $this->dataFromInstantiation = $fn;
     }
 
     /**
@@ -140,6 +187,42 @@ class DataCompiler
     public function collectFromPatch(array $data): void
     {
         $this->dataFromPatch = array_merge($this->dataFromPatch, $data);
+    }
+
+    /**
+     * @param array<int, \Cake\Datasource\EntityInterface|callable|array<string, mixed>> $states Sequence states
+     *
+     * @return void
+     */
+    public function collectSequence(array $states): void
+    {
+        $this->sequenceData = $states;
+    }
+
+    /**
+     * Register a per-field value cycle. Independent fields cycle at their own
+     * periods during compilation; calling this twice for the same field
+     * replaces that field's cycle (last-write-wins per field, additive across
+     * different fields). Composes with {@see self::collectSequence()}.
+     *
+     * @param string $field Column to cycle.
+     * @param array<array-key, mixed> $values Values cycled by `index % count`.
+     *
+     * @return void
+     */
+    public function collectFieldSequence(string $field, array $values): void
+    {
+        $this->fieldSequences[$field] = array_values($values);
+    }
+
+    /**
+     * @param int $sequenceIndex Current sequence index
+     *
+     * @return void
+     */
+    public function setSequenceIndex(int $sequenceIndex): void
+    {
+        $this->sequenceIndex = $sequenceIndex;
     }
 
     /**
@@ -161,24 +244,46 @@ class DataCompiler
      */
     public function collectAssociation(string $associationName, BaseFactory $factory, bool $isToOne): void
     {
+        // Only the toOne path layers data from the instantiation array onto
+        // the associated factory here. ToMany associations are merged later in
+        // mergeWithToMany() based on the resolved property of the relation.
         if ($isToOne) {
-            $associationFieldName = Inflector::underscore(Inflector::singularize($associationName));
+            $associationFieldName = $this->getAssociationPropertyName($associationName);
             if (
                 $this->dataFromInstantiation instanceof EntityInterface &&
                 $this->dataFromInstantiation->has($associationFieldName)
             ) {
-                $factory->patchData($this->dataFromInstantiation->get($associationFieldName));
+                $factory = $factory->state($this->dataFromInstantiation->get($associationFieldName));
             } elseif (
                 is_array($this->dataFromInstantiation) &&
                 isset($this->dataFromInstantiation[$associationFieldName])
             ) {
-                $factory->patchData($this->dataFromInstantiation[$associationFieldName]);
+                $factory = $factory->state($this->dataFromInstantiation[$associationFieldName]);
             }
         }
         if (isset($this->dataFromAssociations[$associationName])) {
             $this->dataFromAssociations[$associationName][] = $factory;
         } else {
             $this->dataFromAssociations[$associationName] = [$factory];
+        }
+    }
+
+    /**
+     * Resolve the entity property name for the given association.
+     *
+     * Honors a custom `propertyName` declared on the association (e.g.
+     * `belongsTo('Country', ['propertyName' => 'native_country'])`) and falls
+     * back to the inflected default when the association cannot be resolved
+     * (e.g. non-Cake apps where the table object has no associations).
+     *
+     * @param string $associationName Association alias, optionally bracketed.
+     */
+    private function getAssociationPropertyName(string $associationName): string
+    {
+        try {
+            return $this->getFactory()->getTable()->getAssociation($associationName)->getProperty();
+        } catch (InvalidArgumentException) {
+            return Inflector::underscore(Inflector::singularize($associationName));
         }
     }
 
@@ -196,6 +301,25 @@ class DataCompiler
     }
 
     /**
+     * Apply a transformation to every stored association factory while preserving
+     * the cardinality already collected for each association name.
+     *
+     * @param callable(\CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>): \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $callback Mapper
+     *
+     * @return void
+     */
+    public function mapAssociationFactories(callable $callback): void
+    {
+        foreach ($this->dataFromAssociations as $associationName => $associationFactories) {
+            $this->dataFromAssociations[$associationName] = array_map($callback, $associationFactories);
+        }
+
+        foreach ($this->dataFromDefaultAssociations as $associationName => $associationFactories) {
+            $this->dataFromDefaultAssociations[$associationName] = array_map($callback, $associationFactories);
+        }
+    }
+
+    /**
      * Populate the factored entity
      *
      * @return \Cake\Datasource\EntityInterface|array<\Cake\Datasource\EntityInterface>
@@ -208,7 +332,7 @@ class DataCompiler
             $compiledTemplateData = [];
             foreach ($this->dataFromInstantiation as $data) {
                 if ($data instanceof BaseFactory) {
-                    foreach ($data->getEntities() as $subEntity) {
+                    foreach ($data->buildMany() as $subEntity) {
                         $compiledTemplateData[] = $this->compileEntity($subEntity, $setPrimaryKey);
                         $setPrimaryKey = false;
                     }
@@ -247,7 +371,9 @@ class DataCompiler
             $this->mergeWithInjectedData($entity, $injectedData);
         }
 
-        $this->mergeWithPatchedData($entity)->mergeWithAssociatedData($entity, $isEntityInjected);
+        $this->mergeWithSequenceData($entity)
+            ->mergeWithPatchedData($entity)
+            ->mergeWithAssociatedData($entity, $isEntityInjected);
 
         if ($this->isInPersistMode() && $this->getModifiedUniqueFields()) {
             $entity->set(self::MODIFIED_UNIQUE_PROPERTIES, $this->getModifiedUniqueFields());
@@ -314,9 +440,12 @@ class DataCompiler
             }
             $entityValue = $accumulated[$rootKey] ?? $entity->get((string)$rootKey) ?? [];
             if (!is_array($entityValue)) {
-                throw new FixtureFactoryException(
-                    "Value `$entityValue` cannot be merged with array notation `$key => $value`",
-                );
+                throw new FixtureFactoryException(sprintf(
+                    'Value `%s` cannot be merged with array notation `%s => %s`',
+                    var_export($entityValue, true),
+                    $key,
+                    var_export($value, true),
+                ));
             }
             $data[$rootKey] = $accumulated[$rootKey] = array_replace_recursive($entityValue, $subData[$rootKey]);
             unset($data[$key]);
@@ -386,31 +515,41 @@ class DataCompiler
             $data = $data($this->getFactory()->getGenerator());
         }
         $entityClassName = $this->getFactory()->getTable()->getEntityClass();
-        $entity = new $entityClassName([], ['source' => $this->getFactory()->getTable()->getRegistryAlias()]);
+        $entity = new $entityClassName([], ['source' => $this->getFactory()->getTable()->getAlias()]);
 
         return $this->patchEntity($entity, $data);
     }
 
     /**
      * Step 2:
-     * Merge with the data injected during the instantiation of the Factory
+     * Merge with the data injected during the instantiation of the Factory.
+     *
+     * EntityInterface input is handled separately in {@see compileEntity()} and
+     * never reaches this method. By the time we get here, $data is always an
+     * array (possibly produced by invoking the original callable).
      *
      * @param \Cake\Datasource\EntityInterface $entity Entity to manipulate.
-     * @param \Cake\Datasource\EntityInterface|callable|array<string, mixed> $data Data from the instantiation.
+     * @param callable|array<string, mixed> $data Data from the instantiation.
+     *
+     * @throws \CakephpFixtureFactories\Error\FixtureFactoryException
      *
      * @return $this
      */
-    private function mergeWithInjectedData(EntityInterface $entity, array|callable|EntityInterface $data)
+    private function mergeWithInjectedData(EntityInterface $entity, array|callable $data)
     {
         if (is_callable($data)) {
             $data = $data(
                 $this->getFactory(),
                 $this->getFactory()->getGenerator(),
             );
-        } elseif (is_array($data)) {
-            $this->addEnforcedFields($data);
+            if (!is_array($data)) {
+                throw new FixtureFactoryException(
+                    'A callable passed to a factory must return an array; got `'
+                    . get_debug_type($data) . '`',
+                );
+            }
         }
-
+        $this->addEnforcedFields($data);
         $this->patchEntity($entity, $data);
 
         return $this;
@@ -432,6 +571,50 @@ class DataCompiler
     {
         $this->patchEntity($entity, $this->dataFromPatch);
         $this->addEnforcedFields($this->dataFromPatch);
+
+        return $this;
+    }
+
+    /**
+     * Step 3.5:
+     * Merge with the data gathered by sequence().
+     *
+     * Field-level cycles registered via sequenceField() are applied AFTER the
+     * row-level sequence so that for any column appearing in both, the
+     * per-field overlay wins. Each field cycles independently at its own
+     * period (`index % count(values)`), so independent fields with different
+     * cardinalities compose without interfering.
+     *
+     * @param \Cake\Datasource\EntityInterface $entity Entity to manipulate.
+     *
+     * @return $this
+     */
+    private function mergeWithSequenceData(EntityInterface $entity)
+    {
+        if ($this->sequenceData) {
+            $state = $this->sequenceData[$this->sequenceIndex % count($this->sequenceData)];
+            if (is_callable($state)) {
+                $state = $state(
+                    $this->getFactory(),
+                    $this->getFactory()->getGenerator(),
+                    $this->sequenceIndex,
+                );
+            } elseif ($state instanceof EntityInterface) {
+                $state = $state->toArray();
+            }
+
+            $this->patchEntity($entity, $state);
+            $this->addEnforcedFields($state);
+        }
+
+        if ($this->fieldSequences) {
+            $fieldState = [];
+            foreach ($this->fieldSequences as $field => $values) {
+                $fieldState[$field] = $values[$this->sequenceIndex % count($values)];
+            }
+            $this->patchEntity($entity, $fieldState);
+            $this->addEnforcedFields($fieldState);
+        }
 
         return $this;
     }
@@ -477,6 +660,8 @@ class DataCompiler
      * @param string $associationName Association
      * @param array<int, \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>> $data Data to inject
      *
+     * @throws \CakephpFixtureFactories\Error\FixtureFactoryException
+     *
      * @return void
      */
     private function mergeWithToOne(EntityInterface $entity, string $associationName, array $data): void
@@ -485,7 +670,16 @@ class DataCompiler
         /** @var \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory */
         $factory = $data[$count - 1];
 
-        $associatedEntity = $factory->getEntity();
+        $associatedEntities = $factory->buildMany();
+        if (count($associatedEntities) !== 1) {
+            throw new FixtureFactoryException(sprintf(
+                'Association `%s` expects exactly 1 entity, but `%s` produced %d. Use a singular factory for to-one associations.',
+                $associationName,
+                $factory::class,
+                count($associatedEntities),
+            ));
+        }
+        $associatedEntity = $associatedEntities[0];
         if ($this->isInPersistMode()) {
             $associatedEntity->set(self::IS_ASSOCIATED, true);
             $this->markEntityDirtyIfNew($associatedEntity);
@@ -521,7 +715,7 @@ class DataCompiler
      */
     private function getManyEntities(BaseFactory $factory): array
     {
-        $entities = $factory->getEntities();
+        $entities = $factory->buildMany();
         if ($this->isInPersistMode()) {
             foreach ($entities as $entity) {
                 $entity->set(self::IS_ASSOCIATED, true);
@@ -552,7 +746,10 @@ class DataCompiler
             return;
         }
 
-        $fields = array_keys($entity->toArray());
+        // Exclude virtual fields: they aren't backed by schema columns, so
+        // marking them dirty has no save effect and just confuses isDirty()
+        // callers downstream.
+        $fields = array_diff(array_keys($entity->toArray()), $entity->getVirtual());
         if (!$entity->isDirty()) {
             foreach ($fields as $field) {
                 $entity->setDirty($field, true);
@@ -688,38 +885,27 @@ class DataCompiler
      *
      * @param string $columnType Column type
      *
+     * @throws \CakephpFixtureFactories\Error\FixtureFactoryException
+     *
      * @return string|int
      */
     public function generateRandomPrimaryKey(string $columnType): int|string
     {
-        switch ($columnType) {
-            case 'uuid':
-            case 'string':
-                $res = $this->getFactory()->getGenerator()->uuid();
-
-                break;
-            case 'tinyinteger':
-                $res = mt_rand(0, 127);
-
-                break;
-            case 'smallinteger':
-                $res = mt_rand(0, 32767);
-
-                break;
-            case 'biginteger':
-                // mt_rand() is capped at mt_getrandmax() (typically 2^31 - 1),
-                // which silently truncates biginteger PKs to 32-bit range.
-                $res = random_int(0, PHP_INT_MAX);
-
-                break;
-            case 'integer':
-            default:
-                $res = mt_rand(0, 2147483647);
-
-                break;
-        }
-
-        return $res;
+        return match ($columnType) {
+            'uuid', 'string' => $this->getFactory()->getGenerator()->uuid(),
+            'tinyinteger' => random_int(0, 127),
+            'smallinteger' => random_int(0, 32767),
+            'mediuminteger' => random_int(0, 8388607),
+            // mt_rand() is capped at mt_getrandmax() (typically 2^31 - 1),
+            // which silently truncates biginteger PKs to 32-bit range.
+            'biginteger' => random_int(0, PHP_INT_MAX),
+            'integer' => random_int(0, 2147483647),
+            default => throw new FixtureFactoryException(sprintf(
+                'Cannot generate a random primary key for column type `%s`. '
+                . 'Provide an explicit primary key offset via setPrimaryKeyOffset().',
+                $columnType,
+            )),
+        };
     }
 
     /**
@@ -774,7 +960,9 @@ class DataCompiler
     private function updatePostgresSequence(array $primaryKeys): void
     {
         $table = $this->getFactory()->getTable();
-        if ($table->getConnection()->config()['driver'] === Postgres::class) {
+        // Use instanceof on the actual driver instance — comparing the class
+        // name string with === would miss Postgres subclasses.
+        if ($table->getConnection()->getDriver() instanceof Postgres) {
             $tableName = $table->getTable();
             $connection = $table->getConnection();
 
@@ -818,15 +1006,21 @@ class DataCompiler
      */
     public function isInPersistMode(): bool
     {
-        return self::$inPersistMode;
+        return self::$persistDepth > 0;
     }
 
     /**
+     * Persist mode is intentionally process-wide so nested association builds
+     * pick it up, but a naive boolean flip breaks under nested persist calls
+     * (e.g. an `afterBuild` callback that persists another factory): the inner
+     * `endPersistMode()` flipped the flag off mid-flight for the outer flow.
+     * Counting depth keeps the flag set until the outermost persist returns.
+     *
      * @return void
      */
     public function startPersistMode(): void
     {
-        self::$inPersistMode = true;
+        self::$persistDepth++;
     }
 
     /**
@@ -834,7 +1028,9 @@ class DataCompiler
      */
     public function endPersistMode(): void
     {
-        self::$inPersistMode = false;
+        if (self::$persistDepth > 0) {
+            self::$persistDepth--;
+        }
     }
 
     /**
@@ -857,10 +1053,12 @@ class DataCompiler
      */
     public function addEnforcedFields(array $fields): void
     {
-        $this->enforcedFields = array_merge(
+        // Dedup so repeated state()/patch calls don't grow the list linearly
+        // with redundant entries — each field name appears once.
+        $this->enforcedFields = array_values(array_unique(array_merge(
             array_keys($fields),
             $this->enforcedFields,
-        );
+        )));
     }
 
     /**

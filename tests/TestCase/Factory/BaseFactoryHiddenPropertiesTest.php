@@ -76,12 +76,12 @@ class BaseFactoryHiddenPropertiesTest extends TestCase
     #[DataProvider('iterate')]
     public function testHiddenPropertyInMainBuild(int $n, bool $persist): void
     {
-        $factory = ArticleFactory::make($n)->withHiddenBiography(self::DUMMY_HIDDEN_PARAGRAPH);
+        $factory = ArticleFactory::new($n)->withHiddenBiography(self::DUMMY_HIDDEN_PARAGRAPH);
 
         if ($n > 1) {
-            $articles = $persist ? $factory->persist() : $factory->getEntities();
+            $articles = $persist ? $factory->saveMany() : $factory->buildMany();
         } else {
-            $articles = $persist ? $factory->persist() : $factory->getEntity();
+            $articles = $persist ? $factory->save() : $factory->build();
         }
         $this->assertHiddenParagraphIsVisible($articles, $persist);
     }
@@ -99,12 +99,12 @@ class BaseFactoryHiddenPropertiesTest extends TestCase
     #[DataProvider('iterate')]
     public function testHiddenPropertyInBelongsToManyAssociation(int $n, bool $persist): void
     {
-        $factory = AuthorFactory::make()->with(
+        $factory = AuthorFactory::new()->with(
             'Articles',
-            ArticleFactory::make($n)->withHiddenBiography(self::DUMMY_HIDDEN_PARAGRAPH),
+            ArticleFactory::new($n)->withHiddenBiography(self::DUMMY_HIDDEN_PARAGRAPH),
         );
 
-        $articles = $persist ? $factory->persist()->get('articles') : $factory->getEntity()->get('articles');
+        $articles = $persist ? $factory->save()->get('articles') : $factory->build()->get('articles');
         $this->assertHiddenParagraphIsVisible($articles, $persist);
     }
 
@@ -121,12 +121,12 @@ class BaseFactoryHiddenPropertiesTest extends TestCase
     #[DataProvider('iterate')]
     public function testHiddenPropertyInBelongsToAssociation(int $n, bool $persist): void
     {
-        $factory = BillFactory::make($n)->with(
+        $factory = BillFactory::new($n)->with(
             'Article',
-            ArticleFactory::make()->withHiddenBiography(self::DUMMY_HIDDEN_PARAGRAPH),
+            ArticleFactory::new()->withHiddenBiography(self::DUMMY_HIDDEN_PARAGRAPH),
         );
 
-        $bills = $persist ? $factory->persist() : $factory->getEntity();
+        $bills = $persist ? $factory->saveMany() : $factory->buildMany();
 
         if (is_array($bills)) {
             foreach ($bills as $bill) {

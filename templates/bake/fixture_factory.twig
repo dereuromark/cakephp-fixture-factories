@@ -6,6 +6,9 @@ namespace {{ namespace }};
 
 use CakephpFixtureFactories\Factory\BaseFactory as CakephpBaseFactory;
 use CakephpFixtureFactories\Generator\GeneratorInterface;
+{% if toOne or oneToMany or manyToMany %}
+use InvalidArgumentException;
+{% endif %}
 {% if useStatements %}
 {% for useStatement in useStatements %}
 use {{ useStatement }};
@@ -16,7 +19,6 @@ use {{ useStatement }};
  * {{ factory }}
  *
  * @extends \CakephpFixtureFactories\Factory\BaseFactory<{{ entityClass }}>
- * @method static {{ entityClass }} get(mixed $primaryKey, array $options = [])
  */
 class {{ factory }} extends CakephpBaseFactory
 {
@@ -34,61 +36,68 @@ class {{ factory }} extends CakephpBaseFactory
      * Defines the factory's default values. This is useful for
      * not nullable fields. You may use methods of the present factory here too.
      *
-     * @return void
+     * @return array<string, mixed>
      */
-    protected function setDefaultTemplate(): void
+    public function definition(GeneratorInterface $generator): array
     {
-        $this->setDefaultData(function (GeneratorInterface $generator) {
-            return [
-                {{ FactoryBake.defaultData(defaultData)|raw }}
-            ];
-        });
+        return [
+            {{ FactoryBake.defaultData(defaultData)|raw }}
+        ];
     }
 {% for association, associationData in toOne %}
 
     /**
-     * @param \Cake\Datasource\EntityInterface|callable|array|string|int|null $parameter
+     * @param \Cake\Datasource\EntityInterface|callable|array|string|null $parameter
+     *
+     * @throws \InvalidArgumentException
      *
      * @return static
      */
-    public function with{{ association }}($parameter = null): static
+    public function for{{ association }}($parameter = null): static
     {
-        return $this->with(
-            '{{ association }}',
-            {{ associationData.className }}::make($parameter),
-        );
+        if (is_int($parameter)) {
+            throw new InvalidArgumentException('for{{ association }}() does not accept integer payloads. Pass an entity, array, string, callable or null.');
+        }
+
+        return $this->with('{{ association }}', {{ associationData.className }}::new($parameter));
     }
 {% endfor %}
 {% for association, associationData in oneToMany %}
 
     /**
-     * @param \Cake\Datasource\EntityInterface|callable|array|string|int|null $parameter
      * @param int $n
+     * @param \Cake\Datasource\EntityInterface|callable|array|string|null $parameter
+     *
+     * @throws \InvalidArgumentException
      *
      * @return static
      */
-    public function with{{ association }}($parameter = null, int $n = 1): static
+    public function has{{ association }}(int $n = 1, $parameter = null): static
     {
-        return $this->with(
-            '{{ association }}',
-            {{ associationData.className }}::make($parameter, $n),
-        );
+        if (is_int($parameter)) {
+            throw new InvalidArgumentException('has{{ association }}() does not accept integer payloads as the second argument. Pass entity/array/string/callable data there; use the first argument for the count.');
+        }
+
+        return $this->with('{{ association }}', {{ associationData.className }}::new($parameter)->count($n));
     }
 {% endfor %}
 {% for association, associationData in manyToMany %}
 
     /**
-     * @param \Cake\Datasource\EntityInterface|callable|array|string|int|null $parameter
      * @param int $n
+     * @param \Cake\Datasource\EntityInterface|callable|array|string|null $parameter
+     *
+     * @throws \InvalidArgumentException
      *
      * @return static
      */
-    public function with{{ association }}($parameter = null, int $n = 1): static
+    public function has{{ association }}(int $n = 1, $parameter = null): static
     {
-        return $this->with(
-            '{{ association }}',
-            {{ associationData.className }}::make($parameter, $n)->without('{{ modelName }}'),
-        );
+        if (is_int($parameter)) {
+            throw new InvalidArgumentException('has{{ association }}() does not accept integer payloads as the second argument. Pass entity/array/string/callable data there; use the first argument for the count.');
+        }
+
+        return $this->with('{{ association }}', {{ associationData.className }}::new($parameter)->count($n)->without('{{ modelName }}'));
     }
 {% endfor %}
 }
