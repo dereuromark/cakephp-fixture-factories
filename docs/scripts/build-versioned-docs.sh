@@ -7,6 +7,7 @@ DIST_DIR="$ROOT_DIR/.vitepress/dist"
 VERSIONED_DIST_DIR="$ROOT_DIR/.vitepress/dist-versioned"
 LEGACY_WORKTREE_DIR="$ROOT_DIR/.vitepress/.legacy-docs-worktree"
 CURRENT_CONFIG="$ROOT_DIR/.vitepress/config.ts"
+CURRENT_THEME_DIR="$ROOT_DIR/.vitepress/theme"
 
 LATEST_BASE="${DOCS_LATEST_BASE:-/cakephp-fixture-factories/}"
 LEGACY_BASE="${DOCS_LEGACY_BASE:-/cakephp-fixture-factories/1.x/}"
@@ -60,6 +61,8 @@ echo "Preparing legacy docs from ref: $LEGACY_REF"
 cleanup
 git -C "$REPO_DIR" worktree add --force --detach "$LEGACY_WORKTREE_DIR" "$LEGACY_REF"
 cp "$CURRENT_CONFIG" "$LEGACY_WORKTREE_DIR/docs/.vitepress/config.ts"
+rm -rf "$LEGACY_WORKTREE_DIR/docs/.vitepress/theme"
+cp -R "$CURRENT_THEME_DIR" "$LEGACY_WORKTREE_DIR/docs/.vitepress/theme"
 
 echo "Installing legacy docs dependencies"
 (cd "$LEGACY_WORKTREE_DIR/docs" && npm ci)

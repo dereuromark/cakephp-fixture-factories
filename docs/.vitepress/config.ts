@@ -1,12 +1,9 @@
 import { defineConfig } from 'vitepress'
 
 const docsBase = process.env.DOCS_BASE ?? '/cakephp-fixture-factories/'
-const docsSiteOrigin = process.env.DOCS_SITE_ORIGIN ?? 'https://dereuromark.github.io'
 const currentVersion = process.env.DOCS_VERSION_TEXT ?? 'v2 (latest)'
 const latestLinkText = process.env.DOCS_LATEST_LINK_TEXT ?? 'v2 (latest)'
 const legacyLinkText = process.env.DOCS_LEGACY_LINK_TEXT ?? 'v1.x (legacy)'
-const latestDocsUrl = `${docsSiteOrigin}/cakephp-fixture-factories/`
-const legacyDocsUrl = `${docsSiteOrigin}/cakephp-fixture-factories/1.x/`
 
 export default defineConfig({
   title: 'CakePHP Fixture Factories',
@@ -37,13 +34,6 @@ export default defineConfig({
           { text: 'Changelog', link: 'https://github.com/dereuromark/cakephp-fixture-factories/releases' },
           { text: 'Packagist', link: 'https://packagist.org/packages/dereuromark/cakephp-fixture-factories' },
           { text: 'Issues', link: 'https://github.com/dereuromark/cakephp-fixture-factories/issues' },
-        ],
-      },
-      {
-        text: currentVersion,
-        items: [
-          { text: latestLinkText, link: latestDocsUrl, target: '_self' },
-          { text: legacyLinkText, link: legacyDocsUrl, target: '_self' },
         ],
       },
     ],
@@ -128,6 +118,14 @@ export default defineConfig({
 
     outline: {
       level: [2, 4],
+    },
+
+    versioning: {
+      currentVersion,
+      latestLinkText,
+      legacyLinkText,
+      latestPath: '/cakephp-fixture-factories/',
+      legacyPath: '/cakephp-fixture-factories/1.x/',
     },
   },
 
