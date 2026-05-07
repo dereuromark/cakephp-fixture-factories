@@ -104,59 +104,70 @@ Prefer the shared `AppTestCase` route — the per-test trait pattern works too b
 - **Solves unique generator state accumulation** - the strategy resets generator state after each test, preventing `OverflowException` when using `unique()` modifiers
 - Works seamlessly with nested associations
 
-> **Note:** Table tracking only captures tables written via the factory save methods. The transaction rollback still handles **all** data modifications regardless of source (factories, controllers, models, etc.) **on connections a Factory has persisted on during the test**. Connections that no Factory has touched are not in the rollback set — see "Lazy by default" below.
+> **Note:** Table tracking only captures tables written via the factory save methods. The transaction rollback still handles **all** data modifications regardless of source (factories, controllers, models, etc.) on the primary test connection (eager-wrapped at setup) plus any additional connections a Factory has persisted on during the test (tracked lazily). See "Eager by default" below for the full contract.
 
-### Lazy by default
+### Eager by default
 
-`FactoryTransactionStrategy` is **lazy**: a connection joins the rollback set the first time a Factory persists on it (via `BaseFactory::save()` / `saveMany()`, which calls the strategy's `ensureTransaction()` under the hood). Connections a given test never writes to via a Factory pay no transaction cost.
+`FactoryTransactionStrategy` is **eager** on the primary test connection: `setupTest()` opens a transaction on `test` (configurable via the `$primaryConnection` property) up-front, so direct table operations during the test (`$table->save($entity)`, `$table->delete($entity)`, raw inserts via `$connection->execute(...)`) are also rolled back at teardown — not just operations that go through a Factory's `save()` / `saveMany()`.
 
-This works perfectly when your tests persist exclusively through Factories. It does **not** automatically cover writes that bypass the Factory pipeline — typically the testFind / testValidationDefault pattern:
+Beyond the primary connection, additional connections are still tracked **lazily**: `ensureTransaction()` is called from inside `BaseFactory::save()` / `saveMany()` the first time a Factory persists on a given connection. Multi-database setups therefore only pay the transaction cost on connections they actually write to.
+
+This covers the standard CakePHP testing patterns out of the box:
 
 ```php
+// Eager-default makes both of these get correctly rolled back:
+
 public function testValidationDefault(): void
 {
-    $data = ArticleFactory::new()->build()->toArray();   // build only, no Factory persist
+    $data = ArticleFactory::new()->build()->toArray();
     $article = $this->Articles->newEntity($data);
-    $this->assertTrue((bool)$this->Articles->save($article));  // direct table save, NOT in the rollback set
+    $this->assertTrue((bool)$this->Articles->save($article));   // direct table save — covered
+}
+
+public function testFind(): void
+{
+    ArticleFactory::new()->save();                              // Factory persist — covered
+    $this->assertNotNull($this->Articles->find()->first());
 }
 ```
 
-The direct `$this->Articles->save($article)` runs outside any transaction the strategy has started. Its row stays in the test database after teardown. Subsequent test methods that persist `articles` may collide on a unique constraint with the leaked row, especially when `unique()` generators reset between tests.
+#### Opting out
 
-There are two ways to opt into eager priming so direct table saves are also covered:
+If your suite persists exclusively through Factories and you want to skip the eager begin (multi-connection optimization, performance under heavy parallel test runs):
 
-#### `EagerFactoryTransactionStrategy` (whole suite)
+##### Whole suite
 
-Point `'fixtureStrategy'` at the eager variant. It opens a transaction on the primary test connection (`test` by default; configurable via the `$primaryConnection` property) up-front in `setupTest()`. Other connections are still tracked lazily.
+Point `'fixtureStrategy'` at the lazy variant:
 
 ```php
 'TestSuite' => [
-    'fixtureStrategy' => \CakephpFixtureFactories\TestSuite\EagerFactoryTransactionStrategy::class,
+    'fixtureStrategy' => \CakephpFixtureFactories\TestSuite\LazyFactoryTransactionStrategy::class,
 ],
 ```
 
-Use this when your suite has the testFind pattern broadly and you don't want to track which classes are affected.
+A connection only joins the rollback set when a Factory persists on it.
 
-#### `EagerTransactionTrait` (per test class)
+##### Single test class
 
-Use the trait in just the test classes that mix Factory build with direct table saves. The rest of the suite stays on the lazy default.
+Use `LazyTransactionTrait` on just the affected class. The rest of the suite stays eager:
 
 ```php
-use CakephpFixtureFactories\TestSuite\EagerTransactionTrait;
+use CakephpFixtureFactories\TestSuite\LazyTransactionTrait;
 
-class ApiUsersTableTest extends \Cake\TestSuite\TestCase
+class HeavyConnectionTest extends \Cake\TestSuite\TestCase
 {
-    use EagerTransactionTrait;
+    use LazyTransactionTrait;
 
-    public function testValidationDefault(): void
-    {
-        $data = ApiUserFactory::new()->build()->toArray();
-        $apiUser = $this->ApiUsers->newEntity($data);
-        $this->assertTrue((bool)$this->ApiUsers->save($apiUser));
-        // Direct save above is rolled back at teardown — the trait
-        // primed a transaction on `test` via a #[Before] hook.
-    }
+    // Eager begin from setupTest() is rolled back via #[Before].
+    // Tests in this class run with the lazy contract.
 }
 ```
 
-If your project's primary test connection is named something other than `test`, override `$eagerConnection` (trait) or `$primaryConnection` (strategy subclass) accordingly.
+If your project's primary test connection is named something other than `test`, override the `$primaryConnection` property in a `FactoryTransactionStrategy` subclass:
+
+```php
+final class MyEagerStrategy extends \CakephpFixtureFactories\TestSuite\FactoryTransactionStrategy
+{
+    protected string $primaryConnection = 'test_main';
+}
+```
