@@ -96,3 +96,24 @@ Configure::write('FixtureFactories.instanceLevelGenerator', true);
 ```
 
 See [Fixture Factories — instance-level generators](factories#instance-level-generators) for details.
+
+## Ambiguous association
+
+`for()` and `has()` auto-resolve which association to attach by looking at the target factory's table. When the parent table declares more than one association pointing at that target table — for example a `Messages` table with both `Sender` and `Recipient` belonging to `Users`, or an `Authors` table with both `Address` and `BusinessAddress` belonging to `Addresses` — the resolver cannot pick a single one and throws:
+
+```
+MessageFactory::for(UserFactory::new()) cannot resolve a unique belongsTo —
+`Messages` declares 2 associations targeting `Users`:
+  - Sender    (foreign key: sender_id)
+  - Recipient (foreign key: recipient_id)
+
+Use the explicit form to disambiguate:
+  MessageFactory::new()->with('Sender',    UserFactory::new())
+  MessageFactory::new()->with('Recipient', UserFactory::new())
+```
+
+The fix is to use the lower-level `with('AliasName', $factory)` form with the explicit association alias instead of the directional helper. Both `with()` lines in the message above are paste-ready — pick the one that matches the relation you want to populate.
+
+This is also why bake-generated `for*()` / `has*()` helpers emit `with('AliasName', …)` rather than `for()` / `has()`: the alias is unambiguous at codegen time and survives later schema changes that introduce sibling associations.
+
+See [Associations — directional helpers](associations#directional-helpers-for-and-has) for the full design.

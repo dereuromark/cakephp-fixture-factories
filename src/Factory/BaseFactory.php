@@ -1482,6 +1482,7 @@ abstract class BaseFactory
     {
         $sourceTable = $this->getTable();
         $targetRegistryAlias = $factory->getRootTableRegistryName();
+        /** @var array<int, array{alias: string, foreignKey: string}> $matches */
         $matches = [];
         foreach ($sourceTable->associations() as $association) {
             $associationTargetsFactory = $association->getClassName() === $targetRegistryAlias
@@ -1490,24 +1491,28 @@ abstract class BaseFactory
             if (!$associationTargetsFactory) {
                 continue;
             }
-            if ($belongsTo && $association instanceof BelongsTo) {
-                $matches[] = $association->getName();
+            $isBelongsTo = $association instanceof BelongsTo;
+            if ($belongsTo !== $isBelongsTo) {
+                continue;
             }
-            if (!$belongsTo && !$association instanceof BelongsTo) {
-                $matches[] = $association->getName();
-            }
+            $foreignKey = $association->getForeignKey();
+            $matches[] = [
+                'alias' => $association->getName(),
+                'foreignKey' => is_array($foreignKey) ? implode(', ', $foreignKey) : (string)$foreignKey,
+            ];
         }
 
         if (count($matches) === 1) {
-            return $matches[0];
+            return $matches[0]['alias'];
         }
         if ($matches !== []) {
-            throw new RuntimeException(sprintf(
-                'Ambiguous %s association from `%s` to `%s`: %s. Use with() to select the explicit association name.',
-                $belongsTo ? 'belongsTo' : 'has*',
+            throw new RuntimeException(self::ambiguousAssociationMessage(
+                $belongsTo ? 'for' : 'has',
+                static::class,
+                $factory::class,
                 $sourceTable->getRegistryAlias(),
                 $targetRegistryAlias,
-                implode(', ', $matches),
+                $matches,
             ));
         }
 
@@ -1517,6 +1522,71 @@ abstract class BaseFactory
             $sourceTable->getRegistryAlias(),
             $targetRegistryAlias,
         ));
+    }
+
+    /**
+     * Build the paste-ready exception body for an ambiguous `for()` / `has()`
+     * call. Lists every candidate alias with its foreign key and emits a
+     * literal `with('Alias', TargetFactory::new())` line per candidate so the
+     * fix is reachable without consulting the docs.
+     *
+     * @param string $direction Either `'for'` (belongsTo) or `'has'` (hasMany / hasOne / belongsToMany).
+     * @param string $callerFactory FQCN of the factory the user called the directional helper on.
+     * @param string $targetFactory FQCN of the factory passed in.
+     * @param string $sourceAlias Source-table registry alias.
+     * @param string $targetAlias Target-table registry alias.
+     * @param array<int, array{alias: string, foreignKey: string}> $matches Candidate associations.
+     */
+    private static function ambiguousAssociationMessage(
+        string $direction,
+        string $callerFactory,
+        string $targetFactory,
+        string $sourceAlias,
+        string $targetAlias,
+        array $matches,
+    ): string {
+        $associationKind = $direction === 'for' ? 'belongsTo' : 'has* (hasOne, hasMany, belongsToMany)';
+        $callerShort = self::shortName($callerFactory);
+        $targetShort = self::shortName($targetFactory);
+
+        $candidateLines = array_map(
+            static fn (array $m): string => sprintf('  - %s (foreign key: %s)', $m['alias'], $m['foreignKey']),
+            $matches,
+        );
+        $fixLines = array_map(
+            static fn (array $m): string => sprintf(
+                '  %s::new()->with(\'%s\', %s::new())',
+                $callerShort,
+                $m['alias'],
+                $targetShort,
+            ),
+            $matches,
+        );
+
+        return sprintf(
+            "%s::%s(%s::new()) cannot resolve a unique %s — `%s` declares %d associations targeting `%s`:\n%s\n\n"
+            . "Use the explicit form to disambiguate:\n%s\n\n"
+            . 'See: https://dereuromark.github.io/cakephp-fixture-factories/guide/troubleshooting.html#ambiguous-association',
+            $callerShort,
+            $direction,
+            $targetShort,
+            $associationKind,
+            $sourceAlias,
+            count($matches),
+            $targetAlias,
+            implode("\n", $candidateLines),
+            implode("\n", $fixLines),
+        );
+    }
+
+    /**
+     * Strip the namespace from a class FQCN for use in user-facing snippets.
+     */
+    private static function shortName(string $fqcn): string
+    {
+        $pos = strrpos($fqcn, '\\');
+
+        return $pos === false ? $fqcn : substr($fqcn, $pos + 1);
     }
 
     /**

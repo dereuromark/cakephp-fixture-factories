@@ -84,11 +84,45 @@ $author = AuthorFactory::new()
     ->save();
 ```
 
-Both methods auto-resolve which association to attach based on the target factory's table — no association name needed. If the parent table has more than one association pointing at the target table (e.g. `created_by` and `updated_by` both → Users), the call throws an "ambiguous association" exception so you don't accidentally attach to the wrong one. Use the underlying `with('Author', …)` form with the explicit association name when you need to disambiguate.
-
-> Bake-generated `for*()` / `has*()` helpers emit `with('AssociationName', …)` rather than `for()` / `has()` for exactly this reason — the explicit alias is unambiguous at codegen time and survives later schema changes that introduce sibling associations.
+Both methods auto-resolve which association to attach based on the target factory's table — no association name needed.
 
 `has()` accepts an optional `$pivot` array as the second parameter for habtm joins, populating the `_joinData` columns on the join row.
+
+### Disambiguating `for()` and `has()`
+
+When the parent table declares **more than one** association pointing at the target table, the auto-resolver cannot pick a single one and throws — for example, an `Authors` table with both `Address` and `BusinessAddress` belonging to `Addresses`:
+
+```
+AuthorFactory::for(AddressFactory::new()) cannot resolve a unique belongsTo —
+`Authors` declares 2 associations targeting `Addresses`:
+  - Address         (foreign key: address_id)
+  - BusinessAddress (foreign key: business_address_id)
+
+Use the explicit form to disambiguate:
+  AuthorFactory::new()->with('Address',         AddressFactory::new())
+  AuthorFactory::new()->with('BusinessAddress', AddressFactory::new())
+```
+
+The fix is to fall back to the lower-level `with('AliasName', $factory)` form with the explicit association alias. Both `with()` lines in the exception message are paste-ready:
+
+::: code-group
+```php [Pick the alias you want]
+$author = AuthorFactory::new()
+    ->with('Address', AddressFactory::new(['street' => 'Home']))
+    ->save();
+```
+
+```php [Or stack multiple aliases]
+$author = AuthorFactory::new()
+    ->with('Address', AddressFactory::new(['street' => 'Home']))
+    ->with('BusinessAddress', AddressFactory::new(['street' => 'Office']))
+    ->save();
+```
+:::
+
+::: tip
+Bake-generated `for*()` / `has*()` helpers emit `with('AliasName', …)` rather than `for()` / `has()` for exactly this reason — the alias is unambiguous at codegen time and survives later schema changes that introduce sibling associations. If you reach for `with()` to disambiguate at a call site, you're using the same form bake would have generated.
+:::
 
 ## `from()` — start from an existing entity
 

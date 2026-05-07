@@ -1344,7 +1344,7 @@ class BaseFactoryTest extends TestCase
     public function testForThrowsWhenDirectionalBelongsToAssociationIsAmbiguous(): void
     {
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Ambiguous belongsTo association');
+        $this->expectExceptionMessage('cannot resolve a unique belongsTo');
 
         AuthorFactory::new()->for(AddressFactory::new());
     }
@@ -1352,9 +1352,38 @@ class BaseFactoryTest extends TestCase
     public function testHasThrowsWhenDirectionalToManyAssociationIsAmbiguous(): void
     {
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Ambiguous has* association');
+        $this->expectExceptionMessage('cannot resolve a unique has*');
 
         CountryFactory::new()->has(CityFactory::new());
+    }
+
+    /**
+     * Regression: the ambiguous-association exception must be paste-ready —
+     * it lists every candidate's foreign key and emits a literal
+     * `with('Alias', TargetFactory::new())` line per candidate so the user
+     * does not have to consult the docs to fix it.
+     */
+    public function testAmbiguousForExceptionIncludesPasteReadyFix(): void
+    {
+        try {
+            AuthorFactory::new()->for(AddressFactory::new());
+            $this->fail('Expected RuntimeException');
+        } catch (RuntimeException $e) {
+            $message = $e->getMessage();
+
+            // Both candidate aliases (Author belongsTo Address + BusinessAddress)
+            // and a paste-ready `with(...)` line for each are present.
+            $this->assertStringContainsString('Address', $message);
+            $this->assertStringContainsString('BusinessAddress', $message);
+            $this->assertStringContainsString('foreign key:', $message);
+            $this->assertStringContainsString("AuthorFactory::new()->with('Address', AddressFactory::new())", $message);
+            $this->assertStringContainsString(
+                "AuthorFactory::new()->with('BusinessAddress', AddressFactory::new())",
+                $message,
+            );
+            // And a pointer at the troubleshooting page.
+            $this->assertStringContainsString('troubleshooting.html#ambiguous-association', $message);
+        }
     }
 
     public function testStaticTableAndQueryHonorConfigureDefaults(): void
