@@ -53,7 +53,7 @@ class SelectQueryMockerTest extends TestCase
             ['name' => $names[0]],
             ['name' => $names[1]],
         ]);
-        $nCountriesInDB = rand(2, 5);
+        $nCountriesInDB = 4;
         CountryFactory::new($nCountriesInDB)->saveMany();
         SelectQueryMocker::mock($this, $countryFactory);
 

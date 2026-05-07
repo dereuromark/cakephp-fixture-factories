@@ -176,6 +176,56 @@ class PersistCommandTest extends TestCase
         $this->command->execute($args, $this->io);
     }
 
+    public function testPersistWithProtectedMethod(): void
+    {
+        $className = ArticleFactory::class;
+        $method = 'getRootTableRegistryName';
+        $args = new Arguments([$className], compact('method'), [PersistCommand::ARG_NAME]);
+
+        $this->expectException(StopException::class);
+        $this->command->execute($args, $this->io);
+    }
+
+    public function testPersistWithMethodRequiringArguments(): void
+    {
+        $className = ArticleFactory::class;
+        $method = 'withTitle';
+        $args = new Arguments([$className], compact('method'), [PersistCommand::ARG_NAME]);
+
+        $this->expectException(StopException::class);
+        $this->command->execute($args, $this->io);
+    }
+
+    public function testPersistWithMethodReturningNonFactory(): void
+    {
+        $className = ArticleFactory::class;
+        $method = 'getTable';
+        $args = new Arguments([$className], compact('method'), [PersistCommand::ARG_NAME]);
+
+        $this->expectException(StopException::class);
+        $this->command->execute($args, $this->io);
+    }
+
+    public function testPersistWithInvalidNumberString(): void
+    {
+        $className = ArticleFactory::class;
+        $number = '3foo';
+        $args = new Arguments([$className], compact('number'), [PersistCommand::ARG_NAME]);
+
+        $this->expectException(StopException::class);
+        $this->command->execute($args, $this->io);
+    }
+
+    public function testPersistWithFloatNumberString(): void
+    {
+        $className = ArticleFactory::class;
+        $number = '1.9';
+        $args = new Arguments([$className], compact('number'), [PersistCommand::ARG_NAME]);
+
+        $this->expectException(StopException::class);
+        $this->command->execute($args, $this->io);
+    }
+
     /**
      * @see /tests/bootstrap.php
      */

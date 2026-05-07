@@ -25,6 +25,8 @@ use CakephpFixtureFactories\Error\PersistenceException;
 use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\Factory\FactoryAwareTrait;
 use InvalidArgumentException;
+use ReflectionException;
+use ReflectionMethod;
 
 class PersistCommand extends Command
 {
@@ -142,7 +144,18 @@ class PersistCommand extends Command
     public function countFactory(Arguments $args, BaseFactory $factory): BaseFactory
     {
         $option = $args->getOption('number');
-        $times = $option === null ? 1 : (int)$option;
+        if ($option === null) {
+            return $factory->count(1);
+        }
+
+        if (is_string($option) && ctype_digit($option)) {
+            $times = (int)$option;
+        } else {
+            throw new InvalidArgumentException(sprintf(
+                '--number must be a positive integer, got `%s`.',
+                (string)$option,
+            ));
+        }
 
         if ($times < 1) {
             throw new InvalidArgumentException(sprintf(
@@ -171,14 +184,41 @@ class PersistCommand extends Command
         if ($method === null) {
             return $factory;
         }
-        if (!method_exists($factory, $method)) {
+
+        try {
+            $reflectionMethod = new ReflectionMethod($factory, $method);
+        } catch (ReflectionException) {
             $className = get_class($factory);
             $io->error("The method {$method} was not found in {$className}.");
 
             throw new FactoryNotFoundException();
         }
 
-        return $factory->{$method}();
+        if (!$reflectionMethod->isPublic()) {
+            throw new InvalidArgumentException(sprintf(
+                'The method `%s` on `%s` must be public to be called from persist command.',
+                $method,
+                get_class($factory),
+            ));
+        }
+        if ($reflectionMethod->getNumberOfRequiredParameters() > 0) {
+            throw new InvalidArgumentException(sprintf(
+                'The method `%s` on `%s` must not require arguments when called from persist command.',
+                $method,
+                get_class($factory),
+            ));
+        }
+
+        $result = $factory->{$method}();
+        if (!$result instanceof BaseFactory) {
+            throw new InvalidArgumentException(sprintf(
+                'The method `%s` on `%s` must return a BaseFactory when called from persist command.',
+                $method,
+                get_class($factory),
+            ));
+        }
+
+        return $result;
     }
 
     /**
