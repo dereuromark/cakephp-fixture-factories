@@ -25,11 +25,12 @@ use Cake\ORM\Table;
  * for every non-primary, non-foreign-key, NOT NULL column with no DB default
  * — i.e. the columns most likely to need fixture-time values.
  *
- * Behaviour is configurable via two `FixtureFactories.*` Configure keys:
+ * Behavior is configurable via two `FixtureFactories.*` Configure keys:
  *
  * - `defaultDataMap`: nested `[type => [column => method]]` overrides merged
- *   on top of the bundled mapping. Use to add project-specific naming
- *   conventions (e.g. `'sku' => 'ean13'`).
+ *   on top of the bundled mapping. Values may be shorthand method names
+ *   (`'ean13'`), method calls (`'randomElement([1, 2])'`) or full
+ *   generator calls (`'$generator->phoneNumber()'`).
  * - `columnPatterns`: `[regex => method]` map evaluated *before* the type
  *   table — first match wins. Useful for cross-cutting suffix conventions
  *   like `_at => optional(0.7)->dateTime()`.
@@ -161,7 +162,7 @@ class DefaultDataGuesser
         $schema = $table->getSchema();
         $columns = $schema->columns();
         $foreignKeys = $this->collectForeignKeys($table);
-        $uniqueFields = $this->collectUniqueFields($table);
+        $uniqueFields = $this->collectSingleColumnUniqueFields($table);
         $primaryKeys = $schema->getPrimaryKey();
 
         foreach ($columns as $column) {
@@ -187,7 +188,7 @@ class DefaultDataGuesser
             // or unique index, so the bake output won't collide on its own
             // generated values.
             if (in_array($column, $uniqueFields, true) && str_starts_with($guessed, '$generator->')) {
-                $guessed = str_replace('$generator->', '$generator->unique()->', $guessed);
+                $guessed = preg_replace('/^\$generator->/', '$generator->unique()->', $guessed) ?? $guessed;
             }
 
             $defaultData[$column] = $guessed;
@@ -217,7 +218,7 @@ class DefaultDataGuesser
         $customPatterns = (array)Configure::read('FixtureFactories.columnPatterns', []);
         foreach ($customPatterns as $pattern => $generatorMethod) {
             if (preg_match($pattern, $column)) {
-                return '$generator->' . $generatorMethod;
+                return $this->normalizeGeneratorExpression($generatorMethod);
             }
         }
 
@@ -255,7 +256,7 @@ class DefaultDataGuesser
     private function guessFromMapOrFallback(string $column, array $typeMap, string $fallback): string
     {
         if (isset($typeMap[$column])) {
-            return '$generator->' . $typeMap[$column] . '()';
+            return $this->normalizeGeneratorExpression($typeMap[$column]);
         }
 
         return $fallback;
@@ -275,10 +276,10 @@ class DefaultDataGuesser
         ];
 
         if ($column === 'name' && isset($modelNameMap[$modelName])) {
-            return '$generator->' . $modelNameMap[$modelName] . '()';
+            return $this->normalizeGeneratorExpression($modelNameMap[$modelName]);
         }
         if (isset($typeMap[$column])) {
-            return '$generator->' . $typeMap[$column] . '()';
+            return $this->normalizeGeneratorExpression($typeMap[$column]);
         }
 
         // Smart string-length handling: keep generated text within the column.
@@ -306,9 +307,7 @@ class DefaultDataGuesser
     private function guessFloat(string $column, array $typeMap): string
     {
         if (isset($typeMap[$column])) {
-            // float entries in the bundled map already include argument lists
-            // (e.g. 'randomFloat(2, 0, 1000)') so we don't append parens here.
-            return '$generator->' . $typeMap[$column];
+            return $this->normalizeGeneratorExpression($typeMap[$column]);
         }
 
         return '$generator->randomFloat(2, 0, 100)';
@@ -355,31 +354,55 @@ class DefaultDataGuesser
             $keys = array_merge($keys, (array)$key);
         }
 
-        return $keys;
+        foreach ($table->getSchema()->constraints() as $constraintName) {
+            $constraint = $table->getSchema()->getConstraint($constraintName);
+            if ($constraint && $constraint['type'] === 'foreign') {
+                $keys = array_merge($keys, $constraint['columns']);
+            }
+        }
+
+        return array_values(array_unique($keys));
     }
 
     /**
      * @return array<string>
      */
-    private function collectUniqueFields(Table $table): array
+    private function collectSingleColumnUniqueFields(Table $table): array
     {
         $schema = $table->getSchema();
         $uniqueFields = [];
 
         foreach ($schema->constraints() as $constraintName) {
             $constraint = $schema->getConstraint($constraintName);
-            if ($constraint && $constraint['type'] === 'unique') {
+            if ($constraint && $constraint['type'] === 'unique' && count($constraint['columns']) === 1) {
                 $uniqueFields = array_merge($uniqueFields, $constraint['columns']);
             }
         }
 
         foreach ($schema->indexes() as $indexName) {
             $index = $schema->getIndex($indexName);
-            if ($index && isset($index['type']) && $index['type'] === 'unique') {
+            if ($index && isset($index['type']) && $index['type'] === 'unique' && count($index['columns']) === 1) {
                 $uniqueFields = array_merge($uniqueFields, $index['columns']);
             }
         }
 
         return array_values(array_unique($uniqueFields));
+    }
+
+    private function normalizeGeneratorExpression(string $generatorMethod): string
+    {
+        $generatorMethod = trim($generatorMethod);
+
+        if ($generatorMethod === '') {
+            return '';
+        }
+        if (str_starts_with($generatorMethod, '$generator->')) {
+            return $generatorMethod;
+        }
+        if (!str_contains($generatorMethod, '(')) {
+            return '$generator->' . $generatorMethod . '()';
+        }
+
+        return '$generator->' . $generatorMethod;
     }
 }

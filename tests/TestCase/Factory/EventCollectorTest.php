@@ -397,6 +397,29 @@ class EventCollectorTest extends TestCase
         $this->assertSame($customEventManager, $factory->getTable()->getEventManager());
     }
 
+    public function testSetEventManagerPreservesFactoryBeforeSaveListener(): void
+    {
+        $customEventManager = new EventManager();
+
+        $factory = CountryFactory::new()->setEventManager($customEventManager);
+
+        $this->assertSame($customEventManager, $factory->getTable()->getEventManager());
+        $this->assertNotEmpty($customEventManager->listeners('Model.beforeSave'));
+    }
+
+    public function testSetEventManagerParticipatesInModelInitialize(): void
+    {
+        $customEventManager = new EventManager();
+        $triggered = false;
+        $customEventManager->on('Model.initialize', static function () use (&$triggered): void {
+            $triggered = true;
+        });
+
+        ArticleFactory::new()->setEventManager($customEventManager)->getTable();
+
+        $this->assertTrue($triggered);
+    }
+
     public function testDifferentFactoriesDoNotShareScopedTableWhenEventManagersDiffer(): void
     {
         FactoryTableRegistry::getTableLocator()->clear();

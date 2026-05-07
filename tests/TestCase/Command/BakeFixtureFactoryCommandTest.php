@@ -23,6 +23,7 @@ use CakephpFixtureFactories\Codegen\DefaultDataGuesser;
 use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\Test\Util\TestCaseWithFixtureBaking;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use ReflectionClass;
 use TestApp\Model\Entity\Address;
@@ -272,6 +273,42 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
         $this->assertInstanceOf(Country::class, $country);
     }
 
+    public function testBakedDirectionalHelpersDoNotAdvertiseIntegerAssociationPayloads(): void
+    {
+        $this->bake([], ['all' => true, 'methods' => true]);
+
+        $authorFactoryFile = TESTS . 'Factory' . DS . 'AuthorFactory.php';
+        $articleFactoryFile = TESTS . 'Factory' . DS . 'ArticleFactory.php';
+
+        $authorFactoryContents = (string)file_get_contents($authorFactoryFile);
+        $articleFactoryContents = (string)file_get_contents($articleFactoryFile);
+
+        $this->assertStringNotContainsString('EntityInterface|callable|array|string|int|null', $authorFactoryContents);
+        $this->assertStringNotContainsString('EntityInterface|callable|array|string|int|null', $articleFactoryContents);
+        $this->assertStringContainsString('EntityInterface|callable|array|string|null', $authorFactoryContents);
+        $this->assertStringContainsString('EntityInterface|callable|array|string|null', $articleFactoryContents);
+    }
+
+    public function testBakedDirectionalHelpersRejectIntegerAssociationPayloads(): void
+    {
+        $this->bake([], ['all' => true, 'methods' => true]);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('forAddress() does not accept integer payloads');
+
+        AuthorFactory::new()->forAddress(5);
+    }
+
+    public function testBakedPluralDirectionalHelpersRejectIntegerSecondArgument(): void
+    {
+        $this->bake([], ['all' => true, 'methods' => true]);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('hasAuthors() does not accept integer payloads as the second argument');
+
+        ArticleFactory::new()->hasAuthors(2, 5);
+    }
+
     public function testRunBakeWithModel(): void
     {
         $this->bake(['Articles']);
@@ -436,12 +473,103 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
         $this->assertStringContainsString('$generator->unique()->', $defaults['username']);
         $this->assertArrayHasKey('email', $defaults);
         $this->assertStringContainsString('$generator->unique()->', $defaults['email']);
-        // user_id is a non-unique integer; it IS emitted, but without unique() wrapping.
-        $this->assertArrayHasKey('user_id', $defaults);
-        $this->assertStringNotContainsString('->unique()->', $defaults['user_id']);
+        // user_id is part of a foreign-key constraint, so the guesser should skip it.
+        $this->assertArrayNotHasKey('user_id', $defaults);
         // 'created' has a non-unique index; emitted without unique() wrapping.
         $this->assertArrayHasKey('created', $defaults);
         $this->assertStringNotContainsString('->unique()->', $defaults['created']);
+    }
+
+    public function testSchemaForeignKeyIsSkippedWithoutAssociation(): void
+    {
+        $schema = $this->getMockBuilder('\Cake\Database\Schema\TableSchema')
+            ->onlyMethods([
+                'constraints', 'getConstraint', 'indexes', 'getIndex',
+                'columns', 'getColumn', 'getPrimaryKey',
+            ])
+            ->setConstructorArgs(['test_table'])
+            ->getMock();
+
+        $schema->method('constraints')
+            ->willReturn(['tenant_fk']);
+        $schema->method('getConstraint')
+            ->willReturn(['type' => 'foreign', 'columns' => ['tenant_id']]);
+        $schema->method('indexes')
+            ->willReturn([]);
+        $schema->method('columns')
+            ->willReturn(['id', 'tenant_id', 'title']);
+        $schema->method('getPrimaryKey')
+            ->willReturn(['id']);
+        $schema->method('getColumn')
+            ->willReturnMap([
+                ['tenant_id', ['type' => 'integer', 'null' => false, 'default' => null]],
+                ['title', ['type' => 'string', 'null' => false, 'default' => null, 'length' => 100]],
+            ]);
+
+        $associations = $this->getMockBuilder('\Cake\ORM\AssociationCollection')
+            ->onlyMethods(['getIterator'])
+            ->getMock();
+        $associations->method('getIterator')
+            ->willReturn(new ArrayIterator([]));
+
+        $table = $this->getMockBuilder('\Cake\ORM\Table')
+            ->onlyMethods(['getSchema', 'getAlias', 'associations'])
+            ->getMock();
+        $table->method('getSchema')->willReturn($schema);
+        $table->method('getAlias')->willReturn('Articles');
+        $table->method('associations')->willReturn($associations);
+
+        $defaults = (new DefaultDataGuesser())->guessFor($table);
+
+        $this->assertArrayNotHasKey('tenant_id', $defaults);
+        $this->assertArrayHasKey('title', $defaults);
+    }
+
+    public function testCompositeUniqueConstraintDoesNotForcePerColumnUniqueness(): void
+    {
+        $schema = $this->getMockBuilder('\Cake\Database\Schema\TableSchema')
+            ->onlyMethods([
+                'constraints', 'getConstraint', 'indexes', 'getIndex',
+                'columns', 'getColumn', 'getPrimaryKey',
+            ])
+            ->setConstructorArgs(['test_articles'])
+            ->getMock();
+
+        $schema->method('constraints')
+            ->willReturn(['site_slug_unique']);
+        $schema->method('getConstraint')
+            ->willReturn(['type' => 'unique', 'columns' => ['site_id', 'slug']]);
+        $schema->method('indexes')
+            ->willReturn([]);
+        $schema->method('columns')
+            ->willReturn(['id', 'site_id', 'slug']);
+        $schema->method('getPrimaryKey')
+            ->willReturn(['id']);
+        $schema->method('getColumn')
+            ->willReturnMap([
+                ['site_id', ['type' => 'integer', 'null' => false, 'default' => null]],
+                ['slug', ['type' => 'string', 'null' => false, 'default' => null, 'length' => 100]],
+            ]);
+
+        $associations = $this->getMockBuilder('\Cake\ORM\AssociationCollection')
+            ->onlyMethods(['getIterator'])
+            ->getMock();
+        $associations->method('getIterator')
+            ->willReturn(new ArrayIterator([]));
+
+        $table = $this->getMockBuilder('\Cake\ORM\Table')
+            ->onlyMethods(['getSchema', 'getAlias', 'associations'])
+            ->getMock();
+        $table->method('getSchema')->willReturn($schema);
+        $table->method('getAlias')->willReturn('Articles');
+        $table->method('associations')->willReturn($associations);
+
+        $defaults = (new DefaultDataGuesser())->guessFor($table);
+
+        $this->assertArrayHasKey('site_id', $defaults);
+        $this->assertArrayHasKey('slug', $defaults);
+        $this->assertStringNotContainsString('->unique()->', $defaults['site_id']);
+        $this->assertStringNotContainsString('->unique()->', $defaults['slug']);
     }
 
     /**

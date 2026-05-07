@@ -47,8 +47,8 @@ bin/cake bake fixture_factory Articles -p MyPlugin
 
 Two configuration keys influence what `bake` writes:
 
-- **`defaultDataMap`** — map column types to generator method calls.
-- **`columnPatterns`** — map column-name regexes to generator method calls.
+- **`defaultDataMap`** — map column types to generator method fragments, call fragments with arguments, or `$generator->...` calls.
+- **`columnPatterns`** — map column-name regexes to generator method fragments, call fragments with arguments, or `$generator->...` calls.
 
 Both let you teach `bake` what `phone`, `zip`, `email`, etc. should look like in your domain. See the [Configuration Reference](configuration#defaultdatamap).
 
@@ -56,8 +56,8 @@ Both let you teach `bake` what `phone`, `zip`, `email`, etc. should look like in
 // config/app.php
 'FixtureFactories' => [
     'columnPatterns' => [
-        '/^phone/' => '$generator->phoneNumber()',
-        '/^zip/'   => '$generator->postcode()',
+        '/^phone/' => 'phoneNumber()',
+        '/^zip/'   => 'postcode()',
     ],
 ],
 ```

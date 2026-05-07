@@ -100,6 +100,9 @@ class EventCollector
             self::MODEL_BEHAVIORS => $this->getListeningBehaviors(),
             'className' => $this->rootTableRegistryName,
         ];
+        if ($this->eventManager !== null) {
+            $options['eventManager'] = $this->eventManager;
+        }
         $registryAlias = $this->getScopedRegistryAlias();
 
         if ($this->connectionName !== null) {
@@ -113,10 +116,6 @@ class EventCollector
             $table = FactoryTableRegistry::getTableLocator()->get($registryAlias, $options);
         }
         $table->setAlias($this->getRootTableAlias());
-
-        if ($this->eventManager !== null) {
-            $table->setEventManager($this->eventManager);
-        }
 
         return $this->table = $table;
     }

@@ -80,8 +80,8 @@ The bake command uses `defaultDataMap` and `columnPatterns` to choose generator 
 
 ```php
 'columnPatterns' => [
-    '/^phone/' => '$generator->phoneNumber()',
-    '/^zip/'   => '$generator->postcode()',
+    '/^phone/' => 'phoneNumber()',
+    '/^zip/'   => 'postcode()',
 ],
 ```
 

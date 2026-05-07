@@ -76,15 +76,28 @@ Provide the behavior name only — not the plugin-prefixed form (use `BehaviorNa
 
 ### `defaultDataMap`
 
-Custom data mapping for the bake command. Maps column names/types to generator method calls. See [Bake command](bake).
+Custom data mapping for the bake command. Maps column names/types to generator
+method fragments, generator call fragments with arguments, or full generator
+calls starting with `$generator->`. Both of these are valid:
+
+```php
+'defaultDataMap' => [
+    'string' => [
+        'sku' => 'ean13',
+        'status' => "randomElement(['draft', 'live'])",
+    ],
+],
+```
 
 ### `columnPatterns`
 
-Custom column-name regex patterns for the bake command, mapped to generator method calls.
+Custom column-name regex patterns for the bake command, mapped to generator
+method fragments, generator call fragments with arguments, or full generator
+calls starting with `$generator->`.
 
 ```php
 'columnPatterns' => [
-    '/^phone/' => '$generator->phoneNumber()',
-    '/^zip/'   => '$generator->postcode()',
+    '/^phone/' => 'phoneNumber()',
+    '/^zip/'   => 'postcode()',
 ],
 ```

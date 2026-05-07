@@ -130,6 +130,24 @@ class DefaultDataGuesserTest extends TestCase
         $this->assertSame('$generator->ean13()', $expression);
     }
 
+    public function testUserMapAcceptsFullGeneratorExpression(): void
+    {
+        Configure::write('FixtureFactories.defaultDataMap', [
+            'string' => [
+                'phone' => '$generator->phoneNumber()',
+            ],
+        ]);
+
+        $expression = $this->guesser->guess('phone', 'Users', [
+            'type' => 'string',
+            'null' => false,
+            'default' => null,
+            'length' => 20,
+        ]);
+
+        $this->assertSame('$generator->phoneNumber()', $expression);
+    }
+
     public function testUnknownColumnTypeReturnsNull(): void
     {
         $expression = $this->guesser->guess('payload', 'Events', [
@@ -139,5 +157,55 @@ class DefaultDataGuesserTest extends TestCase
         ]);
 
         $this->assertNull($expression);
+    }
+
+    public function testColumnPatternsAcceptFullGeneratorExpression(): void
+    {
+        Configure::write('FixtureFactories.columnPatterns', [
+            '/^phone/' => '$generator->phoneNumber()',
+        ]);
+
+        $expression = $this->guesser->guess('phone_home', 'Users', [
+            'type' => 'string',
+            'null' => false,
+            'default' => null,
+            'length' => 20,
+        ]);
+
+        $this->assertSame('$generator->phoneNumber()', $expression);
+    }
+
+    public function testFloatUserMapAcceptsFullGeneratorExpression(): void
+    {
+        Configure::write('FixtureFactories.defaultDataMap', [
+            'float' => [
+                'price' => '$generator->randomFloat(2, 1, 9)',
+            ],
+        ]);
+
+        $expression = $this->guesser->guess('price', 'Products', [
+            'type' => 'float',
+            'null' => false,
+            'default' => null,
+        ]);
+
+        $this->assertSame('$generator->randomFloat(2, 1, 9)', $expression);
+    }
+
+    public function testFloatUserMapAcceptsShorthandMethodName(): void
+    {
+        Configure::write('FixtureFactories.defaultDataMap', [
+            'float' => [
+                'price' => 'randomFloat',
+            ],
+        ]);
+
+        $expression = $this->guesser->guess('price', 'Products', [
+            'type' => 'float',
+            'null' => false,
+            'default' => null,
+        ]);
+
+        $this->assertSame('$generator->randomFloat()', $expression);
     }
 }
