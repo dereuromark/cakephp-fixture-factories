@@ -40,16 +40,36 @@ composer require --dev johnykvsky/dummygenerator
 
 ## Load the plugin
 
-In `src/Application.php`:
+This plugin is dev-only — factories live under `tests/Factory/` and are never
+called from production code paths. One command sets that up:
+
+```bash
+bin/cake plugin load --only-debug CakephpFixtureFactories
+```
+
+This writes `config/plugins.php` with `onlyDebug => true`, so CakePHP only
+loads the plugin when `Configure::read('debug')` is true. The plugin stays out
+of production HTTP requests even if dev dependencies are accidentally shipped.
+
+::: tip Prefer hand-edited config?
+The equivalent `config/plugins.php` entry:
 
 ```php
-protected function bootstrapCli(): void
-{
-    if (Configure::read('debug')) {
-        $this->addPlugin('CakephpFixtureFactories');
-    }
-}
+return [
+    'CakephpFixtureFactories' => [
+        'onlyDebug' => true,
+    ],
+];
 ```
+:::
+
+::: details Without flags, the CLI prompts based on composer keywords
+This plugin's `composer.json` declares `dev` and `cli` keywords, so running
+`bin/cake plugin load CakephpFixtureFactories` (no flags) interactively
+suggests `onlyDebug: true`, `onlyCli: true`, and `optional: true` — accepting
+all three gives you the same gating plus `onlyCli` (skip loading on web
+requests) and `optional` (no error if the package is absent in production).
+:::
 
 ## Configure the fixture strategy (recommended)
 

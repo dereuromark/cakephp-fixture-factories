@@ -21,7 +21,7 @@ OverflowException: Maximum retries of 10000 reached without finding a unique val
 Faker library is not installed. Please install it using: `composer require --dev fakerphp/faker`
 ```
 
-**Cause:** the default generator is `faker`, but the package isn't installed.
+**Cause:** the resolved generator is `faker` (either explicit via `Configure::write('FixtureFactories.generatorType', 'faker')` or because Faker is the auto-detect tiebreaker when both libraries are present), but the package isn't installed.
 
 **Fix:** either install Faker (`composer require --dev fakerphp/faker`) or switch the generator type:
 
@@ -34,6 +34,24 @@ See [Generators](generators) for the comparison.
 ## `DummyGenerator library is not installed`
 
 Same shape as the Faker error. Install with `composer require --dev johnykvsky/dummygenerator` (requires PHP 8.3+) or switch back to `'faker'`.
+
+## `No random data generator found`
+
+```
+No random data generator found. Install either `fakerphp/faker` or `johnykvsky/dummygenerator`, or register a custom adapter via CakeGeneratorFactory::registerAdapter().
+```
+
+**Cause:** neither built-in generator package is installed and no custom adapter has been registered. Auto-detection has nothing to fall back to.
+
+**Fix:** install one of the two supported libraries, or register your own adapter:
+
+```bash
+composer require --dev fakerphp/faker
+# or
+composer require --dev johnykvsky/dummygenerator
+```
+
+See [Generators](generators#available-generators) for guidance on picking one.
 
 ## Method works on one generator, not the other
 

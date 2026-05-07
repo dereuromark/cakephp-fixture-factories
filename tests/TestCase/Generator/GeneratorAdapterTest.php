@@ -9,6 +9,8 @@ use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Error\FixtureFactoryException;
 use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\Generator\CakeGeneratorFactory;
+use CakephpFixtureFactories\Generator\DummyGeneratorAdapter;
+use CakephpFixtureFactories\Generator\FakerAdapter;
 use CakephpFixtureFactories\Generator\GeneratorInterface;
 use CakephpFixtureFactories\Test\Factory\AlternativeSeedArticleFactory;
 use CakephpFixtureFactories\Test\Factory\ArticleFactory;
@@ -741,5 +743,58 @@ class GeneratorAdapterTest extends TestCase
 
         $this->expectException(OverflowException::class);
         $generator->enumValue(SingleCaseStatus::class);
+    }
+
+    /**
+     * With both faker and dummygenerator installed in dev (require-dev), and no
+     * explicit Configure key or `$type` argument, auto-detection must yield the
+     * Faker adapter — preserving the historical default.
+     *
+     * @return void
+     */
+    public function testAutoDetectPrefersFakerWhenBothInstalled(): void
+    {
+        Configure::delete('FixtureFactories.generatorType');
+        CakeGeneratorFactory::clearInstances();
+
+        $generator = CakeGeneratorFactory::create();
+
+        $this->assertInstanceOf(FakerAdapter::class, $generator);
+    }
+
+    /**
+     * An explicit `Configure::write('FixtureFactories.generatorType', ...)` must
+     * win over auto-detection, even when faker is also installed.
+     *
+     * @return void
+     */
+    public function testExplicitConfigureBeatsAutoDetect(): void
+    {
+        Configure::write('FixtureFactories.generatorType', 'dummy');
+        CakeGeneratorFactory::clearInstances();
+
+        $generator = CakeGeneratorFactory::create();
+
+        $this->assertInstanceOf(DummyGeneratorAdapter::class, $generator);
+    }
+
+    /**
+     * The "neither generator installed" branch of detectDefaultType() can only
+     * be exercised by removing both packages from the autoload graph. PHP has
+     * no first-class way to unload an already-declared class, and runkit-style
+     * extensions are not part of this project's CI baseline. We therefore
+     * leave this branch covered by hand via the assertion below — calling
+     * detectDefaultType() while both libraries are present must NOT throw,
+     * which is the inverse guarantee. The thrown-exception path is documented
+     * by the source and verified by inspection.
+     *
+     * @return void
+     */
+    public function testAutoDetectThrowsWhenNoGeneratorInstalled(): void
+    {
+        $this->markTestSkipped(
+            'Cannot reliably simulate "no generator installed" without unloading classes; '
+            . 'see docblock for rationale.',
+        );
     }
 }

@@ -8,17 +8,37 @@ Define your DB connections in your test `bootstrap.php` as described in the [Cak
 
 ## CakePHP apps
 
-To be able to bake your factories,
-load the CakephpFixtureFactories plugin in your `plugins.php` file or your `src/Application.php` file:
-```php
-protected function bootstrapCli(): void
-{
-    // Load more plugins here
-    if (Configure::read('debug')) {
-        $this->addPlugin('CakephpFixtureFactories');
-    }
-}
+To bake and use factories, load the CakephpFixtureFactories plugin. Factories
+live under `tests/Factory/` and are never called from production code paths,
+so you want the plugin loaded only when `debug` is true:
+
+```bash
+bin/cake plugin load --only-debug CakephpFixtureFactories
 ```
+
+This writes `config/plugins.php` with `onlyDebug => true`. CakePHP then loads
+the plugin only when `Configure::read('debug')` is true — the plugin stays out
+of production HTTP requests even if dev dependencies are accidentally shipped.
+
+The resulting entry, if you prefer hand-edited config:
+
+```php
+// config/plugins.php
+return [
+    'CakephpFixtureFactories' => [
+        'onlyDebug' => true,
+    ],
+];
+```
+
+::: tip Composer-keyword recommendations
+This plugin declares `dev` and `cli` in its composer keywords, so running
+`bin/cake plugin load CakephpFixtureFactories` without flags will
+interactively suggest `onlyDebug: true`, `onlyCli: true`, and `optional: true`.
+Accepting all three additionally skips loading on web requests (`onlyCli`) and
+silences the missing-plugin error in production builds that strip dev deps
+(`optional`).
+:::
 
 **We recommend using migrations for managing the schema of your test DB with the [CakePHP Migrations plugin](https://book.cakephp.org/migrations/5/index.html#using-migrations-for-tests).**
 

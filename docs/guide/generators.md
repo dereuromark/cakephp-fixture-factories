@@ -4,7 +4,7 @@ This document provides a detailed comparison between the available fake data gen
 
 ## Available Generators
 
-### Faker (Default)
+### Faker
 - **Package**: [FakerPHP/Faker](https://github.com/FakerPHP/Faker)
 - **Minimum PHP**: 8.2+ (project requirement)
 - **Install**: `composer require --dev fakerphp/faker`
@@ -15,6 +15,22 @@ This document provides a detailed comparison between the available fake data gen
 - **Minimum PHP**: 8.3+
 - **Install**: `composer require --dev johnykvsky/dummygenerator`
 - **Best for**: Modern PHP 8.3+ projects, native enum support, lightweight footprint
+
+### How the default is chosen
+
+When `FixtureFactories.generatorType` is unset and you don't pass `$type` to
+`CakeGeneratorFactory::create()`, the plugin auto-detects which library is
+installed:
+
+1. Explicit `Configure::write('FixtureFactories.generatorType', ...)` always wins.
+2. Otherwise, if `fakerphp/faker` is installed, `'faker'` is used.
+3. Otherwise, if `johnykvsky/dummygenerator` is installed, `'dummy'` is used.
+4. If neither is installed, a `FixtureFactoryException` is thrown pointing at
+   the install commands.
+
+This means single-library installs "just work" with no extra config, while
+existing setups that have both libraries installed keep their previous
+faker-first behavior.
 
 ## Key Differences
 
@@ -102,12 +118,15 @@ Set the generator type in your `tests/bootstrap.php` or test configuration:
 ```php
 use Cake\Core\Configure;
 
-// Use Faker (default)
+// Use Faker
 Configure::write('FixtureFactories.generatorType', 'faker');
 
 // Use DummyGenerator
 Configure::write('FixtureFactories.generatorType', 'dummy');
 ```
+
+> If you have only one of the two libraries installed, you can leave this key
+> unset — the plugin auto-detects which one is available.
 
 Or set it per-factory:
 
