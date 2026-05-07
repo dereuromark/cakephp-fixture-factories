@@ -67,6 +67,25 @@ class EagerTransactionTraitTest extends TestCase
     public function testEnsureEagerTransactionForTestPrimesTheConnection(): void
     {
         $connection = CityFactory::new()->getTable()->getConnection();
+        $resolved = \Cake\Datasource\ConnectionManager::get($this->eagerConnection);
+
+        // Diagnostic: verify the trait resolves the same Connection
+        // instance the factory uses. If these are different instances,
+        // the trait's begin() lands on a different connection than the
+        // assertion below inspects. Spell that out so a CI failure
+        // points at the connection-resolution issue immediately.
+        $this->assertSame(
+            $connection,
+            $resolved,
+            sprintf(
+                'Trait connection differs from factory connection. '
+                . 'eagerConnection=%s, factoryConfigName=%s, resolvedConfigName=%s',
+                $this->eagerConnection,
+                $connection->configName(),
+                $resolved->configName(),
+            ),
+        );
+
         $this->assertFalse(
             $connection->inTransaction(),
             'Lazy strategy should not have begun a transaction yet',
