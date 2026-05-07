@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace CakephpFixtureFactories\TestSuite;
 
+use Cake\Database\Connection;
 use Cake\Datasource\ConnectionManager;
 use PHPUnit\Framework\Attributes\Before;
 
@@ -20,9 +21,14 @@ use PHPUnit\Framework\Attributes\Before;
  *
  * `use` the trait in the affected test class. The `#[Before]` hook
  * runs after the active strategy's `setupTest()` has installed
- * itself, then primes a transaction on the primary test connection
- * (`test` by default — override `$eagerConnection` in the using class
- * to point at a different connection).
+ * itself, then primes a transaction on the eager connection.
+ *
+ * The eager connection defaults to the one resolved by
+ * `ConnectionManager::get($eagerConnection)` (`$eagerConnection`
+ * defaults to `'test'`). Override `$eagerConnection` to point at a
+ * different connection name, or override `getEagerConnections()`
+ * for full control — for example, to pass a Connection instance
+ * obtained from a specific table or to prime several connections.
  *
  * If your whole suite needs the eager wrap, use
  * {@see EagerFactoryTransactionStrategy} as the global strategy
@@ -53,14 +59,41 @@ trait EagerTransactionTrait
      * Connection name to eagerly wrap on each test in the using class.
      *
      * Override in the using class when your project's primary test
-     * connection is named something other than `test`.
+     * connection is named something other than `test`. Set to an empty
+     * string to disable the prime entirely.
      *
      * @var string
      */
     protected string $eagerConnection = 'test';
 
     /**
-     * Prime a transaction on the eager connection before the test runs.
+     * Resolve the connection(s) to wrap eagerly. Default implementation
+     * resolves `$this->eagerConnection` via `ConnectionManager::get()`.
+     *
+     * Override in the using class for full control — for example, to
+     * pass a Connection instance obtained directly from a Table the
+     * test uses (avoiding any alias-map ambiguity in the test app's
+     * bootstrap), or to prime several connections at once.
+     *
+     * @return list<\Cake\Database\Connection>
+     */
+    protected function getEagerConnections(): array
+    {
+        if ($this->eagerConnection === '') {
+            return [];
+        }
+        try {
+            /** @var \Cake\Database\Connection $connection */
+            $connection = ConnectionManager::get($this->eagerConnection);
+        } catch (\Throwable) {
+            return []; // unconfigured / unknown connection name — silent skip.
+        }
+
+        return [$connection];
+    }
+
+    /**
+     * Prime a transaction on each eager connection before the test runs.
      *
      * Runs as a PHPUnit `#[Before]` hook, which fires after the
      * fixture strategy's `setupTest()` has set the active instance,
@@ -76,20 +109,11 @@ trait EagerTransactionTrait
         if ($strategy === null) {
             return;
         }
-        if ($this->eagerConnection === '') {
-            return;
+        foreach ($this->getEagerConnections() as $connection) {
+            if (!$connection instanceof Connection) {
+                continue;
+            }
+            $strategy->ensureTransaction($connection);
         }
-
-        // Resolve via ConnectionManager::get() so the alias map is
-        // honoured. We do NOT pre-check ConnectionManager::getConfig()
-        // because that returns null for alias names whose source is
-        // registered under a different key.
-        try {
-            /** @var \Cake\Database\Connection $connection */
-            $connection = ConnectionManager::get($this->eagerConnection);
-        } catch (\Throwable) {
-            return; // unconfigured / unknown connection name — silent skip.
-        }
-        $strategy->ensureTransaction($connection);
     }
 }

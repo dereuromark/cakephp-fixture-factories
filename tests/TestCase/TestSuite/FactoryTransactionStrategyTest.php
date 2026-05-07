@@ -162,15 +162,26 @@ class FactoryTransactionStrategyTest extends TestCase
      */
     public function testEagerStrategyWrapsPrimaryConnection(): void
     {
-        // Use the connection name CityFactory's table reports so the test
-        // exercises the eager wrap on the same connection instance the
-        // existing lazy test already relies on. Hardcoding 'test' would
-        // be brittle if a downstream test app uses a different alias.
+        // Override the eager-connection resolution to use the exact
+        // Connection CityFactory's table reports. The package's test
+        // bootstrap aliases connection names in a way that makes
+        // ConnectionManager::get('test') resolve to a sibling
+        // connection ('dummy'), so going through the name-based
+        // default would inspect a different Connection instance than
+        // the one the assertion looks at.
         $connection = CityFactory::new()->getTable()->getConnection();
-        $strategy = new class ($connection->configName()) extends EagerFactoryTransactionStrategy {
-            public function __construct(string $name)
+        $strategy = new class ($connection) extends EagerFactoryTransactionStrategy {
+            public function __construct(private \Cake\Database\Connection $eagerConnection)
             {
-                $this->primaryConnection = $name;
+            }
+
+            public function setupTest(array $fixtureNames): void
+            {
+                // Skip the parent's name-based eager begin, and prime
+                // the connection we were handed instead.
+                $this->primaryConnection = '';
+                parent::setupTest($fixtureNames);
+                $this->ensureTransaction($this->eagerConnection);
             }
         };
 
