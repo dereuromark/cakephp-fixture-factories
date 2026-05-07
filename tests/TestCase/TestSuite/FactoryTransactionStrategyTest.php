@@ -13,9 +13,9 @@ use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\Generator\FakerAdapter;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
+use CakephpFixtureFactories\TestSuite\EagerFactoryTransactionStrategy;
 use CakephpFixtureFactories\TestSuite\FactoryTableTracker;
 use CakephpFixtureFactories\TestSuite\FactoryTransactionStrategy;
-use CakephpFixtureFactories\TestSuite\LazyFactoryTransactionStrategy;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
 use RuntimeException;
 
@@ -106,56 +106,21 @@ class FactoryTransactionStrategyTest extends TestCase
     }
 
     /**
-     * The default {@see FactoryTransactionStrategy} eagerly wraps the
-     * primary test connection in setupTest() so that direct
-     * `$table->save()` operations inside a test are also rolled back at
-     * teardown — not just operations that go through a Factory.
+     * Test that FactoryTransactionStrategy uses lazy transactions
+     *
+     * Transactions are NOT started upfront in setupTest(), but only when
+     * a factory actually persists data.
      *
      * @return void
      */
-    public function testEagerStrategyOpensTransactionOnSetup(): void
+    public function testTransactionStrategyLazySetup(): void
     {
         $strategy = new FactoryTransactionStrategy();
 
         // Get the connection the factory will actually use
         $connection = CityFactory::new()->getTable()->getConnection();
 
-        $strategy->setupTest([]);
-
-        $this->assertTrue(
-            $connection->inTransaction(),
-            'Connection should be in transaction after setup (eager default)',
-        );
-
-        $this->assertSame($strategy, FactoryTransactionStrategy::getActiveInstance());
-
-        // A subsequent persist still works and shares the eager transaction.
-        $city = CityFactory::new(['name' => 'Eager City'])->save();
-        $this->assertNotEmpty($city->id);
-
-        $tracker = FactoryTableTracker::getInstance();
-        $this->assertTrue($tracker->hasTables());
-        $this->assertContains('cities', $tracker->getTableNames());
-
-        $strategy->teardownTest();
-
-        $this->assertFalse($tracker->hasTables());
-        $this->assertNull(FactoryTransactionStrategy::getActiveInstance());
-    }
-
-    /**
-     * The opt-in {@see LazyFactoryTransactionStrategy} skips the eager
-     * begin(). Connections only join the rollback set when a Factory
-     * persists on them via ensureTransaction().
-     *
-     * @return void
-     */
-    public function testLazyStrategyDefersTransactionUntilPersist(): void
-    {
-        $strategy = new LazyFactoryTransactionStrategy();
-
-        $connection = CityFactory::new()->getTable()->getConnection();
-
+        // Setup should NOT start transactions (lazy strategy)
         $strategy->setupTest([]);
 
         $this->assertFalse(
@@ -163,10 +128,11 @@ class FactoryTransactionStrategyTest extends TestCase
             'Connection should NOT be in transaction after setup (lazy)',
         );
 
+        // The active instance should be set
         $this->assertSame($strategy, FactoryTransactionStrategy::getActiveInstance());
 
-        // Persisting through a Factory primes the transaction lazily.
-        $city = CityFactory::new(['name' => 'Lazy City'])->save();
+        // Persist data — this should lazily start the transaction
+        $city = CityFactory::new(['name' => 'Test City'])->save();
         $this->assertNotEmpty($city->id);
 
         $this->assertTrue(
@@ -174,14 +140,71 @@ class FactoryTransactionStrategyTest extends TestCase
             'Connection should be in transaction after persist',
         );
 
+        // Verify table is tracked
         $tracker = FactoryTableTracker::getInstance();
         $this->assertTrue($tracker->hasTables());
         $this->assertContains('cities', $tracker->getTableNames());
 
+        // Teardown should rollback and clear
         $strategy->teardownTest();
 
         $this->assertFalse($tracker->hasTables());
         $this->assertNull(FactoryTransactionStrategy::getActiveInstance());
+    }
+
+    /**
+     * EagerFactoryTransactionStrategy primes the primary test connection
+     * inside setupTest() so direct $table->save() calls inside a test
+     * are also covered by the rollback. Beyond that, behavior matches
+     * the parent (lazy on additional connections).
+     *
+     * @return void
+     */
+    public function testEagerStrategyWrapsPrimaryConnection(): void
+    {
+        $strategy = new EagerFactoryTransactionStrategy();
+        $connection = CityFactory::new()->getTable()->getConnection();
+
+        $strategy->setupTest([]);
+
+        $this->assertTrue(
+            $connection->inTransaction(),
+            'Connection should be in transaction after eager setup',
+        );
+        $this->assertSame($strategy, FactoryTransactionStrategy::getActiveInstance());
+
+        $strategy->teardownTest();
+
+        $this->assertFalse(
+            $connection->inTransaction(),
+            'Connection should be released after teardown',
+        );
+        $this->assertNull(FactoryTransactionStrategy::getActiveInstance());
+    }
+
+    /**
+     * Setting $primaryConnection to '' on an EagerFactoryTransactionStrategy
+     * subclass disables the eager begin and reverts to the parent's lazy
+     * behavior on the primary connection. Useful when callers want eager
+     * defaults but no priming for a particular project shape.
+     *
+     * @return void
+     */
+    public function testEagerStrategyWithoutPrimaryConnectionStaysLazy(): void
+    {
+        $strategy = new class () extends EagerFactoryTransactionStrategy {
+            protected string $primaryConnection = '';
+        };
+        $connection = CityFactory::new()->getTable()->getConnection();
+
+        $strategy->setupTest([]);
+
+        $this->assertFalse(
+            $connection->inTransaction(),
+            'Connection should NOT be in transaction when $primaryConnection is empty',
+        );
+
+        $strategy->teardownTest();
     }
 
     /**
