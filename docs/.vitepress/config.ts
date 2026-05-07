@@ -71,6 +71,7 @@ export default defineConfig({
         {
           text: 'Upgrading',
           items: [
+            { text: '1.3 → 1.4', link: '/guide/upgrading' },
             { text: 'Migration from vierge-noire', link: '/guide/migration' },
           ],
         },
@@ -97,7 +98,7 @@ export default defineConfig({
     ],
 
     editLink: {
-      pattern: 'https://github.com/dereuromark/cakephp-fixture-factories/edit/main/docs/:path',
+      pattern: 'https://github.com/dereuromark/cakephp-fixture-factories/edit/1.x/docs/:path',
       text: 'Edit this page on GitHub',
     },
 
