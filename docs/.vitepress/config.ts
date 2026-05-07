@@ -42,8 +42,8 @@ export default defineConfig({
       {
         text: currentVersion,
         items: [
-          { text: latestLinkText, link: latestDocsUrl },
-          { text: legacyLinkText, link: legacyDocsUrl },
+          { text: latestLinkText, link: latestDocsUrl, target: '_self' },
+          { text: legacyLinkText, link: legacyDocsUrl, target: '_self' },
         ],
       },
     ],
