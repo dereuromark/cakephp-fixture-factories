@@ -96,3 +96,47 @@ Configure::write('FixtureFactories.instanceLevelGenerator', true);
 ```
 
 See [Fixture Factories — instance-level generators](factories#instance-level-generators) for details.
+
+## Ambiguous association
+
+`for()` and `has()` auto-resolve which association to attach by looking at the target factory's table. When the parent table declares more than one association pointing at that target table — for example a `Messages` table with both `Sender` and `Recipient` belonging to `Users`, or an `Authors` table with both `Address` and `BusinessAddress` belonging to `Addresses` — the resolver cannot pick a single one and throws:
+
+```
+MessageFactory::for(UserFactory::new()) cannot resolve a unique belongsTo —
+`Messages` declares 2 associations targeting `Users`:
+  - Sender    (foreign key: sender_id)
+  - Recipient (foreign key: recipient_id)
+
+Use the explicit form to disambiguate:
+  MessageFactory::new()->with('Sender',    UserFactory::new())
+  MessageFactory::new()->with('Recipient', UserFactory::new())
+```
+
+**Quick fix at the call site** — use the lower-level `with('AliasName', $factory)` form. Both `with()` lines in the exception message are paste-ready; pick the one that matches the relation you want to populate.
+
+**Long-term pattern** — for any factory whose target table has more than one association in or out, define named wrapper methods directly on the factory:
+
+```php
+class MessageFactory extends BaseFactory
+{
+    public function forSender($parameter = null): static
+    {
+        return $this->with('Sender', UserFactory::new($parameter));
+    }
+
+    public function forRecipient($parameter = null): static
+    {
+        return $this->with('Recipient', UserFactory::new($parameter));
+    }
+}
+```
+
+Call sites then read like the directional API again, with the alias baked into the method name:
+
+```php
+MessageFactory::new()->forSender(['name' => 'Alice'])->forRecipient(['name' => 'Bob'])->save();
+```
+
+This is exactly what `bin/cake bake fixture_factory <Model> --methods` generates automatically — bake emits the explicit `with('AliasName', …)` form per association precisely because the alias is unambiguous at codegen time. The same logic applies when you hand-write factories: co-locate the disambiguation with the schema knowledge in one place rather than scattering alias strings across many test call sites. It mirrors the named-state recommendation in [Best Practices](best-practices) — name what you'll repeat.
+
+See [Associations — directional helpers](associations#directional-helpers-for-and-has) for the full design.
