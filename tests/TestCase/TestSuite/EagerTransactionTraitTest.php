@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace CakephpFixtureFactories\Test\TestCase\TestSuite;
 
-use Cake\Datasource\ConnectionManager;
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
@@ -20,7 +19,7 @@ use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
  * before each test in the using class. We test the method directly
  * here so the assertions don't depend on PHPUnit's attribute
  * dispatch — they exercise the trait's own logic given the documented
- * expectation about the active strategy instance being set.
+ * expectation that the active strategy instance has been set.
  */
 class EagerTransactionTraitTest extends TestCase
 {
@@ -40,6 +39,11 @@ class EagerTransactionTraitTest extends TestCase
         // strategy.
         $this->strategy = new FactoryTransactionStrategy();
         $this->strategy->setupTest([]);
+
+        // Align $eagerConnection to whatever connection name the
+        // factory's table actually uses in this test environment, so
+        // the trait wraps the same connection the test inspects.
+        $this->eagerConnection = CityFactory::new()->getTable()->getConnection()->configName();
     }
 
     protected function tearDown(): void
@@ -131,25 +135,10 @@ class EagerTransactionTraitTest extends TestCase
 
         $this->assertNull(FactoryTransactionStrategy::getActiveInstance());
 
-        // Should not throw.
+        // Should not throw — the trait method short-circuits when
+        // getActiveInstance() returns null. We re-assert null after to
+        // confirm the call path didn't accidentally install one.
         $this->ensureEagerTransactionForTest();
-
-        $this->expectNotToPerformAssertions();
-    }
-
-    /**
-     * Re-installs the strategy so tearDown() finds an active instance
-     * to teardown after the no-op test above. PHPUnit shares the
-     * test-method order non-determinism risk; this is defensive.
-     *
-     * @return void
-     */
-    protected function assertPostConditions(): void
-    {
-        if ($this->strategy === null) {
-            $this->strategy = new FactoryTransactionStrategy();
-            $this->strategy->setupTest([]);
-        }
-        parent::assertPostConditions();
+        $this->assertNull(FactoryTransactionStrategy::getActiveInstance());
     }
 }

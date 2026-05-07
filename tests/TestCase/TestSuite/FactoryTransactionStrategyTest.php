@@ -162,8 +162,17 @@ class FactoryTransactionStrategyTest extends TestCase
      */
     public function testEagerStrategyWrapsPrimaryConnection(): void
     {
-        $strategy = new EagerFactoryTransactionStrategy();
+        // Use the connection name CityFactory's table reports so the test
+        // exercises the eager wrap on the same connection instance the
+        // existing lazy test already relies on. Hardcoding 'test' would
+        // be brittle if a downstream test app uses a different alias.
         $connection = CityFactory::new()->getTable()->getConnection();
+        $strategy = new class ($connection->configName()) extends EagerFactoryTransactionStrategy {
+            public function __construct(string $name)
+            {
+                $this->primaryConnection = $name;
+            }
+        };
 
         $strategy->setupTest([]);
 
