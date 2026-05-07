@@ -52,6 +52,29 @@ This applies the strategy to **all test cases** automatically. No traits needed.
 
 > **Tip**: See `config/app.example.php` in this plugin for a full list of available configuration options, including generator type, seed, and instance-level generator management.
 
+### Eager vs lazy transaction priming
+
+The default `FactoryTransactionStrategy` is **eager** — `setupTest()` opens a transaction on the primary test connection (`test` by default) so that direct table operations during a test (`$table->save($entity)`, `$table->delete($entity)`, raw inserts via `$connection->execute()`) are also rolled back at teardown. Beyond the primary connection, additional connections are still tracked lazily: a transaction is only started on a connection the first time a Factory persists on it (via `BaseFactory::save()` / `saveMany()`).
+
+If your tests persist *exclusively* through Factories — no direct `$table->save()`, no raw inserts inside test methods — and you have multiple test connections where you want to skip transactions on the ones a given test never touches, opt into the `LazyFactoryTransactionStrategy`:
+
+```php
+'TestSuite' => [
+    'fixtureStrategy' => \CakephpFixtureFactories\TestSuite\LazyFactoryTransactionStrategy::class,
+],
+```
+
+Both strategies share the same `ensureTransaction()` and teardown logic; they only differ in whether `setupTest()` eagerly begins a transaction on the primary connection.
+
+If your project's primary test connection is named something other than `test`, subclass and override `$primaryConnection`:
+
+```php
+final class MyEagerStrategy extends \CakephpFixtureFactories\TestSuite\FactoryTransactionStrategy
+{
+    protected string $primaryConnection = 'test_main';
+}
+```
+
 ### CakePHP 5.0–5.1 (trait-based)
 
 For older CakePHP versions, use `FactoryTransactionTrait`. Two patterns:
