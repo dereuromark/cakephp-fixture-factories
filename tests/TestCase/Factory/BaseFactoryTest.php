@@ -38,6 +38,7 @@ use TestApp\Model\Entity\Article;
 use TestApp\Model\Entity\Author;
 use TestApp\Model\Entity\City;
 use TestApp\Model\Entity\Country;
+use TestApp\Model\Enum\TestStatus;
 use TestApp\Model\Table\ArticlesTable;
 use TestApp\Model\Table\CountriesTable;
 use TestPlugin\Model\Entity\Bill;
@@ -365,14 +366,14 @@ class BaseFactoryTest extends TestCase
         // sticks on the entity as-is, so we assert against the case itself.
         $articles = ArticleFactory::new()
             ->count(4)
-            ->sequenceField('status', ...\TestApp\Model\Enum\TestStatus::cases())
+            ->sequenceField('status', ...TestStatus::cases())
             ->buildMany();
 
-        $this->assertSame(\TestApp\Model\Enum\TestStatus::Active, $articles[0]->status);
-        $this->assertSame(\TestApp\Model\Enum\TestStatus::Inactive, $articles[1]->status);
-        $this->assertSame(\TestApp\Model\Enum\TestStatus::Pending, $articles[2]->status);
+        $this->assertSame(TestStatus::Active, $articles[0]->status);
+        $this->assertSame(TestStatus::Inactive, $articles[1]->status);
+        $this->assertSame(TestStatus::Pending, $articles[2]->status);
         // count(4) > 3 cases → cycles
-        $this->assertSame(\TestApp\Model\Enum\TestStatus::Active, $articles[3]->status);
+        $this->assertSame(TestStatus::Active, $articles[3]->status);
     }
 
     public function testSequenceFieldRejectsZeroValues(): void

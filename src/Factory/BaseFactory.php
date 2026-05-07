@@ -928,8 +928,8 @@ abstract class BaseFactory
      * ```
      * ArticleFactory::new()
      *     ->count(6)
-     *     ->sequenceField('status', 'draft', 'published')   // 2-cycle
-     *     ->sequenceField('priority', 1, 5, 10)             // 3-cycle
+     *     ->sequenceField('status', 'draft', 'published') // 2-cycle
+     *     ->sequenceField('priority', 1, 5, 10) // 3-cycle
      *     ->buildMany();
      * ```
      *
