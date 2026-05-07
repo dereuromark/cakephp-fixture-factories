@@ -117,7 +117,7 @@ class PersistCommand extends Command
      *
      * @return \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>
      */
-    public function parseFactory(Arguments $args): BaseFactory
+    protected function parseFactory(Arguments $args): BaseFactory
     {
         $factoryString = (string)$args->getArgument(self::ARG_NAME);
 
@@ -141,7 +141,7 @@ class PersistCommand extends Command
      *
      * @return \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>
      */
-    public function countFactory(Arguments $args, BaseFactory $factory): BaseFactory
+    protected function countFactory(Arguments $args, BaseFactory $factory): BaseFactory
     {
         $option = $args->getOption('number');
         if ($option === null) {
@@ -176,7 +176,7 @@ class PersistCommand extends Command
      *
      * @return \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>
      */
-    public function attachMethod(Arguments $args, BaseFactory $factory, ConsoleIo $io): BaseFactory
+    protected function attachMethod(Arguments $args, BaseFactory $factory, ConsoleIo $io): BaseFactory
     {
         /** @var string|null $method */
         $method = $args->getOption('method');
@@ -227,7 +227,7 @@ class PersistCommand extends Command
      *
      * @return \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>
      */
-    public function with(Arguments $args, BaseFactory $factory): BaseFactory
+    protected function with(Arguments $args, BaseFactory $factory): BaseFactory
     {
         $with = $args->getOption('with');
 
@@ -251,7 +251,7 @@ class PersistCommand extends Command
      *
      * @return callable Restore callback
      */
-    public function aliasConnection(string $connection, BaseFactory $factory): callable
+    protected function aliasConnection(string $connection, BaseFactory $factory): callable
     {
         $targetAlias = $factory->getTable()->getConnection()->configName();
         $existingAliases = ConnectionManager::aliases();
@@ -274,7 +274,7 @@ class PersistCommand extends Command
      *
      * @return void
      */
-    public function persist(BaseFactory $factory, Arguments $args, ConsoleIo $io): void
+    protected function persist(BaseFactory $factory, Arguments $args, ConsoleIo $io): void
     {
         $connection = $args->getOption('connection') ?? 'test';
         if (!is_string($connection)) {
@@ -304,7 +304,7 @@ class PersistCommand extends Command
      *
      * @return void
      */
-    public function dryRun(BaseFactory $factory, Arguments $args, ConsoleIo $io): void
+    protected function dryRun(BaseFactory $factory, Arguments $args, ConsoleIo $io): void
     {
         $connection = $args->getOption('connection') ?? 'test';
         if (!is_string($connection)) {
