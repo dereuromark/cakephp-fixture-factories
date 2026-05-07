@@ -34,6 +34,7 @@ use CakephpFixtureFactories\Test\Factory\CustomerFactory;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
 use PHPUnit\Framework\Attributes\DataProvider;
 use ReflectionMethod;
+use RuntimeException;
 use TestApp\Model\Entity\Address;
 use TestApp\Model\Entity\Article;
 use TestApp\Model\Entity\City;
@@ -418,6 +419,28 @@ class EventCollectorTest extends TestCase
         ArticleFactory::new()->setEventManager($customEventManager)->getTable();
 
         $this->assertTrue($triggered);
+    }
+
+    public function testSetEventManagerDoesNotRetryRuntimeInitializeFailures(): void
+    {
+        FactoryTableRegistry::getTableLocator()->clear();
+
+        $customEventManager = new EventManager();
+        $calls = 0;
+        $customEventManager->on('Model.initialize', static function () use (&$calls): void {
+            $calls++;
+
+            throw new RuntimeException('boom');
+        });
+
+        try {
+            ArticleFactory::new()->setEventManager($customEventManager)->getTable();
+            $this->fail('Expected RuntimeException to be thrown.');
+        } catch (RuntimeException $exception) {
+            $this->assertSame('boom', $exception->getMessage());
+        }
+
+        $this->assertSame(1, $calls);
     }
 
     public function testDifferentFactoriesDoNotShareScopedTableWhenEventManagersDiffer(): void

@@ -112,6 +112,9 @@ class EventCollector
         try {
             $table = FactoryTableRegistry::getTableLocator()->get($registryAlias, $options);
         } catch (RuntimeException $exception) {
+            if (!FactoryTableRegistry::getTableLocator()->exists($registryAlias)) {
+                throw $exception;
+            }
             FactoryTableRegistry::getTableLocator()->remove($registryAlias);
             $table = FactoryTableRegistry::getTableLocator()->get($registryAlias, $options);
         }

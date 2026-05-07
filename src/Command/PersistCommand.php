@@ -104,7 +104,7 @@ class PersistCommand extends Command
             $this->abort();
         }
         if ($args->getOption('dry-run')) {
-            $this->dryRun($factory, $io);
+            $this->dryRun($factory, $args, $io);
         } else {
             $this->persist($factory, $args, $io);
         }
@@ -299,13 +299,24 @@ class PersistCommand extends Command
 
     /**
      * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Factory
+     * @param \Cake\Console\Arguments $args Arguments
      * @param \Cake\Console\ConsoleIo $io Console
      *
      * @return void
      */
-    public function dryRun(BaseFactory $factory, ConsoleIo $io): void
+    public function dryRun(BaseFactory $factory, Arguments $args, ConsoleIo $io): void
     {
-        $entities = $factory->buildMany();
+        $connection = $args->getOption('connection') ?? 'test';
+        if (!is_string($connection)) {
+            $connection = 'test';
+        }
+        $restoreConnectionAlias = $this->aliasConnection($connection, $factory);
+
+        try {
+            $entities = $factory->buildMany();
+        } finally {
+            $restoreConnectionAlias();
+        }
         $times = count($entities);
         $factory = get_class($factory);
 

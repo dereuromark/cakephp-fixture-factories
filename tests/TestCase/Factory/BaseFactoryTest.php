@@ -27,6 +27,7 @@ use CakephpFixtureFactories\Test\Factory\ArticleFactory;
 use CakephpFixtureFactories\Test\Factory\AuthorFactory;
 use CakephpFixtureFactories\Test\Factory\BillFactory;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
+use CakephpFixtureFactories\Test\Factory\ConfiguredConnectionArticleFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpFixtureFactories\Test\Factory\CustomerFactory;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
@@ -1354,6 +1355,12 @@ class BaseFactoryTest extends TestCase
         $this->expectExceptionMessage('Ambiguous has* association');
 
         CountryFactory::new()->has(CityFactory::new());
+    }
+
+    public function testStaticTableAndQueryHonorConfigureDefaults(): void
+    {
+        $this->assertSame('test_dummy', ConfiguredConnectionArticleFactory::table()->getConnection()->configName());
+        $this->assertSame('test_dummy', ConfiguredConnectionArticleFactory::query()->getConnection()->configName());
     }
 
     public function testToOneAssociationRejectsFactoriesThatProduceMultipleEntities(): void

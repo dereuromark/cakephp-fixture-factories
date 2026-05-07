@@ -117,6 +117,15 @@ abstract class BaseFactory
     private bool $keepDirty = false;
 
     /**
+     * Internal bootstrap mode for static read helpers.
+     * During this phase configure()/initialize() may set connection or listener
+     * defaults, but association-building fluent calls should be ignored.
+     *
+     * @var bool
+     */
+    private bool $readBootstrapMode = false;
+
+    /**
      * @var array<int, callable(\Cake\Datasource\EntityInterface, int, static): (\Cake\Datasource\EntityInterface|void)>
      */
     private array $afterBuildCallbacks = [];
@@ -1293,6 +1302,10 @@ abstract class BaseFactory
      */
     public function with(string $associationName, array|int|callable|BaseFactory|EntityInterface|string $data = []): static
     {
+        if ($this->readBootstrapMode) {
+            return clone $this;
+        }
+
         $factory = clone $this;
         $factory->getAssociationBuilder()->getAssociation($associationName);
 
@@ -1389,7 +1402,7 @@ abstract class BaseFactory
      */
     public static function query(): SelectQuery
     {
-        return (new static())->getTable()->find();
+        return self::configuredFactory()->getTable()->find();
     }
 
     /**
@@ -1401,7 +1414,24 @@ abstract class BaseFactory
      */
     public static function table(): Table
     {
-        return (new static())->getTable();
+        return self::configuredFactory()->getTable();
+    }
+
+    /**
+     * Boot a factory through the normal initialize/configure path for static
+     * read helpers like query() and table().
+     *
+     * @return static
+     */
+    private static function configuredFactory(): static
+    {
+        $factory = new static();
+        $factory->readBootstrapMode = true;
+        $factory->initialize();
+        $factory = $factory->configure();
+        $factory->readBootstrapMode = false;
+
+        return $factory;
     }
 
     /**
@@ -1411,6 +1441,10 @@ abstract class BaseFactory
      */
     public function for(BaseFactory $factory): static
     {
+        if ($this->readBootstrapMode) {
+            return clone $this;
+        }
+
         $association = $this->resolveDirectionalAssociation($factory, true);
 
         return $this->with($association, $factory);
@@ -1424,6 +1458,10 @@ abstract class BaseFactory
      */
     public function has(BaseFactory $factory, array $pivot = []): static
     {
+        if ($this->readBootstrapMode) {
+            return clone $this;
+        }
+
         $association = $this->resolveDirectionalAssociation($factory, false);
         if ($pivot !== []) {
             $factory = $factory->mergeAssociated(['_joinData' => $pivot]);

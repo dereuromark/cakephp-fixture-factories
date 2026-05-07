@@ -23,6 +23,7 @@ use Cake\Datasource\ConnectionManager;
 use Cake\ORM\TableRegistry;
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Command\PersistCommand;
+use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\Test\Factory\AddressFactory;
 use CakephpFixtureFactories\Test\Factory\ArticleFactory;
 use CakephpFixtureFactories\Test\Factory\BillFactory;
@@ -254,5 +255,27 @@ class PersistCommandTest extends TestCase
 
         $this->assertSame(PersistCommand::CODE_SUCCESS, $output);
         $this->assertSame($beforeAliases, ConnectionManager::aliases());
+    }
+
+    public function testDryRunAlsoAppliesConnectionAliasPath(): void
+    {
+        $command = new class () extends PersistCommand {
+            public int $aliasCalls = 0;
+
+            public function aliasConnection(string $connection, BaseFactory $factory): callable
+            {
+                $this->aliasCalls++;
+
+                return parent::aliasConnection($connection, $factory);
+            }
+        };
+
+        $output = $command->execute(
+            new Arguments([ArticleFactory::class], ['connection' => 'dummy', 'dry-run' => true], [PersistCommand::ARG_NAME]),
+            $this->io,
+        );
+
+        $this->assertSame(PersistCommand::CODE_SUCCESS, $output);
+        $this->assertSame(1, $command->aliasCalls);
     }
 }
