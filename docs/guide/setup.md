@@ -8,50 +8,37 @@ Define your DB connections in your test `bootstrap.php` as described in the [Cak
 
 ## CakePHP apps
 
-To be able to bake your factories, load the CakephpFixtureFactories plugin.
-This plugin is dev-only (factories live under `tests/Factory/`), so you have
-three load patterns to choose from depending on how strict you want to be
-about keeping it out of production:
-
-### 1. Quickest — `bin/cake plugin load` (loads everywhere)
+To bake and use factories, load the CakephpFixtureFactories plugin. Factories
+live under `tests/Factory/` and are never called from production code paths,
+so you want the plugin loaded only when `debug` is true:
 
 ```bash
-bin/cake plugin load CakephpFixtureFactories
+bin/cake plugin load --only-debug CakephpFixtureFactories
 ```
 
-This edits `config/plugins.php` for you. Fine if your production build strips
-dev dependencies — the plugin can't be loaded if its files aren't deployed.
+This writes `config/plugins.php` with `onlyDebug => true`. CakePHP then loads
+the plugin only when `Configure::read('debug')` is true — the plugin stays out
+of production HTTP requests even if dev dependencies are accidentally shipped.
 
-### 2. Manual `config/plugins.php` (loads everywhere, declarative)
+The resulting entry, if you prefer hand-edited config:
 
 ```php
 // config/plugins.php
 return [
-    'CakephpFixtureFactories' => [],
+    'CakephpFixtureFactories' => [
+        'onlyDebug' => true,
+    ],
 ];
 ```
 
-Same effective behavior as the CLI command, but the change is explicit in your
-diff. Use this if you prefer hand-edited config or you want to add lifecycle
-flags (e.g. `routes => false`).
-
-### 3. Dev-only via `bootstrapCli()` (recommended if production might see dev deps)
-
-```php
-// src/Application.php
-protected function bootstrapCli(): void
-{
-    // Load more plugins here
-    if (Configure::read('debug')) {
-        $this->addPlugin('CakephpFixtureFactories');
-    }
-}
-```
-
-The `Configure::read('debug')` gate combined with `bootstrapCli()` ensures the
-plugin only loads on CLI, in debug mode — so it stays out of production HTTP
-requests even if dev dependencies are accidentally shipped. Pick this if you
-have any concern about prod behavior.
+::: tip Composer-keyword recommendations
+This plugin declares `dev` and `cli` in its composer keywords, so running
+`bin/cake plugin load CakephpFixtureFactories` without flags will
+interactively suggest `onlyDebug: true`, `onlyCli: true`, and `optional: true`.
+Accepting all three additionally skips loading on web requests (`onlyCli`) and
+silences the missing-plugin error in production builds that strip dev deps
+(`optional`).
+:::
 
 **We recommend using migrations for managing the schema of your test DB with the [CakePHP Migrations plugin](https://book.cakephp.org/migrations/5/index.html#using-migrations-for-tests).**
 

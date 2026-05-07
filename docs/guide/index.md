@@ -41,40 +41,35 @@ composer require --dev johnykvsky/dummygenerator
 ## Load the plugin
 
 This plugin is dev-only — factories live under `tests/Factory/` and are never
-called from production code paths. Pick the loading pattern that matches how
-strict you want to be about that:
+called from production code paths. One command sets that up:
 
-::: code-group
-
-```bash [Quickest — loads everywhere]
-bin/cake plugin load CakephpFixtureFactories
+```bash
+bin/cake plugin load --only-debug CakephpFixtureFactories
 ```
 
-```php [Manual plugins.php — loads everywhere]
-// config/plugins.php
+This writes `config/plugins.php` with `onlyDebug => true`, so CakePHP only
+loads the plugin when `Configure::read('debug')` is true. The plugin stays out
+of production HTTP requests even if dev dependencies are accidentally shipped.
+
+::: tip Prefer hand-edited config?
+The equivalent `config/plugins.php` entry:
+
+```php
 return [
-    'CakephpFixtureFactories' => [],
+    'CakephpFixtureFactories' => [
+        'onlyDebug' => true,
+    ],
 ];
 ```
-
-```php [Dev-only via bootstrapCli() — recommended for prod-bound apps]
-// src/Application.php
-protected function bootstrapCli(): void
-{
-    if (Configure::read('debug')) {
-        $this->addPlugin('CakephpFixtureFactories');
-    }
-}
-```
-
 :::
 
-The `bin/cake plugin load` command edits `config/plugins.php` for you and is
-the easiest path. Both that and the manual `plugins.php` form load the plugin
-in all environments — fine if your production deploy strips dev dependencies,
-but if there's any chance dev deps end up on a production box, prefer the
-`bootstrapCli()` form: it gates loading on CLI plus `debug` mode, so the
-plugin is never bootstrapped in production HTTP requests.
+::: details Without flags, the CLI prompts based on composer keywords
+This plugin's `composer.json` declares `dev` and `cli` keywords, so running
+`bin/cake plugin load CakephpFixtureFactories` (no flags) interactively
+suggests `onlyDebug: true`, `onlyCli: true`, and `optional: true` — accepting
+all three gives you the same gating plus `onlyCli` (skip loading on web
+requests) and `optional` (no error if the package is absent in production).
+:::
 
 ## Configure the fixture strategy (recommended)
 
