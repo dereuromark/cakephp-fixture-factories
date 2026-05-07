@@ -15,6 +15,7 @@ use CakephpFixtureFactories\Test\Factory\ArticleFactory;
 use CakephpFixtureFactories\Test\Factory\AuthorFactory;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
+use CakephpFixtureFactories\TestSuite\EagerFactoryTransactionStrategy;
 use CakephpFixtureFactories\TestSuite\FactoryTableTracker;
 use CakephpFixtureFactories\TestSuite\FactoryTransactionStrategy;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
@@ -151,6 +152,81 @@ class FactoryTransactionStrategyTest extends TestCase
 
         $this->assertFalse($tracker->hasTables());
         $this->assertNull(FactoryTransactionStrategy::getActiveInstance());
+    }
+
+    /**
+     * EagerFactoryTransactionStrategy primes the primary test connection
+     * inside setupTest() so direct $table->save() calls inside a test
+     * are also covered by the rollback. Beyond that, behavior matches
+     * the parent (lazy on additional connections).
+     *
+     * @return void
+     */
+    public function testEagerStrategyWrapsPrimaryConnection(): void
+    {
+        // Override the eager-connection resolution to use the exact
+        // Connection CityFactory's table reports. The package's test
+        // bootstrap aliases connection names in a way that makes
+        // ConnectionManager::get('test') resolve to a sibling
+        // connection ('dummy'), so going through the name-based
+        // default would inspect a different Connection instance than
+        // the one the assertion looks at.
+        $connection = CityFactory::new()->getTable()->getConnection();
+        $strategy = new class ($connection) extends EagerFactoryTransactionStrategy {
+            public function __construct(private Connection $eagerConnection)
+            {
+            }
+
+            public function setupTest(array $fixtureNames): void
+            {
+                // Skip the parent's name-based eager begin, and prime
+                // the connection we were handed instead.
+                $this->primaryConnection = '';
+                parent::setupTest($fixtureNames);
+                $this->ensureTransaction($this->eagerConnection);
+            }
+        };
+
+        $strategy->setupTest([]);
+
+        $this->assertTrue(
+            $connection->inTransaction(),
+            'Connection should be in transaction after eager setup',
+        );
+        $this->assertSame($strategy, FactoryTransactionStrategy::getActiveInstance());
+
+        $strategy->teardownTest();
+
+        $this->assertFalse(
+            $connection->inTransaction(),
+            'Connection should be released after teardown',
+        );
+        $this->assertNull(FactoryTransactionStrategy::getActiveInstance());
+    }
+
+    /**
+     * Setting $primaryConnection to '' on an EagerFactoryTransactionStrategy
+     * subclass disables the eager begin and reverts to the parent's lazy
+     * behavior on the primary connection. Useful when callers want eager
+     * defaults but no priming for a particular project shape.
+     *
+     * @return void
+     */
+    public function testEagerStrategyWithoutPrimaryConnectionStaysLazy(): void
+    {
+        $strategy = new class () extends EagerFactoryTransactionStrategy {
+            protected string $primaryConnection = '';
+        };
+        $connection = CityFactory::new()->getTable()->getConnection();
+
+        $strategy->setupTest([]);
+
+        $this->assertFalse(
+            $connection->inTransaction(),
+            'Connection should NOT be in transaction when $primaryConnection is empty',
+        );
+
+        $strategy->teardownTest();
     }
 
     /**
