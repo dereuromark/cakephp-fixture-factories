@@ -16,29 +16,32 @@ declare(strict_types=1);
 namespace CakephpFixtureFactories\ORM;
 
 use Cake\ORM\Locator\LocatorInterface;
-use Cake\ORM\TableRegistry;
 
 /**
- * Alternative TableRegistry to be used by fixture factories
- * The table registered here will be stripped down versions of their TableRegistry counterpart
- * The things that will be removed :
+ * Singleton holder for the {@see FactoryTableLocator} used by fixture factories.
+ *
+ * Tables fetched through this locator are stripped-down versions of their
+ * application Table counterparts:
  * - Behaviors
  * - Events
  * - Validation
  *
- * The goal is twofold :
- * - Having factories without side effects. they are only meant to create fixture data in the database and are not
- *   supposed to behave like the Application's Table classes
- * - Speeding up the fixture data injection to the database
+ * The goal is twofold:
+ * - Factory tables stay side-effect-free — they only insert fixture data and
+ *   should not behave like application tables.
+ * - The fixture insert path is faster.
  *
- * Class FactoryTableRegistry
+ * Implemented as a standalone holder rather than a subclass of
+ * {@see \Cake\ORM\TableRegistry}: the only contract is the static
+ * `getTableLocator()` accessor, and inheriting Cake's other static methods
+ * would silently delegate to Cake's global locator and confuse callers.
  */
-class FactoryTableRegistry extends TableRegistry
+class FactoryTableRegistry
 {
     /**
      * Default LocatorInterface implementation class.
      *
-     * @var string
+     * @var class-string<\Cake\ORM\Locator\LocatorInterface>
      */
     protected static string $_defaultLocatorClass = FactoryTableLocator::class;
 
@@ -48,9 +51,7 @@ class FactoryTableRegistry extends TableRegistry
     protected static ?LocatorInterface $_locator = null;
 
     /**
-     * Returns a singleton instance of LocatorInterface implementation.
-     * This has been removed in CakePHP 4.1.0, and has been re-added here
-     * (https://github.com/cakephp/cakephp/compare/4.0.8...4.1.0-RC1#diff-28239f653d4163b32ba7450ec45f0c3f)
+     * Returns the singleton locator used by fixture factories.
      *
      * @return \Cake\ORM\Locator\LocatorInterface
      */
@@ -65,5 +66,20 @@ class FactoryTableRegistry extends TableRegistry
         self::$_locator = $locator;
 
         return $locator;
+    }
+
+    /**
+     * Override the singleton locator. Mirrors the static API previously
+     * inherited from {@see \Cake\ORM\TableRegistry} — bootstraps and tests
+     * that swap the fixture-factory locator continue to work after the
+     * inheritance was dropped.
+     *
+     * @param \Cake\ORM\Locator\LocatorInterface $tableLocator Locator to install.
+     *
+     * @return void
+     */
+    public static function setTableLocator(LocatorInterface $tableLocator): void
+    {
+        self::$_locator = $tableLocator;
     }
 }

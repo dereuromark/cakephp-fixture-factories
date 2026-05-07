@@ -21,11 +21,11 @@ use Cake\Console\Arguments;
 use Cake\Console\ConsoleIo;
 use Cake\Console\ConsoleOptionParser;
 use Cake\Core\Configure;
-use Cake\ORM\AssociationCollection;
 use Cake\ORM\Table;
 use Cake\ORM\TableRegistry;
 use Cake\Utility\Hash;
 use Cake\Utility\Inflector;
+use CakephpFixtureFactories\Codegen\DefaultDataGuesser;
 use CakephpFixtureFactories\Factory\FactoryAwareTrait;
 use Exception;
 use ReflectionClass;
@@ -50,71 +50,13 @@ class BakeFixtureFactoryCommand extends BakeCommand
     private Table $table;
 
     /**
-     * @var array<string, array<string, string>>
+     * Guesser for the body of the baked `definition()` method. Override in
+     * a subclass to swap in a project-specific guesser (e.g. one that knows
+     * about your domain conventions).
+     *
+     * @var \CakephpFixtureFactories\Codegen\DefaultDataGuesser|null
      */
-    protected array $map = [
-        'string' => [
-            'name' => 'name',
-            'first_name' => 'firstName',
-            'last_name' => 'lastName',
-            'username' => 'userName',
-            'slug' => 'slug',
-            'email' => 'email',
-            'description' => 'words',
-            'postal_code' => 'postcode',
-            'city' => 'city',
-            'address' => 'address',
-            'street_name' => 'streetName',
-            'street_address' => 'streetAddress',
-            'url' => 'url',
-            'website' => 'url',
-            'link' => 'url',
-            'ip_address' => 'ipv4',
-            'currency' => 'currencyCode',
-            'phone_number' => 'phoneNumber',
-            'timezone' => 'timezone',
-            'title' => 'sentence',
-            'bio' => 'realText',
-            'biography' => 'realText',
-            'country_code' => 'countryCode',
-            'language' => 'languageCode',
-            'language_code' => 'languageCode',
-            'locale' => 'locale',
-            'status' => "randomElement(['active', 'inactive', 'pending'])",
-            'gender' => "randomElement(['M', 'F', 'Other'])",
-            'company' => 'company',
-            'company_name' => 'company',
-            'job_title' => 'jobTitle',
-            'mime_type' => 'mimeType',
-            'file_extension' => 'fileExtension',
-            'color' => 'colorName',
-            'hex_color' => 'hexColor',
-        ],
-        'float' => [
-            'latitude' => 'latitude',
-            'longitude' => 'longitude',
-            'price' => 'randomFloat(2, 0, 1000)',
-            'cost' => 'randomFloat(2, 0, 1000)',
-            'amount' => 'randomFloat(2, 10, 5000)',
-            'total' => 'randomFloat(2, 10, 5000)',
-            'percentage' => 'randomFloat(2, 0, 100)',
-            'rate' => 'randomFloat(4, 0, 1)',
-            'discount' => 'randomFloat(2, 0, 50)',
-            'tax' => 'randomFloat(2, 0, 30)',
-        ],
-        'integer' => [
-            'age' => 'numberBetween(18, 80)',
-            'year' => 'year',
-            'quantity' => 'numberBetween(1, 100)',
-            'count' => 'numberBetween(0, 1000)',
-            'views' => 'numberBetween(0, 10000)',
-            'likes' => 'numberBetween(0, 5000)',
-            'rating' => 'numberBetween(1, 5)',
-            'score' => 'numberBetween(0, 100)',
-            'position' => 'numberBetween(1, 100)',
-            'order' => 'numberBetween(1, 100)',
-        ],
-    ];
+    protected ?DefaultDataGuesser $defaultDataGuesser = null;
 
     /**
      * @return string Name of the command
@@ -504,254 +446,26 @@ class BakeFixtureFactoryCommand extends BakeCommand
     }
 
     /**
-     * @return array<string, mixed>
+     * Build the `column => generator-expression` map fed to the bake template.
+     *
+     * @return array<string, string>
      */
     protected function defaultData(): array
     {
-        $defaultData = [];
-
-        $modelName = $this->getTable()->getAlias();
-        $schema = $this->getTable()->getSchema();
-        $columns = $schema->columns();
-        $foreignKeys = $this->foreignKeys($this->getTable()->associations());
-        $uniqueFields = $this->getUniqueFields();
-
-        foreach ($columns as $column) {
-            $keys = $schema->getPrimaryKey();
-            if (in_array($column, $keys, true) || in_array($column, $foreignKeys, true)) {
-                continue;
-            }
-
-            $columnSchema = $schema->getColumn($column);
-            if (!$columnSchema || $columnSchema['null'] || $columnSchema['default'] !== null) {
-                continue;
-            }
-
-            if (!in_array($columnSchema['type'], ['integer', 'string', 'date', 'datetime', 'time', 'boolean', 'float', 'decimal', 'uuid', 'json', 'text'])) {
-                continue;
-            }
-
-            $guessedDefault = $this->guessDefault($column, $modelName, $columnSchema);
-
-            // Add ->unique()-> wrapper for fields with unique constraints
-            if ($guessedDefault && in_array($column, $uniqueFields, true)) {
-                if (str_starts_with($guessedDefault, '$generator->')) {
-                    $guessedDefault = str_replace('$generator->', '$generator->unique()->', $guessedDefault);
-                }
-            }
-
-            if ($guessedDefault) {
-                $defaultData[$column] = $guessedDefault;
-            }
-        }
-
-        return $defaultData;
+        return $this->getDefaultDataGuesser()->guessFor($this->getTable());
     }
 
     /**
-     * @param string $column
-     * @param string $modelName
-     * @param array<string, mixed> $columnSchema
-     *
-     * @return mixed
+     * Lazily instantiates a {@see DefaultDataGuesser}. Override or set the
+     * `$defaultDataGuesser` property in a subclass to swap in a custom
+     * guesser without touching this command.
      */
-    protected function guessDefault(string $column, string $modelName, array $columnSchema): mixed
+    protected function getDefaultDataGuesser(): DefaultDataGuesser
     {
-        // Merge default mappings with user overrides. Use array_replace_recursive
-        // rather than array_merge_recursive: the map's leaves are scalar generator
-        // expressions, and array_merge_recursive collapses duplicate keys into
-        // arrays of both values, which would silently corrupt the output.
-        $map = array_replace_recursive($this->map, (array)Configure::read('FixtureFactories.defaultDataMap'));
-
-        // Check custom column patterns from configuration first
-        $customPatterns = Configure::read('FixtureFactories.columnPatterns', []);
-        foreach ($customPatterns as $pattern => $generatorMethod) {
-            if (preg_match($pattern, $column)) {
-                return '$generator->' . $generatorMethod;
-            }
+        if ($this->defaultDataGuesser === null) {
+            $this->defaultDataGuesser = new DefaultDataGuesser();
         }
 
-        // Pattern-based detection for special cases
-        if (str_ends_with($column, '_at') && $columnSchema['type'] === 'datetime') {
-            return '$generator->optional(0.7)->dateTime()';
-        }
-
-        if (str_ends_with($column, '_count') && $columnSchema['type'] === 'integer') {
-            return '$generator->numberBetween(0, 100)';
-        }
-
-        $map = $map[$columnSchema['type']] ?? [];
-
-        $modelNameMap = [
-            'Countries' => 'country',
-            'Cities' => 'city',
-        ];
-
-        // Handle string type with improved logic
-        if ($columnSchema['type'] === 'string') {
-            if ($column === 'name' && isset($modelNameMap[$modelName])) {
-                return '$generator->' . $modelNameMap[$modelName] . '()';
-            }
-            if (isset($map[$column])) {
-                return '$generator->' . $map[$column] . '()';
-            }
-
-            // Smart string length handling
-            $length = $columnSchema['length'] ?? 255;
-            if ($length <= 3) {
-                return '$generator->lexify("' . str_repeat('?', $length) . '")';
-            }
-            if ($length <= 10) {
-                return '$generator->word()';
-            }
-            if ($length <= 50) {
-                return 'implode(" ", $generator->words(3))';
-            }
-            if ($length <= 100) {
-                return '$generator->sentence()';
-            }
-
-            return '$generator->text(' . $length . ')';
-        }
-
-        // Handle integer type
-        if ($columnSchema['type'] === 'integer') {
-            if (isset($map[$column])) {
-                return '$generator->' . $map[$column] . '()';
-            }
-
-            return '$generator->randomNumber()';
-        }
-
-        // Handle boolean/bool type
-        if ($columnSchema['type'] === 'boolean' || $columnSchema['type'] === 'bool') {
-            if (isset($map[$column])) {
-                return '$generator->' . $map[$column] . '()';
-            }
-
-            return '$generator->boolean()';
-        }
-
-        // Handle float type with enhanced detection
-        if ($columnSchema['type'] === 'float') {
-            if (isset($map[$column])) {
-                return '$generator->' . $map[$column];
-            }
-
-            // Default float generation
-            return '$generator->randomFloat(2, 0, 100)';
-        }
-
-        // Handle decimal type (new)
-        if ($columnSchema['type'] === 'decimal') {
-            $precision = $columnSchema['precision'] ?? 10;
-            $scale = $columnSchema['scale'] ?? 2;
-            $max = (string)(pow(10, (int)$precision - (int)$scale) - 1);
-
-            if (str_contains($column, 'price') || str_contains($column, 'cost') || str_contains($column, 'amount')) {
-                return '$generator->randomFloat(' . $scale . ', 0, 1000)';
-            }
-
-            return '$generator->randomFloat(' . $scale . ', 0, ' . $max . ')';
-        }
-
-        // Handle uuid type (new)
-        if ($columnSchema['type'] === 'uuid') {
-            return '$generator->uuid()';
-        }
-
-        // Handle json type (new). CakePHP's JsonType marshaller serialises
-        // arrays itself, so emit a literal array — using json_encode() forces
-        // a re-decode round-trip on save and obscures the structure.
-        if ($columnSchema['type'] === 'json') {
-            return '["key" => $generator->word(), "value" => $generator->randomNumber()]';
-        }
-
-        // Handle text type (new) - different from string
-        if ($columnSchema['type'] === 'text') {
-            if (str_contains($column, 'bio') || str_contains($column, 'description') || str_contains($column, 'content')) {
-                return '$generator->realText(500)';
-            }
-
-            return '$generator->text(1000)';
-        }
-
-        // Handle date type
-        if ($columnSchema['type'] === 'date') {
-            if (isset($map[$column])) {
-                return '$generator->' . $map[$column] . '()';
-            }
-
-            return '$generator->date()';
-        }
-
-        // Handle datetime type
-        if ($columnSchema['type'] === 'datetime') {
-            if (isset($map[$column])) {
-                return '$generator->' . $map[$column] . '()';
-            }
-
-            return '$generator->datetime()';
-        }
-
-        // Handle time type
-        if ($columnSchema['type'] === 'time') {
-            if (isset($map[$column])) {
-                return '$generator->' . $map[$column] . '()';
-            }
-
-            return '$generator->time()';
-        }
-
-        return null;
-    }
-
-    /**
-     * @param \Cake\ORM\AssociationCollection $associations
-     *
-     * @return array<string>
-     */
-    protected function foreignKeys(AssociationCollection $associations): array
-    {
-        $keys = [];
-
-        foreach ($associations as $association) {
-            $key = $association->getForeignKey();
-            if ($key === false) {
-                continue;
-            }
-            $keys = array_merge($keys, (array)$key);
-        }
-
-        return $keys;
-    }
-
-    /**
-     * Get fields that have unique constraints or unique indexes
-     *
-     * @return array<string>
-     */
-    protected function getUniqueFields(): array
-    {
-        $schema = $this->getTable()->getSchema();
-        $uniqueFields = [];
-
-        // Check unique constraints
-        foreach ($schema->constraints() as $constraintName) {
-            $constraint = $schema->getConstraint($constraintName);
-            if ($constraint && $constraint['type'] === 'unique') {
-                $uniqueFields = array_merge($uniqueFields, $constraint['columns']);
-            }
-        }
-
-        // Check unique indexes
-        foreach ($schema->indexes() as $indexName) {
-            $index = $schema->getIndex($indexName);
-            if ($index && isset($index['type']) && $index['type'] === 'unique') {
-                $uniqueFields = array_merge($uniqueFields, $index['columns']);
-            }
-        }
-
-        return array_unique($uniqueFields);
+        return $this->defaultDataGuesser;
     }
 }

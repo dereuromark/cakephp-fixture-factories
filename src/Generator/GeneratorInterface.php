@@ -16,10 +16,17 @@ declare(strict_types=1);
 namespace CakephpFixtureFactories\Generator;
 
 /**
- * Interface for fake data generators
+ * Interface for fake data generators.
  *
  * This interface provides an abstraction layer for different faker libraries
- * allowing seamless switching between implementations like Faker and DummyGenerator
+ * allowing seamless switching between implementations like Faker and DummyGenerator.
+ *
+ * The `@method` block below is the union of methods exposed by both supported
+ * backends — it powers IDE autocomplete in factory `definition()` bodies. Not
+ * every method is available on every backend (e.g. Faker-only locale-specific
+ * formatters such as `iban()` or `creditCardDetails()` will throw on
+ * DummyGenerator). See {@see https://dereuromark.github.io/cakephp-fixture-factories/guide/generators.html}
+ * for the per-adapter compatibility matrix when picking a generator.
  *
  * @method string name() Generate a random name
  * @method string firstName() Generate a random first name

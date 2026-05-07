@@ -19,6 +19,7 @@ use ArrayIterator;
 use Cake\Console\Arguments;
 use Cake\Console\Exception\StopException;
 use Cake\Core\Configure;
+use CakephpFixtureFactories\Codegen\DefaultDataGuesser;
 use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\Test\Util\TestCaseWithFixtureBaking;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
@@ -365,13 +366,20 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
     }
 
     /**
-     * Test that unique fields are detected from database schema
+     * Test that unique fields are detected from database schema.
+     *
+     * The unique-detection logic lives on the extracted DefaultDataGuesser
+     * — this test covers it through the command's public guessFor() surface
+     * so the bake output is verified end-to-end.
      */
     public function testGetUniqueFieldsDetection(): void
     {
         // Create a mock table with schema containing unique constraints
         $schema = $this->getMockBuilder('\Cake\Database\Schema\TableSchema')
-            ->onlyMethods(['constraints', 'getConstraint', 'indexes', 'getIndex'])
+            ->onlyMethods([
+                'constraints', 'getConstraint', 'indexes', 'getIndex',
+                'columns', 'getColumn', 'getPrimaryKey',
+            ])
             ->setConstructorArgs(['test_table'])
             ->getMock();
 
@@ -395,28 +403,45 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
                 ['created_idx', ['type' => 'index', 'columns' => ['created']]],
             ]);
 
-        // Mock table
-        $table = $this->getMockBuilder('\Cake\ORM\Table')
-            ->onlyMethods(['getSchema'])
+        $schema->method('columns')
+            ->willReturn(['id', 'user_id', 'username', 'email', 'created']);
+        $schema->method('getPrimaryKey')
+            ->willReturn(['id']);
+        $schema->method('getColumn')
+            ->willReturnMap([
+                ['user_id', ['type' => 'integer', 'null' => false, 'default' => null]],
+                ['username', ['type' => 'string', 'null' => false, 'default' => null, 'length' => 50]],
+                ['email', ['type' => 'string', 'null' => false, 'default' => null, 'length' => 100]],
+                ['created', ['type' => 'datetime', 'null' => false, 'default' => null]],
+            ]);
+
+        // Mock empty associations so user_id is not treated as a foreign key
+        $associations = $this->getMockBuilder('\Cake\ORM\AssociationCollection')
+            ->onlyMethods(['getIterator'])
             ->getMock();
+        $associations->method('getIterator')
+            ->willReturn(new ArrayIterator([]));
 
-        $table->method('getSchema')
-            ->willReturn($schema);
+        $table = $this->getMockBuilder('\Cake\ORM\Table')
+            ->onlyMethods(['getSchema', 'getAlias', 'associations'])
+            ->getMock();
+        $table->method('getSchema')->willReturn($schema);
+        $table->method('getAlias')->willReturn('Users');
+        $table->method('associations')->willReturn($associations);
 
-        // Use reflection to test protected method
-        $reflection = new ReflectionClass($this->FactoryCommand);
-        $method = $reflection->getMethod('getUniqueFields');
+        $guesser = new DefaultDataGuesser();
+        $defaults = $guesser->guessFor($table);
 
-        $property = $reflection->getProperty('table');
-        $property->setValue($this->FactoryCommand, $table);
-
-        $uniqueFields = $method->invoke($this->FactoryCommand);
-
-        $this->assertIsArray($uniqueFields);
-        $this->assertContains('username', $uniqueFields);
-        $this->assertContains('email', $uniqueFields);
-        $this->assertNotContains('user_id', $uniqueFields);
-        $this->assertNotContains('created', $uniqueFields);
+        $this->assertArrayHasKey('username', $defaults);
+        $this->assertStringContainsString('$generator->unique()->', $defaults['username']);
+        $this->assertArrayHasKey('email', $defaults);
+        $this->assertStringContainsString('$generator->unique()->', $defaults['email']);
+        // user_id is a non-unique integer; it IS emitted, but without unique() wrapping.
+        $this->assertArrayHasKey('user_id', $defaults);
+        $this->assertStringNotContainsString('->unique()->', $defaults['user_id']);
+        // 'created' has a non-unique index; emitted without unique() wrapping.
+        $this->assertArrayHasKey('created', $defaults);
+        $this->assertStringNotContainsString('->unique()->', $defaults['created']);
     }
 
     /**
