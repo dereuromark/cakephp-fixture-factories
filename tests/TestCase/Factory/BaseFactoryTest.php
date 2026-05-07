@@ -384,6 +384,73 @@ class BaseFactoryTest extends TestCase
         ArticleFactory::new()->sequenceField('title');
     }
 
+    /**
+     * Regression: `from($entity)->count(N>1)` used to silently return N
+     * references to the same mutated entity (each iteration of toArray()
+     * pushed the same instance and the merge steps mutated it in place).
+     * Reject the combination with a clear error pointing at the
+     * `new($entity->toArray())->count(N)` workaround.
+     */
+    public function testFromEntityRejectsCountGreaterThanOne(): void
+    {
+        $base = ArticleFactory::new(['title' => 'Original'])->build();
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('cannot produce 3 entities from a single injected entity');
+
+        ArticleFactory::from($base)->count(3);
+    }
+
+    public function testNewWithEntityRejectsCountGreaterThanOne(): void
+    {
+        $base = ArticleFactory::new(['title' => 'Original'])->build();
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('cannot produce 4 entities from a single injected entity');
+
+        ArticleFactory::new($base)->count(4);
+    }
+
+    public function testNewWithEntityAndExplicitTimesRejected(): void
+    {
+        // Two-arg form (entity + explicit times) must trip the same guard
+        // — the bug exists regardless of how the count gets attached.
+        $base = ArticleFactory::new(['title' => 'Original'])->build();
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('cannot produce 2 entities from a single injected entity');
+
+        ArticleFactory::new($base, 2);
+    }
+
+    public function testFromEntityCountOneStillWorks(): void
+    {
+        // The single-row case is the documented use of from()/new(entity)
+        // and must continue to return that exact entity reference.
+        $base = ArticleFactory::new(['title' => 'Wrap me'])->build();
+
+        $wrapped = ArticleFactory::from($base)->build();
+
+        $this->assertSame($base, $wrapped);
+    }
+
+    public function testFromEntityProperWorkaroundUsingToArray(): void
+    {
+        // The documented workaround: extract the entity's data and pass it
+        // through new() so the factory gets a fresh array template per row.
+        // This produces N distinct entities, which is what users actually want.
+        $base = ArticleFactory::new(['title' => 'Seed'])->build();
+
+        $articles = ArticleFactory::new($base->toArray())->count(3)->buildMany();
+
+        $this->assertCount(3, $articles);
+        $ids = array_map(static fn ($e) => spl_object_id($e), $articles);
+        $this->assertCount(3, array_unique($ids), 'each entity must be a distinct instance');
+        foreach ($articles as $article) {
+            $this->assertSame('Seed', $article->title);
+        }
+    }
+
     public function testSequenceFieldDoesNotMutateOriginalFactory(): void
     {
         // Fluent immutability — the original factory must not see the cycle.
