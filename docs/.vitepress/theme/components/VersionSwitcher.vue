@@ -19,15 +19,23 @@ const versioning = computed(() => {
     legacyPath: data?.legacyPath ?? '/cakephp-fixture-factories/1.x/',
   }
 })
+
+function navigate(path: string): void {
+  window.location.assign(path)
+}
 </script>
 
 <template>
   <div :class="props.mobile ? 'version-switcher version-switcher-mobile' : 'version-switcher'">
     <span class="version-current">{{ versioning.currentVersion }}</span>
     <span class="version-separator">/</span>
-    <a class="version-link" :href="versioning.latestPath">{{ versioning.latestLinkText }}</a>
+    <button class="version-link" type="button" @click="navigate(versioning.latestPath)">
+      {{ versioning.latestLinkText }}
+    </button>
     <span class="version-separator">/</span>
-    <a class="version-link" :href="versioning.legacyPath">{{ versioning.legacyLinkText }}</a>
+    <button class="version-link" type="button" @click="navigate(versioning.legacyPath)">
+      {{ versioning.legacyLinkText }}
+    </button>
   </div>
 </template>
 
@@ -53,6 +61,11 @@ const versioning = computed(() => {
 }
 
 .version-link {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
   color: var(--vp-c-text-2);
   text-decoration: none;
 }
