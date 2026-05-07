@@ -4,6 +4,9 @@ const docsBase = process.env.DOCS_BASE ?? '/cakephp-fixture-factories/'
 const currentVersion = process.env.DOCS_VERSION_TEXT ?? 'v2 (latest)'
 const latestLinkText = process.env.DOCS_LATEST_LINK_TEXT ?? 'v2 (latest)'
 const legacyLinkText = process.env.DOCS_LEGACY_LINK_TEXT ?? 'v1.x (legacy)'
+const docsSeries = process.env.DOCS_SERIES ?? 'v2'
+const editBranch = process.env.DOCS_EDIT_BRANCH ?? 'main'
+const isLegacyDocs = docsSeries === 'v1'
 
 export default defineConfig({
   title: 'CakePHP Fixture Factories',
@@ -75,10 +78,14 @@ export default defineConfig({
         },
         {
           text: 'Upgrading',
-          items: [
-            { text: 'v1 → v2', link: '/guide/upgrading' },
-            { text: 'Migration from vierge-noire', link: '/guide/migration' },
-          ],
+          items: isLegacyDocs
+            ? [
+                { text: 'Migration from vierge-noire', link: '/guide/migration' },
+              ]
+            : [
+                { text: 'v1 → v2', link: '/guide/upgrading' },
+                { text: 'Migration from vierge-noire', link: '/guide/migration' },
+              ],
         },
       ],
       '/reference/': [
@@ -103,7 +110,7 @@ export default defineConfig({
     ],
 
     editLink: {
-      pattern: 'https://github.com/dereuromark/cakephp-fixture-factories/edit/main/docs/:path',
+      pattern: `https://github.com/dereuromark/cakephp-fixture-factories/edit/${editBranch}/docs/:path`,
       text: 'Edit this page on GitHub',
     },
 
