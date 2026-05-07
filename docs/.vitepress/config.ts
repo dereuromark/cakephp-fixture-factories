@@ -1,9 +1,12 @@
 import { defineConfig } from 'vitepress'
 
 const docsBase = process.env.DOCS_BASE ?? '/cakephp-fixture-factories/'
+const docsSiteOrigin = process.env.DOCS_SITE_ORIGIN ?? 'https://dereuromark.github.io'
 const currentVersion = process.env.DOCS_VERSION_TEXT ?? 'v2 (latest)'
 const latestLinkText = process.env.DOCS_LATEST_LINK_TEXT ?? 'v2 (latest)'
 const legacyLinkText = process.env.DOCS_LEGACY_LINK_TEXT ?? 'v1.x (legacy)'
+const latestDocsUrl = `${docsSiteOrigin}/cakephp-fixture-factories/`
+const legacyDocsUrl = `${docsSiteOrigin}/cakephp-fixture-factories/1.x/`
 
 export default defineConfig({
   title: 'CakePHP Fixture Factories',
@@ -39,8 +42,8 @@ export default defineConfig({
       {
         text: currentVersion,
         items: [
-          { text: latestLinkText, link: '/cakephp-fixture-factories/' },
-          { text: legacyLinkText, link: '/cakephp-fixture-factories/1.x/' },
+          { text: latestLinkText, link: latestDocsUrl },
+          { text: legacyLinkText, link: legacyDocsUrl },
         ],
       },
     ],
