@@ -59,6 +59,12 @@ Typical before/after replacements look like this:
 + $published = ArticleFactory::query()->find('published')->all();
 ```
 
+### If commit-phase tests block the upgrade
+
+The recommended `FactoryTransactionStrategy` is still the best default for v2, but some older suites rely on real commit behavior during the test itself. If your tests depend on `Model.afterSaveCommit`, commit-triggered listeners/behaviors, or rows being durably written before assertions run, CakePHP's `Eager` fixture strategy can be a practical temporary fallback.
+
+That is mainly a migration-pressure valve: it lets you move to the v2 factory API first and defer the heavier refactor of commit-sensitive tests. The tradeoff is that you give up the transaction-based cleanup and automatic unique-state reset provided by `FactoryTransactionStrategy`.
+
 Custom factory helpers that wrap field overrides also flip from
 `patchData()` to `state()`:
 
