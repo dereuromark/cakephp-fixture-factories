@@ -41,13 +41,13 @@ jobs:
         working-directory: docs
 
       - name: Build docs
-        run: npm run docs:build
+        run: npm run docs:build:versioned
         working-directory: docs
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs/.vitepress/dist
+          path: docs/.vitepress/dist-versioned
 
   deploy:
     needs: build
