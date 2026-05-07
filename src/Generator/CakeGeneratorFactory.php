@@ -17,6 +17,8 @@ namespace CakephpFixtureFactories\Generator;
 
 use Cake\Core\Configure;
 use CakephpFixtureFactories\Error\FixtureFactoryException;
+use DummyGenerator\DummyGenerator;
+use Faker\Generator as FakerGenerator;
 
 /**
  * Factory for creating generator instances
@@ -27,7 +29,8 @@ use CakephpFixtureFactories\Error\FixtureFactoryException;
 class CakeGeneratorFactory
 {
     /**
-     * Default generator implementation
+     * Preferred default generator when both supported libraries are installed
+     * and no explicit type is configured.
      *
      * @var string
      */
@@ -51,7 +54,22 @@ class CakeGeneratorFactory
     private static array $instances = [];
 
     /**
+     * Cached auto-detection result. Reset by clearInstances().
+     *
+     * @var string|null
+     */
+    private static ?string $autoDetected = null;
+
+    /**
      * Create a generator instance
+     *
+     * Resolution order for the generator type:
+     * 1. The explicit `$type` argument, if provided.
+     * 2. `Configure::read('FixtureFactories.generatorType')`, if set.
+     * 3. Auto-detection: prefer Faker (preserves the prior default) and fall
+     *    back to DummyGenerator when only that library is installed. If
+     *    neither library is present, a {@see FixtureFactoryException} is
+     *    thrown with installation guidance.
      *
      * @param string|null $locale The locale to use
      * @param string|null $type The generator type (faker, dummy)
@@ -60,7 +78,9 @@ class CakeGeneratorFactory
      */
     public static function create(?string $locale = null, ?string $type = null): GeneratorInterface
     {
-        $type = $type ?? Configure::read('FixtureFactories.generatorType', self::DEFAULT_GENERATOR);
+        $type = $type
+            ?? Configure::read('FixtureFactories.generatorType')
+            ?? self::detectDefaultType();
         $locale = $locale ?? Configure::read('FixtureFactories.defaultLocale');
 
         $cacheKey = $type . '::' . ($locale ?? 'default');
@@ -70,6 +90,37 @@ class CakeGeneratorFactory
         }
 
         return self::$instances[$cacheKey];
+    }
+
+    /**
+     * Auto-detect which built-in generator library is installed.
+     *
+     * Faker wins the tie when both are present so existing setups behave
+     * exactly as before. Result is memoized; reset via clearInstances().
+     *
+     * @throws \CakephpFixtureFactories\Error\FixtureFactoryException
+     *
+     * @return string
+     */
+    private static function detectDefaultType(): string
+    {
+        if (self::$autoDetected !== null) {
+            return self::$autoDetected;
+        }
+
+        if (class_exists(FakerGenerator::class)) {
+            return self::$autoDetected = 'faker';
+        }
+
+        if (class_exists(DummyGenerator::class)) {
+            return self::$autoDetected = 'dummy';
+        }
+
+        throw new FixtureFactoryException(
+            'No random data generator found. Install either `fakerphp/faker` or '
+            . '`johnykvsky/dummygenerator`, or register a custom adapter via '
+            . 'CakeGeneratorFactory::registerAdapter().',
+        );
     }
 
     /**
@@ -123,5 +174,6 @@ class CakeGeneratorFactory
     public static function clearInstances(): void
     {
         self::$instances = [];
+        self::$autoDetected = null;
     }
 }
