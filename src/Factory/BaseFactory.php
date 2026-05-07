@@ -256,6 +256,9 @@ abstract class BaseFactory
      *
      * @param int $times Number of entities created
      *
+     * @throws \RuntimeException When $times > 1 is combined with a factory
+     *   instantiated from an existing entity.
+     *
      * @return static
      */
     protected function setUp(int $times): static
@@ -285,9 +288,9 @@ abstract class BaseFactory
     private static function entityWithMultipleCountMessage(string $factory, int $times): string
     {
         return sprintf(
-            "%s cannot produce %d entities from a single injected entity — `new(\$entity)` and `from(\$entity)` wrap exactly one existing entity. "
-            . "To produce N entities seeded from an existing one, extract its data and pass it through `new()` instead: "
-            . "%s::new(\$entity->toArray())->count(%d).",
+            '%s cannot produce %d entities from a single injected entity — `new($entity)` and `from($entity)` wrap exactly one existing entity. '
+            . 'To produce N entities seeded from an existing one, extract its data and pass it through `new()` instead: '
+            . '%s::new($entity->toArray())->count(%d).',
             $factory,
             $times,
             $factory,
