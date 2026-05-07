@@ -262,6 +262,11 @@ abstract class BaseFactory
     {
         $this->initialize();
         $factory = $this->configure();
+        if ($times > 1 && $factory->getDataCompiler()->isInstantiatedFromEntity()) {
+            throw new RuntimeException(
+                self::entityWithMultipleCountMessage(static::class, $times),
+            );
+        }
         $factory->times = $times;
         $definitionFactory = $factory;
         $factory = $factory->setDefaultData(
@@ -270,6 +275,24 @@ abstract class BaseFactory
         $factory->getDataCompiler()->collectAssociationsFromDefaultTemplate();
 
         return $factory;
+    }
+
+    /**
+     * Compose the message used by the entity-with-count guards in setUp() and
+     * count(). Both error sites point users at the same workaround so the fix
+     * is discoverable from either entry point.
+     */
+    private static function entityWithMultipleCountMessage(string $factory, int $times): string
+    {
+        return sprintf(
+            "%s cannot produce %d entities from a single injected entity — `new(\$entity)` and `from(\$entity)` wrap exactly one existing entity. "
+            . "To produce N entities seeded from an existing one, extract its data and pass it through `new()` instead: "
+            . "%s::new(\$entity->toArray())->count(%d).",
+            $factory,
+            $times,
+            $factory,
+            $times,
+        );
     }
 
     /**
@@ -1054,6 +1077,10 @@ abstract class BaseFactory
      * @param int $times Number of entities to create. Must be at least 1.
      *
      * @throws \InvalidArgumentException When $times is less than 1.
+     * @throws \RuntimeException When called with $times > 1 on a factory that
+     *   was instantiated from an existing entity (via `new($entity)` or
+     *   `from($entity)`). Use `new($entity->toArray())->count($times)`
+     *   instead — wrapping a single entity cannot produce N distinct ones.
      *
      * @return static
      */
@@ -1064,6 +1091,11 @@ abstract class BaseFactory
                 '::count() expects a positive integer, got `%d`.',
                 $times,
             ));
+        }
+        if ($times > 1 && $this->getDataCompiler()->isInstantiatedFromEntity()) {
+            throw new RuntimeException(
+                self::entityWithMultipleCountMessage(static::class, $times),
+            );
         }
         $factory = clone $this;
         $factory->times = $times;

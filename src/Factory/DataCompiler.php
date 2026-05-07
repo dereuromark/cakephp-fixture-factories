@@ -148,6 +148,19 @@ class DataCompiler
     }
 
     /**
+     * Whether the factory was instantiated from a single existing entity
+     * (via `BaseFactory::new($entity)` or `BaseFactory::from($entity)`).
+     *
+     * Used by the count guards: combining an entity payload with `times > 1`
+     * would return N references to the same mutated entity, which is never
+     * what callers want.
+     */
+    public function isInstantiatedFromEntity(): bool
+    {
+        return $this->dataFromInstantiation instanceof EntityInterface;
+    }
+
+    /**
      * Data passed in the instantiation by callable.
      *
      * The callable is stored as-is and invoked once per build iteration during

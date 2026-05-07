@@ -101,6 +101,42 @@ $factory = ArticleFactory::from($article);
 
 Unlike `state(EntityInterface)` (which extracts via `toArray()`), `from()` preserves the entity's identity, so `_accessible`/`_virtual`/source-alias stay intact.
 
+### `from()` / `new($entity)` wrap exactly one entity
+
+Combining a single injected entity with a count greater than 1 throws `RuntimeException`:
+
+```php
+// ✗ throws
+ArticleFactory::from($article)->count(3)->buildMany();
+ArticleFactory::new($article)->count(3)->buildMany();
+ArticleFactory::new($article, 3)->buildMany();
+```
+
+A single entity cannot legitimately become N distinct entities — the factory would otherwise return N references to the same instance, mutated repeatedly by each iteration.
+
+To produce N entities seeded from an existing one, extract its data and feed that through `new()` instead:
+
+```php
+// ✓ N distinct entities, all carrying $base's field values
+$articles = ArticleFactory::new($base->toArray())->count(3)->buildMany();
+
+// ✓ Vary attributes per row with sequence() / sequenceField() on top
+$articles = ArticleFactory::new($base->toArray())
+    ->count(3)
+    ->sequenceField('slug', 'a', 'b', 'c')
+    ->buildMany();
+```
+
+You can also pass a list of arrays to `new()` directly when each row needs its own data:
+
+```php
+$articles = ArticleFactory::new([
+    ['title' => 'First'],
+    ['title' => 'Second'],
+    ['title' => 'Third'],
+])->buildMany();
+```
+
 ## Factory injection
 
 When building associations, you may simply provide a factory as parameter. Example:

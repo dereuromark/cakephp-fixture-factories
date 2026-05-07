@@ -22,6 +22,7 @@ use CakephpFixtureFactories\Test\Factory\AddressFactory;
 use CakephpFixtureFactories\Test\Factory\ArticleFactory;
 use CakephpFixtureFactories\Test\Factory\AuthorFactory;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use RuntimeException;
 
 class BaseFactoryMakeWithEntityTest extends TestCase
 {
@@ -106,15 +107,21 @@ class BaseFactoryMakeWithEntityTest extends TestCase
         $this->assertSame(2, ArticleFactory::query()->count());
     }
 
-    public function testMakeEntityAndTimes(): void
+    /**
+     * Behavior change in v2: combining a single injected entity with a count
+     * greater than 1 now throws. The previous behavior pushed the same
+     * entity reference N times (each iteration mutated the same instance),
+     * which was never useful in practice. The error message points at the
+     * `new($entity->toArray())->count(N)` workaround.
+     */
+    public function testMakeEntityAndTimesIsRejected(): void
     {
-        $n = 2;
         $author1 = AuthorFactory::new()->save();
-        $authors = AuthorFactory::new($author1, $n)->saveMany();
-        foreach ($authors as $author) {
-            $this->assertSame($author1, $author);
-        }
-        $this->assertSame(1, AuthorFactory::query()->count());
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('cannot produce 2 entities from a single injected entity');
+
+        AuthorFactory::new($author1, 2);
     }
 
     public function testWithEntitiesAndTimes(): void
