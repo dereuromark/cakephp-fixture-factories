@@ -7,6 +7,7 @@ namespace CakephpFixtureFactories\TestSuite;
 use Cake\Database\Connection;
 use Cake\Datasource\ConnectionManager;
 use PHPUnit\Framework\Attributes\Before;
+use Throwable;
 
 /**
  * Per-test-class opt-in to eager transactional semantics on top of the
@@ -85,7 +86,7 @@ trait EagerTransactionTrait
         try {
             /** @var \Cake\Database\Connection $connection */
             $connection = ConnectionManager::get($this->eagerConnection);
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return []; // unconfigured / unknown connection name — silent skip.
         }
 

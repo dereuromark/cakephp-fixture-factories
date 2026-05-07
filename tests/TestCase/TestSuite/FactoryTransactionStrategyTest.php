@@ -171,7 +171,7 @@ class FactoryTransactionStrategyTest extends TestCase
         // the one the assertion looks at.
         $connection = CityFactory::new()->getTable()->getConnection();
         $strategy = new class ($connection) extends EagerFactoryTransactionStrategy {
-            public function __construct(private \Cake\Database\Connection $eagerConnection)
+            public function __construct(private Connection $eagerConnection)
             {
             }
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace CakephpFixtureFactories\TestSuite;
 
 use Cake\Datasource\ConnectionManager;
+use Throwable;
 
 /**
  * Eager variant of {@see FactoryTransactionStrategy}.
@@ -82,7 +83,7 @@ class EagerFactoryTransactionStrategy extends FactoryTransactionStrategy
         try {
             /** @var \Cake\Database\Connection $primary */
             $primary = ConnectionManager::get($this->primaryConnection);
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return; // unconfigured / unknown connection name — silent skip.
         }
         $this->ensureTransaction($primary);
