@@ -680,6 +680,43 @@ class GeneratorAdapterTest extends TestCase
         $this->assertSame($sequence1, $sequence2, 'Seeded optional() should produce identical draw sequences');
     }
 
+    /**
+     * Regression: DummyOptionalAdapter::shouldReturnValue() previously hand-
+     * rolled the percentage check via `numberBetween(1, 100) <= round(weight * 100)`,
+     * which silently rounded sub-0.5% weights to 0% — `optional(0.001)`
+     * would never fire. v0.2.1 of johnykvsky/dummygenerator added float
+     * support to boolean(), so the adapter now forwards the float weight
+     * directly and preserves precision below the 1% boundary.
+     *
+     * 100k draws at weight 0.001 (0.1%) gives expected hits = 100.
+     * Under the broken implementation hits would be 0; under the fix the
+     * probability of 0 hits across 100k Bernoulli(0.001) trials is about
+     * (0.999)^100000 ≈ 3.7e-44, so any positive count proves the fix.
+     *
+     * @return void
+     */
+    public function testDummyOptionalSubPercentWeightActuallyFires(): void
+    {
+        Configure::write('FixtureFactories.generatorType', 'dummy');
+        CakeGeneratorFactory::clearInstances();
+
+        $generator = CakeGeneratorFactory::create();
+        $generator->seed(1234);
+        $optional = $generator->optional(0.001); // 0.1% — below the broken-impl 0.5% rounding boundary
+
+        $hits = 0;
+        $total = 100000;
+        for ($i = 0; $i < $total; $i++) {
+            if ($optional->randomDigit() !== null) {
+                $hits++;
+            }
+        }
+
+        $this->assertGreaterThan(0, $hits, 'optional(0.001) must fire at least once across 100k draws');
+        // Sanity upper bound — at 0.1% over 100k we expect ~100 hits, never anywhere near majority.
+        $this->assertLessThan(1000, $hits, 'optional(0.001) must fire substantially less than 1% of the time');
+    }
+
     public function testUnknownGeneratorTypeThrows(): void
     {
         $this->expectException(FixtureFactoryException::class);

@@ -97,17 +97,17 @@ class DummyOptionalAdapter implements OptionalGeneratorInterface
     /**
      * Determine if a value should be returned.
      *
-     * Routes through the wrapped generator's randomizer so seeded tests stay
-     * deterministic. Falling back to mt_rand() bypasses any seed configured
-     * via {@see GeneratorInterface::seed()}.
+     * Forwards the float weight (0.0..1.0) directly to DummyGenerator's
+     * `boolean()`, which since v0.2.1 accepts the float form natively. This
+     * keeps the dice roll on the wrapped generator's seeded randomizer (so
+     * seeded tests stay deterministic) and preserves precision for very
+     * small weights — `optional(0.001)` now actually fires ~0.1% of the
+     * time instead of rounding to 0%.
      *
      * @return bool
      */
     private function shouldReturnValue(): bool
     {
-        $threshold = (int)round($this->weight * 100);
-        $roll = $this->generator->__call('numberBetween', [1, 100]);
-
-        return is_int($roll) && $roll <= $threshold;
+        return (bool)$this->generator->__call('boolean', [$this->weight]);
     }
 }

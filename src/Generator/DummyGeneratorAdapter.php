@@ -18,8 +18,6 @@ namespace CakephpFixtureFactories\Generator;
 use BadMethodCallException;
 use Cake\Core\Configure;
 use CakephpFixtureFactories\Error\FixtureFactoryException;
-// Version detection classes - only one will exist at runtime
-use DummyGenerator\Container\DiContainerFactory;
 use DummyGenerator\Core\Randomizer\XoshiroRandomizer;
 use DummyGenerator\Definitions\Randomizer\RandomizerInterface;
 use DummyGenerator\DummyGenerator;
@@ -60,21 +58,14 @@ class DummyGeneratorAdapter implements GeneratorInterface
     private bool $isUnique = false;
 
     /**
-     * @var bool Whether using legacy v0.1.x API
-     */
-    private bool $isLegacyApi = false;
-
-    /**
-     * Container for v0.1.x API (DefinitionContainerInterface)
-     */
-    private ?object $container = null;
-
-    /**
-     * Constructor
+     * Constructor.
+     *
+     * Locale is accepted for interface compatibility; DummyGenerator does
+     * not use locale in the same way Faker does.
      *
      * @param string|null $locale The locale to use (unused, kept for interface compatibility)
      *
-     * @throws \CakephpFixtureFactories\Error\FixtureFactoryException if DummyGenerator library is not installed
+     * @throws \CakephpFixtureFactories\Error\FixtureFactoryException if DummyGenerator library is not installed.
      */
     public function __construct(?string $locale = null) // @phpstan-ignore constructor.unusedParameter
     {
@@ -84,25 +75,7 @@ class DummyGeneratorAdapter implements GeneratorInterface
             );
         }
 
-        // DummyGenerator doesn't use locale in the same way as Faker
-        // The $locale parameter is kept for interface compatibility
-
-        // Detect API version: v0.2+ has DiContainerFactory, v0.1.x has DefinitionContainerBuilder
-        if (class_exists(DiContainerFactory::class)) {
-            // v0.2+ API: use static factory method
-            $this->generator = DummyGenerator::create();
-        } else {
-            // v0.1.x API (deprecated) - use dynamic class instantiation to avoid static analysis errors
-            $this->isLegacyApi = true;
-            $builderClass = 'DummyGenerator\Container\DefinitionContainerBuilder';
-            $this->container = $builderClass::all();
-            $this->generator = new DummyGenerator($this->container); // @phpstan-ignore argument.type
-
-            trigger_error(
-                'DummyGenerator v0.1.x is deprecated. Please upgrade to v0.2.0 or later: `composer require --dev johnykvsky/dummygenerator:^0.2.0`',
-                E_USER_DEPRECATED,
-            );
-        }
+        $this->generator = DummyGenerator::create();
     }
 
     /**
@@ -114,22 +87,10 @@ class DummyGeneratorAdapter implements GeneratorInterface
             return;
         }
 
-        if ($this->isLegacyApi) {
-            // v0.1.x API: modify container directly and recreate generator
-            /** @phpstan-ignore method.nonObject */
-            $this->container->add(
-                RandomizerInterface::class,
-                new XoshiroRandomizer($seed),
-            );
-            /** @phpstan-ignore argument.type */
-            $this->generator = new DummyGenerator($this->container);
-        } else {
-            // v0.2+ API: use immutable withDefinition()
-            $this->generator = $this->generator->withDefinition(
-                RandomizerInterface::class,
-                new XoshiroRandomizer($seed),
-            );
-        }
+        $this->generator = $this->generator->withDefinition(
+            RandomizerInterface::class,
+            new XoshiroRandomizer($seed),
+        );
     }
 
     /**
@@ -239,10 +200,10 @@ class DummyGeneratorAdapter implements GeneratorInterface
      */
     public function unique(): UniqueGeneratorInterface
     {
-        // Clone to share the same generator/container but have separate unique tracking
+        // Clone to share the same underlying generator but have separate unique tracking.
         $adapter = clone $this;
         $adapter->isUnique = true;
-        $adapter->uniqueValues = []; // Reset unique tracking for this instance
+        $adapter->uniqueValues = [];
 
         return new DummyUniqueAdapter($adapter);
     }
