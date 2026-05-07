@@ -146,6 +146,20 @@ class UniquenessJanitorTest extends TestCase
         $this->assertCount(2, $result);
     }
 
+    public function testSanitizeEntityArrayDetectsFalseyDuplicateValues(): void
+    {
+        $factoryStub = $this->getMockBuilder(BaseFactory::class)->disableOriginalConstructor()->getMock();
+        $factoryStub->method('getUniqueProperties')->willReturn(['property_1']);
+
+        $entities = [
+            new Entity(['property_1' => '0']),
+            new Entity(['property_1' => '0']),
+        ];
+
+        $this->expectException(UniquenessException::class);
+        UniquenessJanitor::sanitizeEntityArray($factoryStub, $entities, true);
+    }
+
     public function testSanitizeEntityArrayRemovesAllLaterDuplicatesInNonStrictMode(): void
     {
         $factoryStub = $this->getMockBuilder(BaseFactory::class)->disableOriginalConstructor()->getMock();

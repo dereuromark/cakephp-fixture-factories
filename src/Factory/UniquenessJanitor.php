@@ -61,7 +61,8 @@ class UniquenessJanitor
         $entities = Hash::flatten($entities);
 
         // Extract the key after the dot
-        $getPropertyName = function (string $str): string {
+        $getPropertyName = function (string|int $str): string {
+            $str = (string)$str;
             $pos = strrpos($str, '.');
             if ($pos === false) {
                 return $str;
@@ -71,7 +72,8 @@ class UniquenessJanitor
         };
 
         // Extract the key before the dot
-        $getIndex = function (string $str): int {
+        $getIndex = function (string|int $str): int {
+            $str = (string)$str;
             $pos = strrpos($str, '.');
             if ($pos === false) {
                 return 0;
@@ -89,7 +91,7 @@ class UniquenessJanitor
 
         $indexesToRemove = [];
         foreach ($entities as $k1 => $v1) {
-            if (!$v1) {
+            if ($v1 === null) {
                 continue;
             }
             $property = $getPropertyName($k1);

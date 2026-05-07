@@ -231,6 +231,8 @@ class PersistCommandTest extends TestCase
      */
     public function testAliasedConnection(): void
     {
+        $aliasesBefore = ConnectionManager::aliases();
+
         $output = $this->command->execute(new Arguments([ArticleFactory::class], [], [PersistCommand::ARG_NAME]), $this->io);
         $this->assertSame(PersistCommand::CODE_SUCCESS, $output);
         $configName = TableRegistry::getTableLocator()->get('TestPlugin.Bills')->getConnection()->configName();
@@ -238,7 +240,19 @@ class PersistCommandTest extends TestCase
 
         $output = $this->command->execute(new Arguments([ArticleFactory::class], ['connection' => 'dummy'], [PersistCommand::ARG_NAME]), $this->io);
         $this->assertSame(PersistCommand::CODE_SUCCESS, $output);
-        $dummyKeyValue = ConnectionManager::get('test')->config()['dummy_key'];
-        $this->assertSame('DummyKeyValue', $dummyKeyValue);
+        $this->assertSame($aliasesBefore, ConnectionManager::aliases());
+    }
+
+    public function testAliasedConnectionIsRestoredAfterPersist(): void
+    {
+        $beforeAliases = ConnectionManager::aliases();
+
+        $output = $this->command->execute(
+            new Arguments([ArticleFactory::class], ['connection' => 'dummy'], [PersistCommand::ARG_NAME]),
+            $this->io,
+        );
+
+        $this->assertSame(PersistCommand::CODE_SUCCESS, $output);
+        $this->assertSame($beforeAliases, ConnectionManager::aliases());
     }
 }

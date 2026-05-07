@@ -11,6 +11,8 @@ use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Error\PersistenceException;
 use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\Generator\FakerAdapter;
+use CakephpFixtureFactories\Test\Factory\ArticleFactory;
+use CakephpFixtureFactories\Test\Factory\AuthorFactory;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpFixtureFactories\TestSuite\FactoryTableTracker;
@@ -316,6 +318,38 @@ class FactoryTransactionStrategyTest extends TestCase
                 $connection->inTransaction(),
                 'Sanity check: the bug only manifests inside an outer transaction.',
             );
+        } finally {
+            $strategy->teardownTest();
+        }
+    }
+
+    public function testPersistFinalizesNestedAssociatedEntityStateBeforeAfterSaveCallbacks(): void
+    {
+        $strategy = new FactoryTransactionStrategy();
+        $strategy->setupTest([]);
+
+        $captured = [];
+        try {
+            $article = ArticleFactory::new()
+                ->has(
+                    AuthorFactory::new()
+                        ->afterSave(static function ($author) use (&$captured): void {
+                            $captured = [
+                                'isNew' => $author->isNew(),
+                                'isDirty' => $author->isDirty(),
+                                'source' => $author->getSource(),
+                            ];
+                        }),
+                )
+                ->save();
+
+            $this->assertSame(
+                ['isNew' => false, 'isDirty' => false, 'source' => 'Authors'],
+                $captured,
+            );
+            $this->assertFalse($article->authors[0]->isNew());
+            $this->assertFalse($article->authors[0]->isDirty());
+            $this->assertSame('Authors', $article->authors[0]->getSource());
         } finally {
             $strategy->teardownTest();
         }

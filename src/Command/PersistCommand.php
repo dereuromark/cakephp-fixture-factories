@@ -249,14 +249,22 @@ class PersistCommand extends Command
      * @param string $connection Connection name
      * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Factory
      *
-     * @return void
+     * @return callable Restore callback
      */
-    public function aliasConnection(string $connection, BaseFactory $factory): void
+    public function aliasConnection(string $connection, BaseFactory $factory): callable
     {
-        ConnectionManager::alias(
-            $connection,
-            $factory->getTable()->getConnection()->configName(),
-        );
+        $targetAlias = $factory->getTable()->getConnection()->configName();
+        $existingAliases = ConnectionManager::aliases();
+        $previousSource = $existingAliases[$targetAlias] ?? null;
+
+        ConnectionManager::alias($connection, $targetAlias);
+
+        return static function () use ($targetAlias, $previousSource): void {
+            ConnectionManager::dropAlias($targetAlias);
+            if ($previousSource !== null) {
+                ConnectionManager::alias($previousSource, $targetAlias);
+            }
+        };
     }
 
     /**
@@ -272,7 +280,7 @@ class PersistCommand extends Command
         if (!is_string($connection)) {
             $connection = 'test';
         }
-        $this->aliasConnection($connection, $factory);
+        $restoreConnectionAlias = $this->aliasConnection($connection, $factory);
 
         $entities = [];
         try {
@@ -280,6 +288,8 @@ class PersistCommand extends Command
         } catch (PersistenceException $e) {
             $io->error($e->getMessage());
             $this->abort();
+        } finally {
+            $restoreConnectionAlias();
         }
 
         $times = count($entities);

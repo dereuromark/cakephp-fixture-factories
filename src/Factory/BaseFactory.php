@@ -805,6 +805,11 @@ abstract class BaseFactory
         }
         $visited[$key] = true;
 
+        // Keep nested callbacks/listeners aligned with the top-level persist
+        // contract under outer transactions: child entities must already be
+        // finalized before any afterSave logic inspects them.
+        $associationFactory->finalizePersistedEntities([$entity], $associationFactory->getTable());
+
         $options = new ArrayObject(['associated' => true, 'atomic' => false]);
         $associationFactory->getTable()->dispatchEvent('Model.afterSave', compact('entity', 'options'));
 
