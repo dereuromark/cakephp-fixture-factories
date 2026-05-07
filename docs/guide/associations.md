@@ -103,7 +103,7 @@ Use the explicit form to disambiguate:
   AuthorFactory::new()->with('BusinessAddress', AddressFactory::new())
 ```
 
-The fix is to fall back to the lower-level `with('AliasName', $factory)` form with the explicit association alias. Both `with()` lines in the exception message are paste-ready:
+**Quick fix at the call site** — fall back to the lower-level `with('AliasName', $factory)` form. Both `with()` lines in the exception message are paste-ready:
 
 ::: code-group
 ```php [Pick the alias you want]
@@ -120,8 +120,42 @@ $author = AuthorFactory::new()
 ```
 :::
 
+**Long-term pattern** — for any factory whose target table has more than one association in or out, define named wrapper methods on the factory itself. The bake command generates these automatically when you pass `--methods`:
+
+```bash
+bin/cake bake fixture_factory Authors --methods
+```
+
+```php
+class AuthorFactory extends BaseFactory
+{
+    public function forAddress($parameter = null): static
+    {
+        return $this->with('Address', AddressFactory::new($parameter));
+    }
+
+    public function forBusinessAddress($parameter = null): static
+    {
+        return $this->with('BusinessAddress', AddressFactory::new($parameter));
+    }
+}
+```
+
+Call sites then read like the directional API again, with the alias baked into the method name:
+
+```php
+$author = AuthorFactory::new()
+    ->forAddress(['street' => 'Home'])
+    ->forBusinessAddress(['street' => 'Office'])
+    ->save();
+```
+
 ::: tip
-Bake-generated `for*()` / `has*()` helpers emit `with('AliasName', …)` rather than `for()` / `has()` for exactly this reason — the alias is unambiguous at codegen time and survives later schema changes that introduce sibling associations. If you reach for `with()` to disambiguate at a call site, you're using the same form bake would have generated.
+See [Best Practices — directional helper methods](best-practices#do-add-directional-helper-methods-for-every-association) for the broader recommendation. The factory class is the right home for schema-coupled knowledge: it already knows it is the `AuthorFactory`; let it own the `Address` / `BusinessAddress` choice too rather than scattering inline alias strings across hundreds of call sites.
+:::
+
+::: tip Why bake emits `with()` and not `for()`
+Bake's `--methods` output uses `with('AliasName', …)` rather than `for()` / `has()` even when the relation is unambiguous today, because the alias is unambiguous at codegen time and survives later schema changes that introduce sibling associations. If you reach for `with()` to disambiguate at a call site, you're using the same form bake would have generated.
 :::
 
 ## `from()` — start from an existing entity

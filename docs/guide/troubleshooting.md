@@ -112,8 +112,31 @@ Use the explicit form to disambiguate:
   MessageFactory::new()->with('Recipient', UserFactory::new())
 ```
 
-The fix is to use the lower-level `with('AliasName', $factory)` form with the explicit association alias instead of the directional helper. Both `with()` lines in the message above are paste-ready — pick the one that matches the relation you want to populate.
+**Quick fix at the call site** — use the lower-level `with('AliasName', $factory)` form. Both `with()` lines in the exception message are paste-ready; pick the one that matches the relation you want to populate.
 
-This is also why bake-generated `for*()` / `has*()` helpers emit `with('AliasName', …)` rather than `for()` / `has()`: the alias is unambiguous at codegen time and survives later schema changes that introduce sibling associations.
+**Long-term pattern** — for any factory whose target table has more than one association in or out, define named wrapper methods directly on the factory:
+
+```php
+class MessageFactory extends BaseFactory
+{
+    public function forSender($parameter = null): static
+    {
+        return $this->with('Sender', UserFactory::new($parameter));
+    }
+
+    public function forRecipient($parameter = null): static
+    {
+        return $this->with('Recipient', UserFactory::new($parameter));
+    }
+}
+```
+
+Call sites then read like the directional API again, with the alias baked into the method name:
+
+```php
+MessageFactory::new()->forSender(['name' => 'Alice'])->forRecipient(['name' => 'Bob'])->save();
+```
+
+This is exactly what `bin/cake bake fixture_factory <Model> --methods` generates automatically — bake emits the explicit `with('AliasName', …)` form per association precisely because the alias is unambiguous at codegen time. The same logic applies when you hand-write factories: co-locate the disambiguation with the schema knowledge in one place rather than scattering alias strings across many test call sites. It mirrors the named-state recommendation in [Best Practices](best-practices) — name what you'll repeat.
 
 See [Associations — directional helpers](associations#directional-helpers-for-and-has) for the full design.
