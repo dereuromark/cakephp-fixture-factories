@@ -80,6 +80,7 @@ export default defineConfig({
           text: 'Upgrading',
           items: isLegacyDocs
             ? [
+                { text: '1.3 → 1.4', link: '/guide/upgrading' },
                 { text: 'Migration from vierge-noire', link: '/guide/migration' },
               ]
             : [
