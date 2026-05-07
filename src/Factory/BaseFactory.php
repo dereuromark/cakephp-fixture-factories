@@ -908,6 +908,53 @@ abstract class BaseFactory
     }
 
     /**
+     * Cycle the values of a single column across the entities the factory
+     * produces. A focused alternative to {@see self::sequence()} when you
+     * only want to vary one field — the value can be any scalar, array,
+     * `BackedEnum`/`UnitEnum` case, or anything Cake's marshaller accepts
+     * for the target column.
+     *
+     * Stacking and ordering rules:
+     * - Calls for **different fields** stack: each field cycles independently
+     *   at its own period (`index % count(values)`), so two cycles with
+     *   different cardinalities compose without interference.
+     * - Calls for the **same field** replace that field's cycle (last-write-
+     *   wins per field, matching normal map semantics).
+     * - Plays nicely with `sequence()`: the row-level sequence runs first,
+     *   then `sequenceField()` overlays its column. So if a field appears in
+     *   both, the per-field overlay wins for that column.
+     *
+     * Example:
+     * ```
+     * ArticleFactory::new()
+     *     ->count(6)
+     *     ->sequenceField('status', 'draft', 'published')   // 2-cycle
+     *     ->sequenceField('priority', 1, 5, 10)             // 3-cycle
+     *     ->buildMany();
+     * ```
+     *
+     * @param string $field Column to cycle.
+     * @param mixed ...$values Values cycled in order. At least one is required.
+     *
+     * @throws \InvalidArgumentException When no values are provided.
+     *
+     * @return static
+     */
+    public function sequenceField(string $field, mixed ...$values): static
+    {
+        if ($values === []) {
+            throw new InvalidArgumentException(
+                'sequenceField() expects at least one value to cycle through.',
+            );
+        }
+
+        $factory = clone $this;
+        $factory->getDataCompiler()->collectFieldSequence($field, $values);
+
+        return $factory;
+    }
+
+    /**
      * Register a callback to run on each built entity before `build*()` returns
      * and before `save*()` persists the entity.
      *

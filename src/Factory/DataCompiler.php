@@ -64,6 +64,15 @@ class DataCompiler
      */
     private array $sequenceData = [];
 
+    /**
+     * Per-field cycle map populated by `BaseFactory::sequenceField()`. Each
+     * entry is a list of values cycled at its own period during compilation,
+     * applied AFTER `sequence()` so a per-field overlay wins for that column.
+     *
+     * @var array<string, array<int, mixed>>
+     */
+    private array $fieldSequences = [];
+
     private int $sequenceIndex = 0;
 
     /**
@@ -175,6 +184,22 @@ class DataCompiler
     public function collectSequence(array $states): void
     {
         $this->sequenceData = $states;
+    }
+
+    /**
+     * Register a per-field value cycle. Independent fields cycle at their own
+     * periods during compilation; calling this twice for the same field
+     * replaces that field's cycle (last-write-wins per field, additive across
+     * different fields). Composes with {@see self::collectSequence()}.
+     *
+     * @param string $field Column to cycle.
+     * @param array<array-key, mixed> $values Values cycled by `index % count`.
+     *
+     * @return void
+     */
+    public function collectFieldSequence(string $field, array $values): void
+    {
+        $this->fieldSequences[$field] = array_values($values);
     }
 
     /**
@@ -539,7 +564,13 @@ class DataCompiler
 
     /**
      * Step 3.5:
-     * Merge with the data gathered by sequence.
+     * Merge with the data gathered by sequence().
+     *
+     * Field-level cycles registered via sequenceField() are applied AFTER the
+     * row-level sequence so that for any column appearing in both, the
+     * per-field overlay wins. Each field cycles independently at its own
+     * period (`index % count(values)`), so independent fields with different
+     * cardinalities compose without interfering.
      *
      * @param \Cake\Datasource\EntityInterface $entity Entity to manipulate.
      *
@@ -547,23 +578,30 @@ class DataCompiler
      */
     private function mergeWithSequenceData(EntityInterface $entity)
     {
-        if (!$this->sequenceData) {
-            return $this;
+        if ($this->sequenceData) {
+            $state = $this->sequenceData[$this->sequenceIndex % count($this->sequenceData)];
+            if (is_callable($state)) {
+                $state = $state(
+                    $this->getFactory(),
+                    $this->getFactory()->getGenerator(),
+                    $this->sequenceIndex,
+                );
+            } elseif ($state instanceof EntityInterface) {
+                $state = $state->toArray();
+            }
+
+            $this->patchEntity($entity, $state);
+            $this->addEnforcedFields($state);
         }
 
-        $state = $this->sequenceData[$this->sequenceIndex % count($this->sequenceData)];
-        if (is_callable($state)) {
-            $state = $state(
-                $this->getFactory(),
-                $this->getFactory()->getGenerator(),
-                $this->sequenceIndex,
-            );
-        } elseif ($state instanceof EntityInterface) {
-            $state = $state->toArray();
+        if ($this->fieldSequences) {
+            $fieldState = [];
+            foreach ($this->fieldSequences as $field => $values) {
+                $fieldState[$field] = $values[$this->sequenceIndex % count($values)];
+            }
+            $this->patchEntity($entity, $fieldState);
+            $this->addEnforcedFields($fieldState);
         }
-
-        $this->patchEntity($entity, $state);
-        $this->addEnforcedFields($state);
 
         return $this;
     }

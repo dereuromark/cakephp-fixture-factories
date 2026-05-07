@@ -274,6 +274,128 @@ class BaseFactoryTest extends TestCase
         }
     }
 
+    public function testSequenceFieldCyclesValuesAcrossEntities(): void
+    {
+        $articles = ArticleFactory::new()
+            ->count(5)
+            ->sequenceField('title', 'Alpha', 'Beta')
+            ->buildMany();
+
+        $titles = array_map(static fn (Article $a): string => $a->title, $articles);
+        $this->assertSame(['Alpha', 'Beta', 'Alpha', 'Beta', 'Alpha'], $titles);
+    }
+
+    public function testSequenceFieldStacksAcrossDifferentFields(): void
+    {
+        // Two cycles of different periods (2 and 3) cycle independently:
+        // an LCM-of-6 pattern emerges across the count(6) factory.
+        $articles = ArticleFactory::new()
+            ->count(6)
+            ->sequenceField('title', 'Draft', 'Published')
+            ->sequenceField('body', 'short', 'medium', 'long')
+            ->buildMany();
+
+        $rows = array_map(
+            static fn (Article $a): array => ['title' => $a->title, 'body' => $a->body],
+            $articles,
+        );
+        $this->assertSame([
+            ['title' => 'Draft', 'body' => 'short'],
+            ['title' => 'Published', 'body' => 'medium'],
+            ['title' => 'Draft', 'body' => 'long'],
+            ['title' => 'Published', 'body' => 'short'],
+            ['title' => 'Draft', 'body' => 'medium'],
+            ['title' => 'Published', 'body' => 'long'],
+        ], $rows);
+    }
+
+    public function testSequenceFieldLastWriteWinsForSameField(): void
+    {
+        // Two calls for the same field must REPLACE, not append (matching
+        // the "last-write-wins per field" rule documented on the method).
+        $articles = ArticleFactory::new()
+            ->count(3)
+            ->sequenceField('title', 'OldA', 'OldB')
+            ->sequenceField('title', 'NewA', 'NewB', 'NewC')
+            ->buildMany();
+
+        $titles = array_map(static fn (Article $a): string => $a->title, $articles);
+        $this->assertSame(['NewA', 'NewB', 'NewC'], $titles);
+    }
+
+    public function testSequenceFieldOverlaysSequenceForSameColumn(): void
+    {
+        // sequence() applies first, sequenceField() overlays for that column.
+        $articles = ArticleFactory::new()
+            ->count(3)
+            ->sequence(
+                ['title' => 'FromSequence', 'body' => 'BodyA'],
+                ['title' => 'FromSequence', 'body' => 'BodyB'],
+            )
+            ->sequenceField('title', 'X', 'Y', 'Z')
+            ->buildMany();
+
+        $this->assertSame('X', $articles[0]->title);
+        $this->assertSame('Y', $articles[1]->title);
+        $this->assertSame('Z', $articles[2]->title);
+        // body comes from the row-level sequence and is unaffected
+        $this->assertSame('BodyA', $articles[0]->body);
+        $this->assertSame('BodyB', $articles[1]->body);
+        $this->assertSame('BodyA', $articles[2]->body);
+    }
+
+    public function testSequenceFieldRunsBeforePlainStateOverrides(): void
+    {
+        // state() (collected as patch data) is applied AFTER sequence steps,
+        // so the ad-hoc override still wins like it does for sequence().
+        $articles = ArticleFactory::new()
+            ->count(3)
+            ->sequenceField('title', 'A', 'B', 'C')
+            ->state(['title' => 'Override'])
+            ->buildMany();
+
+        foreach ($articles as $article) {
+            $this->assertSame('Override', $article->title);
+        }
+    }
+
+    public function testSequenceFieldAcceptsBackedEnumCases(): void
+    {
+        // Cake's EnumType marshals enum cases on save; for build() the value
+        // sticks on the entity as-is, so we assert against the case itself.
+        $articles = ArticleFactory::new()
+            ->count(4)
+            ->sequenceField('status', ...\TestApp\Model\Enum\TestStatus::cases())
+            ->buildMany();
+
+        $this->assertSame(\TestApp\Model\Enum\TestStatus::Active, $articles[0]->status);
+        $this->assertSame(\TestApp\Model\Enum\TestStatus::Inactive, $articles[1]->status);
+        $this->assertSame(\TestApp\Model\Enum\TestStatus::Pending, $articles[2]->status);
+        // count(4) > 3 cases → cycles
+        $this->assertSame(\TestApp\Model\Enum\TestStatus::Active, $articles[3]->status);
+    }
+
+    public function testSequenceFieldRejectsZeroValues(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('sequenceField() expects at least one value');
+
+        ArticleFactory::new()->sequenceField('title');
+    }
+
+    public function testSequenceFieldDoesNotMutateOriginalFactory(): void
+    {
+        // Fluent immutability — the original factory must not see the cycle.
+        $base = ArticleFactory::new()->count(2);
+        $cycled = $base->sequenceField('title', 'A', 'B');
+
+        $cycledTitles = array_map(static fn (Article $a): string => $a->title, $cycled->buildMany());
+        $baseTitles = array_map(static fn (Article $a): string => $a->title, $base->buildMany());
+
+        $this->assertSame(['A', 'B'], $cycledTitles);
+        $this->assertNotSame(['A', 'B'], $baseTitles, 'sequenceField must not mutate the originating factory');
+    }
+
     public function testAfterBuildRunsBeforeSave(): void
     {
         $article = ArticleFactory::new()

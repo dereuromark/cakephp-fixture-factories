@@ -66,6 +66,39 @@ $articles = ArticleFactory::new()
     ->buildMany();
 ```
 
+When you only want to vary one column at a time, `sequenceField()` is the focused alternative. It accepts any value the column supports — scalars, arrays, enum cases, anything Cake's marshaller handles for that field:
+
+```php
+$articles = ArticleFactory::new()
+    ->count(4)
+    ->sequenceField('status', Status::Draft, Status::Published, Status::Archived)
+    ->buildMany();
+
+// or, equivalently, with an enum's ::cases():
+$articles = ArticleFactory::new()
+    ->count(4)
+    ->sequenceField('status', ...Status::cases())
+    ->buildMany();
+```
+
+`sequenceField()` calls **stack across different fields**: each column cycles independently at its own period, so two cycles with different lengths compose without interference.
+
+```php
+$articles = ArticleFactory::new()
+    ->count(6)
+    ->sequenceField('status', 'draft', 'published')   // 2-cycle
+    ->sequenceField('priority', 1, 5, 10)             // 3-cycle
+    ->buildMany();
+// row 0: draft / 1
+// row 1: published / 5
+// row 2: draft / 10
+// row 3: published / 1
+// row 4: draft / 5
+// row 5: published / 10
+```
+
+Calling `sequenceField()` twice for the **same field** replaces that field's cycle (last-write-wins per field, matching normal map semantics). When mixed with `sequence()`, the row-level `sequence()` is applied first and `sequenceField()` overlays its column on top — so for any field appearing in both, the per-field overlay wins.
+
 For reusable business states, prefer named methods on the factory:
 ```php
 $article = ArticleFactory::new()
