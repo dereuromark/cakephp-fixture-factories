@@ -79,12 +79,17 @@ trait EagerTransactionTrait
         if ($this->eagerConnection === '') {
             return;
         }
-        if (ConnectionManager::getConfig($this->eagerConnection) === null) {
-            return;
-        }
 
-        /** @var \Cake\Database\Connection $connection */
-        $connection = ConnectionManager::get($this->eagerConnection);
+        // Resolve via ConnectionManager::get() so the alias map is
+        // honoured. We do NOT pre-check ConnectionManager::getConfig()
+        // because that returns null for alias names whose source is
+        // registered under a different key.
+        try {
+            /** @var \Cake\Database\Connection $connection */
+            $connection = ConnectionManager::get($this->eagerConnection);
+        } catch (\Throwable) {
+            return; // unconfigured / unknown connection name — silent skip.
+        }
         $strategy->ensureTransaction($connection);
     }
 }

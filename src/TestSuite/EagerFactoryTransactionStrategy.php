@@ -73,12 +73,18 @@ class EagerFactoryTransactionStrategy extends FactoryTransactionStrategy
         if ($this->primaryConnection === '') {
             return;
         }
-        if (ConnectionManager::getConfig($this->primaryConnection) === null) {
-            return;
-        }
 
-        /** @var \Cake\Database\Connection $primary */
-        $primary = ConnectionManager::get($this->primaryConnection);
+        // Note: we resolve via ConnectionManager::get() which honours the
+        // alias map. We do NOT pre-check ConnectionManager::getConfig()
+        // because that returns null for alias names whose source is
+        // registered under a different key — the connection still exists,
+        // it's just keyed under the alias's target.
+        try {
+            /** @var \Cake\Database\Connection $primary */
+            $primary = ConnectionManager::get($this->primaryConnection);
+        } catch (\Throwable) {
+            return; // unconfigured / unknown connection name — silent skip.
+        }
         $this->ensureTransaction($primary);
     }
 }
