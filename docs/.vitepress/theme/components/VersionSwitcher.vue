@@ -20,22 +20,49 @@ const versioning = computed(() => {
   }
 })
 
-function navigate(path: string): void {
+const options = computed(() => [
+  {
+    label: versioning.value.latestLinkText,
+    path: versioning.value.latestPath,
+  },
+  {
+    label: versioning.value.legacyLinkText,
+    path: versioning.value.legacyPath,
+  },
+])
+
+const selectedPath = computed(() => {
+  return versioning.value.currentVersion === versioning.value.legacyLinkText
+    ? versioning.value.legacyPath
+    : versioning.value.latestPath
+})
+
+function navigate(event: Event): void {
+  const path = (event.target as HTMLSelectElement).value
+  if (!path || path === selectedPath.value) {
+    return
+  }
+
   window.location.assign(path)
 }
 </script>
 
 <template>
   <div :class="props.mobile ? 'version-switcher version-switcher-mobile' : 'version-switcher'">
-    <span class="version-current">{{ versioning.currentVersion }}</span>
-    <span class="version-separator">/</span>
-    <button class="version-link" type="button" @click="navigate(versioning.latestPath)">
-      {{ versioning.latestLinkText }}
-    </button>
-    <span class="version-separator">/</span>
-    <button class="version-link" type="button" @click="navigate(versioning.legacyPath)">
-      {{ versioning.legacyLinkText }}
-    </button>
+    <label class="version-label" for="docs-version-switcher">Version</label>
+    <div class="version-select-wrap">
+      <select
+        id="docs-version-switcher"
+        class="version-select"
+        :value="selectedPath"
+        @change="navigate"
+      >
+        <option v-for="option in options" :key="option.path" :value="option.path">
+          {{ option.label }}
+        </option>
+      </select>
+      <span class="version-chevron" aria-hidden="true">▾</span>
+    </div>
   </div>
 </template>
 
@@ -43,7 +70,7 @@ function navigate(path: string): void {
 .version-switcher {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.5rem;
   margin-left: 1rem;
   font-size: 0.875rem;
   white-space: nowrap;
@@ -55,26 +82,50 @@ function navigate(path: string): void {
   border-top: 1px solid var(--vp-c-divider);
 }
 
-.version-current {
-  color: var(--vp-c-text-1);
-  font-weight: 600;
-}
-
-.version-link {
-  border: 0;
-  padding: 0;
-  background: transparent;
-  font: inherit;
-  cursor: pointer;
+.version-label {
   color: var(--vp-c-text-2);
-  text-decoration: none;
+  font-size: 0.8125rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
-.version-link:hover {
-  color: var(--vp-c-brand-1);
+.version-select-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
 }
 
-.version-separator {
+.version-select {
+  min-width: 9.5rem;
+  padding: 0.35rem 2rem 0.35rem 0.75rem;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 999px;
+  background: var(--vp-c-bg-soft);
+  color: var(--vp-c-text-1);
+  font: inherit;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  appearance: none;
+}
+
+.version-select:hover {
+  border-color: var(--vp-c-brand-1);
+}
+
+.version-select:focus {
+  outline: 2px solid var(--vp-c-brand-1);
+  outline-offset: 2px;
+}
+
+.version-chevron {
+  position: absolute;
+  right: 0.8rem;
   color: var(--vp-c-text-3);
+  pointer-events: none;
+}
+
+.version-switcher-mobile .version-select {
+  min-width: 100%;
 }
 </style>
