@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useData } from 'vitepress'
 
 const props = defineProps<{
@@ -37,6 +37,16 @@ const selectedPath = computed(() => {
     : versioning.value.latestPath
 })
 
+const selectedValue = ref(selectedPath.value)
+
+watch(
+  selectedPath,
+  (value) => {
+    selectedValue.value = value
+  },
+  { immediate: true },
+)
+
 function navigate(event: Event): void {
   const path = (event.target as HTMLSelectElement).value
   if (!path || path === selectedPath.value) {
@@ -54,7 +64,7 @@ function navigate(event: Event): void {
       <select
         id="docs-version-switcher"
         class="version-select"
-        :value="selectedPath"
+        v-model="selectedValue"
         @change="navigate"
       >
         <option v-for="option in options" :key="option.path" :value="option.path">
