@@ -59,7 +59,6 @@ function navigate(event: Event): void {
 
 <template>
   <div :class="props.mobile ? 'version-switcher version-switcher-mobile' : 'version-switcher'">
-    <label class="version-label" for="docs-version-switcher">Version</label>
     <div class="version-select-wrap">
       <select
         id="docs-version-switcher"
@@ -90,13 +89,6 @@ function navigate(event: Event): void {
   margin: 0.75rem 0 0;
   padding-top: 0.75rem;
   border-top: 1px solid var(--vp-c-divider);
-}
-
-.version-label {
-  color: var(--vp-c-text-2);
-  font-size: 0.8125rem;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
 }
 
 .version-select-wrap {
