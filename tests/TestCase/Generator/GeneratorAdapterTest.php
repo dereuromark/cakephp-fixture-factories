@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace CakephpFixtureFactories\Test\TestCase\Generator;
 
+use BadMethodCallException;
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Error\FixtureFactoryException;
@@ -20,6 +21,7 @@ use TestApp\Model\Enum\EmptyTestStatus;
 use TestApp\Model\Enum\SingleCaseStatus;
 use TestApp\Model\Enum\TestStatus;
 use TestApp\Model\Enum\UnitTestStatus;
+use Throwable;
 
 class GeneratorAdapterTest extends TestCase
 {
@@ -297,33 +299,6 @@ class GeneratorAdapterTest extends TestCase
     }
 
     /**
-     * Test enumElement() method works with both adapters
-     *
-     * @return void
-     */
-    public function testEnumElementGeneration(): void
-    {
-        // Test with Faker
-        $fakerGenerator = CakeGeneratorFactory::create();
-        $fakerElement = $fakerGenerator->enumElement(TestStatus::class);
-        $this->assertInstanceOf(TestStatus::class, $fakerElement);
-        $this->assertContains($fakerElement, TestStatus::cases());
-
-        // Test with DummyGenerator
-        Configure::write('FixtureFactories.generatorType', 'dummy');
-        CakeGeneratorFactory::clearInstances();
-
-        $dummyGenerator = CakeGeneratorFactory::create();
-        $dummyElement = $dummyGenerator->enumElement(TestStatus::class);
-        $this->assertInstanceOf(TestStatus::class, $dummyElement);
-        $this->assertContains($dummyElement, TestStatus::cases());
-
-        // Reset config
-        Configure::delete('FixtureFactories.generatorType');
-        CakeGeneratorFactory::clearInstances();
-    }
-
-    /**
      * Test enum methods with unique() modifier
      *
      * @return void
@@ -377,6 +352,39 @@ class GeneratorAdapterTest extends TestCase
         $this->assertContains($dummyCase, TestStatus::cases());
 
         // Reset config
+        Configure::delete('FixtureFactories.generatorType');
+        CakeGeneratorFactory::clearInstances();
+    }
+
+    /**
+     * Regression: the Faker-style `enumElement()` alias is removed in v2.
+     * Both backends fall through to the underlying generator's __call,
+     * which doesn't have a method by that name. The Faker backend rejects
+     * with Faker's own UnknownFormatterException; the dummy backend
+     * rejects with BadMethodCallException via the adapter's
+     * handleUniqueCall translation. Assert each does NOT silently succeed.
+     */
+    public function testEnumElementAliasIsRemoved(): void
+    {
+        $fakerGenerator = CakeGeneratorFactory::create();
+        try {
+            $fakerGenerator->enumElement(TestStatus::class);
+            $this->fail('Faker backend must not silently accept the removed `enumElement` alias');
+        } catch (Throwable $e) {
+            $this->assertNotEmpty($e->getMessage());
+        }
+
+        Configure::write('FixtureFactories.generatorType', 'dummy');
+        CakeGeneratorFactory::clearInstances();
+
+        $dummyGenerator = CakeGeneratorFactory::create();
+        try {
+            $dummyGenerator->enumElement(TestStatus::class);
+            $this->fail('Dummy backend must not silently accept the removed `enumElement` alias');
+        } catch (BadMethodCallException $e) {
+            $this->assertStringContainsString('enumElement', $e->getMessage());
+        }
+
         Configure::delete('FixtureFactories.generatorType');
         CakeGeneratorFactory::clearInstances();
     }

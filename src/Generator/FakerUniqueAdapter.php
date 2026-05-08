@@ -88,11 +88,6 @@ class FakerUniqueAdapter implements UniqueGeneratorInterface
             return $this->pickUniqueEnum('enumCase', $arguments[0], false);
         }
 
-        // Backward compatibility: map enumElement to enumCase
-        if ($name === 'enumElement' && count($arguments) === 1) {
-            return $this->__call('enumCase', $arguments);
-        }
-
         return $this->generator->$name(...$arguments);
     }
 
