@@ -1,6 +1,7 @@
 import DefaultTheme from 'vitepress/theme'
 import { h } from 'vue'
 import VersionSwitcher from './components/VersionSwitcher.vue'
+import './theme.css'
 
 export default {
   extends: DefaultTheme,

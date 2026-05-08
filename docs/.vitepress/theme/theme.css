@@ -1,0 +1,16 @@
+@media (max-width: 959px) {
+  .VPSidebar {
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y !important;
+  }
+
+  .VPSidebar .nav {
+    max-height: calc(100vh - var(--vp-nav-height) - env(safe-area-inset-bottom));
+    overflow-y: visible !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+  }
+}
