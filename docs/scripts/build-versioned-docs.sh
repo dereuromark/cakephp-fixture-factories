@@ -12,7 +12,7 @@ CURRENT_THEME_DIR="$ROOT_DIR/.vitepress/theme"
 LATEST_BASE="${DOCS_LATEST_BASE:-/cakephp-fixture-factories/}"
 LEGACY_BASE="${DOCS_LEGACY_BASE:-/cakephp-fixture-factories/1.x/}"
 LEGACY_REF="${DOCS_LEGACY_REF:-origin/1.x}"
-LEGACY_LABEL="${DOCS_LEGACY_LABEL:-v1}"
+LEGACY_LABEL="${DOCS_LEGACY_LABEL:-v1 (legacy)}"
 
 detect_latest_label() {
     if [[ -n "${DOCS_LATEST_LABEL:-}" ]]; then
