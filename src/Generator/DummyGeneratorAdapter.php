@@ -16,7 +16,6 @@ declare(strict_types=1);
 namespace CakephpFixtureFactories\Generator;
 
 use BadMethodCallException;
-use Cake\Core\Configure;
 use CakephpFixtureFactories\Error\FixtureFactoryException;
 use DummyGenerator\Core\Randomizer\XoshiroRandomizer;
 use DummyGenerator\Definitions\Randomizer\RandomizerInterface;
@@ -25,17 +24,20 @@ use InvalidArgumentException;
 use OverflowException;
 
 /**
- * Adapter for DummyGenerator library
+ * Adapter for DummyGenerator library.
  *
- * This adapter wraps the DummyGenerator library to implement the GeneratorInterface
+ * Wraps DummyGenerator to implement {@see GeneratorInterface}. Where the
+ * underlying method names diverge from Faker's, this adapter bridges them
+ * so factory `definition()` bodies stay portable across both backends:
  *
- * Compatibility notes:
- * - uuid() is mapped to uuid4()
- * - enumElement() is mapped to enumCase() for Faker compatibility (deprecated, kept for backward compatibility)
+ * - `uuid()` maps to DummyGenerator's `uuid4()`.
+ * - `realText()` maps to `text()` (DummyGenerator does not ship a separate
+ *   real-text provider).
+ * - `randomAscii()` maps to `numberBetween(33, 126)` + `chr()`.
  *
  * For enum support, use:
- * - enumCase(EnumClass::class) - returns a random enum case
- * - enumValue(BackedEnumClass::class) - returns a random backed enum value
+ * - `enumCase(EnumClass::class)` — returns a random enum case.
+ * - `enumValue(BackedEnumClass::class)` — returns a random backed enum value.
  *
  * @method \UnitEnum enumCase(string $enumClass) Get a random enum case
  * @method string|int enumValue(string $enumClass) Get a random backed enum value
@@ -133,25 +135,7 @@ class DummyGeneratorAdapter implements GeneratorInterface
             return $this->handleUniqueCall('text', [$maxNbChars]);
         }
 
-        // Map enumElement() to enumCase() for compatibility with Faker
-        // @deprecated Use enumCase() instead - enumElement() is Faker-specific
-        if ($name === 'enumElement') {
-            // Soft deprecation - log warning if in debug mode and not in test environment
-            if (
-                class_exists('\Cake\Core\Configure') &&
-                Configure::read('debug') &&
-                !defined('PHPUNIT_COMPOSER_INSTALL') // Skip deprecation in PHPUnit tests
-            ) {
-                trigger_error(
-                    'DummyGeneratorAdapter::enumElement() is deprecated. Use enumCase() instead for DummyGenerator compatibility.',
-                    E_USER_DEPRECATED,
-                );
-            }
-
-            return $this->handleUniqueCall('enumCase', $arguments);
-        }
-
-        // DummyGenerator uses __call for all its methods, so we try to call it directly
+        // DummyGenerator uses __call for all its methods, so we try to call it directly.
         return $this->handleUniqueCall($name, $arguments);
     }
 

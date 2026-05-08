@@ -82,7 +82,7 @@ class FakerAdapter implements GeneratorInterface
      */
     public function __call(string $name, array $arguments): mixed
     {
-        // Handle enumCase method - returns the enum case itself (alias for enumElement)
+        // Handle enumCase method - returns the enum case itself.
         if ($name === 'enumCase' && count($arguments) === 1) {
             $enumClass = $arguments[0];
             if (!is_string($enumClass) || !enum_exists($enumClass)) {
@@ -118,21 +118,6 @@ class FakerAdapter implements GeneratorInterface
             $randomCase = $this->generator->randomElement($cases);
 
             return $randomCase->value;
-        }
-
-        // Handle enumElement method - returns the enum element itself
-        if ($name === 'enumElement' && count($arguments) === 1) {
-            $enumClass = $arguments[0];
-            if (!is_string($enumClass) || !enum_exists($enumClass)) {
-                throw new InvalidArgumentException("Invalid enum class: `$enumClass`");
-            }
-
-            $cases = $enumClass::cases();
-            if (!$cases) {
-                throw new InvalidArgumentException("Enum has no cases: `$enumClass`");
-            }
-
-            return $this->generator->randomElement($cases);
         }
 
         return $this->generator->$name(...$arguments);
