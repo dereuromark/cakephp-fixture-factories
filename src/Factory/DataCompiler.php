@@ -30,7 +30,14 @@ use InvalidArgumentException;
 /**
  * Class DataCompiler
  *
+ * The TEntity template tracks the *parent* factory's entity type. Associated
+ * child factories collected in `$dataFromAssociations` and friends carry
+ * their own (different) entity types and stay typed as
+ * `BaseFactory<EntityInterface>`.
+ *
  * @internal
+ *
+ * @template TEntity of \Cake\Datasource\EntityInterface
  */
 class DataCompiler
 {
@@ -108,7 +115,7 @@ class DataCompiler
     private static int $persistDepth = 0;
 
     /**
-     * @var \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>
+     * @var \CakephpFixtureFactories\Factory\BaseFactory<TEntity>
      */
     private BaseFactory $factory;
 
@@ -118,7 +125,7 @@ class DataCompiler
     private bool $setPrimaryKey = true;
 
     /**
-     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Master factory
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<TEntity> $factory Master factory
      */
     public function __construct(BaseFactory $factory)
     {
@@ -126,7 +133,7 @@ class DataCompiler
     }
 
     /**
-     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Master factory
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<TEntity> $factory Master factory
      *
      * @return void
      */
@@ -909,7 +916,7 @@ class DataCompiler
     }
 
     /**
-     * @return \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>
+     * @return \CakephpFixtureFactories\Factory\BaseFactory<TEntity>
      */
     public function getFactory(): BaseFactory
     {

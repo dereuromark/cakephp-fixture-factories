@@ -132,14 +132,14 @@ abstract class BaseFactory
      * and compiles it to produce the data feeding the
      * entities of the Factory
      *
-     * @var \CakephpFixtureFactories\Factory\DataCompiler
+     * @var \CakephpFixtureFactories\Factory\DataCompiler<TEntity>
      */
     private DataCompiler $dataCompiler;
 
     /**
      * Helper to check and build data in associations
      *
-     * @var \CakephpFixtureFactories\Factory\AssociationBuilder
+     * @var \CakephpFixtureFactories\Factory\AssociationBuilder<TEntity>
      */
     private AssociationBuilder $associationBuilder;
 
@@ -164,7 +164,7 @@ abstract class BaseFactory
      * Override in a subclass to swap in a custom DataCompiler implementation
      * (e.g. a subclass with project-specific compilation behavior).
      *
-     * @return \CakephpFixtureFactories\Factory\DataCompiler
+     * @return \CakephpFixtureFactories\Factory\DataCompiler<TEntity>
      */
     protected function buildDataCompiler(): DataCompiler
     {
@@ -1032,7 +1032,7 @@ abstract class BaseFactory
     /**
      * A protected class dedicated to generating / collecting data for this factory
      *
-     * @return \CakephpFixtureFactories\Factory\DataCompiler
+     * @return \CakephpFixtureFactories\Factory\DataCompiler<TEntity>
      */
     protected function getDataCompiler(): DataCompiler
     {
@@ -1042,7 +1042,7 @@ abstract class BaseFactory
     /**
      * A protected class dedicated to building / collecting associations for this factory
      *
-     * @return \CakephpFixtureFactories\Factory\AssociationBuilder
+     * @return \CakephpFixtureFactories\Factory\AssociationBuilder<TEntity>
      */
     protected function getAssociationBuilder(): AssociationBuilder
     {
