@@ -28,7 +28,13 @@ use Throwable;
 /**
  * Class AssociationBuilder
  *
+ * The TEntity template tracks the *parent* factory's entity type. Child
+ * association factories accumulated in `$associations` carry their own
+ * (different) entity types and stay typed as `BaseFactory<EntityInterface>`.
+ *
  * @internal
+ *
+ * @template TEntity of \Cake\Datasource\EntityInterface
  */
 class AssociationBuilder
 {
@@ -47,12 +53,12 @@ class AssociationBuilder
     private array $manualAssociations = [];
 
     /**
-     * @var \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>
+     * @var \CakephpFixtureFactories\Factory\BaseFactory<TEntity>
      */
     private BaseFactory $factory;
 
     /**
-     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Associated factory
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<TEntity> $factory Associated factory
      */
     public function __construct(BaseFactory $factory)
     {
@@ -60,7 +66,7 @@ class AssociationBuilder
     }
 
     /**
-     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Associated factory
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<TEntity> $factory Associated factory
      *
      * @return void
      */
@@ -270,7 +276,7 @@ class AssociationBuilder
     }
 
     /**
-     * @return \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> Factory
+     * @return \CakephpFixtureFactories\Factory\BaseFactory<TEntity> Factory
      */
     public function getFactory(): BaseFactory
     {
