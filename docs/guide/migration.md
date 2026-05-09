@@ -39,7 +39,7 @@ Replace `setDefaultTemplate()` + `setDefaultData()` with `definition()`:
 The bundled Rector ruleset performs this rewrite automatically:
 
 ```bash
-vendor/bin/rector process tests --config rector.php
+vendor/bin/rector process tests --config vendor/dereuromark/cakephp-fixture-factories/rector.php
 ```
 
 See the [v1 → v2 upgrade guide](upgrading.md) for the full ruleset and the call-site renames it covers.
