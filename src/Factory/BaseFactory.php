@@ -37,14 +37,7 @@ use Throwable;
  * Class BaseFactory
  *
  * Subclasses should declare the entity type via PHPStan generics so that
- * `build()`, `buildMany()`, `save()` and `saveMany()` resolve to the concrete entity class:
- *
- * ```
- * /**
- *  * @extends BaseFactory<\App\Model\Entity\Article>
- *  *\/
- * class ArticleFactory extends BaseFactory { ... }
- * ```
+ * `build()`, `buildMany()`, `save()` and `saveMany()` resolve to the concrete entity class.
  *
  * @template TEntity of \Cake\Datasource\EntityInterface
  */
