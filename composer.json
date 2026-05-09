@@ -3,7 +3,7 @@
     "description": "A CakePHP plugin for creating test fixtures dynamically with factory pattern",
     "type": "cakephp-plugin",
     "keywords": ["cakephp", "tests", "dynamic", "fixtures", "dev", "cli", "testing", "factories", "faker"],
-    "homepage": "https://github.com/dereuromark/cakephp-fixture-factories",
+    "homepage": "https://dereuromark.github.io/cakephp-fixture-factories/",
     "support": {
         "source": "https://github.com/dereuromark/cakephp-fixture-factories"
     },
