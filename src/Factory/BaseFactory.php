@@ -117,12 +117,12 @@ abstract class BaseFactory
     private bool $readBootstrapMode = false;
 
     /**
-     * @var array<int, callable(\Cake\Datasource\EntityInterface, int, static): (\Cake\Datasource\EntityInterface|void)>
+     * @var array<int, callable(TEntity, int, static): (TEntity|void)>
      */
     private array $afterBuildCallbacks = [];
 
     /**
-     * @var array<int, callable(\Cake\Datasource\EntityInterface, int, static): (\Cake\Datasource\EntityInterface|void)>
+     * @var array<int, callable(TEntity, int, static): (TEntity|void)>
      */
     private array $afterSaveCallbacks = [];
 
@@ -241,7 +241,7 @@ abstract class BaseFactory
     /**
      * Create a factory from an existing entity.
      *
-     * @param \Cake\Datasource\EntityInterface $entity Injected entity.
+     * @param TEntity $entity Injected entity.
      *
      * @return static
      */
@@ -562,7 +562,7 @@ abstract class BaseFactory
     /**
      * Fetch entities from the data compiler.
      *
-     * @return array<\Cake\Datasource\EntityInterface>
+     * @return array<TEntity>
      */
     protected function toArray(): array
     {
@@ -717,7 +717,7 @@ abstract class BaseFactory
      * so this is a harmless second application (the entity is already
      * clean and not new by the time we get here).
      *
-     * @param array<\Cake\Datasource\EntityInterface> $entities Saved entities returned by the table.
+     * @param array<TEntity> $entities Saved entities returned by the table.
      * @param \Cake\ORM\Table $table The table the save was performed on.
      */
     private function finalizePersistedEntities(array $entities, Table $table): void
@@ -989,7 +989,7 @@ abstract class BaseFactory
      * Register a callback to run on each built entity before `build*()` returns
      * and before `save*()` persists the entity.
      *
-     * @param callable(\Cake\Datasource\EntityInterface, int, static): (\Cake\Datasource\EntityInterface|void) $callback Callback
+     * @param callable(TEntity, int, static): (TEntity|void) $callback Callback
      *
      * @return static
      */
@@ -1004,7 +1004,7 @@ abstract class BaseFactory
     /**
      * Register a callback to run on each entity after it has been saved.
      *
-     * @param callable(\Cake\Datasource\EntityInterface, int, static): (\Cake\Datasource\EntityInterface|void) $callback Callback
+     * @param callable(TEntity, int, static): (TEntity|void) $callback Callback
      *
      * @return static
      */
@@ -1581,13 +1581,22 @@ abstract class BaseFactory
     }
 
     /**
-     * @param array<\Cake\Datasource\EntityInterface> $entities Entities
-     * @param array<int, callable(\Cake\Datasource\EntityInterface, int, static): (\Cake\Datasource\EntityInterface|void)> $callbacks Callbacks
+     * Inputs are typed loosely as `array<EntityInterface>` because the upstream
+     * sources (DataCompiler, Table::saveOrFail) only promise EntityInterface;
+     * the factory's TEntity-binding is asserted here at the boundary so that
+     * the callback contract — and thus userland callbacks registered via
+     * afterBuild() / afterSave() — can use the concrete entity class.
      *
-     * @return array<\Cake\Datasource\EntityInterface>
+     * @param array<\Cake\Datasource\EntityInterface> $entities Entities
+     * @param array<int, callable(TEntity, int, static): (TEntity|void)> $callbacks Callbacks
+     *
+     * @return array<TEntity>
      */
     private function applyCallbacks(array $entities, array $callbacks): array
     {
+        /** @var array<TEntity> $entities */
+        $entities = $entities;
+
         if ($callbacks === []) {
             return $entities;
         }
