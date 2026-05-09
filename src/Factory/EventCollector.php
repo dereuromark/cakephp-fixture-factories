@@ -109,16 +109,47 @@ class EventCollector
             $options['connection'] = ConnectionManager::get($this->connectionName);
         }
 
+        $locator = FactoryTableRegistry::getTableLocator();
+
         try {
-            $table = FactoryTableRegistry::getTableLocator()->get($registryAlias, $options);
+            $table = $locator->get($registryAlias, $options);
         } catch (RuntimeException $exception) {
-            if (!FactoryTableRegistry::getTableLocator()->exists($registryAlias)) {
+            if (!$locator->exists($registryAlias)) {
                 throw $exception;
             }
-            FactoryTableRegistry::getTableLocator()->remove($registryAlias);
-            $table = FactoryTableRegistry::getTableLocator()->get($registryAlias, $options);
+            $locator->remove($registryAlias);
+            $table = $locator->get($registryAlias, $options);
         }
         $table->setAlias($this->getRootTableAlias());
+
+        // Mirror the factory's scoped instance under the bare alias and the
+        // plugin-prefixed alias so CakePHP's BTM target lookups and
+        // junction-belongsTo resolutions — which always use those forms,
+        // never the scoped key — return this exact instance instead of
+        // spawning a parallel one under the same logical name.
+        //
+        // Without this consolidation the junction's belongsTo target
+        // (registered by Cake's `_generateJunctionAssociations` source-side
+        // block with `targetTable: $source` = this scoped factory table)
+        // drifts away from the bare-alias instance the inverse direction
+        // creates on its first BTM target lookup. Cake then reaches the
+        // identity check at `BelongsToMany::_generateJunctionAssociations`
+        // and throws the "incompatible association on junction" error
+        // reported in #62.
+        //
+        // The set is unconditional: factories that resolve to the same
+        // scoped key (default-listening factories — the common case) all
+        // map their bare alias here to the same instance, so successive
+        // calls are no-ops. Custom-listening factories overwrite, which
+        // is intentional — the factory that ran most recently owns the
+        // bare alias, matching the behavior CakePHP itself documents for
+        // explicit `set()` calls on the table locator.
+        foreach ([$this->getRootTableAlias(), $this->rootTableRegistryName] as $alias) {
+            if ($alias === $registryAlias) {
+                continue;
+            }
+            $locator->set($alias, $table);
+        }
 
         return $this->table = $table;
     }
