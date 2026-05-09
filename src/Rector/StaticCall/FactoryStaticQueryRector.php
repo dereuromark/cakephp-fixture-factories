@@ -44,6 +44,14 @@ final class FactoryStaticQueryRector extends AbstractRector
             );
         }
 
+        // Factory::find() with no args -> Factory::query(). CakePHP 5's
+        // SelectQuery::find() requires a finder name, so chaining ->find() onto
+        // Factory::query() (which already returns a default 'all' SelectQuery)
+        // would error. Factory::find('all', ...) keeps the chained form.
+        if ($this->isName($node->name, 'find') && $node->args === []) {
+            return new StaticCall($node->class, new Identifier('query'));
+        }
+
         foreach (['find', 'firstOrFail', 'count'] as $queryMethod) {
             if ($this->isName($node->name, $queryMethod)) {
                 return new MethodCall(

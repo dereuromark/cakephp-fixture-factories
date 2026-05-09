@@ -26,7 +26,7 @@ If you're still on `1.3.x`, upgrade to `1.4.x` first, then move to v2.
 For the v2 step, the package ships a Rector config to help with the mechanical API rename work:
 
 ```bash
-vendor/bin/rector process tests --config rector.php
+vendor/bin/rector process tests --config vendor/dereuromark/cakephp-fixture-factories/rector.php
 ```
 
 The bundled rules cover the safe, mechanical call-site changes:
