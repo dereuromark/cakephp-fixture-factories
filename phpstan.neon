@@ -6,6 +6,11 @@ parameters:
 		- src/
 	ignoreErrors:
 		- identifier: trait.unused
-		# Pre-existing issues exposed by CakePHP 5.3.2's stricter type annotations
-		- identifier: return.type
-		  path: src/Factory/BaseFactory.php
+		# PHPStan does not propagate the TEntity template through `new static()`,
+		# so the BaseFactory factory-method helpers are reported as returning
+		# static<EntityInterface> instead of static<TEntity>. Narrow + count-pinned.
+		-
+			message: '#static\(.+BaseFactory<TEntity.+\) but returns static\(.+BaseFactory<.+EntityInterface>\)#'
+			identifier: return.type
+			path: src/Factory/BaseFactory.php
+			count: 2

@@ -1393,7 +1393,10 @@ abstract class BaseFactory
      */
     public static function query(): SelectQuery
     {
-        return self::configuredFactory()->getTable()->find();
+        /** @var \Cake\ORM\Query\SelectQuery<\Cake\Datasource\EntityInterface> $query */
+        $query = self::configuredFactory()->getTable()->find();
+
+        return $query;
     }
 
     /**
