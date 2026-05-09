@@ -42,6 +42,7 @@ The bundled rules cover the safe, mechanical call-site changes:
 - `patchData(...)` to `state(...)` (in factory helper methods such as `asAdmin()`)
 - static query helpers like `Factory::find()` to `Factory::query()`
 - `Factory::get($id, $options)` to `Factory::table()->get($id, $options)`
+- Faker-style property access on the generator to a method call: `$generator->name` to `$generator->name()` (also covers `optional()` / `unique()` chains and `$this->getGenerator()->name`)
 
 It intentionally does **not** rewrite deprecated `persist()` calls, because that return type is shape-dependent and needs a human choice between `save()` and `saveMany()`.
 
