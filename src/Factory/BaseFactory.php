@@ -47,8 +47,6 @@ use Throwable;
  * ```
  *
  * @template TEntity of \Cake\Datasource\EntityInterface
- *
- * @package CakephpFixtureFactories\Factory
  */
 abstract class BaseFactory
 {
