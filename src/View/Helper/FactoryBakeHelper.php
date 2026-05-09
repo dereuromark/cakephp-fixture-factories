@@ -6,6 +6,9 @@ namespace CakephpFixtureFactories\View\Helper;
 
 use Cake\View\Helper;
 
+/**
+ * @extends \Cake\View\Helper<\Cake\View\View>
+ */
 class FactoryBakeHelper extends Helper
 {
     /**
