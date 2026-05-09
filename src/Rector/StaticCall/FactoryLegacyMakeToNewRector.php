@@ -13,6 +13,7 @@ use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
 use PhpParser\Node\VariadicPlaceholder;
 use PHPStan\Type\ObjectType;
+use PHPStan\Type\UnionType;
 use Rector\Rector\AbstractRector;
 
 final class FactoryLegacyMakeToNewRector extends AbstractRector
@@ -71,13 +72,20 @@ final class FactoryLegacyMakeToNewRector extends AbstractRector
                 return null;
             }
 
-            $isInteger = $this->getType($firstArg->value)->isInteger();
-            if ($isInteger->yes()) {
+            $type = $this->getType($firstArg->value);
+            if ($type->isInteger()->yes()) {
                 return $this->createCountCall($this->createNewCall($node->class), $firstArg);
             }
 
-            // Static type is uncertain (e.g. int|array). Bail rather than guess wrong.
-            if ($isInteger->maybe()) {
+            // Bail only on concretely ambiguous int|array unions where rector
+            // genuinely cannot choose between new($data) and new()->count($n).
+            // For mixed/unknown/untyped variables, fall through to the new()
+            // rename — historically `make($single_arg)` meant data, not count.
+            if (
+                $type instanceof UnionType
+                && $type->isInteger()->maybe()
+                && $type->isArray()->maybe()
+            ) {
                 return null;
             }
 
