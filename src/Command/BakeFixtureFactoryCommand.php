@@ -138,7 +138,7 @@ class BakeFixtureFactoryCommand extends BakeCommand
      */
     public function getModelPath(): string|array
     {
-        if (!empty($this->plugin)) {
+        if ($this->plugin) {
             $path = $this->_pluginPath($this->plugin) . APP_DIR . DS . $this->pathToTableDir;
         } else {
             $path = APP . $this->pathToTableDir;
@@ -171,11 +171,10 @@ class BakeFixtureFactoryCommand extends BakeCommand
         $modelPath = $this->getModelPathString();
         $tables = glob($modelPath . '*Table.php') ?: [];
 
-        $tables = array_map(function ($a) {
-            $result = preg_replace('/Table.php$/', '', $a);
-
-            return $result ?? $a;
-        }, $tables);
+        $tables = array_map(
+            static fn (string $a): string => preg_replace('/Table.php$/', '', $a) ?? $a,
+            $tables,
+        );
 
         $return = [];
         foreach ($tables as $table) {
@@ -345,10 +344,7 @@ class BakeFixtureFactoryCommand extends BakeCommand
                 $methods = array_merge(array_keys($associations['manyToMany']), $methods);
             }
 
-            array_walk($methods, function (&$value): void {
-                $value = "with$value";
-            });
-            $data['methods'] = $methods;
+            $data['methods'] = array_map(static fn (string $value): string => "with$value", $methods);
             $data['useStatements'] = array_unique(array_values(Hash::flatten($useStatements)));
         }
 
