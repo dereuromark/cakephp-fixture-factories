@@ -66,10 +66,9 @@ trait FactoryAwareTrait
      */
     public function getFactoryClassName(string $name): string
     {
-        // phpcs:disable
-        @[$modelName, $plugin] = array_reverse(explode('.', $name));
-
-        // phpcs:enable
+        $parts = array_reverse(explode('.', $name));
+        $modelName = $parts[0];
+        $plugin = $parts[1] ?? null;
 
         return $this->getFactoryNamespace($plugin) . '\\' . $this->getFactoryNameFromModelName($modelName);
     }
