@@ -121,6 +121,14 @@ class DefaultDataGuesser
     ];
 
     /**
+     * When true, the guesser also emits defaults for nullable columns and
+     * columns with a DB default. Backs the `bake fixture_factory --all-fields`
+     * flag. Foreign-key and primary-key columns are still skipped regardless,
+     * so the baked factory keeps pushing users toward association-aware APIs.
+     */
+    protected bool $includeOptional = false;
+
+    /**
      * Replace the entire bundled mapping. Useful for projects whose
      * conventions diverge enough that a partial merge would be noisy.
      *
@@ -149,6 +157,25 @@ class DefaultDataGuesser
     }
 
     /**
+     * Toggle the "include optional columns" mode.
+     *
+     * When `true`, the guesser emits defaults for nullable columns and
+     * columns with a DB default — useful when you want bake to pre-populate
+     * `definition()` with every interesting column up front. Backs the
+     * `bake fixture_factory --all-fields` flag.
+     *
+     * Foreign-key columns and primary keys are still excluded regardless so
+     * the baked factory keeps pushing users toward `with()` / `for()` /
+     * `has()` for related rows.
+     */
+    public function setIncludeOptional(bool $include): static
+    {
+        $this->includeOptional = $include;
+
+        return $this;
+    }
+
+    /**
      * Build the `column => generator-expression` map for a Table's schema.
      *
      * @param \Cake\ORM\Table $table The Table being baked against.
@@ -171,7 +198,10 @@ class DefaultDataGuesser
             }
 
             $columnSchema = $schema->getColumn($column);
-            if (!$columnSchema || $columnSchema['null'] || $columnSchema['default'] !== null) {
+            if (!$columnSchema) {
+                continue;
+            }
+            if (!$this->includeOptional && ($columnSchema['null'] || $columnSchema['default'] !== null)) {
                 continue;
             }
 

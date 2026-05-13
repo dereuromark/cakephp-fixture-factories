@@ -40,8 +40,21 @@ bin/cake bake fixture_factory Articles -p MyPlugin
 |-------------|--------|
 | `-a`        | Bake every model in the app |
 | `-m`        | Add directional helpers based on associations (`for…()` for to-one, `has…()` for to-many) |
+| `--all-fields` | Emit default values for **every** non-primary, non-foreign-key column — including nullable columns and columns with a DB default. Without the flag, bake only fills required (NOT NULL, no DB default) columns. |
 | `-p Plugin` | Bake into a plugin's namespace |
 | `-h`        | Show all available options |
+
+### `--all-fields`: include optional columns
+
+By default, the baked `definition()` only emits values for columns the database would otherwise reject — required, no-default, non-FK columns. Optional columns and columns that the database already defaults are skipped to keep the factory minimal.
+
+Pass `--all-fields` when you want a fully populated factory body up front:
+
+```bash
+bin/cake bake fixture_factory Articles --all-fields
+```
+
+Foreign-key columns remain excluded regardless of the flag, so the baked factory keeps pushing related rows through the association APIs (`with()` / `for()` / `has()`) instead of emitting raw integer FK values.
 
 ## Customizing the generated code
 

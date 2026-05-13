@@ -320,7 +320,7 @@ class BakeFixtureFactoryCommand extends BakeCommand
             'modelName' => $this->modelName,
             'factory' => Inflector::singularize($this->modelName) . 'Factory',
             'namespace' => $this->getFactoryNamespace($this->plugin),
-            'defaultData' => $this->defaultData(),
+            'defaultData' => $this->defaultData($arg),
         ];
         $useStatements = $methods = [];
         if ($arg->getOption('methods')) {
@@ -436,6 +436,12 @@ class BakeFixtureFactoryCommand extends BakeCommand
                 'short' => 'm',
                 'boolean' => true,
                 'help' => 'Include methods based on the table relations.',
+            ])
+            ->addOption('all-fields', [
+                'boolean' => true,
+                'help' => 'Emit default values for nullable columns and columns with DB defaults too, '
+                    . 'instead of only required NOT NULL columns. Foreign keys are still excluded '
+                    . 'so the baked factory keeps pushing related rows through with()/for()/has().',
             ]);
 
         return $parser;
@@ -444,11 +450,23 @@ class BakeFixtureFactoryCommand extends BakeCommand
     /**
      * Build the `column => generator-expression` map fed to the bake template.
      *
+     * Honours the `--all-fields` option when available — emits defaults for
+     * nullable / DB-defaulted columns too (foreign keys remain excluded).
+     *
+     * @param \Cake\Console\Arguments|null $args Bake-command arguments. Optional
+     *     for subclasses / callers that want the legacy required-only behavior.
+     *
      * @return array<string, string>
      */
-    protected function defaultData(): array
+    protected function defaultData(?Arguments $args = null): array
     {
-        return $this->getDefaultDataGuesser()->guessFor($this->getTable());
+        $guesser = $this->getDefaultDataGuesser();
+        // Always set both directions: the guesser may be cached across multiple
+        // executions on the same command instance, and a prior --all-fields run
+        // must not leak into a subsequent invocation without the flag.
+        $guesser->setIncludeOptional($args !== null && (bool)$args->getOption('all-fields'));
+
+        return $guesser->guessFor($this->getTable());
     }
 
     /**

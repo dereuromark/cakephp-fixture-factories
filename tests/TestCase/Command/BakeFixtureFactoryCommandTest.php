@@ -322,6 +322,48 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
         $this->assertEquals($title, $article['title']);
     }
 
+    public function testBakeAllFieldsEmitsDefaultsForOptionalColumns(): void
+    {
+        $bakedPath = TESTS . 'Factory' . DS . 'ArticleFactory.php';
+        if (file_exists($bakedPath)) {
+            unlink($bakedPath);
+        }
+
+        $this->bake(['Articles'], ['all-fields' => true]);
+
+        $this->assertFileExists($bakedPath);
+        $contents = (string)file_get_contents($bakedPath);
+
+        // The Articles table has a `published` column that defaults to 0
+        // — it's skipped by default but should appear with --all-fields.
+        $this->assertStringContainsString("'published'", $contents);
+    }
+
+    public function testAllFieldsToggleDoesNotLeakAcrossInvocations(): void
+    {
+        // Codex P2: the cached DefaultDataGuesser must be reset both ways,
+        // otherwise a previous --all-fields run leaks into a later run
+        // without the flag on the same command instance.
+        $bakedPath = TESTS . 'Factory' . DS . 'ArticleFactory.php';
+
+        // First run: with --all-fields → 'published' should appear.
+        if (file_exists($bakedPath)) {
+            unlink($bakedPath);
+        }
+        $this->bake(['Articles'], ['all-fields' => true]);
+        $this->assertStringContainsString("'published'", (string)file_get_contents($bakedPath));
+
+        // Second run on the SAME command instance: without --all-fields.
+        // 'published' must NOT appear; the guesser must have been reset.
+        unlink($bakedPath);
+        $this->bake(['Articles']);
+        $this->assertStringNotContainsString(
+            "'published'",
+            (string)file_get_contents($bakedPath),
+            'Second bake without --all-fields must not leak the prior all-fields state.',
+        );
+    }
+
     public function testRunBakeAllInTestApp(): void
     {
         $this->bake([], ['all' => true]);
