@@ -57,13 +57,24 @@ $articles = ArticleFactory::new()
 
 The state at index `$i % count($states)` is applied to the i-th entity, so the example above produces `Draft, Published, Draft, Published`. If `count()` is smaller than the number of states the trailing states are simply unused; if `count()` is `1` only the first state ever applies. Calling `sequence()` again replaces the previously stored states — it is not additive.
 
-A `sequence` state can also be a callable receiving `($factory, $generator, $index)` for index-aware values:
+A `sequence` state can also be a callable receiving a `Sequence` context object for index-aware values. `Sequence` is a readonly value object surfacing the iteration position (`$s->index`, `$s->position`, `$s->total`) and the boundary checks (`$s->isFirst`, `$s->isLast`) as **properties** — uniform with the rest of the API and IDE-autocompleted. `$s->factory` and `$s->generator` are also exposed for the rare callable that doesn't have them in `use(...)` scope:
 
 ```php
+use CakephpFixtureFactories\Factory\Sequence;
+
 $articles = ArticleFactory::new()
     ->count(3)
-    ->sequence(fn ($factory, $generator, int $i) => ['slug' => "article-{$i}"])
+    ->sequence(fn (Sequence $s) => ['slug' => "article-{$s->index}"])
     ->buildMany();
+
+// Or composing the position / boundary checks:
+$articles = ArticleFactory::new()
+    ->count(5)
+    ->sequence(fn (Sequence $s) => [
+        'title' => $s->isFirst ? 'Pinned' : "Article {$s->position}/{$s->total}",
+        'is_final' => $s->isLast,
+    ])
+    ->saveMany();
 ```
 
 When you only want to vary one column at a time, `sequenceField()` is the focused alternative. It accepts any value the column supports — scalars, arrays, enum cases, anything Cake's marshaller handles for that field:
