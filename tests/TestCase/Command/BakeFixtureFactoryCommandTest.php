@@ -24,6 +24,7 @@ use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\Test\Util\TestCaseWithFixtureBaking;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
 use InvalidArgumentException;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\DataProvider;
 use ReflectionClass;
 use TestApp\Model\Entity\Address;
@@ -409,6 +410,7 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
      * — this test covers it through the command's public guessFor() surface
      * so the bake output is verified end-to-end.
      */
+    #[AllowMockObjectsWithoutExpectations]
     public function testGetUniqueFieldsDetection(): void
     {
         // Create a mock table with schema containing unique constraints
@@ -480,6 +482,7 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
         $this->assertStringNotContainsString('->unique()->', $defaults['created']);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testSchemaForeignKeyIsSkippedWithoutAssociation(): void
     {
         $schema = $this->getMockBuilder('\Cake\Database\Schema\TableSchema')
@@ -525,6 +528,7 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
         $this->assertArrayHasKey('title', $defaults);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testCompositeUniqueConstraintDoesNotForcePerColumnUniqueness(): void
     {
         $schema = $this->getMockBuilder('\Cake\Database\Schema\TableSchema')
@@ -575,6 +579,7 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
     /**
      * Test that unique fields get wrapped with ->unique()-> in default data
      */
+    #[AllowMockObjectsWithoutExpectations]
     public function testDefaultDataWithUniqueFields(): void
     {
         // Create a mock schema with unique constraint on username
