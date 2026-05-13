@@ -1,0 +1,171 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Licensed under The MIT License
+ * For full copyright and license information, please see the LICENSE.txt
+ * Redistributions of files must retain the above copyright notice.
+ */
+
+namespace CakephpFixtureFactories\Test\TestCase\TestSuite;
+
+use Cake\TestSuite\TestCase;
+use CakephpFixtureFactories\Test\Factory\CityFactory;
+use CakephpFixtureFactories\Test\Factory\CountryFactory;
+use CakephpFixtureFactories\TestSuite\TableAssertionsTrait;
+use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use PHPUnit\Framework\AssertionFailedError;
+
+/**
+ * Tests for `TableAssertionsTrait` — expressive assertions composed over
+ * `Factory::query()`. Stays on the v2 side of the design line: no factory
+ * read-surface additions, just a test-suite trait.
+ *
+ * Failure-message tests use try/catch (rather than `expectException`) because
+ * the trait methods themselves are named `assertX()`, which trips the
+ * "no assert after expectException" CS rule when paired.
+ */
+class TableAssertionsTraitTest extends TestCase
+{
+    use TableAssertionsTrait;
+    use TruncateDirtyTables;
+
+    public function testAssertTableEmptyPassesOnFreshTable(): void
+    {
+        $this->assertTableEmpty(CountryFactory::class);
+    }
+
+    public function testAssertTableEmptyFailsWhenRowsExist(): void
+    {
+        CountryFactory::new()->save();
+
+        $message = $this->captureFailureMessage(
+            fn () => $this->assertTableEmpty(CountryFactory::class),
+        );
+        $this->assertMatchesRegularExpression('/CountryFactory.*empty.*found 1/i', $message);
+    }
+
+    public function testAssertTableCountMatchesExactRowCount(): void
+    {
+        CountryFactory::new()->count(3)->saveMany();
+
+        $this->assertTableCount(CountryFactory::class, 3);
+    }
+
+    public function testAssertTableCountFailsOnMismatch(): void
+    {
+        CountryFactory::new()->count(3)->saveMany();
+
+        $message = $this->captureFailureMessage(
+            fn () => $this->assertTableCount(CountryFactory::class, 5),
+        );
+        $this->assertMatchesRegularExpression('/Expected 5.*found 3/i', $message);
+    }
+
+    public function testAssertTableCountWithCriteriaFiltersBeforeCounting(): void
+    {
+        CountryFactory::new(['name' => 'Kenya'])->save();
+        CountryFactory::new(['name' => 'France'])->save();
+        CountryFactory::new(['name' => 'France'])->save();
+
+        $this->assertTableCount(CountryFactory::class, 2, ['name' => 'France']);
+        $this->assertTableCount(CountryFactory::class, 1, ['name' => 'Kenya']);
+        $this->assertTableCount(CountryFactory::class, 0, ['name' => 'Atlantis']);
+    }
+
+    public function testAssertTableHasPassesWhenAtLeastOneRowMatches(): void
+    {
+        CountryFactory::new(['name' => 'Kenya'])->save();
+        CountryFactory::new(['name' => 'Atlantis'])->save();
+
+        $this->assertTableHas(CountryFactory::class, ['name' => 'Kenya']);
+    }
+
+    public function testAssertTableHasFailsWhenNoRowMatches(): void
+    {
+        CountryFactory::new(['name' => 'Real Country'])->save();
+
+        $message = $this->captureFailureMessage(
+            fn () => $this->assertTableHas(CountryFactory::class, ['name' => 'Atlantis']),
+        );
+        $this->assertMatchesRegularExpression('/at least one.*name.*Atlantis/i', $message);
+    }
+
+    public function testAssertTableMissingPassesWhenNoRowMatches(): void
+    {
+        CountryFactory::new(['name' => 'Kenya'])->save();
+
+        $this->assertTableMissing(CountryFactory::class, ['name' => 'Atlantis']);
+    }
+
+    public function testAssertTableMissingFailsWhenRowExists(): void
+    {
+        CountryFactory::new(['name' => 'Spam'])->save();
+
+        $message = $this->captureFailureMessage(
+            fn () => $this->assertTableMissing(CountryFactory::class, ['name' => 'Spam']),
+        );
+        $this->assertMatchesRegularExpression('/no rows.*name.*Spam/i', $message);
+    }
+
+    public function testAssertEntityExistsPassesForSavedEntity(): void
+    {
+        $country = CountryFactory::new()->save();
+
+        $this->assertEntityExists($country);
+    }
+
+    public function testAssertEntityExistsFailsForUnsavedEntity(): void
+    {
+        $country = CountryFactory::new(['name' => 'Ghost'])->build();
+
+        $message = $this->captureFailureMessage(
+            fn () => $this->assertEntityExists($country),
+        );
+        $this->assertMatchesRegularExpression('/to exist .* but it does not/i', $message);
+    }
+
+    public function testAssertEntityMissingPassesForDeletedEntity(): void
+    {
+        $country = CountryFactory::new()->save();
+        CountryFactory::table()->deleteAll(['id' => $country->id]);
+
+        $this->assertEntityMissing($country);
+    }
+
+    public function testAssertEntityMissingFailsWhenStillPresent(): void
+    {
+        $country = CountryFactory::new()->save();
+
+        $message = $this->captureFailureMessage(
+            fn () => $this->assertEntityMissing($country),
+        );
+        $this->assertMatchesRegularExpression('/missing.*still exists/i', $message);
+    }
+
+    public function testAssertTableHasComposesAcrossFactoryClasses(): void
+    {
+        CityFactory::new(['name' => 'Paris'])->save();
+        CountryFactory::new(['name' => 'France'])->save();
+
+        $this->assertTableHas(CityFactory::class, ['name' => 'Paris']);
+        $this->assertTableHas(CountryFactory::class, ['name' => 'France']);
+        $this->assertTableMissing(CityFactory::class, ['name' => 'France']);
+        $this->assertTableMissing(CountryFactory::class, ['name' => 'Paris']);
+    }
+
+    /**
+     * Run the closure, fail if it does NOT throw an `AssertionFailedError`,
+     * otherwise return the failure message so the test can introspect it.
+     */
+    private function captureFailureMessage(callable $closure): string
+    {
+        try {
+            $closure();
+        } catch (AssertionFailedError $e) {
+            return $e->getMessage();
+        }
+        $this->fail('Expected an AssertionFailedError but no exception was thrown.');
+    }
+}
