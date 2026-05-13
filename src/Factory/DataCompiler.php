@@ -601,11 +601,13 @@ class DataCompiler
         if ($this->sequenceData) {
             $state = $this->sequenceData[$this->sequenceIndex % count($this->sequenceData)];
             if (is_callable($state)) {
-                $state = $state(
-                    $this->getFactory(),
-                    $this->getFactory()->getGenerator(),
-                    $this->sequenceIndex,
-                );
+                $factory = $this->getFactory();
+                $state = $state(new Sequence(
+                    index: $this->sequenceIndex,
+                    total: $factory->getTimes(),
+                    factory: $factory,
+                    generator: $factory->getGenerator(),
+                ));
             } elseif ($state instanceof EntityInterface) {
                 $state = $state->toArray();
             }

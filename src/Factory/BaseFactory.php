@@ -930,7 +930,16 @@ abstract class BaseFactory
      * Calling `sequence()` again replaces the previously stored states; it is
      * not additive.
      *
-     * @param \Cake\Datasource\EntityInterface|callable|array<string, mixed> ...$states Sequence states
+     * Each state can be:
+     * - `array<string, mixed>` — patched onto the entity directly,
+     * - `\Cake\Datasource\EntityInterface` — its `toArray()` is patched,
+     * - `callable(\CakephpFixtureFactories\Factory\Sequence): array<string, mixed>`
+     *   — invoked once per cycle with a `Sequence` context object that exposes
+     *   `$s->index`, `$s->position`, `$s->total`, `$s->isFirst()`, `$s->isLast()`,
+     *   plus `$s->factory` and `$s->generator` for the rare callable that
+     *   needs them but doesn't have them in `use(...)` scope.
+     *
+     * @param \Cake\Datasource\EntityInterface|callable(\CakephpFixtureFactories\Factory\Sequence<TEntity>): array<string, mixed>|array<string, mixed> ...$states Sequence states
      *
      * @throws \InvalidArgumentException
      *
