@@ -1511,32 +1511,61 @@ abstract class BaseFactory
             $this->guardAliasDirection($alias, false);
         }
         if ($pivot !== []) {
-            $factory = $factory->mergeAssociated(['_joinData' => $pivot]);
+            // Patch `_joinData` into every built child so Cake's belongsToMany
+            // marshaller writes the pivot columns onto the join row. The
+            // previous `mergeAssociated(['_joinData' => $pivot])` only set
+            // the marshaller `associated` config — it never populated the
+            // entity's data, so pivot values silently dropped on save.
+            $factory = $factory->state(['_joinData' => $pivot]);
         }
 
         return $this->with($alias, $factory);
     }
 
     /**
-     * Reject an explicit `$alias` whose association cardinality contradicts
-     * the directional helper. `for('Articles')` on Authors would silently
-     * attach a belongsToMany without this check; `has('Address')` would
-     * silently attach a belongsTo. Either misbuilds the entity graph.
+     * Validate an explicit `$alias`:
+     *
+     * - Unknown alias → rethrow with a paste-ready list of valid aliases on
+     *   this factory's source table, instead of letting Cake's generic
+     *   `"<assoc> is not defined"` bubble up.
+     * - Cardinality mismatch → reject `for('hasMany-alias')` or
+     *   `has('belongsTo-alias')` so a typo doesn't silently misbuild the graph.
      *
      * @param string $alias Association alias on this factory's source table.
      * @param bool $belongsTo `true` when called from `for()`, `false` from `has()`.
      *
-     * @throws \RuntimeException When the alias resolves to the wrong cardinality.
+     * @throws \RuntimeException When the alias is unknown or resolves to the wrong cardinality.
      */
     private function guardAliasDirection(string $alias, bool $belongsTo): void
     {
-        $association = $this->getTable()->getAssociation($alias);
+        $caller = $belongsTo ? 'for' : 'has';
+        $callerShort = self::shortName(static::class);
+
+        try {
+            $association = $this->getTable()->getAssociation($alias);
+        } catch (InvalidArgumentException $e) {
+            $available = [];
+            foreach ($this->getTable()->associations() as $declared) {
+                $available[] = $declared->getName();
+            }
+            sort($available);
+
+            throw new RuntimeException(sprintf(
+                "%s::%s() got unknown alias '%s' on `%s`. Available aliases: %s. "
+                . '(Typo? Missing belongsTo / hasMany declaration on the table class?)',
+                $callerShort,
+                $caller,
+                $alias,
+                $this->getTable()->getRegistryAlias(),
+                $available === [] ? '(none declared)' : '`' . implode('`, `', $available) . '`',
+            ), 0, $e);
+        }
+
         $isBelongsTo = $association instanceof BelongsTo;
         if ($belongsTo === $isBelongsTo) {
             return;
         }
 
-        $caller = $belongsTo ? 'for' : 'has';
         $expected = $belongsTo ? 'belongsTo' : 'has* (hasOne, hasMany, belongsToMany)';
         $actual = $isBelongsTo ? 'belongsTo' : 'has*';
 
@@ -1544,7 +1573,7 @@ abstract class BaseFactory
             "%s::%s() with alias '%s' refers to a %s association — expected %s. "
             . "Use the matching directional helper, or `with('%s', ...)` if you "
             . 'want the lower-level form.',
-            self::shortName(static::class),
+            $callerShort,
             $caller,
             $alias,
             $actual,
