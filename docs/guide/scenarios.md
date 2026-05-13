@@ -81,3 +81,58 @@ class FixtureScenarioTest extends TestCase
 }
 
 ```
+
+## Story pattern: named entity pools
+
+For scenarios that seed data and then need to be **sampled** from in the body of the test — "give me one random author from the 10 you just seeded" — extend the `Story` abstract class instead of implementing `FixtureScenarioInterface` directly. `Story` ships with a small pool API on top of the same loading machinery.
+
+```php
+use CakephpFixtureFactories\Scenario\Story;
+
+class BlogStory extends Story
+{
+    protected function build(): void
+    {
+        $this->addToPool('authors',    UserFactory::new()->count(10)->saveMany());
+        $this->addToPool('categories', CategoryFactory::new()->count(3)->saveMany());
+
+        // Seed 50 articles randomly distributed across the pooled authors:
+        ArticleFactory::new()
+            ->count(50)
+            ->afterBuild(fn ($article) => $article->set('author_id', $this->getRandom('authors')->id))
+            ->saveMany();
+    }
+}
+```
+
+In the test, `loadFixtureScenario()` returns the `Story` instance so the same handles are available for assertions and follow-up factory builds:
+
+```php
+class FeedTest extends TestCase
+{
+    use ScenarioAwareTrait;
+
+    public function testRandomArticleHasAPooledAuthor(): void
+    {
+        $story = $this->loadFixtureScenario(BlogStory::class);
+
+        $author  = $story->getRandom('authors');                // one entity
+        $threeOf = $story->getRandomSet('categories', 3);       // n distinct entities
+
+        $this->assertContains($author, $story->getPool('authors'));
+        $this->assertCount(3, $threeOf);
+    }
+}
+```
+
+### API
+
+- `addToPool(string $pool, EntityInterface|array $entities)` — register one or more entities under a named pool; repeated calls append.
+- `getPool(string $pool): array<EntityInterface>` — return every entity in a pool.
+- `getRandom(string $pool): EntityInterface` — uniform random pick from a pool.
+- `getRandomSet(string $pool, int $count): array<EntityInterface>` — `$count` distinct entities drawn from a pool (raises if the pool holds fewer).
+
+Unknown pool names raise `FixtureScenarioException` with a paste-ready list of the pools that *do* exist on the story.
+
+> [!NOTE]
+> `Story` `implements FixtureScenarioInterface`, so it works with `ScenarioAwareTrait::loadFixtureScenario(...)` exactly like plain scenarios. Existing scenarios that implement the interface directly keep working unchanged — `Story` is purely additive.
