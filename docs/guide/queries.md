@@ -72,8 +72,10 @@ class ArticlesControllerTest extends AppTestCase
 - `assertTableMissing(string $factoryClass, array $criteria, ?string $message = null)` — zero rows match.
 - `assertTableCount(string $factoryClass, int $expected, array $criteria = [], ?string $message = null)` — exact row count (optionally narrowed by criteria).
 - `assertTableEmpty(string $factoryClass, ?string $message = null)` — table has no rows.
-- `assertEntityExists(EntityInterface $entity, ?string $message = null)` — the entity is still in the database (by primary key).
-- `assertEntityMissing(EntityInterface $entity, ?string $message = null)` — the entity is no longer in the database.
+- `assertEntityExists(EntityInterface $entity, ?string $factoryClass = null, ?string $message = null)` — the entity is still in the database (by primary key).
+- `assertEntityMissing(EntityInterface $entity, ?string $factoryClass = null, ?string $message = null)` — the entity is no longer in the database.
+
+The optional `$factoryClass` argument on the entity assertions scopes the lookup to that factory's table. Use it when several factory variants share a bare table alias on different connections — without it, the entity's `getSource()` is consulted, which may resolve to whichever factory variant most-recently registered with the locator.
 
 `$criteria` is passed straight to `Factory::query()->where(...)`, so the same operator forms work — e.g. `['title LIKE' => '%Cake%']`, `['status IN' => ['draft', 'published']]`, `['author_id' => $author->id]`.
 

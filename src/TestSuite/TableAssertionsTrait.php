@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace CakephpFixtureFactories\TestSuite;
 
 use Cake\Datasource\EntityInterface;
+use Cake\ORM\Table;
 use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\ORM\FactoryTableRegistry;
 use InvalidArgumentException;
@@ -166,23 +167,31 @@ trait TableAssertionsTrait
     /**
      * Assert that the given entity still exists in the database (by primary key).
      *
-     * Uses the entity's `getSource()` plus the factory locator to query the
-     * underlying table. The entity must have a primary key set; built-but-unsaved
-     * entities will fail this assertion.
+     * By default, the underlying table is resolved through the entity's
+     * `getSource()` plus the factory locator. Pass `$factoryClass` to query
+     * via an explicit factory's table instead — this disambiguates multi-
+     * connection setups where the same bare alias is shared by several
+     * factory variants.
      *
      * @param \Cake\Datasource\EntityInterface $entity
+     * @param class-string<\CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>>|null $factoryClass
+     *     Optional factory class to scope the lookup; falls back to the
+     *     entity's source table when null.
      * @param string|null $message Optional custom failure message.
      */
-    public function assertEntityExists(EntityInterface $entity, ?string $message = null): void
-    {
-        $exists = self::entityExistsInDatabase($entity);
+    public function assertEntityExists(
+        EntityInterface $entity,
+        ?string $factoryClass = null,
+        ?string $message = null,
+    ): void {
+        $exists = self::entityExistsInDatabase($entity, $factoryClass);
         $this->assertTrue(
             $exists,
             self::composeMessage(
                 sprintf(
                     'Expected entity `%s` (PK: %s) to exist in the database, but it does not.',
                     $entity::class,
-                    self::renderPrimaryKey($entity),
+                    self::renderPrimaryKey($entity, $factoryClass),
                 ),
                 $message,
             ),
@@ -193,18 +202,23 @@ trait TableAssertionsTrait
      * Assert that the given entity is no longer in the database.
      *
      * @param \Cake\Datasource\EntityInterface $entity
+     * @param class-string<\CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>>|null $factoryClass
+     *     Optional factory class to scope the lookup; see {@see self::assertEntityExists()}.
      * @param string|null $message Optional custom failure message.
      */
-    public function assertEntityMissing(EntityInterface $entity, ?string $message = null): void
-    {
-        $exists = self::entityExistsInDatabase($entity);
+    public function assertEntityMissing(
+        EntityInterface $entity,
+        ?string $factoryClass = null,
+        ?string $message = null,
+    ): void {
+        $exists = self::entityExistsInDatabase($entity, $factoryClass);
         $this->assertFalse(
             $exists,
             self::composeMessage(
                 sprintf(
                     'Expected entity `%s` (PK: %s) to be missing, but it still exists.',
                     $entity::class,
-                    self::renderPrimaryKey($entity),
+                    self::renderPrimaryKey($entity, $factoryClass),
                 ),
                 $message,
             ),
@@ -227,16 +241,13 @@ trait TableAssertionsTrait
         }
     }
 
-    private static function entityExistsInDatabase(EntityInterface $entity): bool
+    /**
+     * @param \Cake\Datasource\EntityInterface $entity
+     * @param class-string<\CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>>|null $factoryClass
+     */
+    private static function entityExistsInDatabase(EntityInterface $entity, ?string $factoryClass): bool
     {
-        $source = $entity->getSource();
-        if ($source === '') {
-            throw new InvalidArgumentException(
-                'Cannot check existence of an entity with no source table. '
-                . 'Build or save the entity through a factory first.',
-            );
-        }
-        $table = FactoryTableRegistry::getTableLocator()->get($source);
+        $table = self::resolveTableForEntity($entity, $factoryClass);
         $primaryKey = (array)$table->getPrimaryKey();
         $conditions = [];
         foreach ($primaryKey as $field) {
@@ -248,6 +259,39 @@ trait TableAssertionsTrait
         }
 
         return $table->find()->where($conditions)->count() > 0;
+    }
+
+    /**
+     * Resolve the Cake table to query for entity-level assertions.
+     *
+     * When `$factoryClass` is passed, it scopes the lookup unambiguously —
+     * useful for multi-connection / multi-listener setups where the bare
+     * alias gets reused by several factory variants and the most-recently-
+     * registered one wins on the locator. Otherwise the entity's
+     * `getSource()` is used.
+     *
+     * @param \Cake\Datasource\EntityInterface $entity
+     * @param class-string<\CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>>|null $factoryClass
+     *
+     * @throws \InvalidArgumentException
+     */
+    private static function resolveTableForEntity(EntityInterface $entity, ?string $factoryClass): Table
+    {
+        if ($factoryClass !== null) {
+            self::guardFactoryClass($factoryClass);
+
+            return $factoryClass::table();
+        }
+        $source = $entity->getSource();
+        if ($source === '') {
+            throw new InvalidArgumentException(
+                'Cannot check existence of an entity with no source table. '
+                . 'Build or save the entity through a factory first, or pass an explicit '
+                . '`$factoryClass` argument to scope the lookup.',
+            );
+        }
+
+        return FactoryTableRegistry::getTableLocator()->get($source);
     }
 
     private static function renderCriteria(array $criteria): string
@@ -274,17 +318,28 @@ trait TableAssertionsTrait
         if (is_scalar($value)) {
             return (string)$value;
         }
+        if (is_array($value)) {
+            // Render arrays inline so operator criteria like `['status IN' => ['draft', 'published']]`
+            // surface their actual values rather than just the literal word "array".
+            $parts = array_map(self::renderScalar(...), $value);
+
+            return '[' . implode(', ', $parts) . ']';
+        }
 
         return get_debug_type($value);
     }
 
-    private static function renderPrimaryKey(EntityInterface $entity): string
+    /**
+     * @param \Cake\Datasource\EntityInterface $entity
+     * @param class-string<\CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>>|null $factoryClass
+     */
+    private static function renderPrimaryKey(EntityInterface $entity, ?string $factoryClass = null): string
     {
-        $source = $entity->getSource();
-        if ($source === '') {
+        try {
+            $table = self::resolveTableForEntity($entity, $factoryClass);
+        } catch (InvalidArgumentException) {
             return '(no source)';
         }
-        $table = FactoryTableRegistry::getTableLocator()->get($source);
         $parts = [];
         foreach ((array)$table->getPrimaryKey() as $field) {
             $parts[] = sprintf('%s=%s', $field, self::renderScalar($entity->get($field)));

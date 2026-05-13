@@ -155,6 +155,43 @@ class TableAssertionsTraitTest extends TestCase
         $this->assertTableMissing(CountryFactory::class, ['name' => 'Paris']);
     }
 
+    public function testAssertEntityExistsAcceptsExplicitFactoryClassForScopedLookup(): void
+    {
+        // Per PR #72 review (Copilot): when multiple factories share a bare
+        // alias on different connections, the entity-existence lookup must
+        // honour an explicit $factoryClass so the user picks which table to
+        // query against — not whichever factory variant most-recently won
+        // the locator's `set($alias, ...)` race.
+        $country = CountryFactory::new()->save();
+
+        $this->assertEntityExists($country, CountryFactory::class);
+        $this->assertEntityExists($country); // implicit-source path still works
+    }
+
+    public function testAssertEntityMissingAcceptsExplicitFactoryClass(): void
+    {
+        $country = CountryFactory::new()->save();
+        CountryFactory::table()->deleteAll(['id' => $country->id]);
+
+        $this->assertEntityMissing($country, CountryFactory::class);
+    }
+
+    public function testRenderScalarRendersArrayValuesInsteadOfTheWordArray(): void
+    {
+        // Per PR #72 review (Copilot): array criteria like
+        // `['status IN' => ['draft', 'published']]` were rendered as
+        // `{status IN: array}`. The failure message should include the
+        // actual values.
+        CountryFactory::new(['name' => 'France'])->save();
+
+        $message = $this->captureFailureMessage(
+            fn () => $this->assertTableHas(CountryFactory::class, ['name IN' => ['Atlantis', 'Mu']]),
+        );
+        $this->assertStringContainsString("'Atlantis'", $message);
+        $this->assertStringContainsString("'Mu'", $message);
+        $this->assertStringNotContainsString('array', $message);
+    }
+
     /**
      * Run the closure, fail if it does NOT throw an `AssertionFailedError`,
      * otherwise return the failure message so the test can introspect it.
