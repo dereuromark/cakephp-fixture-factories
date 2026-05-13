@@ -1440,39 +1440,117 @@ abstract class BaseFactory
     }
 
     /**
-     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Associated belongsTo factory
+     * Attach a belongsTo associated factory.
+     *
+     * Pass `$alias` to disambiguate when this factory's table has multiple
+     * belongsTo associations pointing at the same target — e.g.
+     * `Authors belongsTo Address AND BusinessAddress`, both targeting `Addresses`:
+     *
+     * ```php
+     * AuthorFactory::new()
+     *     ->for(AddressFactory::new(['street' => 'Home']), 'Address')
+     *     ->for(AddressFactory::new(['street' => 'Office']), 'BusinessAddress')
+     *     ->save();
+     * ```
+     *
+     * When `$alias` is null, the alias is auto-resolved by the associated
+     * factory's target table — equivalent to the previous single-arg form.
+     *
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Associated belongsTo factory.
+     * @param string|null $alias Explicit association alias on the source table; auto-resolved when null.
      *
      * @return static
      */
-    public function for(BaseFactory $factory): static
+    public function for(BaseFactory $factory, ?string $alias = null): static
     {
         if ($this->readBootstrapMode) {
             return clone $this;
         }
 
-        $association = $this->resolveDirectionalAssociation($factory, true);
+        if ($alias === null) {
+            $alias = $this->resolveDirectionalAssociation($factory, true);
+        } else {
+            $this->guardAliasDirection($alias, true);
+        }
 
-        return $this->with($association, $factory);
+        return $this->with($alias, $factory);
     }
 
     /**
-     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Associated factory
-     * @param array<string, mixed> $pivot Pivot data for belongsToMany joins
+     * Attach a hasMany / hasOne / belongsToMany associated factory.
+     *
+     * Pass `$alias` to disambiguate when this factory's table has multiple
+     * has* associations targeting the same model — e.g.
+     * `Countries hasMany Cities AND VirtualCities`, both targeting `Cities`:
+     *
+     * ```php
+     * CountryFactory::new()
+     *     ->has(CityFactory::new()->count(3), 'Cities')
+     *     ->has(CityFactory::new()->count(2), 'VirtualCities')
+     *     ->save();
+     * ```
+     *
+     * When `$alias` is null, the alias is auto-resolved by the associated
+     * factory's target table — equivalent to the previous single-arg form.
+     *
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Associated factory.
+     * @param string|null $alias Explicit association alias on the source table; auto-resolved when null.
+     * @param array<string, mixed> $pivot Pivot data for belongsToMany joins.
      *
      * @return static
      */
-    public function has(BaseFactory $factory, array $pivot = []): static
+    public function has(BaseFactory $factory, ?string $alias = null, array $pivot = []): static
     {
         if ($this->readBootstrapMode) {
             return clone $this;
         }
 
-        $association = $this->resolveDirectionalAssociation($factory, false);
+        if ($alias === null) {
+            $alias = $this->resolveDirectionalAssociation($factory, false);
+        } else {
+            $this->guardAliasDirection($alias, false);
+        }
         if ($pivot !== []) {
             $factory = $factory->mergeAssociated(['_joinData' => $pivot]);
         }
 
-        return $this->with($association, $factory);
+        return $this->with($alias, $factory);
+    }
+
+    /**
+     * Reject an explicit `$alias` whose association cardinality contradicts
+     * the directional helper. `for('Articles')` on Authors would silently
+     * attach a belongsToMany without this check; `has('Address')` would
+     * silently attach a belongsTo. Either misbuilds the entity graph.
+     *
+     * @param string $alias Association alias on this factory's source table.
+     * @param bool $belongsTo `true` when called from `for()`, `false` from `has()`.
+     *
+     * @throws \RuntimeException When the alias resolves to the wrong cardinality.
+     */
+    private function guardAliasDirection(string $alias, bool $belongsTo): void
+    {
+        $association = $this->getTable()->getAssociation($alias);
+        $isBelongsTo = $association instanceof BelongsTo;
+        if ($belongsTo === $isBelongsTo) {
+            return;
+        }
+
+        $caller = $belongsTo ? 'for' : 'has';
+        $expected = $belongsTo ? 'belongsTo' : 'has* (hasOne, hasMany, belongsToMany)';
+        $actual = $isBelongsTo ? 'belongsTo' : 'has*';
+
+        throw new RuntimeException(sprintf(
+            "%s::%s() with alias '%s' refers to a %s association — expected %s. "
+            . "Use the matching directional helper, or `with('%s', ...)` if you "
+            . 'want the lower-level form.',
+            self::shortName(static::class),
+            $caller,
+            $alias,
+            $actual,
+            $expected,
+            $alias,
+        ));
     }
 
     /**

@@ -86,11 +86,33 @@ $author = AuthorFactory::new()
 
 Both methods auto-resolve which association to attach based on the target factory's table — no association name needed.
 
-`has()` accepts an optional `$pivot` array as the second parameter for habtm joins, populating the `_joinData` columns on the join row.
+Pass an explicit `$alias` as the second argument when this factory's table declares **more than one** association pointing at the same target — the auto-resolver cannot pick a single one and would throw without the alias:
+
+```php
+// Authors belongsTo Address AND BusinessAddress (both → Addresses):
+$author = AuthorFactory::new()
+    ->for(AddressFactory::new(['street' => 'Home']),   'Address')
+    ->for(AddressFactory::new(['street' => 'Office']), 'BusinessAddress')
+    ->save();
+
+// Countries hasMany Cities AND VirtualCities (both → Cities):
+$country = CountryFactory::new()
+    ->has(CityFactory::new()->count(3), 'Cities')
+    ->has(CityFactory::new()->count(2), 'VirtualCities')
+    ->save();
+```
+
+`has()` also accepts an optional `$pivot` array as a third argument for belongsToMany joins, populating the `_joinData` columns on the join row:
+
+```php
+$article = ArticleFactory::new()
+    ->has(AuthorFactory::new()->count(2), 'Authors', ['featured' => true])
+    ->save();
+```
 
 ### Disambiguating `for()` and `has()`
 
-When the parent table declares **more than one** association pointing at the target table, the auto-resolver cannot pick a single one and throws — for example, an `Authors` table with both `Address` and `BusinessAddress` belonging to `Addresses`:
+When the parent table declares **more than one** association pointing at the target table and you don't pass `$alias`, the auto-resolver cannot pick a single one and throws — for example, an `Authors` table with both `Address` and `BusinessAddress` belonging to `Addresses`:
 
 ```
 AuthorFactory::for(AddressFactory::new()) cannot resolve a unique belongsTo —
