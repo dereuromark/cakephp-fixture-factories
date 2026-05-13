@@ -649,7 +649,7 @@ class DataCompiler
             $propertyName = $this->getMarshallerAssociationName($propertyName);
             if ($association instanceof HasOne || $association instanceof BelongsTo) {
                 // toOne associated data must be singular when saved
-                $this->mergeWithToOne($entity, $propertyName, $data);
+                $this->mergeWithToOne($entity, $propertyName, $data, $association);
             } else {
                 $this->mergeWithToMany($entity, $propertyName, $data);
             }
@@ -671,22 +671,62 @@ class DataCompiler
      *
      * @return void
      */
-    private function mergeWithToOne(EntityInterface $entity, string $associationName, array $data): void
-    {
+
+    /**
+     * @param \Cake\Datasource\EntityInterface $entity Entity produced by the factory.
+     * @param string $associationName Association property name.
+     * @param array<int, \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>> $data Data to inject
+     * @param \Cake\ORM\Association|null $association Resolved association (used for recycle target-table lookup).
+     *
+     * @throws \CakephpFixtureFactories\Error\FixtureFactoryException
+     */
+    private function mergeWithToOne(
+        EntityInterface $entity,
+        string $associationName,
+        array $data,
+        ?Association $association = null,
+    ): void {
         $count = count($data);
         /** @var \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory */
         $factory = $data[$count - 1];
 
-        $associatedEntities = $factory->buildMany();
-        if (count($associatedEntities) !== 1) {
-            throw new FixtureFactoryException(sprintf(
-                'Association `%s` expects exactly 1 entity, but `%s` produced %d. Use a singular factory for to-one associations.',
-                $associationName,
-                $factory::class,
-                count($associatedEntities),
-            ));
+        $recycles = $this->factory->getRecycledEntities();
+        $associatedEntity = null;
+        // Recycle substitutes only when this branch's active (last-written)
+        // factory has no explicit customization. A user who wrote
+        // `with('Alias', $entity)` or `with('Alias', Factory::new()->forX())`
+        // has expressed per-branch intent that should win over recycle.
+        //
+        // The post-buildMany cardinality check below is intentionally skipped on
+        // the recycle fast path: the user supplied a specific entity to reuse, so
+        // the original factory's build (and its afterBuild callbacks) are no longer
+        // expected to fire. AssociationBuilder already rejects `->count(N)` on
+        // to-one branches at registration time, which is the common-case guard.
+        if (
+            $recycles !== []
+            && $association instanceof BelongsTo
+            && !$factory->isInstantiatedFromEntity()
+            && !$factory->hasUserSetAssociations()
+        ) {
+            $associatedEntity = self::matchRecycledEntity($association, $recycles);
         }
-        $associatedEntity = $associatedEntities[0];
+
+        if ($associatedEntity === null) {
+            if ($recycles !== []) {
+                $factory = $factory->inheritRecycledEntities($recycles);
+            }
+            $associatedEntities = $factory->buildMany();
+            if (count($associatedEntities) !== 1) {
+                throw new FixtureFactoryException(sprintf(
+                    'Association `%s` expects exactly 1 entity, but `%s` produced %d. Use a singular factory for to-one associations.',
+                    $associationName,
+                    $factory::class,
+                    count($associatedEntities),
+                ));
+            }
+            $associatedEntity = $associatedEntities[0];
+        }
+
         if ($this->isInPersistMode()) {
             $associatedEntity->set(self::IS_ASSOCIATED, true);
             $this->markEntityDirtyIfNew($associatedEntity);
@@ -705,7 +745,11 @@ class DataCompiler
     private function mergeWithToMany(EntityInterface $entity, string $associationName, array $data): void
     {
         $associationData = $entity->get($associationName);
+        $recycles = $this->factory->getRecycledEntities();
         foreach ($data as $factory) {
+            if ($recycles !== []) {
+                $factory = $factory->inheritRecycledEntities($recycles);
+            }
             if (!$associationData) {
                 $associationData = $this->getManyEntities($factory);
             } else {
@@ -713,6 +757,81 @@ class DataCompiler
             }
         }
         $entity->set($associationName, $associationData);
+    }
+
+    /**
+     * Normalize a registry alias / class name to a canonical recycle key.
+     *
+     * Stripped:
+     *  - FQCN namespace (`App\Model\Table\AddressesTable` → `AddressesTable`)
+     *  - The `Table` suffix on bare table class names (`AddressesTable` → `Addresses`)
+     *  - The factory-internal `__ff_<hash>` suffix added by FactoryTableLocator
+     *  - The `Plugin.` prefix on plugin-namespaced table identifiers — mirrors
+     *    `FactoryTableLocator`, which already strips that prefix from the
+     *    registry aliases it generates for plugin tables; both sides of the
+     *    recycle map must agree to match.
+     *
+     * Examples — all normalize to `Addresses`:
+     *  - `Addresses`
+     *  - `Addresses__ff_e0b429e1`
+     *  - `TestPlugin.Addresses`
+     *  - `App\Model\Table\AddressesTable`
+     *
+     * @internal
+     */
+    public static function normalizeTableAlias(string $alias): string
+    {
+        // Strip FQCN namespace.
+        $pos = strrpos($alias, '\\');
+        if ($pos !== false) {
+            $alias = substr($alias, $pos + 1);
+        }
+        // Strip the `Table` suffix on bare class names (but not the literal `Table`).
+        if ($alias !== 'Table' && str_ends_with($alias, 'Table')) {
+            $alias = substr($alias, 0, -5);
+        }
+        // Strip the plugin prefix (`Plugin.Addresses` → `Addresses`) to match
+        // what FactoryTableLocator does with plugin-namespaced registry aliases.
+        $pos = strrpos($alias, '.');
+        if ($pos !== false) {
+            $alias = substr($alias, $pos + 1);
+        }
+        // Strip the factory-internal suffix.
+        $pos = strpos($alias, '__ff_');
+        if ($pos !== false) {
+            $alias = substr($alias, 0, $pos);
+        }
+
+        return $alias;
+    }
+
+    /**
+     * Match a registered belongsTo association against a recycle map.
+     *
+     * Tries both `$association->getClassName()` (the canonical target table)
+     * and `$association->getName()` (the association alias) so a recycle works
+     * whether the entity was built through a factory (source = canonical table)
+     * or loaded through an aliased belongsTo (source = association alias, e.g.
+     * `$author->business_address` whose `getSource()` returns `'BusinessAddress'`).
+     *
+     * @param \Cake\ORM\Association $association BelongsTo association to look up.
+     * @param array<string, \Cake\Datasource\EntityInterface> $recycles Recycle map keyed by normalized table name.
+     *
+     * @return \Cake\Datasource\EntityInterface|null Matched entity, or null when no match.
+     */
+    private static function matchRecycledEntity(Association $association, array $recycles): ?EntityInterface
+    {
+        $candidates = [
+            self::normalizeTableAlias($association->getClassName()),
+            self::normalizeTableAlias($association->getName()),
+        ];
+        foreach (array_unique($candidates) as $key) {
+            if (isset($recycles[$key])) {
+                return $recycles[$key];
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -791,6 +910,22 @@ class DataCompiler
     {
         $this->dataFromDefaultAssociations = $this->dataFromAssociations;
         $this->dataFromAssociations = [];
+    }
+
+    /**
+     * Whether the user (post-`configure()`) added any association overrides
+     * via `with()` / `for()` / `has()` on this factory.
+     *
+     * Distinguishes user customizations from `configure()` defaults: defaults
+     * end up in `$dataFromDefaultAssociations` after
+     * {@see self::collectAssociationsFromDefaultTemplate()}, while explicit
+     * user calls populate `$dataFromAssociations`.
+     *
+     * @internal
+     */
+    public function hasUserSetAssociations(): bool
+    {
+        return $this->dataFromAssociations !== [];
     }
 
     /**
