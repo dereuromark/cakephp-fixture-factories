@@ -46,7 +46,22 @@ trait ScenarioAwareTrait
             }
             $scenarioNamespace = $factoryNamespace . 'Scenario';
             $scenarioName = str_replace('/', '\\', $scenarioName);
-            $scenario = $scenarioNamespace . '\\' . $scenarioName . 'Scenario';
+            // Two resolution candidates:
+            // 1. `<name>Scenario` — the legacy convention; tried first so
+            //    existing scenario classes keep resolving unchanged.
+            // 2. `<name>` verbatim — a fallback for Story subclasses (or any
+            //    other naming) where the class doesn't follow the legacy suffix.
+            $legacy = $scenarioNamespace . '\\' . $scenarioName . 'Scenario';
+            $verbatim = $scenarioNamespace . '\\' . $scenarioName;
+            if (class_exists($legacy)) {
+                $scenario = $legacy;
+            } elseif (class_exists($verbatim)) {
+                $scenario = $verbatim;
+            } else {
+                // Neither resolves; pick the legacy form so the eventual
+                // FixtureScenarioException references the canonical name.
+                $scenario = $legacy;
+            }
         }
 
         try {
