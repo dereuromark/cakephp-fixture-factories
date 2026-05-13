@@ -57,7 +57,7 @@ export default defineConfig({
             { text: 'Fixture Factories', link: '/guide/factories' },
             { text: 'Usage Examples', link: '/guide/examples' },
             { text: 'Associations', link: '/guide/associations' },
-            { text: 'Associations (non-CakePHP)', link: '/guide/non-cakephp-associations' },
+            { text: 'Associations (standalone cakephp/orm)', link: '/guide/non-cakephp-associations' },
             { text: 'Scenarios', link: '/guide/scenarios' },
             { text: 'Best Practices', link: '/guide/best-practices' },
           ],

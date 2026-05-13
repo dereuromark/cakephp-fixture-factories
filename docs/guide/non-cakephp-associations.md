@@ -1,8 +1,10 @@
-# Associations for non-CakePHP apps
+# Associations for standalone `cakephp/orm`
+
+> This page applies when you use this plugin with `cakephp/orm` as a standalone library — outside the full CakePHP application stack. It is **not** a Laravel or Symfony adapter; see [Setup → Using a different PHP framework?](setup.md#using-a-different-php-framework) for the recommended factory libraries in those ecosystems.
 
 Associations can be defined within the factories in the `initialize()` method.
 The `getTable()` method provides public access to the model class used by the factories. If not defined in your application
-(which is probably the case if not built with CakePHP), the model class is generated automatically,
+(which is probably the case if you're not using the full CakePHP framework), the model class is generated automatically,
 based on the table name returned by the `getRootTableRegistryName` method.
 
 For example, considering the following schema:

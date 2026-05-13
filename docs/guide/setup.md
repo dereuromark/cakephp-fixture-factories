@@ -1,10 +1,21 @@
 # Setup
 
-## Non-CakePHP apps
+## Using a different PHP framework?
 
-For non-CakePHP applications, use whatever method your framework provides for managing the test database, or opt for the universal [test-database-cleaner](https://github.com/vierge-noire/test-database-cleaner).
+This plugin is built **on top of CakePHP's ORM** (`cakephp/orm`) — the produced objects are CakePHP entities, marshalled by `Table::patchEntity()`, with associations expressed in Cake's shape. If your project is built on a different framework, prefer the factory library that is canonical for that ecosystem instead of bringing in a second ORM:
+
+- **Laravel** → built-in [Eloquent factories](https://laravel.com/docs/eloquent-factories) (`Illuminate\Database\Eloquent\Factories\Factory`) paired with the `RefreshDatabase` trait.
+- **Symfony / Doctrine (ORM or ODM)** → [`zenstruck/foundry`](https://github.com/zenstruck/foundry).
+
+The section below covers the rarer case of using this plugin with a **standalone `cakephp/orm`** install — i.e. you're using Cake's ORM as a library outside the full Cake application stack, not Laravel/Symfony interop.
+
+## Standalone `cakephp/orm` (no full Cake app)
+
+For applications that use `cakephp/orm` directly (without the rest of the Cake framework), use whatever method your test stack provides for managing the database, or opt for the universal [test-database-cleaner](https://github.com/vierge-noire/test-database-cleaner).
 
 Define your DB connections in your test `bootstrap.php` as described in the [CakePHP cookbook](https://book.cakephp.org/5/en/orm/database-basics.html#configuration).
+
+See also: [Associations for standalone `cakephp/orm`](non-cakephp-associations.md).
 
 ## CakePHP apps
 
