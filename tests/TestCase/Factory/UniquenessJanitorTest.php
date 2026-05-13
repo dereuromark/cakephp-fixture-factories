@@ -51,7 +51,7 @@ class UniquenessJanitorTest extends TestCase
     #[DataProvider('dataForSanitizeEntityArrayOnPrimary')]
     public function testSanitizeEntityArrayOnPrimary(array $uniqueProperties, bool $expectException): void
     {
-        $factoryStub = $this->getMockBuilder(BaseFactory::class)->disableOriginalConstructor()->getMock();
+        $factoryStub = $this->createStub(BaseFactory::class);
         $factoryStub->method('getUniqueProperties')->willReturn($uniqueProperties);
 
         $entities = [
@@ -101,7 +101,7 @@ class UniquenessJanitorTest extends TestCase
     #[DataProvider('dataForSanitizeEntityArrayOnAssociation')]
     public function testSanitizeEntityArrayOnAssociation(array $uniqueProperties, array $expectOutput): void
     {
-        $factoryStub = $this->getMockBuilder(BaseFactory::class)->disableOriginalConstructor()->getMock();
+        $factoryStub = $this->createStub(BaseFactory::class);
         $factoryStub->method('getUniqueProperties')->willReturn($uniqueProperties);
 
         $associations = [
@@ -120,7 +120,7 @@ class UniquenessJanitorTest extends TestCase
 
     public function testSanitizeEntityArrayDoesNotMutateHiddenFieldsOnOriginalEntity(): void
     {
-        $factoryStub = $this->getMockBuilder(BaseFactory::class)->disableOriginalConstructor()->getMock();
+        $factoryStub = $this->createStub(BaseFactory::class);
         $factoryStub->method('getUniqueProperties')->willReturn(['property_1']);
 
         $entity = new Entity(['property_1' => 'foo', 'secret' => 'value']);
@@ -133,7 +133,7 @@ class UniquenessJanitorTest extends TestCase
 
     public function testSanitizeEntityArrayUsesStrictComparisonForUniqueValues(): void
     {
-        $factoryStub = $this->getMockBuilder(BaseFactory::class)->disableOriginalConstructor()->getMock();
+        $factoryStub = $this->createStub(BaseFactory::class);
         $factoryStub->method('getUniqueProperties')->willReturn(['property_1']);
 
         $entities = [
@@ -148,7 +148,7 @@ class UniquenessJanitorTest extends TestCase
 
     public function testSanitizeEntityArrayDetectsFalseyDuplicateValues(): void
     {
-        $factoryStub = $this->getMockBuilder(BaseFactory::class)->disableOriginalConstructor()->getMock();
+        $factoryStub = $this->createStub(BaseFactory::class);
         $factoryStub->method('getUniqueProperties')->willReturn(['property_1']);
 
         $entities = [
@@ -162,7 +162,7 @@ class UniquenessJanitorTest extends TestCase
 
     public function testSanitizeEntityArrayRemovesAllLaterDuplicatesInNonStrictMode(): void
     {
-        $factoryStub = $this->getMockBuilder(BaseFactory::class)->disableOriginalConstructor()->getMock();
+        $factoryStub = $this->createStub(BaseFactory::class);
         $factoryStub->method('getUniqueProperties')->willReturn(['property_1']);
 
         $entities = [

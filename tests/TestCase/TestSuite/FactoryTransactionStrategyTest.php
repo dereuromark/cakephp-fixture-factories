@@ -19,6 +19,7 @@ use CakephpFixtureFactories\TestSuite\FactoryTableTracker;
 use CakephpFixtureFactories\TestSuite\FactoryTransactionStrategy;
 use CakephpFixtureFactories\TestSuite\LazyFactoryTransactionStrategy;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use RuntimeException;
 
 /**
@@ -288,6 +289,7 @@ class FactoryTransactionStrategyTest extends TestCase
      *
      * @return void
      */
+    #[AllowMockObjectsWithoutExpectations]
     public function testCrossConnectionSameTableNameKeepsBoth(): void
     {
         $tracker = FactoryTableTracker::getInstance();

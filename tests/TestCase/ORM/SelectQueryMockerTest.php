@@ -21,8 +21,10 @@ use CakephpFixtureFactories\ORM\SelectQueryMocker;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use TestApp\Model\Entity\Country;
 
+#[AllowMockObjectsWithoutExpectations]
 class SelectQueryMockerTest extends TestCase
 {
     use TruncateDirtyTables;
