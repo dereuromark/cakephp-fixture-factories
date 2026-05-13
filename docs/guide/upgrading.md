@@ -8,6 +8,174 @@ description: Per-version upgrade notes
 This page collects breaking-change notes between minor versions. For migrating
 from `vierge-noire/cakephp-fixture-factories`, see the [migration guide](migration.md).
 
+## Since `2.0.0-beta.3`
+
+Two breaking changes and several additions. The package is still pre-stable so
+these moves are intentional — getting the API shape right before tagging stable
+is worth a one-time mechanical migration.
+
+### Breaking: `sequence()` callable now takes a single `Sequence` arg
+
+The 3-arg positional form `($factory, $generator, int $index)` is gone. New
+callables receive a single `Sequence` value object that bundles all the
+context: index, position, total, isFirst, isLast, factory, generator.
+
+```diff
+ ArticleFactory::new()
+     ->count(5)
+-    ->sequence(fn ($factory, $generator, int $i) => ['rank' => $i])
++    ->sequence(fn (Sequence $s) => ['rank' => $s->index])
+     ->saveMany();
+```
+
+Every member of `Sequence` is a `public readonly` property — no method calls,
+all IDE-autocompleted:
+
+| Old positional arg | New on `$s`     |
+|--------------------|-----------------|
+| `$factory`         | `$s->factory`   |
+| `$generator`       | `$s->generator` |
+| `$index`           | `$s->index`     |
+| —                  | `$s->position` (1-based) |
+| —                  | `$s->total`     |
+| —                  | `$s->isFirst`   |
+| —                  | `$s->isLast`    |
+
+Import: `use CakephpFixtureFactories\Factory\Sequence;`. No Rector rule is
+shipped for this rewrite — the variable-name shape is too consumer-specific.
+A repo-wide grep for `->sequence(` is the quickest manual migration.
+
+Array-state and entity-state sequence forms (`sequence(['a' => 1], ['a' => 2])`)
+are unchanged — only the callable form's signature shifted.
+
+### Breaking: `has()` pivot data moves to the 3rd argument
+
+`has()` gained an optional `$alias` parameter as its second argument to
+disambiguate associations on multi-alias schemas (see "Alias overload" below).
+The pivot array moved one slot down.
+
+```diff
+- $author = AuthorFactory::new()->has($articleFactory, ['featured' => true])->save();
++ $author = AuthorFactory::new()->has($articleFactory, null, ['featured' => true])->save();
+```
+
+Or use a named argument to avoid the positional-`null`:
+
+```php
+$author = AuthorFactory::new()->has($articleFactory, pivot: ['featured' => true])->save();
+```
+
+While checking your call sites, also note that `has($f, $pivot)` previously
+patched `_joinData` via the marshaller's `associated` config only — pivot
+values **silently dropped** at save time. The new `has()` patches `_joinData`
+directly onto every built child entity, so pivot values now actually land on
+the join row. If you depended on the old no-op behavior, audit those call
+sites.
+
+### Alias overload on `for()` / `has()`
+
+When the source table declares more than one association pointing at the
+same target, pass an explicit alias instead of dropping down to `with()`:
+
+```php
+AuthorFactory::new()
+    ->for(AddressFactory::new(['street' => 'Home']),   'Address')
+    ->for(AddressFactory::new(['street' => 'Office']), 'BusinessAddress')
+    ->save();
+
+CountryFactory::new()
+    ->has(CityFactory::new()->count(3), 'Cities')
+    ->has(CityFactory::new()->count(2), 'VirtualCities')
+    ->save();
+```
+
+Single-argument `for($factory)` / `has($factory)` keeps working unchanged
+when the alias is unambiguous. When an alias is given, a direction guard
+runs: `for('hasMany-alias')` and `has('belongsTo-alias')` fail fast with a
+clear error instead of silently miswiring the graph. Unknown aliases also
+surface a paste-ready list of valid aliases on the source table.
+
+### New: `recycle()` for shared parents
+
+```php
+$author = UserFactory::new()->save();
+
+ArticleFactory::new()
+    ->count(5)
+    ->with('Comments[3]')
+    ->recycle($author)   // every Article AND each nested Comment reuses $author
+    ->saveMany();
+```
+
+Closes the silent N× duplicate-parent gap when the same parent appears on
+multiple branches of an association tree. See
+[Associations → Recycling shared parents](associations.md#recycling-shared-parents-recycle) for the full contract.
+
+### New: `TableAssertionsTrait` for database-state assertions
+
+Opt-in trait that wraps the common `Factory::query()` checks with sharper
+failure messages:
+
+```php
+use CakephpFixtureFactories\TestSuite\TableAssertionsTrait;
+
+class ArticlesControllerTest extends AppTestCase
+{
+    use TableAssertionsTrait;
+
+    public function testCreate(): void
+    {
+        $this->post('/articles', ['title' => 'Hello']);
+
+        $this->assertTableCount(ArticleFactory::class, 1);
+        $this->assertTableHas(ArticleFactory::class, ['title' => 'Hello']);
+        $this->assertTableMissing(ArticleFactory::class, ['status' => 'spam']);
+    }
+}
+```
+
+Six methods: `assertTableHas`, `assertTableMissing`, `assertTableCount`,
+`assertTableEmpty`, `assertEntityExists`, `assertEntityMissing`. See
+[Queries → Expressive database assertions](queries.md#expressive-database-assertions-tableassertionstrait).
+
+### New: `Story` scenario with named entity pools
+
+Extend the new `Story` abstract instead of implementing `FixtureScenarioInterface`
+directly when your scenario seeds data and the test wants to sample from it:
+
+```php
+use CakephpFixtureFactories\Scenario\Story;
+
+class BlogStory extends Story
+{
+    protected function build(): void
+    {
+        $this->addToPool('authors', UserFactory::new()->count(10)->saveMany());
+        ArticleFactory::new()->count(50)->saveMany();
+    }
+}
+
+// In the test:
+$story = $this->loadFixtureScenario(BlogStory::class);
+$author = $story->getRandom('authors');
+```
+
+Existing `FixtureScenarioInterface` implementations keep working unchanged.
+Short-name loading (`loadFixtureScenario('BlogStory')`) now tries the
+verbatim class name as a fallback when no `*Scenario` class exists.
+
+### New: `bake fixture_factory --all-fields`
+
+Emits defaults for **every** non-PK, non-FK column — including nullable
+columns and columns with a DB default — instead of only required columns:
+
+```bash
+bin/cake bake fixture_factory Articles --all-fields
+```
+
+Foreign keys stay excluded regardless so the baked factory keeps pushing
+related rows through `with()` / `for()` / `has()`.
+
 ## v2 migration helpers
 
 Version 2 targets projects already on `1.4.x`.
