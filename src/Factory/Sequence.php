@@ -27,8 +27,8 @@ use CakephpFixtureFactories\Generator\GeneratorInterface;
  *         'rank' => $s->index,
  *         'position' => $s->position,
  *         'total' => $s->total,
- *         'is_first' => $s->isFirst(),
- *         'is_last' => $s->isLast(),
+ *         'is_first' => $s->isFirst,
+ *         'is_last' => $s->isLast,
  *         'slug' => $s->generator->slug(),
  *         'parent' => $s->factory->getTable()->getAlias(),
  *     ])

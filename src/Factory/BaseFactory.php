@@ -935,7 +935,7 @@ abstract class BaseFactory
      * - `\Cake\Datasource\EntityInterface` — its `toArray()` is patched,
      * - `callable(\CakephpFixtureFactories\Factory\Sequence): array<string, mixed>`
      *   — invoked once per cycle with a `Sequence` context object that exposes
-     *   `$s->index`, `$s->position`, `$s->total`, `$s->isFirst()`, `$s->isLast()`,
+     *   `$s->index`, `$s->position`, `$s->total`, `$s->isFirst`, `$s->isLast`,
      *   plus `$s->factory` and `$s->generator` for the rare callable that
      *   needs them but doesn't have them in `use(...)` scope.
      *
