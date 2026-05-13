@@ -158,6 +158,97 @@ See [Best Practices — directional helper methods](best-practices#do-add-direct
 Bake's `--methods` output uses `with('AliasName', …)` rather than `for()` / `has()` even when the relation is unambiguous today, because the alias is unambiguous at codegen time and survives later schema changes that introduce sibling associations. If you reach for `with()` to disambiguate at a call site, you're using the same form bake would have generated.
 :::
 
+## Recycling shared parents: `recycle()`
+
+When the same parent should appear on **multiple branches** of an association tree, threading the parent entity through every branch by hand is noisy and easy to forget. `recycle($entity)` registers an already-built entity to be reused wherever any `belongsTo` in the build graph targets the same source table.
+
+```php
+$author = AuthorFactory::new()->save();
+
+// Every Article *and* every Comment under each Article uses $author
+// (assuming Article belongsTo Author and Comment belongsTo Author):
+$articles = ArticleFactory::new()
+    ->count(5)
+    ->with('Comments[3]')
+    ->recycle($author)
+    ->saveMany();
+```
+
+Without `recycle()`, that same build would silently create up to 20 distinct Author rows.
+
+### How it matches
+
+`recycle()` is keyed by **table name**. It substitutes whenever a `belongsTo` association in the build graph targets the same table as the recycled entity AND that branch's child factory has no explicit customization. The recycled entity must already be **persisted** (i.e. you've called `->save()`).
+
+Recycle is intentionally narrow:
+
+- Recycled entities must be saved. An entity from `Factory::new(...)->build()` (built in memory, not in the database) is rejected — recycle's fast path skips the child factory's persistence pipeline, so unsaved entities would never get a primary key. Pass them via `with('Alias', $entity)` instead if you need that.
+- Recycle does not override branches the user customized via `with('Alias', $entity)` (per-alias entity) or `with('Alias', Factory::new()->forX())` (chained child factory). Those calls express explicit per-branch intent and win.
+- `configure()` defaults (the chains baked into `forX()` / `hasX()` helpers and registered before user input) do **not** count as "customized" — recycle still applies to them.
+
+```php
+$country = CountryFactory::new()->save();
+
+CityFactory::new()
+    ->count(5)
+    ->forCountries()       // each city would normally get a fresh Country
+    ->recycle($country)
+    ->saveMany();          // all 5 cities share $country instead
+```
+
+### Propagation through nested factories
+
+Recycles flow down the build graph. The recycled map is inherited by every child factory that runs as part of the same build, so a recycle set on the root applies anywhere in the tree:
+
+```php
+$country = CountryFactory::new()->save();
+
+// Address belongsTo City; City belongsTo Country. Recycle the Country
+// at the root and every nested City reuses it:
+AddressFactory::new()
+    ->count(3)
+    ->with('City', CityFactory::new()->forCountries())
+    ->recycle($country)
+    ->saveMany();
+```
+
+### Multiple recycles
+
+`recycle()` is variadic and chainable. Each call merges into the recycle map (last call wins for the same target table):
+
+```php
+$country = CountryFactory::new()->save();
+$category = CategoryFactory::new()->save();
+
+ArticleFactory::new()
+    ->count(10)
+    ->with('Category')
+    ->with('Author.Country')
+    ->recycle($country, $category)
+    ->saveMany();
+```
+
+### Multiple aliases targeting the same table
+
+If a factory declares two `belongsTo` aliases pointing at the same target table (e.g. `Authors belongsTo Address` and `BusinessAddress`, both targeting `Addresses`), `recycle()` substitutes **both** branches with the recycled entity. If you need per-alias control, use `with('AliasName', $entity)` directly instead:
+
+```php
+$home   = AddressFactory::new()->save();
+$office = AddressFactory::new()->save();
+
+// Per-alias control via explicit with():
+AuthorFactory::new()
+    ->with('Address', $home)
+    ->with('BusinessAddress', $office)
+    ->save();
+```
+
+### When `recycle()` doesn't help
+
+- The build graph has no registered `belongsTo` to the recycled entity's table — recycle is a silent no-op.
+- You need different parents on different branches — use `with('AliasName', $entity)` per branch.
+- You want to reuse a `hasMany` or `belongsToMany` collection — recycle only substitutes single-row `belongsTo` parents. Use `with()` with concrete entities for the many side.
+
 ## `from()` — start from an existing entity
 
 Use `from(EntityInterface)` when you already have an entity and want a factory backed by it:

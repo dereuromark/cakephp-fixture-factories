@@ -117,6 +117,17 @@ abstract class BaseFactory
     private bool $readBootstrapMode = false;
 
     /**
+     * Already-built entities that should be reused everywhere a belongsTo
+     * association in this factory's build graph targets the same source table.
+     *
+     * Keyed by `EntityInterface::getSource()`. Shared (recursively propagated)
+     * to child factories at compile time.
+     *
+     * @var array<string, \Cake\Datasource\EntityInterface>
+     */
+    private array $recycledEntities = [];
+
+    /**
      * @var array<int, callable(TEntity, int, static): (TEntity|void)>
      */
     private array $afterBuildCallbacks = [];
@@ -1462,6 +1473,134 @@ abstract class BaseFactory
         }
 
         return $this->with($association, $factory);
+    }
+
+    /**
+     * Reuse one or more already-built entities everywhere a belongsTo
+     * association in this factory's build graph targets the same source table.
+     *
+     * Closes the silent N× duplicate-parent gap when the same parent appears
+     * on multiple branches of an association tree.
+     *
+     * ```php
+     * $author = UserFactory::new()->save();
+     *
+     * ArticleFactory::new()
+     *     ->count(5)
+     *     ->with('Comments[3]')
+     *     ->recycle($author) // both Article AND each nested Comment reuse $author
+     *     ->saveMany();
+     * ```
+     *
+     * Recycles only substitute on association branches that already exist in
+     * the build tree (via `with()`, `for()`, `has()`, or `initialize()`/`configure()`
+     * defaults). If a recycle has no matching branch on the current factory,
+     * it is silently ignored on this level but still propagates to children.
+     *
+     * When a factory declares two belongsTo aliases targeting the same table
+     * (e.g. `Authors belongsTo Address` AND `BusinessAddress` — both targeting
+     * Addresses), recycle substitutes both. Use `with('Alias', $entity)`
+     * directly for per-alias control.
+     *
+     * @param \Cake\Datasource\EntityInterface ...$entities One or more
+     *     already-built entities to reuse, keyed internally by source table.
+     *
+     * @throws \InvalidArgumentException If an entity has no source table set.
+     *
+     * @return static
+     */
+    public function recycle(EntityInterface ...$entities): static
+    {
+        if ($this->readBootstrapMode) {
+            return clone $this;
+        }
+
+        $factory = clone $this;
+        foreach ($entities as $entity) {
+            $source = $entity->getSource();
+            if ($source === '') {
+                throw new InvalidArgumentException(
+                    'recycle() requires entities with a known source table. '
+                    . 'Build or save the entity through a factory (or call '
+                    . '`$entity->setSource(\'Tablename\')`) before recycling.',
+                );
+            }
+            if ($entity->isNew()) {
+                throw new InvalidArgumentException(sprintf(
+                    'recycle() requires already-persisted entities (got a `%s` with isNew()=true). '
+                    . 'Save the parent via `$entity = Factory::new(...)->save()` before recycling, '
+                    . 'or use `with(\'Alias\', $entity)` to attach an unsaved entity to a specific branch.',
+                    $entity::class,
+                ));
+            }
+            // Normalize the factory-internal `__ff_<hash>` suffix so the map
+            // keys match association target aliases on the lookup side.
+            $key = DataCompiler::normalizeTableAlias($source);
+            $factory->recycledEntities[$key] = $entity;
+        }
+
+        return $factory;
+    }
+
+    /**
+     * @internal Used by DataCompiler to propagate recycles down the build tree.
+     *
+     * @return array<string, \Cake\Datasource\EntityInterface>
+     */
+    public function getRecycledEntities(): array
+    {
+        return $this->recycledEntities;
+    }
+
+    /**
+     * Whether this factory was instantiated from an explicit entity
+     * (`Factory::new($entity)` or `Factory::from($entity)`).
+     *
+     * Used by `DataCompiler` to keep an explicit `with('Alias', $entity)`
+     * from being silently overridden by `recycle()` on the parent factory.
+     *
+     * @internal
+     */
+    public function isInstantiatedFromEntity(): bool
+    {
+        return $this->dataCompiler->isInstantiatedFromEntity();
+    }
+
+    /**
+     * Whether the user added explicit `with()` / `for()` / `has()` calls on
+     * this factory after `configure()` registered its defaults.
+     *
+     * @internal
+     */
+    public function hasUserSetAssociations(): bool
+    {
+        return $this->dataCompiler->hasUserSetAssociations();
+    }
+
+    /**
+     * Merge inherited recycles from a parent factory into a child without
+     * overriding locally-set recycles. Returns the same instance if nothing
+     * changes, or a clone with the merged map.
+     *
+     * @internal Called by DataCompiler when a child factory is about to build.
+     *
+     * @param array<string, \Cake\Datasource\EntityInterface> $recycles
+     *
+     * @return static
+     */
+    public function inheritRecycledEntities(array $recycles): static
+    {
+        if ($recycles === []) {
+            return $this;
+        }
+        $merged = $this->recycledEntities + $recycles;
+        if ($merged === $this->recycledEntities) {
+            return $this;
+        }
+        $factory = clone $this;
+        $factory->recycledEntities = $merged;
+
+        return $factory;
     }
 
     /**
