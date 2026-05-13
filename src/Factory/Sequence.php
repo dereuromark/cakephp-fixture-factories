@@ -48,6 +48,16 @@ final readonly class Sequence
     public int $position;
 
     /**
+     * Whether this is the very first row of the batch (`index === 0`).
+     */
+    public bool $isFirst;
+
+    /**
+     * Whether this is the very last row of the batch (`index === total - 1`).
+     */
+    public bool $isLast;
+
+    /**
      * @param int $index 0-based iteration index across the factory's `count(N)` builds.
      * @param int $total Total number of entities the factory will build (`BaseFactory::getTimes()`).
      * @param \CakephpFixtureFactories\Factory\BaseFactory<TEntity> $factory Owning factory.
@@ -60,21 +70,7 @@ final readonly class Sequence
         public GeneratorInterface $generator,
     ) {
         $this->position = $index + 1;
-    }
-
-    /**
-     * Whether this is the very first row of the batch.
-     */
-    public function isFirst(): bool
-    {
-        return $this->index === 0;
-    }
-
-    /**
-     * Whether this is the very last row of the batch.
-     */
-    public function isLast(): bool
-    {
-        return $this->index === $this->total - 1;
+        $this->isFirst = $index === 0;
+        $this->isLast = $index === $total - 1;
     }
 }

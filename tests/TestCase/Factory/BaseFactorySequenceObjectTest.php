@@ -17,7 +17,7 @@ use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
 
 /**
  * `BaseFactory::sequence()` callables receive a single `Sequence` context
- * object exposing `$index`, `$position`, `$total`, `isFirst()`, `isLast()`,
+ * object exposing `$index`, `$position`, `$total`, `$isFirst`, `$isLast`,
  * plus the in-context `factory` / `generator` for the rare callable that
  * needs them but doesn't have them in `use(...)` scope.
  *
@@ -39,8 +39,8 @@ class BaseFactorySequenceObjectTest extends TestCase
                     'index' => $s->index,
                     'position' => $s->position,
                     'total' => $s->total,
-                    'isFirst' => $s->isFirst(),
-                    'isLast' => $s->isLast(),
+                    'isFirst' => $s->isFirst,
+                    'isLast' => $s->isLast,
                 ];
 
                 return ['name' => 'Row' . $s->position];
@@ -86,8 +86,8 @@ class BaseFactorySequenceObjectTest extends TestCase
         CountryFactory::new()
             ->count(1)
             ->sequence(function (Sequence $s) use (&$sawFirst, &$sawLast) {
-                $sawFirst = $s->isFirst();
-                $sawLast = $s->isLast();
+                $sawFirst = $s->isFirst;
+                $sawLast = $s->isLast;
 
                 return [];
             })
