@@ -58,6 +58,7 @@ export default defineConfig({
             { text: 'Usage Examples', link: '/guide/examples' },
             { text: 'Associations', link: '/guide/associations' },
             { text: 'Associations (standalone cakephp/orm)', link: '/guide/non-cakephp-associations' },
+            { text: 'Foreign keys in definition()', link: '/guide/foreign-keys-in-definition' },
             { text: 'Scenarios', link: '/guide/scenarios' },
             { text: 'Best Practices', link: '/guide/best-practices' },
           ],

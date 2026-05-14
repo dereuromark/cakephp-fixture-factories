@@ -14,6 +14,7 @@ return [
         'defaultLocale' => 'en_US',
         'seed' => 1234,
         'instanceLevelGenerator' => true,
+        'strictDefinition' => true,
         'testFixtureNamespace' => 'App\\Test\\Factory',
         'testFixtureOutputDir' => 'Factory/',
         'testFixtureGlobalBehaviors' => [],
@@ -58,6 +59,23 @@ When `true`, `setGenerator()` only affects the current factory instance instead 
 Default: `true` (`setGenerator()` only affects the current factory instance).
 
 > Set this to `false` only if you explicitly need the legacy global `setGenerator()` behavior.
+
+### `strictDefinition`
+
+Controls the FK-in-`definition()` detector. When `true` (the default), any
+factory whose `definition()` returns a column belonging to a belongsTo
+association emits `E_USER_DEPRECATED` pointing at the offending column and the
+association. Foreign-key columns should be populated by composing the parent
+association (`->with('Alias')`, `->for(...)`, or a factory helper such as
+`forAuthor()` / `withAuthor()`), never as a scalar default.
+
+Set to `false` only when migrating a legacy test suite away from the pattern —
+the opt-out is transitional and will be removed in the next major release,
+when the deprecation becomes a hard exception. See
+[Foreign keys in `definition()`](/guide/foreign-keys-in-definition) for the
+full rationale and a migration cookbook.
+
+Default: `true`.
 
 ### `testFixtureNamespace`
 

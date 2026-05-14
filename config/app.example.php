@@ -47,6 +47,21 @@ return [
         // 'instanceLevelGenerator' => true,
 
         /**
+         * Controls the FK-in-definition() detector. When enabled (the default),
+         * any factory whose definition() returns a column belonging to a
+         * belongsTo association emits an E_USER_DEPRECATED naming the column
+         * and the association. Foreign-key columns belong to ->with('Alias')
+         * / ->for() / factory helpers — never to the scalar default template.
+         *
+         * Set to false to silence the detector while migrating a legacy test
+         * suite. This opt-out is transitional and will be removed in the next
+         * major release, when the deprecation graduates to a hard exception.
+         *
+         * Default: true
+         */
+        // 'strictDefinition' => true,
+
+        /**
          * Namespace where factory classes are located.
          * Default: App\Test\Factory (auto-detected from table registry name)
          */
