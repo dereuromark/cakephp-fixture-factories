@@ -58,6 +58,26 @@ abstract class BaseFactory
     private static array $defaultGenerators = [];
 
     /**
+     * Per-process dedupe set for the FK-in-definition() detector. Keyed by
+     * "FactoryClass::column" so the deprecation fires at most once per offending
+     * column even when the factory runs thousands of times across a suite.
+     *
+     * @var array<string, true>
+     */
+    private static array $reportedFkInDefinition = [];
+
+    /**
+     * Memoised map of FK column name to declaring association alias, keyed by
+     * the table's registry alias. Computed once per table per process. The
+     * inner map's key type is `int|string` because PHP coerces numeric-string
+     * column names to int keys; in practice all real FK column names are
+     * non-numeric strings.
+     *
+     * @var array<string, array<int|string, string>>
+     */
+    private static array $fkColumnsByRegistry = [];
+
+    /**
      * Per-instance generator override.
      * Only used when `FixtureFactories.instanceLevelGenerator` is enabled.
      *
@@ -283,8 +303,14 @@ abstract class BaseFactory
         }
         $factory->times = $times;
         $definitionFactory = $factory;
+        $factoryClass = static::class;
         $factory = $factory->setDefaultData(
-            fn (GeneratorInterface $generator): array => $definitionFactory->definition($generator),
+            function (GeneratorInterface $generator) use ($definitionFactory, $factoryClass): array {
+                $data = $definitionFactory->definition($generator);
+                self::detectForeignKeysInDefinition($data, $definitionFactory->getTable(), $factoryClass);
+
+                return $data;
+            },
         );
         $factory->getDataCompiler()->collectAssociationsFromDefaultTemplate();
 
@@ -1299,6 +1325,117 @@ abstract class BaseFactory
         $factory->getDataCompiler()->collectFromDefaultTemplate($fn);
 
         return $factory;
+    }
+
+    /**
+     * Emit `E_USER_DEPRECATED` when `definition()` returns a column that is the
+     * belongsTo foreign key of one of the table's declared associations.
+     *
+     * Foreign-key columns belong to association composition (`->with('Alias')`,
+     * `->for()`, factory helpers like `withAuthor()`), never to the scalar
+     * default template. A FK value set here either (a) silently overrides a
+     * `->with()`-composed parent's id with garbage, or (b) creates a dangling
+     * id that points at no real row when no association is attached. Both
+     * outcomes mask the real source of the FK, so the column is flagged
+     * regardless of whether a matching `->with()` is also present.
+     *
+     * The check is opt-out via `FixtureFactories.strictDefinition = false` for
+     * projects migrating off the legacy pattern. The opt-out is transitional
+     * and will be removed when the deprecation graduates to a hard exception
+     * in the next major release.
+     *
+     * @param array<string, mixed> $data Data returned by definition().
+     * @param \Cake\ORM\Table $table The factory's root table.
+     * @param string $factoryClass FQCN of the factory, used in the message.
+     */
+    private static function detectForeignKeysInDefinition(array $data, Table $table, string $factoryClass): void
+    {
+        if (!$data) {
+            return;
+        }
+        if (!Configure::read('FixtureFactories.strictDefinition', true)) {
+            return;
+        }
+
+        $primaryKey = (array)$table->getSchema()->getPrimaryKey();
+        $fkColumns = self::collectForeignKeyColumns($table);
+        if (!$fkColumns) {
+            return;
+        }
+
+        foreach (array_keys($data) as $column) {
+            if (in_array($column, $primaryKey, true)) {
+                continue;
+            }
+            if (!isset($fkColumns[$column])) {
+                continue;
+            }
+
+            $dedupeKey = $factoryClass . '::' . $column;
+            if (isset(self::$reportedFkInDefinition[$dedupeKey])) {
+                continue;
+            }
+            self::$reportedFkInDefinition[$dedupeKey] = true;
+
+            trigger_error(sprintf(
+                '%s::definition() returns "%s", which is the foreign-key column for the "%s" belongsTo association. '
+                . "Move association composition out of definition() — use ->with('%s') in configure(), a forFoo() / withFoo() helper, "
+                . 'or pass the association at the call site. Setting the FK column directly produces dangling ids that point at no '
+                . 'real row, and silently masks the real source of the value when a parent is composed via ->with(). '
+                . "Opt out transitionally with Configure::write('FixtureFactories.strictDefinition', false); "
+                . 'the opt-out is removed in the next major.',
+                $factoryClass,
+                $column,
+                $fkColumns[$column],
+                $fkColumns[$column],
+            ), E_USER_DEPRECATED);
+        }
+    }
+
+    /**
+     * Build the FK-column-to-association-alias map for the given table, memoised
+     * per registry alias. Only belongsTo associations contribute, because that
+     * is the side that owns the FK column locally.
+     *
+     * @param \Cake\ORM\Table $table
+     *
+     * @return array<int|string, string> Map of FK column name to declaring association alias.
+     */
+    private static function collectForeignKeyColumns(Table $table): array
+    {
+        $cacheKey = $table->getRegistryAlias();
+        if (isset(self::$fkColumnsByRegistry[$cacheKey])) {
+            return self::$fkColumnsByRegistry[$cacheKey];
+        }
+
+        $columns = [];
+        foreach ($table->associations() as $association) {
+            if (!$association instanceof BelongsTo) {
+                continue;
+            }
+            foreach ((array)$association->getForeignKey() as $column) {
+                if ($column === '') {
+                    continue;
+                }
+                if (!isset($columns[$column])) {
+                    $columns[$column] = $association->getAlias();
+                }
+            }
+        }
+
+        return self::$fkColumnsByRegistry[$cacheKey] = $columns;
+    }
+
+    /**
+     * Reset the FK-in-definition() detector's process-wide caches. Intended for
+     * the test suite of this plugin (and downstream test-helper code), so that
+     * each test starts with an empty dedupe set and a freshly-resolved table
+     * FK map.
+     */
+    public static function resetForeignKeyInDefinitionDetector(): void
+    {
+        self::$reportedFkInDefinition = [];
+        self::$fkColumnsByRegistry = [];
     }
 
     /**
