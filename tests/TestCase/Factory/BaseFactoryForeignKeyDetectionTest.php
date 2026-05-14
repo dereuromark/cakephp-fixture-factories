@@ -35,18 +35,13 @@ class BaseFactoryForeignKeyDetectionTest extends TestCase
      */
     private array $capturedErrors = [];
 
-    /**
-     * @var callable|null
-     */
-    private $previousHandler;
-
     protected function setUp(): void
     {
         parent::setUp();
         BaseFactory::resetForeignKeyInDefinitionDetector();
         Configure::write('FixtureFactories.strictDefinition', true);
         $this->capturedErrors = [];
-        $this->previousHandler = set_error_handler(
+        set_error_handler(
             function (int $level, string $message): bool {
                 if ($level === E_USER_DEPRECATED) {
                     $this->capturedErrors[] = ['level' => $level, 'message' => $message];
@@ -63,7 +58,6 @@ class BaseFactoryForeignKeyDetectionTest extends TestCase
     protected function tearDown(): void
     {
         restore_error_handler();
-        $this->previousHandler = null;
         BaseFactory::resetForeignKeyInDefinitionDetector();
         Configure::delete('FixtureFactories.strictDefinition');
         parent::tearDown();
