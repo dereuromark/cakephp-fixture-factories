@@ -101,6 +101,32 @@ For each factory the detector flags:
 4. Decide whether the association should be auto-composed in `configure()` (always-on parent) or stay opt-in at the call site (sometimes-on parent).
 5. Update tests that previously asserted on the random FK value — they should now assert against the composed parent's real id.
 
+## Pinning the FK at the call site Just Works
+
+The detector steers FK population out of `definition()` and into association
+composition. The natural follow-up question is: *if the parent is now composed
+in `configure()`, how do I still test "this row belongs to that specific
+parent"?* Historically you had to add a manual `->without('Alias')` next to
+every `Factory::new(['foo_id' => $x])`, because the composed parent's id would
+otherwise overwrite the explicit FK.
+
+That manual `->without()` is no longer needed. With
+[`autoSkipComposeOnExplicitForeignKey`](/reference/configuration#autoskipcomposeonexplicitforeignkey)
+(default `true`), explicitly providing the FK at the call site automatically
+suppresses the `configure()`-composed parent for that build, so the explicit
+value wins:
+
+```php
+// Factory composes the parent in configure()->with('Author').
+// Pinning author_id at the call site auto-skips that composition:
+$article = ArticleFactory::new(['author_id' => $author->id])->persist();
+// $article->author_id === $author->id  (no throw-away Author row)
+```
+
+An explicit `->with('Author', ...)` still always composes — that is an
+unambiguous request for a parent and wins over the auto-skip. Turn the flag
+off only if a suite relied on the old override behavior.
+
 ## Opt-out while migrating
 
 If a downstream suite has many offenders and can't migrate in one pass:

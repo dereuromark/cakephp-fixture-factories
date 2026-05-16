@@ -62,6 +62,26 @@ return [
         // 'strictDefinition' => true,
 
         /**
+         * When enabled (the default), a belongsTo association composed in
+         * configure() is automatically NOT composed for a given build when the
+         * caller explicitly provides that association's foreign-key column at
+         * the call site — via new(['foo_id' => $x]), setField('foo_id', $x),
+         * state(['foo_id' => $x]) or sequence(). The explicitly-set FK then
+         * wins instead of being silently overwritten by the composed parent's
+         * fresh id, and no throw-away parent row is created (equivalent to an
+         * automatic ->without('Alias')).
+         *
+         * An explicit ->with('Alias', ...) always wins over this auto-skip:
+         * the caller clearly asked for composition, so it is never skipped.
+         *
+         * Set to false to restore the legacy behavior where a configure()-
+         * composed parent overrides an explicitly-set foreign key.
+         *
+         * Default: true
+         */
+        // 'autoSkipComposeOnExplicitForeignKey' => true,
+
+        /**
          * Namespace where factory classes are located.
          * Default: App\Test\Factory (auto-detected from table registry name)
          */

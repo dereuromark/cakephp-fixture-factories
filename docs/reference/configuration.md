@@ -15,6 +15,7 @@ return [
         'seed' => 1234,
         'instanceLevelGenerator' => true,
         'strictDefinition' => true,
+        'autoSkipComposeOnExplicitForeignKey' => true,
         'testFixtureNamespace' => 'App\\Test\\Factory',
         'testFixtureOutputDir' => 'Factory/',
         'testFixtureGlobalBehaviors' => [],
@@ -74,6 +75,36 @@ the opt-out is transitional and will be removed in the next major release,
 when the deprecation becomes a hard exception. See
 [Foreign keys in `definition()`](/guide/foreign-keys-in-definition) for the
 full rationale and a migration cookbook.
+
+Default: `true`.
+
+### `autoSkipComposeOnExplicitForeignKey`
+
+Controls whether a `configure()`-composed `belongsTo` parent is automatically
+skipped for a build when the caller explicitly supplies that association's
+foreign-key column.
+
+When `true` (the default) and a factory composes a parent in `configure()`
+(e.g. `configure()->with('Homes')`), a call site that pins the FK —
+`Factory::new(['home_id' => 123])`, `->setField('home_id', 123)`,
+`->state(['home_id' => 123])`, or `sequence()` — makes the factory **not**
+compose that parent for that build (an implicit `->without('Homes')`). The
+explicitly-set `123` then survives instead of being silently overwritten by
+the composed parent's freshly-persisted id, and no throw-away parent row is
+created. This is almost always the intent and complements the
+[FK-in-`definition()` detector](/guide/foreign-keys-in-definition): the
+detector says "don't put the FK in `definition()`", this makes "pin the FK at
+the call site" Just Work.
+
+An explicit `->with('Alias', ...)` always wins over the auto-skip — the caller
+clearly asked for composition, so it is never skipped even if the FK is also
+set. Only `configure()` defaults are auto-skipped, and only when the FK value
+comes from caller-supplied state (not a `definition()` default) and is
+non-null.
+
+Set to `false` to restore the legacy behavior where a `configure()`-composed
+parent overrides an explicitly-set foreign key (e.g. for a suite that relied
+on that override).
 
 Default: `true`.
 
