@@ -101,78 +101,31 @@ For each factory the detector flags:
 4. Decide whether the association should be auto-composed in `configure()` (always-on parent) or stay opt-in at the call site (sometimes-on parent).
 5. Update tests that previously asserted on the random FK value — they should now assert against the composed parent's real id.
 
-## Migrating off FK-in-`definition()`
+## Pinning the FK at the call site Just Works
 
-::: warning This is a call-site sweep, not just a factory edit
-Removing the FK from `definition()` and composing the parent via
-`configure()->with('Alias')` is only half the job. **Every existing test
-that pins that FK explicitly** — `Factory::new(['author_id' => $x])`,
-`->setField('author_id', $x)`, `->patchData(['author_id' => $x])` — will
-**silently break** the moment the factory starts composing the parent,
-because the composed parent's freshly-persisted id **overwrites** the
-explicitly-set FK. Nothing errors; the row just points at the wrong parent.
-Budget for a suite-wide grep, not a one-line factory change.
-:::
+The detector steers FK population out of `definition()` and into association
+composition. The natural follow-up question is: *if the parent is now composed
+in `configure()`, how do I still test "this row belongs to that specific
+parent"?* Historically you had to add a manual `->without('Alias')` next to
+every `Factory::new(['foo_id' => $x])`, because the composed parent's id would
+otherwise overwrite the explicit FK.
 
-### Preferred idiom: `->with('Alias', $persistedEntity)`
-
-When a test needs the row to belong to a *specific* parent, pass that parent
-through the composition layer instead of pinning the scalar FK:
+That manual `->without()` is no longer needed. With
+[`autoSkipComposeOnExplicitForeignKey`](/reference/configuration#autoskipcomposeonexplicitforeignkey)
+(default `true`), explicitly providing the FK at the call site automatically
+suppresses the `configure()`-composed parent for that build, so the explicit
+value wins:
 
 ```php
-// Before — pins the scalar FK, breaks once the factory composes Author
+// Factory composes the parent in configure()->with('Author').
+// Pinning author_id at the call site auto-skips that composition:
 $article = ArticleFactory::new(['author_id' => $author->id])->persist();
-
-// After — the composed parent IS the one you want
-$article = ArticleFactory::new()->with('Author', $author)->persist();
+// $article->author_id === $author->id  (no throw-away Author row)
 ```
 
-`->with('Alias', $entity)` accepts a persisted entity, an array of fields, or
-a factory. It always wins over an auto-composed `configure()->with()`, so the
-parent you hand in is the parent the row ends up with.
-
-### Escape hatch: `->without('Alias')`
-
-Occasionally a test genuinely wants a bare scalar FK — an orphan id, a fixed
-legacy id, a value the system-under-test is expected to handle as
-"parent missing". In that case keep the explicit FK and drop the composed
-parent for that build:
-
-```php
-$article = ArticleFactory::new(['author_id' => 999999])
-    ->without('Author')
-    ->persist();
-```
-
-`->without('Alias')` cancels the `configure()`-composed parent for this build
-only, so the scalar `author_id` survives unmodified and no `Author` row is
-created.
-
-::: tip Auto-skip
-When the `autoSkipComposeOnExplicitForeignKey` flag is enabled (its default),
-supplying the FK explicitly at the call site *automatically* drops the
-composed parent for that build — the explicit FK wins without a manual
-`->without('Alias')`. The escape hatch above is only needed when that flag is
-turned off. See the [configuration reference](/reference/configuration) for
-the flag.
-:::
-
-### Deep-cascade caveat
-
-`->with('Alias', $entity)` composes the parent into the build graph. If you
-take a built (not persisted) entity and save it externally:
-
-```php
-$article = ArticleFactory::new()->with('Author', AuthorFactory::new())->getEntity();
-$data = $article->toArray();
-$table->save($table->newEntity($data)); // cascade-saves the unsaved Author too
-```
-
-the external `$table->save()` will try to **cascade-save the composed but
-unpersisted parent**, which may collide with uniqueness rules or insert rows
-you did not expect. Either `->persist()` through the factory (it handles the
-save order), or compose with an already-persisted entity so there is nothing
-left to cascade.
+An explicit `->with('Author', ...)` still always composes — that is an
+unambiguous request for a parent and wins over the auto-skip. Turn the flag
+off only if a suite relied on the old override behavior.
 
 ## Opt-out while migrating
 

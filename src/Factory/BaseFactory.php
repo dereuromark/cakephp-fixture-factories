@@ -1405,11 +1405,18 @@ abstract class BaseFactory
      * per registry alias. Only belongsTo associations contribute, because that
      * is the side that owns the FK column locally.
      *
+     * Shared with the auto-skip-composition feature in {@see DataCompiler}: both
+     * the FK-in-definition() detector and the auto-skip need the same belongsTo
+     * FK enumeration, so the mapping is defined once here and reused rather than
+     * duplicated.
+     *
+     * @internal
+     *
      * @param \Cake\ORM\Table $table
      *
      * @return array<int|string, string> Map of FK column name to declaring association alias.
      */
-    private static function collectForeignKeyColumns(Table $table): array
+    public static function collectForeignKeyColumns(Table $table): array
     {
         $cacheKey = $table->getRegistryAlias();
         if (isset(self::$fkColumnsByRegistry[$cacheKey])) {

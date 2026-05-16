@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace CakephpFixtureFactories\Factory;
 
+use Cake\Core\Configure;
 use Cake\Database\Driver\Postgres;
 use Cake\Datasource\EntityInterface;
 use Cake\ORM\Association;
@@ -642,8 +643,12 @@ class DataCompiler
         if ($isEntityInjected) {
             $associatedData = $this->dataFromAssociations;
         } else {
+            $defaultAssociations = $this->skipComposedAssociationsWithExplicitForeignKey(
+                $entity,
+                $this->dataFromDefaultAssociations,
+            );
             // Overwrite the default associations if these are found in the associations
-            $associatedData = array_merge($this->dataFromDefaultAssociations, $this->dataFromAssociations);
+            $associatedData = array_merge($defaultAssociations, $this->dataFromAssociations);
         }
 
         foreach ($associatedData as $propertyName => $data) {
@@ -658,6 +663,108 @@ class DataCompiler
         }
 
         return $this;
+    }
+
+    /**
+     * Drop `configure()`-composed belongsTo associations whose foreign-key
+     * column was set explicitly by the caller.
+     *
+     * When a factory composes a parent in `configure()` (e.g.
+     * `configure()->with('Homes')`) and the caller also pins that parent's FK
+     * at the call site — `Factory::new(['home_id' => 123])`,
+     * `->setField('home_id', 123)`, `->state(['home_id' => 123])` — the
+     * composed parent would be built, persisted, and its fresh id would
+     * silently overwrite the explicit `123`. That is almost never the intent:
+     * a caller who names the FK wants that exact parent. Auto-skipping the
+     * composition (an implicit `->without('Alias')`) lets the explicit FK win
+     * and avoids creating a throw-away parent row.
+     *
+     * Scope and guarantees:
+     *  - Only `configure()` defaults are considered. An explicit
+     *    `->with('Alias', ...)` lands in `$dataFromAssociations` (merged after
+     *    this filter) and always wins — the caller clearly asked for
+     *    composition, so it is never auto-skipped.
+     *  - The FK must come from caller-supplied state, tracked by
+     *    {@see self::getEnforcedFields()} — instantiation array, `state()`,
+     *    `setField()`, `sequence()`. Values produced only by `definition()`
+     *    defaults never reach the enforced-fields list, so a default FK does
+     *    not trigger the skip.
+     *  - The resolved FK value on the entity must be non-null. An explicit
+     *    `null` is intentionally out of scope: it is indistinguishable here
+     *    from "not provided", and the legacy compose-then-overwrite behavior
+     *    is preserved for that case. To deliberately build an orphan with a
+     *    `null` FK, use an explicit `->without('Alias')` at the call site.
+     *  - Behind `FixtureFactories.autoSkipComposeOnExplicitForeignKey`
+     *    (default `true`). Set to `false` to restore the legacy behavior where
+     *    the composed parent overrides an explicitly-set FK.
+     *
+     * @param \Cake\Datasource\EntityInterface $entity Entity carrying the resolved scalar data.
+     * @param array<string, array<int, \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>>> $defaultAssociations Associations composed by configure().
+     *
+     * @return array<string, array<int, \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>>>
+     */
+    private function skipComposedAssociationsWithExplicitForeignKey(
+        EntityInterface $entity,
+        array $defaultAssociations,
+    ): array {
+        if (!$defaultAssociations) {
+            return $defaultAssociations;
+        }
+        if (!Configure::read('FixtureFactories.autoSkipComposeOnExplicitForeignKey', true)) {
+            return $defaultAssociations;
+        }
+
+        $enforcedFields = $this->getEnforcedFields();
+        if (!$enforcedFields) {
+            return $defaultAssociations;
+        }
+
+        // Reuse the belongsTo FK→alias enumeration shared with the
+        // FK-in-definition() detector (see BaseFactory::collectForeignKeyColumns())
+        // as a cheap gate: if the table declares no belongsTo FK columns there
+        // is nothing this feature can ever skip.
+        if (!BaseFactory::collectForeignKeyColumns($this->getFactory()->getTable())) {
+            return $defaultAssociations;
+        }
+        $enforcedFields = array_fill_keys($enforcedFields, true);
+
+        foreach (array_keys($defaultAssociations) as $associationName) {
+            // An explicit ->with('Alias', ...) re-added the same alias: the
+            // caller asked for composition, so never auto-skip it.
+            if (isset($this->dataFromAssociations[$associationName])) {
+                continue;
+            }
+            $association = $this->getAssociationByPropertyName($associationName);
+            if (!$association instanceof BelongsTo) {
+                continue;
+            }
+
+            // Only skip when the WHOLE foreign key (every component of a
+            // composite key) was explicitly provided and resolves to a
+            // non-null value — otherwise composing the parent would still be
+            // the only way to populate the missing key parts.
+            $allExplicit = null;
+            foreach ((array)$association->getForeignKey() as $foreignKey) {
+                if (!is_string($foreignKey) || $foreignKey === '') {
+                    continue;
+                }
+                if (
+                    !isset($enforcedFields[$foreignKey])
+                    || !$entity->has($foreignKey)
+                    || $entity->get($foreignKey) === null
+                ) {
+                    $allExplicit = false;
+
+                    break;
+                }
+                $allExplicit = true;
+            }
+            if ($allExplicit === true) {
+                unset($defaultAssociations[$associationName]);
+            }
+        }
+
+        return $defaultAssociations;
     }
 
     /**
