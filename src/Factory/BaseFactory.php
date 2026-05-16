@@ -1382,9 +1382,17 @@ abstract class BaseFactory
                 . "Move association composition out of definition() — use ->with('%s') in configure(), a forFoo() / withFoo() helper, "
                 . 'or pass the association at the call site. Setting the FK column directly produces dangling ids that point at no '
                 . 'real row, and silently masks the real source of the value when a parent is composed via ->with(). '
+                . 'Migrating is a test-wide call-site sweep, not just a factory edit: once the factory composes the parent via '
+                . "configure()->with('%s'), every existing test that pins this FK with new(['%s' => \$x]) silently breaks, because "
+                . "the composed parent's id overwrites the explicitly-set FK. Such call sites must switch to ->with('%s', \$entity) "
+                . "or add ->without('%s'). "
                 . "Opt out transitionally with Configure::write('FixtureFactories.strictDefinition', false); "
                 . 'the opt-out is removed in the next major.',
                 $factoryClass,
+                $column,
+                $fkColumns[$column],
+                $fkColumns[$column],
+                $fkColumns[$column],
                 $column,
                 $fkColumns[$column],
                 $fkColumns[$column],
