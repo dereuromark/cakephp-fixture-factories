@@ -149,11 +149,12 @@ only, so the scalar `author_id` survives unmodified and no `Author` row is
 created.
 
 ::: tip Auto-skip
-As of the [`autoSkipComposeOnExplicitForeignKey`](/reference/configuration#autoskipcomposeonexplicitforeignkey)
-flag (default `true`), supplying the FK explicitly at the call site
-*automatically* drops the composed parent for that build — the explicit FK
-wins without a manual `->without('Alias')`. The escape hatch above is only
-needed when that flag is turned off.
+When the `autoSkipComposeOnExplicitForeignKey` flag is enabled (its default),
+supplying the FK explicitly at the call site *automatically* drops the
+composed parent for that build — the explicit FK wins without a manual
+`->without('Alias')`. The escape hatch above is only needed when that flag is
+turned off. See the [configuration reference](/reference/configuration) for
+the flag.
 :::
 
 ### Deep-cascade caveat
