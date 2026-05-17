@@ -42,14 +42,7 @@ use function is_array;
  *
  * Subclasses should declare the entity type via PHPStan generics so that
  * `getEntity()`, `getEntities()`, `getResultSet()`, `getPersistedResultSet()`,
- * `persistEntity()` and `persistEntities()` resolve to the concrete entity class:
- *
- * ```
- * /**
- *  * @extends BaseFactory<\App\Model\Entity\Article>
- *  *\/
- * class ArticleFactory extends BaseFactory { ... }
- * ```
+ * `persistEntity()` and `persistEntities()` resolve to the concrete entity class.
  *
  * @template TEntity of \Cake\Datasource\EntityInterface
  *
