@@ -16,6 +16,7 @@ declare(strict_types=1);
 namespace CakephpFixtureFactories\Test\TestCase\Factory;
 
 use Cake\Core\Configure;
+use Cake\ORM\Association\BelongsTo;
 use Cake\ORM\Table;
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Factory\BaseFactory;
@@ -229,5 +230,93 @@ class BaseFactoryForeignKeyDetectionTest extends TestCase
         $this->assertArrayNotHasKey('deleted', $map);
         $this->assertArrayNotHasKey(0, $map);
         $this->assertSame([], $map, 'Filter-only and Closure conditions must contribute no columns.');
+    }
+
+    /**
+     * When CakePHP exposes join columns directly (5.4+ API), the detector
+     * should use those values instead of parsing custom conditions itself.
+     */
+    public function testForeignKeyFalseAssociationPrefersCoreJoinKeyIntrospectionWhenAvailable(): void
+    {
+        $table = new Table(['table' => 'addresses', 'alias' => 'Addresses']);
+        $association = new IntrospectableBelongsTo('ApiCity', [
+            'sourceTable' => $table,
+            'foreignKey' => false,
+            'conditions' => ['Addresses.regex_uuid = ApiCity.uuid'],
+            'sourceJoinKey' => ['api_uuid'],
+            'targetJoinKey' => ['uuid'],
+        ]);
+        $table->associations()->add($association->getName(), $association);
+
+        BaseFactory::resetForeignKeyInDefinitionDetector();
+        $map = BaseFactory::collectForeignKeyColumns($table);
+
+        $this->assertSame('ApiCity', $map['api_uuid'] ?? null);
+        $this->assertArrayNotHasKey('regex_uuid', $map);
+    }
+
+    /**
+     * On the core-introspection path, an empty join-key list must stay empty
+     * instead of falling back to the legacy regex parser.
+     */
+    public function testForeignKeyFalseAssociationDoesNotFallbackWhenCoreJoinKeyIntrospectionReturnsEmpty(): void
+    {
+        $table = new Table(['table' => 'addresses', 'alias' => 'Addresses']);
+        $association = new IntrospectableBelongsTo('ApiCity', [
+            'sourceTable' => $table,
+            'foreignKey' => false,
+            'conditions' => ['Addresses.regex_uuid = ApiCity.uuid'],
+            'sourceJoinKey' => [],
+            'targetJoinKey' => [],
+        ]);
+        $table->associations()->add($association->getName(), $association);
+
+        BaseFactory::resetForeignKeyInDefinitionDetector();
+        $map = BaseFactory::collectForeignKeyColumns($table);
+
+        $this->assertSame([], $map);
+    }
+}
+
+/**
+ * Test double for CakePHP 5.4+'s join-key introspection API.
+ *
+ * @extends \Cake\ORM\Association\BelongsTo<\Cake\ORM\Table>
+ */
+class IntrospectableBelongsTo extends BelongsTo
+{
+    /**
+     * @var array<int, string>
+     */
+    protected array $sourceJoinKey = [];
+
+    /**
+     * @var array<int, string>
+     */
+    protected array $targetJoinKey = [];
+
+    /**
+     * @return array<int, string>
+     */
+    public function getSourceJoinKey(): array
+    {
+        return $this->sourceJoinKey;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function getTargetJoinKey(): array
+    {
+        return $this->targetJoinKey;
+    }
+
+    /**
+     * @param array<string, mixed> $options Options passed to the association constructor.
+     */
+    protected function _options(array $options): void
+    {
+        $this->sourceJoinKey = $options['sourceJoinKey'] ?? [];
+        $this->targetJoinKey = $options['targetJoinKey'] ?? [];
     }
 }

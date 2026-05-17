@@ -91,6 +91,12 @@ The detector inspects the `belongsTo` associations declared on the factory's roo
 
 Non-FK `*_id` columns (external system ids, enum-like status codes, anything *not* declared as a belongsTo FK) are not flagged. The detector consults the schema, not column-name patterns.
 
+For `belongsTo` associations declared with `foreignKey => false` and custom
+join conditions, the detector also protects the source-side join column when it
+can determine it. On CakePHP `5.4+` this uses the ORM's association
+introspection API directly; on CakePHP `5.0`-`5.3` it falls back to a
+conservative parser for the common alias-qualified equality patterns.
+
 ## Migration cookbook
 
 For each factory the detector flags:

@@ -1436,15 +1436,12 @@ abstract class BaseFactory
                 }
             }
 
-            // No declared scalar FK (foreignKey => false): the join is done
-            // through custom conditions (e.g. a uuid join). Recover the
-            // source-side join column(s) from the conditions so the detector
-            // still protects them. Conservative: only equality-style joins
-            // that reference BOTH this table's alias and the target alias are
-            // treated as join columns — pure filter conditions and opaque
-            // Closure conditions are ignored (no false positives).
+            // No declared scalar FK (foreignKey => false): on CakePHP 5.4+
+            // the association can expose its source-side join columns via the
+            // new core introspection API. On older Cake versions, fall back to
+            // conservative best-effort parsing of custom conditions.
             if (!$declared) {
-                foreach (self::joinColumnsFromConditions($association) as $column) {
+                foreach (self::collectSourceJoinColumns($association) as $column) {
                     if (!isset($columns[$column])) {
                         $columns[$column] = $association->getAlias();
                     }
@@ -1453,6 +1450,34 @@ abstract class BaseFactory
         }
 
         return self::$fkColumnsByRegistry[$cacheKey] = $columns;
+    }
+
+    /**
+     * Extract the source-side join columns from a belongsTo association that
+     * has no declared foreign key.
+     *
+     * On CakePHP 5.4+ the ORM provides these columns directly via
+     * `getSourceJoinKey()`. Older Cake versions are limited to inspecting raw
+     * custom conditions, so we keep the legacy fallback for compatibility.
+     *
+     * @param \Cake\ORM\Association\BelongsTo<\Cake\ORM\Table> $association
+     *
+     * @return array<int, string>
+     */
+    private static function collectSourceJoinColumns(BelongsTo $association): array
+    {
+        if (method_exists($association, 'getSourceJoinKey')) {
+            /** @var callable(): array<int, string> $callable */
+            $callable = [$association, 'getSourceJoinKey'];
+            $columns = $callable();
+
+            return array_values(array_filter(
+                $columns,
+                static fn (string $column): bool => $column !== '',
+            ));
+        }
+
+        return self::joinColumnsFromConditions($association);
     }
 
     /**
