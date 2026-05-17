@@ -1421,7 +1421,11 @@ abstract class BaseFactory
                 continue;
             }
             foreach ((array)$association->getForeignKey() as $column) {
-                if ($column === '') {
+                // A belongsTo with 'foreignKey' => false (custom-condition /
+                // non-FK join) yields false here; (array)false === [false].
+                // Skip any non-string / empty key so it never lands in the
+                // map as a bogus 0 => alias entry.
+                if (!is_string($column) || $column === '') {
                     continue;
                 }
                 if (!isset($columns[$column])) {

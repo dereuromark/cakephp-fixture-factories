@@ -16,11 +16,13 @@ declare(strict_types=1);
 namespace CakephpFixtureFactories\Test\TestCase\Factory;
 
 use Cake\Core\Configure;
+use Cake\ORM\Table;
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\Test\Factory\AddressFactory;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\SmellyAddressFactory;
+use TestApp\Model\Table\CitiesTable;
 
 /**
  * Covers the BaseFactory FK-in-definition() detector that emits an
@@ -155,5 +157,40 @@ class BaseFactoryForeignKeyDetectionTest extends TestCase
 
         SmellyAddressFactory::new()->build();
         $this->assertCount(1, $this->capturedErrors);
+    }
+
+    /**
+     * A belongsTo declared with `'foreignKey' => false` (a custom-condition /
+     * non-FK join, e.g. joining on a uuid via `conditions`) has no foreign-key
+     * column. `Association::getForeignKey()` returns `false` there, and
+     * `(array)false === [false]`, so collectForeignKeyColumns() must skip it
+     * rather than register a bogus `0 => Alias` entry (PHP casts the `false`
+     * key to `0`). The map must only ever be keyed by real string column
+     * names — otherwise the detector and the auto-skip feature both consult a
+     * polluted map.
+     */
+    public function testForeignKeyFalseAssociationIsNotCollectedAsColumn(): void
+    {
+        $table = new Table(['table' => 'addresses', 'alias' => 'Addresses']);
+        $table->belongsTo('City', ['className' => CitiesTable::class]);
+        $table->belongsTo('GhostCity', [
+            'className' => CitiesTable::class,
+            'foreignKey' => false,
+            'conditions' => ['GhostCity.name = Addresses.street'],
+        ]);
+
+        BaseFactory::resetForeignKeyInDefinitionDetector();
+        $map = BaseFactory::collectForeignKeyColumns($table);
+
+        // Real FK still collected.
+        $this->assertArrayHasKey('city_id', $map);
+        $this->assertSame('City', $map['city_id']);
+
+        // No ghost entry from (array)false, and only string keys.
+        $this->assertArrayNotHasKey(0, $map);
+        $this->assertArrayNotHasKey('', $map);
+        foreach (array_keys($map) as $key) {
+            $this->assertIsString($key, 'collectForeignKeyColumns() must only key by string column names.');
+        }
     }
 }
