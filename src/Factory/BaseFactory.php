@@ -1420,6 +1420,8 @@ abstract class BaseFactory
             if (!$association instanceof BelongsTo) {
                 continue;
             }
+
+            $declared = false;
             foreach ((array)$association->getForeignKey() as $column) {
                 // A belongsTo with 'foreignKey' => false (custom-condition /
                 // non-FK join) yields false here; (array)false === [false].
@@ -1428,13 +1430,88 @@ abstract class BaseFactory
                 if (!is_string($column) || $column === '') {
                     continue;
                 }
+                $declared = true;
                 if (!isset($columns[$column])) {
                     $columns[$column] = $association->getAlias();
+                }
+            }
+
+            // No declared scalar FK (foreignKey => false): the join is done
+            // through custom conditions (e.g. a uuid join). Recover the
+            // source-side join column(s) from the conditions so the detector
+            // still protects them. Conservative: only equality-style joins
+            // that reference BOTH this table's alias and the target alias are
+            // treated as join columns — pure filter conditions and opaque
+            // Closure conditions are ignored (no false positives).
+            if (!$declared) {
+                foreach (self::joinColumnsFromConditions($association) as $column) {
+                    if (!isset($columns[$column])) {
+                        $columns[$column] = $association->getAlias();
+                    }
                 }
             }
         }
 
         return self::$fkColumnsByRegistry[$cacheKey] = $columns;
+    }
+
+    /**
+     * Best-effort extraction of the source-table join column(s) from a
+     * belongsTo association whose `foreignKey` is `false` and whose join is
+     * expressed via custom `conditions` (the classic uuid-join pattern:
+     * `['Source.foo_uuid = Target.uuid']` or `['Source.foo_uuid' => 'Target.uuid']`).
+     *
+     * Only equality references that mention BOTH the source alias and the
+     * target alias are accepted, so a plain filter (`'Source.status' => 1`,
+     * `'Source.deleted = 0'`) is never mistaken for a join column. Closure
+     * conditions are opaque and yield nothing.
+     *
+     * @param \Cake\ORM\Association\BelongsTo<\Cake\ORM\Table> $association
+     *
+     * @return array<int, string> Source-table column names participating in the join.
+     */
+    private static function joinColumnsFromConditions(BelongsTo $association): array
+    {
+        $conditions = $association->getConditions();
+        if (!is_array($conditions)) {
+            return [];
+        }
+
+        $sourceAlias = $association->getSource()->getAlias();
+        $targetAlias = $association->getAlias();
+        $src = preg_quote($sourceAlias, '/');
+        $tgt = preg_quote($targetAlias, '/');
+
+        $cols = [];
+        foreach ($conditions as $key => $value) {
+            if (is_string($key)) {
+                // 'Source.col' => 'Target.col'  (join)
+                // 'Source.col' => <scalar>      (filter — ignored)
+                if (
+                    preg_match('/^' . $src . '\.(\w+)$/', $key, $m)
+                    && is_string($value)
+                    && preg_match('/^' . $tgt . '\.\w+$/', $value)
+                ) {
+                    $cols[] = $m[1];
+                }
+
+                continue;
+            }
+            // Integer key: a string expression such as
+            // 'Source.col = Target.col' (operator-agnostic). Require both
+            // aliases present so filters never qualify.
+            if (
+                is_string($value)
+                && preg_match('/\b' . $tgt . '\.\w+/', $value)
+                && preg_match_all('/\b' . $src . '\.(\w+)/', $value, $m)
+            ) {
+                foreach ($m[1] as $col) {
+                    $cols[] = $col;
+                }
+            }
+        }
+
+        return $cols;
     }
 
     /**
