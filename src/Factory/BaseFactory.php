@@ -45,8 +45,6 @@ use function is_array;
  * `persistEntity()` and `persistEntities()` resolve to the concrete entity class.
  *
  * @template TEntity of \Cake\Datasource\EntityInterface
- *
- * @package CakephpFixtureFactories\Factory
  */
 abstract class BaseFactory
 {
