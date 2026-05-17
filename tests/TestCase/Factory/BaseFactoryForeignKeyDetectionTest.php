@@ -16,11 +16,13 @@ declare(strict_types=1);
 namespace CakephpFixtureFactories\Test\TestCase\Factory;
 
 use Cake\Core\Configure;
+use Cake\ORM\Table;
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\Test\Factory\AddressFactory;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\SmellyAddressFactory;
+use TestApp\Model\Table\CitiesTable;
 
 /**
  * Covers the BaseFactory FK-in-definition() detector that emits an
@@ -155,5 +157,77 @@ class BaseFactoryForeignKeyDetectionTest extends TestCase
 
         SmellyAddressFactory::new()->build();
         $this->assertCount(1, $this->capturedErrors);
+    }
+
+    /**
+     * A belongsTo declared with `'foreignKey' => false` joins via custom
+     * `conditions`. `Association::getForeignKey()` returns `false` there and
+     * `(array)false === [false]`, so the collector must never register a
+     * bogus `0 => Alias` entry. Instead it recovers the source-side join
+     * column from the conditions (the classic uuid join), keyed by the real
+     * string column name, so the detector still protects it.
+     */
+    public function testForeignKeyFalseAssociationRecoversJoinColumnFromConditions(): void
+    {
+        $table = new Table(['table' => 'addresses', 'alias' => 'Addresses']);
+        $table->belongsTo('City', ['className' => CitiesTable::class]);
+        // string-expression form
+        $table->belongsTo('GhostCity', [
+            'className' => CitiesTable::class,
+            'foreignKey' => false,
+            'conditions' => ['Addresses.city_uuid = GhostCity.uuid'],
+        ]);
+        // key => value form
+        $table->belongsTo('KvCity', [
+            'className' => CitiesTable::class,
+            'foreignKey' => false,
+            'conditions' => ['Addresses.kv_uuid' => 'KvCity.uuid'],
+        ]);
+
+        BaseFactory::resetForeignKeyInDefinitionDetector();
+        $map = BaseFactory::collectForeignKeyColumns($table);
+
+        // Normal FK still collected.
+        $this->assertSame('City', $map['city_id'] ?? null);
+        // Custom uuid-join columns now recovered from conditions.
+        $this->assertSame('GhostCity', $map['city_uuid'] ?? null);
+        $this->assertSame('KvCity', $map['kv_uuid'] ?? null);
+
+        // No ghost entry from (array)false; only string keys.
+        $this->assertArrayNotHasKey(0, $map);
+        $this->assertArrayNotHasKey('', $map);
+        foreach (array_keys($map) as $key) {
+            $this->assertIsString($key, 'collectForeignKeyColumns() must only key by string column names.');
+        }
+    }
+
+    /**
+     * A pure filter condition on a foreignKey=>false association (no target
+     * alias referenced) must NOT be mistaken for a join column, and an opaque
+     * Closure condition yields nothing — both guard against false positives.
+     */
+    public function testForeignKeyFalseFilterAndClosureConditionsAreNotJoinColumns(): void
+    {
+        $table = new Table(['table' => 'addresses', 'alias' => 'Addresses']);
+        $table->belongsTo('FilteredCity', [
+            'className' => CitiesTable::class,
+            'foreignKey' => false,
+            'conditions' => ['Addresses.status' => 1, 'Addresses.deleted = 0'],
+        ]);
+        $table->belongsTo('ClosureCity', [
+            'className' => CitiesTable::class,
+            'foreignKey' => false,
+            'conditions' => function ($exp) {
+                return $exp;
+            },
+        ]);
+
+        BaseFactory::resetForeignKeyInDefinitionDetector();
+        $map = BaseFactory::collectForeignKeyColumns($table);
+
+        $this->assertArrayNotHasKey('status', $map);
+        $this->assertArrayNotHasKey('deleted', $map);
+        $this->assertArrayNotHasKey(0, $map);
+        $this->assertSame([], $map, 'Filter-only and Closure conditions must contribute no columns.');
     }
 }
