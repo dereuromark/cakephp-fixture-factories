@@ -16,7 +16,6 @@ declare(strict_types=1);
 namespace CakephpFixtureFactories\Test\TestCase\Factory;
 
 use Cake\Core\Configure;
-use Cake\ORM\Association\BelongsTo;
 use Cake\ORM\Table;
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Factory\BaseFactory;
@@ -275,48 +274,5 @@ class BaseFactoryForeignKeyDetectionTest extends TestCase
         $map = BaseFactory::collectForeignKeyColumns($table);
 
         $this->assertSame([], $map);
-    }
-}
-
-/**
- * Test double for CakePHP 5.4+'s join-key introspection API.
- *
- * @extends \Cake\ORM\Association\BelongsTo<\Cake\ORM\Table>
- */
-class IntrospectableBelongsTo extends BelongsTo
-{
-    /**
-     * @var array<int, string>
-     */
-    protected array $sourceJoinKey = [];
-
-    /**
-     * @var array<int, string>
-     */
-    protected array $targetJoinKey = [];
-
-    /**
-     * @return array<int, string>
-     */
-    public function getSourceJoinKey(): array
-    {
-        return $this->sourceJoinKey;
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    public function getTargetJoinKey(): array
-    {
-        return $this->targetJoinKey;
-    }
-
-    /**
-     * @param array<string, mixed> $options Options passed to the association constructor.
-     */
-    protected function _options(array $options): void
-    {
-        $this->sourceJoinKey = $options['sourceJoinKey'] ?? [];
-        $this->targetJoinKey = $options['targetJoinKey'] ?? [];
     }
 }
