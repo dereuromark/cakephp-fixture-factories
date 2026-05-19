@@ -1103,6 +1103,38 @@ class DataCompiler
     }
 
     /**
+     * Reclassify a single association from an explicit user `with()`
+     * (`$dataFromAssociations`) to a `configure()`-style default
+     * (`$dataFromDefaultAssociations`).
+     *
+     * `withRequiredParents()` composes the required chain by calling
+     * `with()` *after* `configure()` has been snapshotted, so its
+     * auto-resolved parents would otherwise look like per-branch user intent
+     * and flip {@see self::hasUserSetAssociations()} — which makes
+     * {@see self::mergeWithToOne()} refuse to substitute a `recycle()`d row
+     * for that node. Auto-composition is not user intent, so demote it: the
+     * parent is still built, but recycle substitution works at every depth of
+     * the chain, exactly like a `configure()` default.
+     *
+     * No-op when the alias is not currently an explicit association.
+     *
+     * @internal
+     *
+     * @param string $associationName Association alias to reclassify.
+     *
+     * @return void
+     */
+    public function demoteAssociationToDefault(string $associationName): void
+    {
+        if (!isset($this->dataFromAssociations[$associationName])) {
+            return;
+        }
+
+        $this->dataFromDefaultAssociations[$associationName] = $this->dataFromAssociations[$associationName];
+        unset($this->dataFromAssociations[$associationName]);
+    }
+
+    /**
      * Whether the user (post-`configure()`) added any association overrides
      * via `with()` / `for()` / `has()` on this factory.
      *

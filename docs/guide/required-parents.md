@@ -87,8 +87,11 @@ Without `recycle()`, each produced row gets its own full required chain, which
 is the correct default for independent fixtures. Note the cost is the *whole
 transitive chain* per row: `->count(50)` on a root three levels deep inserts
 50 × every level, not 50 rows. `recycle()` the shared table(s) when that matters
-— a recycled entity is substituted at every depth of the chain by table name,
-for the whole batch.
+— a recycled entity is substituted at **every depth** of the chain by table
+name, for the whole batch. This includes *mid-chain* parents, not just the
+leaf: recycling an intermediate required parent reuses it everywhere, because
+`withRequiredParents()`' auto-composition is treated as a default (not as
+explicit per-branch `with()` intent) and so never blocks recycle substitution.
 
 Two **distinct-alias** belongsTo that happen to target the same table (e.g.
 `Address` and `BusinessAddress`, both → `addresses`) each get their own parent
