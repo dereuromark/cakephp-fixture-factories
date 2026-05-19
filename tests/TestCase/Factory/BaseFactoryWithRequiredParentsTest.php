@@ -441,9 +441,21 @@ class BaseFactoryWithRequiredParentsTest extends TestCase
             'conditions' => ['Authors.name = GhostCountry.name'],
         ]);
 
-        $author = $factory
-            ->withRequiredParents()
-            ->save();
+        // This test exercises withRequiredParents()'s handling of a
+        // foreignKey => false join, not the FK-in-definition() detector. The
+        // contrived `Authors.name = GhostCountry.name` join makes `name`
+        // (a real definition() data field) double as the recovered join
+        // column, so strictDefinition would correctly — but irrelevantly —
+        // flag it here. Isolate from the detector.
+        $strict = Configure::read('FixtureFactories.strictDefinition');
+        Configure::write('FixtureFactories.strictDefinition', false);
+        try {
+            $author = $factory
+                ->withRequiredParents()
+                ->save();
+        } finally {
+            Configure::write('FixtureFactories.strictDefinition', $strict);
+        }
 
         $this->assertNotNull($author->id, 'Build still succeeds.');
         // Only the legitimate required chain built a Country (via City);
