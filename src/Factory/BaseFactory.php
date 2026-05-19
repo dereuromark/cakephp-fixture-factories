@@ -307,7 +307,12 @@ abstract class BaseFactory
         $factory = $factory->setDefaultData(
             function (GeneratorInterface $generator) use ($definitionFactory, $factoryClass): array {
                 $data = $definitionFactory->definition($generator);
-                self::detectForeignKeysInDefinition($data, $definitionFactory->getTable(), $factoryClass);
+                self::detectForeignKeysInDefinition(
+                    $data,
+                    $definitionFactory->getTable(),
+                    $factoryClass,
+                    $definitionFactory->allowedForeignKeysInDefinition(),
+                );
 
                 return $data;
             },
@@ -1347,8 +1352,11 @@ abstract class BaseFactory
      * @param array<string, mixed> $data Data returned by definition().
      * @param \Cake\ORM\Table $table The factory's root table.
      * @param string $factoryClass FQCN of the factory, used in the message.
+     * @param array<int, string> $allowed Columns the factory explicitly
+     *   declares as intentional via {@see self::allowedForeignKeysInDefinition()}
+     *   — not flagged. Reserved for non-managed join columns.
      */
-    private static function detectForeignKeysInDefinition(array $data, Table $table, string $factoryClass): void
+    private static function detectForeignKeysInDefinition(array $data, Table $table, string $factoryClass, array $allowed = []): void
     {
         if (!$data) {
             return;
@@ -1368,6 +1376,9 @@ abstract class BaseFactory
                 continue;
             }
             if (!isset($fkColumns[$column])) {
+                continue;
+            }
+            if (in_array($column, $allowed, true)) {
                 continue;
             }
 
@@ -1916,6 +1927,26 @@ abstract class BaseFactory
     protected function requiredParentAssociations(): ?array
     {
         return null;
+    }
+
+    /**
+     * Columns that `definition()` intentionally returns and the
+     * `strictDefinition` detector must NOT flag.
+     *
+     * Reserved for **non-managed** join columns: a `foreignKey => false`
+     * custom-condition belongsTo (e.g. a uuid-condition join) whose column
+     * CakePHP never manages. strictDefinition exists to stop a dangling
+     * *managed* FK id from masking a real composed parent; a non-managed
+     * condition-join column has no managed pointer to dangle, so a generated
+     * value there is not that anti-pattern. The detector still flags every
+     * genuinely managed FK — listing a managed FK column here defeats the
+     * check, so don't.
+     *
+     * @return array<int, string> Column names exempt from the detector.
+     */
+    protected function allowedForeignKeysInDefinition(): array
+    {
+        return [];
     }
 
     /**

@@ -84,12 +84,36 @@ AuthorFactory::new()->count(50)
 ```
 
 Without `recycle()`, each produced row gets its own full required chain, which
-is the correct default for independent fixtures.
+is the correct default for independent fixtures. Note the cost is the *whole
+transitive chain* per row: `->count(50)` on a root three levels deep inserts
+50 × every level, not 50 rows. `recycle()` the shared table(s) when that matters
+— a recycled entity is substituted at every depth of the chain by table name,
+for the whole batch.
 
 Two **distinct-alias** belongsTo that happen to target the same table (e.g.
 `Address` and `BusinessAddress`, both → `addresses`) each get their own parent
 — that is per-alias intent, preserved on purpose. Use `->with('Alias', $entity)`
 when you want two aliases to point at the *same* parent.
+
+### Diamond required graphs
+
+When two *different* required parents of the root each require the same
+grandparent table — root → `B` and root → `C`, with both `B` → `D` and
+`C` → `D` all `NOT NULL` — the two branches are composed independently, so a
+single root produces **two `D` rows**. This is consistent with the
+independent-fixtures default above, not a bug: nothing is persisted at
+composition time, so there is no shared row to reuse. When the diamond should
+collapse to one shared grandparent, `recycle()` it — the same table-keyed
+substitution applies, so both branches reuse it:
+
+```php
+$d = DFactory::new()->save();
+
+RootFactory::new()
+    ->withRequiredParents()
+    ->recycle($d) // both B's and C's required D resolve to this one row
+    ->save();
+```
 
 ## Shared-primary-key and cyclic graphs
 

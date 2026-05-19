@@ -20,6 +20,7 @@ use Cake\ORM\Table;
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\Test\Factory\AddressFactory;
+use CakephpFixtureFactories\Test\Factory\AllowedFkAddressFactory;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\SmellyAddressFactory;
 use TestApp\Model\Table\CitiesTable;
@@ -125,6 +126,25 @@ class BaseFactoryForeignKeyDetectionTest extends TestCase
         SmellyAddressFactory::new()->build();
 
         $this->assertSame([], $this->capturedErrors);
+    }
+
+    /**
+     * A factory may declare a definition() column intentional via
+     * `allowedForeignKeysInDefinition()` — reserved for non-managed
+     * condition-join columns. The detector must not flag a listed column,
+     * while `strictDefinition` stays globally on for every other factory.
+     */
+    public function testAllowedForeignKeysInDefinitionExemptsListedColumn(): void
+    {
+        AllowedFkAddressFactory::new()->build();
+
+        $this->assertSame([], $this->capturedErrors, 'A column listed in allowedForeignKeysInDefinition() must not be flagged.');
+
+        // The exemption is per-factory: an un-listed smelly factory on the
+        // same column is still flagged.
+        SmellyAddressFactory::new()->build();
+        $this->assertCount(1, $this->capturedErrors);
+        $this->assertStringContainsString('"city_id"', $this->capturedErrors[0]['message']);
     }
 
     /**

@@ -160,3 +160,18 @@ Configure::write('FixtureFactories.strictDefinition', false);
 ```
 
 The opt-out silences the detector entirely. It is transitional — the next major release removes the flag and promotes the deprecation to an exception. Plan the migration before then; the detector's report tells you exactly which factories and columns to touch.
+
+### Per-factory exception for non-managed join columns
+
+`strictDefinition` exists to stop a dangling *managed* foreign-key id from masking a real composed parent. A `foreignKey => false` custom-condition belongsTo (for example a uuid-condition join, `Child.parent_uuid = Parents.uuid`) has a column CakePHP never manages — there is no managed pointer to dangle, so a generated value there is not that anti-pattern, yet the detector still recognises it as a join column.
+
+For those columns only, a factory can declare the column intentional instead of switching the detector off globally:
+
+```php
+protected function allowedForeignKeysInDefinition(): array
+{
+    return ['parent_uuid'];
+}
+```
+
+The detector skips listed columns for that factory while staying fully active for every other factory and for every genuinely managed FK. Reserve it for non-managed condition-join columns — listing a managed FK column there defeats the check.
