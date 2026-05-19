@@ -15,7 +15,7 @@ namespace CakephpFixtureFactories\Test\Factory;
 
 /**
  * Opts the (otherwise nullable, thus not auto-resolved) `BusinessAddress`
- * belongsTo into `withRequiredParents()` via the override hook, demonstrating
+ * belongsTo into `withRequiredParents()` via the additive hook, demonstrating
  * the supported, non-guessing escape hatch for associations automatic
  * detection deliberately refuses (composite / custom-join / nullable).
  *
@@ -24,10 +24,10 @@ namespace CakephpFixtureFactories\Test\Factory;
 class RequiredParentsOverrideAuthorFactory extends RequiredParentsAuthorFactory
 {
     /**
-     * @return array<int, string>|null
+     * @return array<int, string>
      */
-    protected function requiredParentAssociations(): ?array
+    protected function requiredParentAssociations(): array
     {
-        return ['Address', 'BusinessAddress'];
+        return ['BusinessAddress'];
     }
 }

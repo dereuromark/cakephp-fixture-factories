@@ -1785,8 +1785,8 @@ abstract class BaseFactory
      *
      * - aliases listed in `$except`,
      * - aliases whose FK the caller pinned (non-null) at the call site,
-     * - aliases excluded by the {@see self::requiredParentAssociations()}
-     *   override hook.
+     * - aliases added explicitly by the {@see self::requiredParentAssociations()}
+     *   hook.
      *
      * An alias already composed via `->with()` / `->for()` / `configure()` is
      * still returned: the caller's factory is recursively enriched (or, if it
@@ -1805,7 +1805,7 @@ abstract class BaseFactory
         $table = $this->getTable();
         $schema = $table->getSchema();
 
-        $override = $this->requiredParentAssociations();
+        $additional = $this->requiredParentAssociations();
         // Caller-pinned FK columns (Factory::new(['fk' => x]), ->state(),
         // ->setField(), ->patchData(), sequence*()), resolvable at chain time.
         // A *non-null* pinned FK means the parent is already satisfied, so the
@@ -1870,17 +1870,6 @@ abstract class BaseFactory
                 }
             }
 
-            if ($override !== null) {
-                // Explicit opt-in list: the caller takes full responsibility
-                // for which aliases (including composite / custom-join ones)
-                // are buildable, so honour it verbatim.
-                if (in_array($alias, $override, true)) {
-                    $aliases[] = $alias;
-                }
-
-                continue;
-            }
-
             $foreignKeys = (array)$association->getForeignKey();
             // Composite key, or `foreignKey => false` (custom-condition join):
             // never auto-resolved — see PR #85. Opt in via the override hook.
@@ -1905,28 +1894,35 @@ abstract class BaseFactory
             $aliases[] = $alias;
         }
 
+        foreach ($additional as $alias) {
+            if (in_array($alias, $except, true)) {
+                continue;
+            }
+            if (!in_array($alias, $aliases, true)) {
+                $aliases[] = $alias;
+            }
+        }
+
         return $aliases;
     }
 
     /**
-     * Override hook to take explicit control over which belongsTo aliases
-     * {@see self::withRequiredParents()} composes.
+     * Add extra belongsTo aliases to the automatic required-parent set used by
+     * {@see self::withRequiredParents()}.
      *
-     * Return `null` (the default) to use automatic NOT NULL single-scalar-FK
-     * detection. Return an array of aliases to opt in *exactly* those — this
-     * is the supported, non-guessing way to include a composite-key or
+     * Automatic detection always includes the root table's belongsTo
+     * associations whose foreign key is a single scalar NOT NULL column in the
+     * schema. Return additional aliases here to opt in edge cases that
+     * automatic detection deliberately refuses to guess, such as a composite-key or
      * `foreignKey => false` custom-join belongsTo, which automatic detection
-     * deliberately refuses to build (the PR #85 brittle cases).
+     * deliberately refuses to build (the PR #85 brittle cases). Returned
+     * aliases are unioned onto the automatically detected set.
      *
-     * When a non-null list is returned it is authoritative: only listed
-     * aliases are composed, automatic detection is bypassed entirely, and the
-     * factory author owns correctness for the listed associations.
-     *
-     * @return array<int, string>|null Aliases to compose, or null for auto.
+     * @return array<int, string> Additional aliases to compose.
      */
-    protected function requiredParentAssociations(): ?array
+    protected function requiredParentAssociations(): array
     {
-        return null;
+        return [];
     }
 
     /**

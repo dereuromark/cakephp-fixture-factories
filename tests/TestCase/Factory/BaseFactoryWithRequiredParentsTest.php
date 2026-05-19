@@ -406,9 +406,10 @@ class BaseFactoryWithRequiredParentsTest extends TestCase
     }
 
     /**
-     * The override hook is authoritative: it opts the (otherwise nullable,
-     * not auto-resolved) BusinessAddress into composition AND keeps Address.
-     * This is the supported, non-guessing escape hatch for composite /
+     * The hook is additive: it opts the (otherwise nullable, not
+     * auto-resolved) BusinessAddress into composition while the ordinary
+     * required Address still comes from automatic detection. This is the
+     * supported, non-guessing escape hatch for composite /
      * custom-join associations automatic detection refuses to build.
      */
     public function testOverrideHookOptsInExtraAssociation(): void
@@ -420,7 +421,7 @@ class BaseFactoryWithRequiredParentsTest extends TestCase
         $this->assertNotNull($author->address_id, 'Address still composed.');
         $this->assertNotNull(
             $author->business_address_id,
-            'Override hook opted BusinessAddress in even though its FK is nullable.',
+            'Hook opted BusinessAddress in even though its FK is nullable.',
         );
     }
 

@@ -163,30 +163,28 @@ $author = AuthorFactory::new(['address_id' => $address->id])
 
 ## Override hook
 
-Return a non-null list from `requiredParentAssociations()` to take explicit
-control. The list is **authoritative**: only listed aliases are composed,
-automatic detection is bypassed entirely, and the factory author owns
-correctness for the listed associations. This is the supported, non-guessing
-way to include a composite-key or `foreignKey => false` belongsTo that
-automatic detection refuses to build:
+Return extra aliases from `requiredParentAssociations()` to union them onto
+the automatically detected set. This is the supported, non-guessing way to
+include a composite-key or `foreignKey => false` belongsTo that automatic
+detection refuses to build:
 
 ```php
 class BillFactory extends BaseFactory
 {
     /**
-     * @return array<int, string>|null
+     * @return array<int, string>
      */
-    protected function requiredParentAssociations(): ?array
+    protected function requiredParentAssociations(): array
     {
-        // Build these exactly — including a custom-join one automatic
-        // detection would never touch.
-        return ['Customer', 'Article', 'LegacyUuidParent'];
+        // Add this custom-join one on top of the ordinary auto-detected
+        // required parents.
+        return ['LegacyUuidParent'];
     }
 }
 ```
 
-Return `null` (the default) to use automatic NOT NULL single-scalar-FK
-detection.
+Return an empty array (the default) to use only automatic NOT NULL
+single-scalar-FK detection.
 
 ## It's the pragmatic default — not the assertion tool
 
