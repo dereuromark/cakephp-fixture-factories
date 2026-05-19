@@ -22,28 +22,6 @@ If you're still on `1.3.x`, upgrade to `1.4.x` first, then move to v2.
 - **`FactoryTransactionStrategy` is eager by default again.** v1.3.0 (PR #23) flipped the strategy from eager to lazy: a connection only joined the rollback set after a Factory persisted on it. That silently broke tests that mixed Factory build with direct `$table->save($entity)` (the testFind / testValidationDefault pattern) — the direct save ran outside any transaction and leaked across test methods. v2 restores the eager default: `setupTest()` opens a transaction on the primary test connection (`test` by default; configurable via the `protected string $primaryConnection` property) up-front. Additional connections are still tracked lazily via `ensureTransaction()` from `BaseFactory::save()` / `saveMany()`, so multi-database setups still skip transactions on connections they never write to. Suites that explicitly want the 1.3.0+ lazy behaviour opt in via `LazyFactoryTransactionStrategy::class` (whole suite) or `LazyTransactionTrait` (per test class).
 - **DummyGenerator backend now requires `johnykvsky/dummygenerator:^0.2.1`** (was `^0.1.0 || ^0.2.0`). v0.1.x is removed entirely — the deprecation notice the adapter used to emit on every test boot is gone, the legacy `DefinitionContainerBuilder` code path with it. The v2 adapter only constructs `DummyGenerator::create()` and calls `withDefinition(RandomizerInterface::class, new XoshiroRandomizer($seed))` directly. Tied to that: v2 now forwards the `optional()` float weight to `boolean()` directly (added in v0.2.1), so weights below 0.005 — e.g. `optional(0.001)` for 0.1% chance — fire at the requested rate instead of silently rounding to 0%. Projects on `^0.2.0` need to bump to `^0.2.1` (a patch release); projects still on `^0.1.x` need to upgrade to `^0.2.1`.
 - **`enumElement()` alias is removed.** The Faker-specific name was a back-compat alias for `enumCase()`; both adapters now expose only `enumCase()` (returns the case) and `enumValue()` (returns the backed-enum scalar). The `trigger_error(E_USER_DEPRECATED)` the dummy adapter used to emit on every `enumElement()` call under `debug = true` is gone with it. Callers that still use `enumElement(EnumClass::class)` should rename to `enumCase(EnumClass::class)` — the bundled rector config does not rewrite this rename, so it's a manual one-line change per call site.
-- **Foreign-key columns in `definition()` now emit `E_USER_DEPRECATED`.** Any factory whose `definition()` returns a column belonging to a belongsTo association (e.g. returning `author_id` from `definition()`) triggers a deprecation that names the column, the association alias, and the migration path. The smell either creates dangling ids (no parent composed) or silently overrides the composed parent's id with a random value — both shapes mask the real source of the FK. See the [Foreign keys in definition()](foreign-keys-in-definition.md) guide for the full rationale and a migration cookbook. The detector is on by default; opt out transitionally with `Configure::write('FixtureFactories.strictDefinition', false)` while you migrate. The opt-out is removed in the next major release, when the deprecation graduates to a hard exception.
-- **`sequence()` callables now receive a single `Sequence` context object (BREAKING, no fallback).** The old positional `fn ($factory, $generator, int $index)` form no longer works — it fails with a `Sequence` vs `BaseFactory` type error. Rewrite the closure to take one `Sequence $s` and read what you need off it (`$s->index` 0-based, `$s->position` 1-based, `$s->total`, `$s->isFirst()`, `$s->isLast()`, `$s->generator`, `$s->factory`):
-
-  ```diff
-  -use CakephpFixtureFactories\Factory\Sequence;
-  -
-   ArticleFactory::new()->count(5)
-  -    ->sequence(fn ($factory, $generator, $index) => ['rank' => $index])
-  +    ->sequence(fn (Sequence $s) => ['rank' => $s->index])
-       ->saveMany();
-  ```
-
-  The Rector config does **not** rewrite this — it's a manual change per call site. See [Examples](examples.md) for the full `Sequence` surface.
-- **`has()`'s second argument is now `?string $alias`; pivot data moves to the third position (BREAKING).** `for()` and `has()` gained an optional `$alias` to disambiguate multiple associations targeting the same table. For `has()` this shifts the pivot array: `->has($factory, ['featured' => true])` no longer compiles (the array is bound to `?string $alias`). Pass the alias (or `null`) first, or use a named argument:
-
-  ```diff
-  - CountryFactory::new()->has(CityFactory::new(), ['is_capital' => true])
-  + CountryFactory::new()->has(CityFactory::new(), null, ['is_capital' => true])
-  + // or: ->has(CityFactory::new(), pivotData: ['is_capital' => true])
-  ```
-
-  `for()` is unaffected (it took no pivot arg); passing `$alias` is purely additive there. With `$alias = null` both helpers behave exactly as before (auto-resolve by table). See [Associations](associations.md#disambiguating-for-and-has).
 
 For the v2 step, the package ships a Rector config to help with the mechanical API rename work:
 
@@ -83,6 +61,16 @@ Typical before/after replacements look like this:
 - $published = ArticleFactory::find('published')->all();
 + $published = ArticleFactory::query()->find('published')->all();
 ```
+
+### 2.x conveniences (not 1.4 → 2 migration steps)
+
+These were introduced and refined *within* the 2.x line — a 1.4 project never had an older form, so they are not migration steps. Use them directly; each feature's guide is the source of truth:
+
+- **Don't put foreign keys in `definition()`.** Compose the parent instead; `withRequiredParents()` auto-builds the required `NOT NULL` belongsTo chain (with optional `maxDepth` / `strict`), and the `strictDefinition` detector flags the smell. See [Foreign keys in definition()](foreign-keys-in-definition.md) and [Required parents](required-parents.md).
+- **Per-row variation:** `->sequence(fn (Sequence $s) => [...])`, or `->sequenceField('col', [...])` for a single column. See [Examples](examples.md).
+- **Disambiguate associations targeting the same table:** pass an explicit alias to `->for($factory, 'Alias')` / `->has($factory, 'Alias', $pivot)`, or add directional helper methods on the factory. See [Associations](associations.md#disambiguating-for-and-has).
+- **Share one parent across a batch:** `->recycle($entity)`. See [Associations](associations.md).
+
 
 ### If commit-phase tests block the upgrade
 
