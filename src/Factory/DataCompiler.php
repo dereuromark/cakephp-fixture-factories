@@ -178,6 +178,26 @@ class DataCompiler
     }
 
     /**
+     * The entity passed to `Factory::new($entity)` / `Factory::from($entity)`,
+     * or `null` when the factory was not instantiated from an entity.
+     *
+     * Exposed so {@see \CakephpFixtureFactories\Factory\BaseFactory::withRequiredParents()}
+     * can probe specific FK columns via `has()`/`get()` (which see hidden
+     * fields), matching the build-time auto-skip path instead of going through
+     * `toArray()` (which drops hidden properties).
+     *
+     * @internal
+     *
+     * @return \Cake\Datasource\EntityInterface|null
+     */
+    public function getInstantiationEntity(): ?EntityInterface
+    {
+        return $this->dataFromInstantiation instanceof EntityInterface
+            ? $this->dataFromInstantiation
+            : null;
+    }
+
+    /**
      * Data passed in the instantiation by callable.
      *
      * The callable is stored as-is and invoked once per build iteration during
@@ -1351,6 +1371,114 @@ class DataCompiler
     public function getEnforcedFields(): array
     {
         return $this->enforcedFields;
+    }
+
+    /**
+     * Field name => value pairs the caller has pinned via array instantiation
+     * (`Factory::new(['fk' => x])`), `->state([...])`, `->setField()` or
+     * `->patchData([...])`, resolvable *before* the build runs.
+     *
+     * Unlike {@see self::getEnforcedFields()} (populated during the build),
+     * this is available at chain-construction time, so
+     * {@see \CakephpFixtureFactories\Factory\BaseFactory::withRequiredParents()}
+     * can treat a *non-null* pinned FK as "this parent is already satisfied"
+     * and not compose it (matching the non-null semantics of the
+     * autoSkipComposeOnExplicitForeignKey feature). Callable
+     * instantiation/patch data is opaque pre-build and therefore not
+     * introspected.
+     *
+     * Patch data (state/setField/patchData) takes precedence over
+     * instantiation data, mirroring the build-time merge order.
+     *
+     * @internal
+     *
+     * @return array<string, mixed>
+     */
+    public function getPinnedFields(): array
+    {
+        $pinned = [];
+        if (is_array($this->dataFromInstantiation)) {
+            foreach ($this->dataFromInstantiation as $key => $value) {
+                if (is_string($key)) {
+                    $pinned[$key] = $value;
+                }
+            }
+        }
+
+        // sequence() / sequenceField() pins are explicit caller state too. A
+        // field only counts as pinned when EVERY produced row sets it to a
+        // non-null value (present in every sequence state / every cycle
+        // value) — otherwise some row would still need the parent composed.
+        // Callable states are opaque pre-build and conservatively ignored.
+        return $this->dataFromPatch
+            + $this->pinnedSequenceFields()
+            + $pinned;
+    }
+
+    /**
+     * Fields pinned to a non-null value for *every* produced row by
+     * `sequence()` / `sequenceField()` (and therefore safe to treat as
+     * already satisfying a required parent).
+     *
+     * @return array<string, mixed>
+     */
+    private function pinnedSequenceFields(): array
+    {
+        $pinned = [];
+
+        if ($this->sequenceData !== []) {
+            $perStateArrays = [];
+            foreach ($this->sequenceData as $state) {
+                if ($state instanceof EntityInterface) {
+                    $perStateArrays[] = $state->toArray();
+                } elseif (is_array($state)) {
+                    $perStateArrays[] = $state;
+                } else {
+                    // A callable state is opaque pre-build: cannot guarantee
+                    // any field is pinned for that row — bail out entirely.
+                    $perStateArrays = [];
+
+                    break;
+                }
+            }
+            if ($perStateArrays !== []) {
+                $common = $perStateArrays[0];
+                foreach ($perStateArrays as $stateArray) {
+                    foreach ($common as $field => $_) {
+                        if (
+                            !array_key_exists($field, $stateArray)
+                            || $stateArray[$field] === null
+                        ) {
+                            unset($common[$field]);
+                        }
+                    }
+                }
+                foreach ($common as $field => $value) {
+                    if (is_string($field)) {
+                        $pinned[$field] = $value;
+                    }
+                }
+            }
+        }
+
+        foreach ($this->fieldSequences as $field => $values) {
+            if ($values === []) {
+                continue;
+            }
+            $allNonNull = true;
+            foreach ($values as $value) {
+                if ($value === null) {
+                    $allNonNull = false;
+
+                    break;
+                }
+            }
+            if ($allNonNull) {
+                $pinned[$field] = $values[0];
+            }
+        }
+
+        return $pinned;
     }
 
     /**
