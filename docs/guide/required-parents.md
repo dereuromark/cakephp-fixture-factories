@@ -143,6 +143,73 @@ $author = AuthorFactory::new(['address_id' => $address->id])
 // $author->address_id === $address->id; no throw-away Address built.
 ```
 
+## `maxDepth`: cap the recursion depth
+
+By default `withRequiredParents()` recurses the *whole* NOT NULL chain. Pass
+`maxDepth` to compose only the first N levels below the root:
+
+```php
+// Only the root's direct required parents — not their parents.
+AuthorFactory::new()->withRequiredParents(maxDepth: 1)->build();
+
+// Root's parents and their parents, but not the third level.
+AuthorFactory::new()->withRequiredParents(maxDepth: 2)->build();
+
+// Explicit null is the unbounded default (same as no argument).
+AuthorFactory::new()->withRequiredParents(maxDepth: null)->build();
+```
+
+`$except` and `maxDepth` are independent — pass both as named arguments:
+`->withRequiredParents(['BusinessAddress'], maxDepth: 2)`.
+
+`maxDepth` caps the *auto-recursion* this method performs. It does **not**
+suppress a composed parent factory's own `configure()` / `for()` defaults —
+those are the factory author's deliberate choice and always apply. So a depth
+cap is fully effective for the bare factories `withRequiredParents()` targets
+(no FKs in `definition()`/`configure()`, the `strictDefinition` model); if a
+parent factory self-composes a chain via `configure()`, that chain is still
+built regardless of `maxDepth`.
+
+::: warning A cap below the real required depth produces an un-persistable row
+This is by design — the exact same contract as `$except`. If `maxDepth`
+stops before a deeper `NOT NULL` FK is satisfied, `->build()` still returns an
+in-memory entity, but `->save()` fails with a `NOT NULL` violation. Use
+`maxDepth` only when you know the deeper levels are nullable, pinned, or
+recycled; otherwise omit it and let the full chain compose.
+
+This also applies to the [required-parent cycle fast-fail](#shared-primary-key-and-cyclic-graphs):
+a cycle *beyond* the cap is never reached, so it degrades from the actionable
+`FixtureFactoryException` to a generic save-time `NOT NULL` error. A cycle
+*within* the cap still throws as usual.
+:::
+
+### `strict`: turn the silent shortfall into a clear error
+
+Opt in with `strict: true` when you want a capped chain that is *too shallow*
+to fail loudly at the call site instead of silently producing an
+un-persistable row:
+
+```php
+// Throws FixtureFactoryException: maxDepth:1 leaves Address's required
+// City unsatisfied.
+AuthorFactory::new()->withRequiredParents(maxDepth: 1, strict: true);
+
+// No throw — the cap covers the whole required chain.
+AuthorFactory::new()->withRequiredParents(maxDepth: 9, strict: true)->save();
+```
+
+`strict` only fires when `maxDepth` actually truncates a *needed* parent: a
+boundary parent that still has its own required belongsTo not already composed
+(`configure()` / `->with()` / `->for()`), pinned, or excepted. It is a no-op
+without `maxDepth` (a full chain is never truncated), and it also restores an
+actionable message for a [cycle beyond the cap](#shared-primary-key-and-cyclic-graphs)
+instead of the generic save-time error. Default is `strict: false` — the
+silent contract above.
+
+`maxDepth` must be a positive integer or `null`. `0` or a negative value
+throws an `InvalidArgumentException` at call time — "compose zero required
+parents" is just not calling `withRequiredParents()`.
+
 ## Composes cleanly with the rest of the layer
 
 - An alias already composed as a **factory** —
