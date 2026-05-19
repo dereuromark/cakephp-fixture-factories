@@ -1594,6 +1594,331 @@ abstract class BaseFactory
     }
 
     /**
+     * Compose every belongsTo parent the root table *requires* — i.e. each
+     * belongsTo whose single scalar foreign-key column is `NOT NULL` in the
+     * schema — recursively down the chain, so a row built by this factory
+     * satisfies its NOT NULL FK constraints out of the box.
+     *
+     * This is the ergonomic counterpart to the FK-in-`definition()` detector
+     * (`FixtureFactories.strictDefinition`, see
+     * {@link https://dereuromark.github.io/cakephp-fixture-factories/guide/foreign-keys-in-definition Foreign keys in definition()}).
+     * `strictDefinition` pushes FK population *out* of `definition()`; without
+     * a counterpart, every factory for a table with NOT NULL belongsTo FKs then
+     * needs hand-written `->with('Alias')` boilerplate just to persist.
+     * `withRequiredParents()` is that counterpart: one call composes the whole
+     * required chain.
+     *
+     * What counts as "required" — and what does NOT:
+     *
+     * - A belongsTo whose foreign key is a *single scalar column* that is
+     *   `NOT NULL` in the table schema is auto-resolved.
+     * - A belongsTo with a *composite* foreign key, or one declared
+     *   `'foreignKey' => false` (custom-condition / non-FK join), is **never**
+     *   auto-resolved. These are exactly the brittle edge cases that PR #85 hit
+     *   — guessing how to build them is unsafe. Opt them in explicitly by
+     *   overriding {@see self::requiredParentAssociations()}.
+     * - A nullable FK is not composed: the row persists fine without it, and
+     *   silently fabricating an optional parent hides intent.
+     *
+     * Side-effect free: like every other `with*()` / `for*()` chain method,
+     * this only *composes* parent factories. Nothing is written to the
+     * database until the root factory is persisted (`->save()` /
+     * `->persist()` / `->saveMany()`), so the parents are created in the same
+     * unit as the root entity — atomic, no orphan rows on a later override or
+     * a failed root save, and `->build()` stays purely in-memory.
+     *
+     * Composes cleanly with the rest of the composition layer:
+     *
+     * - An alias already composed via `->with('Alias', SomeFactory::new())`
+     *   or a `configure()` default is kept (the caller's parent is not
+     *   replaced) but is itself recursively enriched, so the parent's *own*
+     *   required grandchildren are satisfied too. A parent composed from a
+     *   concrete entity (`->with('Alias', $entity)`) is left fully untouched —
+     *   the caller specified that row exactly.
+     * - An alias listed in `$except` is skipped (pin its FK literally at the
+     *   call site for a column-scope assertion).
+     * - Behaves correctly alongside `autoSkipComposeOnExplicitForeignKey`: an
+     *   alias whose FK the caller already pinned (with a non-null value) is
+     *   not double-composed.
+     *
+     * Sharing a parent (dedup): `withRequiredParents()` deliberately does NOT
+     * persist anything itself, so it cannot reuse a pre-existing row. When you
+     * want a counted batch — or several factories — to share one parent, build
+     * it yourself and hand it to {@see self::recycle()} (the established
+     * pattern), which composes cleanly with this method:
+     *
+     * ```php
+     * $country = CountryFactory::new()->save();
+     * AuthorFactory::new()->count(50)
+     *     ->withRequiredParents()
+     *     ->recycle($country) // every row's chain reuses this one Country
+     *     ->saveMany();
+     * ```
+     *
+     * This is the *pragmatic default* for "I just need a persistable row".
+     * When a test asserts on a specific parent, still attach it explicitly
+     * with `->with('Alias', $entity)` so the assertion's intent is visible.
+     *
+     * Note: a root table with an unsatisfiable required (NOT NULL) belongsTo
+     * cycle raises a `FixtureFactoryException` — see the cycle handling below.
+     *
+     * @param array<int, string> $except Association aliases to skip.
+     *
+     * @return static
+     */
+    public function withRequiredParents(array $except = []): static
+    {
+        return $this->doWithRequiredParents($except, []);
+    }
+
+    /**
+     * @param array<int, string> $except Root-scoped association aliases to skip.
+     * @param array<int, string> $visitedTables Target table registry names
+     *   already on the current recursion chain — used to detect an
+     *   unsatisfiable required-parent cycle (self-referential or
+     *   `A -> B -> A` NOT NULL graphs) and fail fast with an actionable
+     *   exception instead of recursing until the stack overflows.
+     *
+     * @throws \CakephpFixtureFactories\Error\FixtureFactoryException When a
+     *   required (NOT NULL) belongsTo cycle is detected.
+     *
+     * @return static
+     */
+    private function doWithRequiredParents(array $except, array $visitedTables): static
+    {
+        if ($this->readBootstrapMode) {
+            return clone $this;
+        }
+
+        $factory = clone $this;
+        // Identify tables by their physical DB table name. A factory's own
+        // registry alias carries an internal `__ff_<hash>` suffix and a
+        // belongsTo target's registry alias is the *association* alias, so
+        // only getTable() is a stable cross-level identity for cycle checks.
+        $ownTable = $factory->getTable()->getTable();
+        $visitedTables[] = $ownTable;
+
+        $aliases = $factory->resolveRequiredParentAliases($except);
+        if ($aliases === []) {
+            return $factory;
+        }
+
+        foreach ($aliases as $alias) {
+            $association = $factory->getAssociationBuilder()->getAssociation($alias);
+            $targetTable = $association->getTarget()->getTable();
+
+            // If the caller already composed this alias with a *factory*
+            // (explicitly or via configure() defaults), enrich THAT factory
+            // rather than skipping it — otherwise its own required parents
+            // (the grandchildren) stay unsatisfied and the save still fails.
+            // A parent instantiated from a concrete entity is left untouched:
+            // the caller fully specified that row (and, importantly, it
+            // terminates an otherwise self-referential / cyclic chain).
+            $composed = $factory->getAssociationBuilder()->getAssociations();
+            $existing = $composed[$alias] ?? null;
+            if ($existing instanceof BaseFactory) {
+                if ($existing->isInstantiatedFromEntity()) {
+                    continue;
+                }
+                $parentFactory = $existing;
+            } else {
+                $parentFactory = $factory->getAssociationBuilder()->getAssociatedFactory($alias);
+            }
+
+            // Only now — for an alias we would actually recurse into — reject
+            // an unsatisfiable required (NOT NULL) belongsTo cycle
+            // (self-referential, or A -> B -> A). The check runs *after* the
+            // explicit-parent handling above so a caller who already broke the
+            // cycle with `->with('Alias', $entity)` is honored, not rejected.
+            // A real cycle cannot be auto-resolved: no row in it can be
+            // inserted without a parent row that itself needs one, so fail
+            // loudly here instead of with a confusing NOT NULL at save time.
+            if (in_array($targetTable, $visitedTables, true)) {
+                throw new FixtureFactoryException(sprintf(
+                    'withRequiredParents() found a required (NOT NULL) belongsTo cycle through the "%s" '
+                    . 'association (table "%s" is already on the chain: %s). Such a cycle cannot be '
+                    . 'auto-resolved. Break it manually: compose a terminating parent explicitly with '
+                    . '->with(\'%s\', $entity), pin the FK and pass the alias in $except '
+                    . '(e.g. ->withRequiredParents([\'%s\'])), or exclude it via the '
+                    . 'requiredParentAssociations() override hook.',
+                    $alias,
+                    $targetTable,
+                    implode(' -> ', $visitedTables),
+                    $alias,
+                    $alias,
+                ));
+            }
+
+            // Recurse so the whole NOT NULL chain is satisfied, not just the
+            // first level. `$except` is intentionally root-scoped: a deeper
+            // level's required parents are always needed for that row to
+            // persist regardless of what the caller pinned.
+            $parentFactory = $parentFactory->doWithRequiredParents([], $visitedTables);
+
+            // Compose the parent *factory* only — no persistence here. The
+            // parent is built and saved as part of the root factory's own
+            // persist unit, so this stays side-effect free and atomic, and a
+            // caller's recycle() still dedups the chain across a batch.
+            $factory = $factory->with($alias, $parentFactory);
+        }
+
+        return $factory;
+    }
+
+    /**
+     * Resolve which belongsTo aliases of the root table are *required* parents
+     * for {@see self::withRequiredParents()}.
+     *
+     * By default this is every belongsTo whose foreign key is a single scalar
+     * column that is `NOT NULL` in the schema, minus:
+     *
+     * - aliases listed in `$except`,
+     * - aliases whose FK the caller pinned (non-null) at the call site,
+     * - aliases excluded by the {@see self::requiredParentAssociations()}
+     *   override hook.
+     *
+     * An alias already composed via `->with()` / `->for()` / `configure()` is
+     * still returned: the caller's factory is recursively enriched (or, if it
+     * was instantiated from a concrete entity, left untouched) by
+     * {@see self::doWithRequiredParents()}.
+     *
+     * Composite-key and `foreignKey => false` associations are never included
+     * automatically — only the override hook can opt them in.
+     *
+     * @param array<int, string> $except Association aliases to skip.
+     *
+     * @return array<int, string> Ordered list of belongsTo aliases to compose.
+     */
+    private function resolveRequiredParentAliases(array $except): array
+    {
+        $table = $this->getTable();
+        $schema = $table->getSchema();
+
+        $override = $this->requiredParentAssociations();
+        // Caller-pinned FK columns (Factory::new(['fk' => x]), ->state(),
+        // ->setField(), ->patchData(), sequence*()), resolvable at chain time.
+        // A *non-null* pinned FK means the parent is already satisfied, so the
+        // alias is skipped — but ONLY while autoSkipComposeOnExplicitForeignKey
+        // is on (its default). With the opt-out flag off the library's legacy
+        // contract is "composed parent overrides the explicit FK", so to stay
+        // consistent withRequiredParents() must still compose the parent then.
+        // A null pin never satisfies a NOT NULL FK (matches the auto-skip
+        // feature's non-null semantics).
+        $honorPinnedFks = (bool)Configure::read(
+            'FixtureFactories.autoSkipComposeOnExplicitForeignKey',
+            true,
+        );
+        $pinnedFields = $honorPinnedFks ? $this->getDataCompiler()->getPinnedFields() : [];
+        // Probe hidden FK columns on a Factory::new($entity) payload via
+        // has()/get() (toArray() drops hidden properties) — matches the
+        // build-time auto-skip path.
+        $instantiationEntity = $honorPinnedFks
+            ? $this->getDataCompiler()->getInstantiationEntity()
+            : null;
+
+        $aliases = [];
+        foreach ($table->associations() as $association) {
+            if (!$association instanceof BelongsTo) {
+                continue;
+            }
+
+            $alias = $association->getAlias();
+            if (in_array($alias, $except, true)) {
+                continue;
+            }
+            // Note: an alias already composed via ->with()/configure() is NOT
+            // skipped here — doWithRequiredParents() recurses into an attached
+            // *factory* so its own required grandchildren get satisfied too
+            // (an entity-instantiated parent is left untouched there).
+            // The caller pinned this association's FK literally at the call
+            // site: the parent is already satisfied. Composing it would
+            // override the pinned value (an explicit ->with() always wins over
+            // autoSkipComposeOnExplicitForeignKey), so skip the alias entirely.
+            $foreignKeysForAlias = array_values(array_filter(
+                (array)$association->getForeignKey(),
+                static fn ($fk): bool => is_string($fk) && $fk !== '',
+            ));
+            if ($foreignKeysForAlias !== []) {
+                $allPinnedNonNull = true;
+                foreach ($foreignKeysForAlias as $fkColumn) {
+                    $pinned =
+                        (array_key_exists($fkColumn, $pinnedFields) && $pinnedFields[$fkColumn] !== null)
+                        || (
+                            $instantiationEntity !== null
+                            && $instantiationEntity->has($fkColumn)
+                            && $instantiationEntity->get($fkColumn) !== null
+                        );
+                    if (!$pinned) {
+                        $allPinnedNonNull = false;
+
+                        break;
+                    }
+                }
+                if ($allPinnedNonNull) {
+                    continue;
+                }
+            }
+
+            if ($override !== null) {
+                // Explicit opt-in list: the caller takes full responsibility
+                // for which aliases (including composite / custom-join ones)
+                // are buildable, so honour it verbatim.
+                if (in_array($alias, $override, true)) {
+                    $aliases[] = $alias;
+                }
+
+                continue;
+            }
+
+            $foreignKeys = (array)$association->getForeignKey();
+            // Composite key, or `foreignKey => false` (custom-condition join):
+            // never auto-resolved — see PR #85. Opt in via the override hook.
+            if (count($foreignKeys) !== 1) {
+                continue;
+            }
+            $column = $foreignKeys[0];
+            if (!is_string($column) || $column === '') {
+                continue;
+            }
+            if (!$schema->hasColumn($column)) {
+                continue;
+            }
+            // A shared-primary-key 1:1 (child.id is both PK and the belongsTo
+            // FK) is intentionally NOT excluded: it is a legitimate single
+            // scalar NOT NULL belongsTo and the parent must be composed for
+            // the child to persist.
+            if ($schema->isNullable($column)) {
+                continue;
+            }
+
+            $aliases[] = $alias;
+        }
+
+        return $aliases;
+    }
+
+    /**
+     * Override hook to take explicit control over which belongsTo aliases
+     * {@see self::withRequiredParents()} composes.
+     *
+     * Return `null` (the default) to use automatic NOT NULL single-scalar-FK
+     * detection. Return an array of aliases to opt in *exactly* those — this
+     * is the supported, non-guessing way to include a composite-key or
+     * `foreignKey => false` custom-join belongsTo, which automatic detection
+     * deliberately refuses to build (the PR #85 brittle cases).
+     *
+     * When a non-null list is returned it is authoritative: only listed
+     * aliases are composed, automatic detection is bypassed entirely, and the
+     * factory author owns correctness for the listed associations.
+     *
+     * @return array<int, string>|null Aliases to compose, or null for auto.
+     */
+    protected function requiredParentAssociations(): ?array
+    {
+        return null;
+    }
+
+    /**
      * @internal Not for normal use, only used for testing.
      *
      * @param array<string, mixed> $data Data to merge
