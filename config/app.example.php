@@ -82,6 +82,17 @@ return [
         // 'autoSkipComposeOnExplicitForeignKey' => true,
 
         /**
+         * When enabled, emit an E_USER_WARNING the first time a given
+         * factory+association default from configure() is auto-skipped because
+         * caller-supplied state explicitly pinned the FK. Useful for finding
+         * factories whose default graph is fighting call-site intent or adding
+         * hidden overhead.
+         *
+         * Default: false
+         */
+        // 'warnOnAutoSkippedConfigureAssociation' => false,
+
+        /**
          * Namespace where factory classes are located.
          * Default: App\Test\Factory (auto-detected from table registry name)
          */
