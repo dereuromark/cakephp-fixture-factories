@@ -1780,8 +1780,16 @@ abstract class BaseFactory
                     continue;
                 }
                 $parentFactory = $existing;
+                // The caller composed this branch themselves (explicit
+                // ->with()/->for(), or a configure() default). Leave its
+                // classification untouched so recycle() keeps its documented
+                // "explicit per-branch intent wins" semantics.
+                $autoResolved = false;
             } else {
                 $parentFactory = $factory->getAssociationBuilder()->getAssociatedFactory($alias);
+                // We synthesized this parent solely to satisfy a NOT NULL FK:
+                // auto-scaffolding, not per-branch user intent.
+                $autoResolved = true;
             }
 
             // Only now — for an alias we would actually recurse into — reject
@@ -1845,8 +1853,10 @@ abstract class BaseFactory
                     throw new FixtureFactoryException(sprintf(
                         'withRequiredParents(maxDepth: %d, strict: true): the depth cap leaves the '
                         . 'required belongsTo "%s" on table "%s" (reached via "%s") unsatisfied, so '
-                        . 'the composed row cannot persist. Raise maxDepth, pin or recycle that FK, '
-                        . 'add "%s" to $except, or drop strict to accept the silent contract.',
+                        . 'the composed row cannot persist. Raise maxDepth, pin that FK, '
+                        . 'add "%s" to $except, or drop strict to accept the silent contract. '
+                        . '(recycle() cannot help here: the cap stopped this branch from being '
+                        . 'composed, and recycle only substitutes composed branches.)',
                         $maxDepth,
                         $unmetAlias,
                         $parentFactory->getTable()->getTable(),
@@ -1861,6 +1871,18 @@ abstract class BaseFactory
             // persist unit, so this stays side-effect free and atomic, and a
             // caller's recycle() still dedups the chain across a batch.
             $factory = $factory->with($alias, $parentFactory);
+
+            // An auto-resolved parent is scaffolding, not per-branch user
+            // intent. `with()` lands it in the explicit-association bucket
+            // (after configure() was already snapshotted), which would flip
+            // hasUserSetAssociations() and make recycle() refuse to substitute
+            // this node — silently rebuilding a mid-chain parent the caller
+            // recycle()d. Demote it to a configure()-style default so recycle
+            // substitution works at every depth, while a caller-composed
+            // branch keeps its intent.
+            if ($autoResolved) {
+                $factory->getDataCompiler()->demoteAssociationToDefault($alias);
+            }
         }
 
         return $factory;

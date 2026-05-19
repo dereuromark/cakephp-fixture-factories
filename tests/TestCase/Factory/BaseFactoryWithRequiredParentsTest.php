@@ -786,4 +786,38 @@ class BaseFactoryWithRequiredParentsTest extends TestCase
             ->recycle($country)
             ->withRequiredParents(maxDepth: 2, strict: true);
     }
+
+    /**
+     * Recycling a *mid-chain* required parent (not just the leaf) must reuse
+     * it, not silently rebuild it. `withRequiredParents()` auto-composes the
+     * chain; that auto-composition must not count as user `with()` intent and
+     * defeat recycle substitution for an intermediate node.
+     */
+    public function testRecyclingAMidChainParentReusesItAcrossBatch(): void
+    {
+        // A persisted City (with its own required Country) to share.
+        $city = CityFactory::new()->withRequiredParents()->save();
+        $this->assertSame(1, CityFactory::query()->count());
+        $this->assertSame(1, CountryFactory::query()->count());
+
+        $authors = RequiredParentsAuthorFactory::new()
+            ->count(4)
+            ->withRequiredParents()
+            ->recycle($city)
+            ->saveMany();
+
+        $this->assertCount(4, $authors);
+        $this->assertSame(
+            1,
+            CityFactory::query()->count(),
+            'The recycled mid-chain City must be reused by every row, not rebuilt.',
+        );
+        $this->assertSame(
+            1,
+            CountryFactory::query()->count(),
+            'No extra Country built behind a duplicated City.',
+        );
+        // Addresses still fan out (Address was not recycled).
+        $this->assertSame(4, AddressFactory::query()->count());
+    }
 }
