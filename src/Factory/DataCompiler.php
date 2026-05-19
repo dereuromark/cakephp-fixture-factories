@@ -116,6 +116,15 @@ class DataCompiler
     private static int $persistDepth = 0;
 
     /**
+     * Dedupe warnings about `configure()` defaults being auto-skipped when
+     * caller-supplied FK state pins the parent. Keyed by
+     * `factory-class::association::fk1,fk2`.
+     *
+     * @var array<string, bool>
+     */
+    private static array $reportedAutoSkippedConfigureAssociations = [];
+
+    /**
      * @var \CakephpFixtureFactories\Factory\BaseFactory<TEntity>
      */
     private BaseFactory $factory;
@@ -760,11 +769,63 @@ class DataCompiler
                 $allExplicit = true;
             }
             if ($allExplicit === true) {
+                $this->warnOnAutoSkippedConfigureAssociation($associationName, $association);
                 unset($defaultAssociations[$associationName]);
             }
         }
 
         return $defaultAssociations;
+    }
+
+    /**
+     * Emit an opt-in warning when a `configure()`-default belongsTo
+     * association is auto-skipped because the caller explicitly pinned the
+     * FK. This makes "the factory default is fighting caller intent" visible
+     * without changing the behavior.
+     *
+     * @param string $associationName Property/association name from the
+     * default-associations map.
+     * @param \Cake\ORM\Association\BelongsTo<\Cake\ORM\Table> $association Resolved association.
+     *
+     * @return void
+     */
+    private function warnOnAutoSkippedConfigureAssociation(string $associationName, BelongsTo $association): void
+    {
+        if (!Configure::read('FixtureFactories.warnOnAutoSkippedConfigureAssociation', false)) {
+            return;
+        }
+
+        $foreignKeys = array_values(array_filter(
+            (array)$association->getForeignKey(),
+            'is_string',
+        ));
+
+        $factoryClass = $this->getFactory()::class;
+        $dedupeKey = $factoryClass . '::' . $associationName . '::' . implode(',', $foreignKeys);
+        if (isset(self::$reportedAutoSkippedConfigureAssociations[$dedupeKey])) {
+            return;
+        }
+        self::$reportedAutoSkippedConfigureAssociations[$dedupeKey] = true;
+
+        trigger_error(sprintf(
+            '%s skipped configure()-default association "%s" because caller-supplied state explicitly set %s. '
+            . 'The explicit FK wins and the default compose is not applied for this build. '
+            . 'If this warning appears often, the factory may be doing too much in configure(); '
+            . 'prefer a lighter default and explicit ->with() / helper composition at the call site.',
+            $factoryClass,
+            $association->getName(),
+            implode(', ', array_map(static fn (string $foreignKey): string => '"' . $foreignKey . '"', $foreignKeys)),
+        ), E_USER_WARNING);
+    }
+
+    /**
+     * Reset the auto-skip warning dedupe between tests.
+     *
+     * @return void
+     */
+    public static function resetAutoSkippedConfigureAssociationWarnings(): void
+    {
+        self::$reportedAutoSkippedConfigureAssociations = [];
     }
 
     /**

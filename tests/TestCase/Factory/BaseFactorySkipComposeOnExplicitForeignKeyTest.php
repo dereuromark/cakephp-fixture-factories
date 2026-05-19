@@ -17,6 +17,7 @@ namespace CakephpFixtureFactories\Test\TestCase\Factory;
 
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
+use CakephpFixtureFactories\Factory\DataCompiler;
 use CakephpFixtureFactories\Test\Factory\AddressFactory;
 use CakephpFixtureFactories\Test\Factory\BillFactory;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
@@ -39,6 +40,13 @@ class BaseFactorySkipComposeOnExplicitForeignKeyTest extends TestCase
 {
     use TruncateDirtyTables;
 
+    /**
+     * @var array<int, array{level: int, message: string}>
+     */
+    private array $capturedWarnings = [];
+
+    private bool $customErrorHandlerInstalled = false;
+
     public static function setUpBeforeClass(): void
     {
         Configure::write('FixtureFactories.testFixtureNamespace', 'CakephpFixtureFactories\Test\Factory');
@@ -52,6 +60,12 @@ class BaseFactorySkipComposeOnExplicitForeignKeyTest extends TestCase
     protected function tearDown(): void
     {
         Configure::delete('FixtureFactories.autoSkipComposeOnExplicitForeignKey');
+        Configure::delete('FixtureFactories.warnOnAutoSkippedConfigureAssociation');
+        if ($this->customErrorHandlerInstalled) {
+            restore_error_handler();
+            $this->customErrorHandlerInstalled = false;
+        }
+        DataCompiler::resetAutoSkippedConfigureAssociationWarnings();
         parent::tearDown();
     }
 
@@ -252,5 +266,60 @@ class BaseFactorySkipComposeOnExplicitForeignKeyTest extends TestCase
         $this->assertNull($address->city);
         $this->assertSame(1, CityFactory::query()->count());
         $this->assertSame(1, CountryFactory::query()->count());
+    }
+
+    public function testWarnsWhenConfiguredToExposeAutoSkippedDefaultAssociation(): void
+    {
+        Configure::write('FixtureFactories.warnOnAutoSkippedConfigureAssociation', true);
+        $this->capturedWarnings = [];
+        set_error_handler(
+            function (int $level, string $message): bool {
+                if ($level === E_USER_WARNING) {
+                    $this->capturedWarnings[] = ['level' => $level, 'message' => $message];
+
+                    return true;
+                }
+
+                return false;
+            },
+            E_USER_WARNING,
+        );
+        $this->customErrorHandlerInstalled = true;
+
+        $city = CityFactory::new()->save();
+
+        $address = AddressFactory::new(['city_id' => $city->id])->save();
+
+        $this->assertSame($city->id, $address->city_id);
+        $this->assertCount(1, $this->capturedWarnings);
+        $this->assertStringContainsString(AddressFactory::class, $this->capturedWarnings[0]['message']);
+        $this->assertStringContainsString('"city_id"', $this->capturedWarnings[0]['message']);
+        $this->assertStringContainsString('"City"', $this->capturedWarnings[0]['message']);
+    }
+
+    public function testAutoSkipWarningIsDeduplicatedPerFactoryAssociation(): void
+    {
+        Configure::write('FixtureFactories.warnOnAutoSkippedConfigureAssociation', true);
+        $this->capturedWarnings = [];
+        set_error_handler(
+            function (int $level, string $message): bool {
+                if ($level === E_USER_WARNING) {
+                    $this->capturedWarnings[] = ['level' => $level, 'message' => $message];
+
+                    return true;
+                }
+
+                return false;
+            },
+            E_USER_WARNING,
+        );
+        $this->customErrorHandlerInstalled = true;
+
+        $city = CityFactory::new()->save();
+
+        AddressFactory::new(['city_id' => $city->id])->save();
+        AddressFactory::new(['city_id' => $city->id])->save();
+
+        $this->assertCount(1, $this->capturedWarnings);
     }
 }

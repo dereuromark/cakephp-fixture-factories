@@ -116,6 +116,51 @@ The same rule applies to required associations inside helper methods — if pers
 
 Rule of thumb: "what does the schema require?" goes in the template. "What does this particular test want?" goes at the call site.
 
+## DON'T: put broad default graphs in `configure()`
+
+This is convenient:
+
+```php
+protected function configure(): static
+{
+    return $this
+        ->with('Accounts')
+        ->with('Homes')
+        ->with('Units')
+        ->with('Rooms')
+        ->with('Users');
+}
+```
+
+But on a frequently-used factory it quietly adds database work to every
+caller, including tests that do not care about those parents. It also creates
+hidden tension with call sites that pin a FK explicitly — the package will do
+the right thing and auto-skip the default compose, but that is still a smell
+that the factory default is broader than the test wants.
+
+Prefer this:
+
+- keep hot factories light by default
+- compose only the parent(s) the current test actually needs
+- add explicit helpers for common opt-in shapes
+
+```php
+$home = HomeFactory::new()->save();
+
+$activity = ActivityFactory::new()
+    ->with('Homes', $home)
+    ->save();
+```
+
+Use default `configure()` associations only when they are both:
+
+- truly universal for that factory
+- cheap enough that every caller should pay for them
+
+If you want visibility into where a default `configure()` association is being
+auto-skipped by explicit FK state, enable
+`FixtureFactories.warnOnAutoSkippedConfigureAssociation`.
+
 ## DON'T: nest `with()` calls in test cases
 
 ```php

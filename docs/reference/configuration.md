@@ -16,6 +16,7 @@ return [
         'instanceLevelGenerator' => true,
         'strictDefinition' => true,
         'autoSkipComposeOnExplicitForeignKey' => true,
+        'warnOnAutoSkippedConfigureAssociation' => false,
         'testFixtureNamespace' => 'App\\Test\\Factory',
         'testFixtureOutputDir' => 'Factory/',
         'testFixtureGlobalBehaviors' => [],
@@ -107,6 +108,32 @@ parent overrides an explicitly-set foreign key (e.g. for a suite that relied
 on that override).
 
 Default: `true`.
+
+### `warnOnAutoSkippedConfigureAssociation`
+
+Controls whether the package emits an `E_USER_WARNING` when a
+`configure()`-default `belongsTo` association is auto-skipped because the
+caller explicitly supplied that association's FK.
+
+When `true`, the first skip per `(factory class, association, FK set)` for
+the current process emits a warning naming the factory, the association, and
+the FK column(s). Behavior does not change: the explicit FK still wins, and
+the default compose is still skipped. The warning is only there to make the
+hidden conflict visible.
+
+This is especially useful when:
+
+- a factory's `configure()` defaults are too broad for common call sites
+- a team wants to find "this factory is doing too much" smells
+- hot factories are adding hidden graph cost across a large suite
+
+Typical next step after seeing the warning:
+
+- keep the factory light by default
+- move the parent compose to an explicit `->with('Alias', ...)` or helper at
+  the call site
+
+Default: `false`.
 
 ### `testFixtureNamespace`
 
