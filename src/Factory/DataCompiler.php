@@ -785,7 +785,7 @@ class DataCompiler
      *
      * @param string $associationName Property/association name from the
      * default-associations map.
-     * @param \Cake\ORM\Association\BelongsTo $association Resolved association.
+     * @param \Cake\ORM\Association\BelongsTo<\Cake\ORM\Table> $association Resolved association.
      *
      * @return void
      */
@@ -797,11 +797,8 @@ class DataCompiler
 
         $foreignKeys = array_values(array_filter(
             (array)$association->getForeignKey(),
-            static fn (mixed $foreignKey): bool => is_string($foreignKey) && $foreignKey !== '',
+            'is_string',
         ));
-        if (!$foreignKeys) {
-            return;
-        }
 
         $factoryClass = $this->getFactory()::class;
         $dedupeKey = $factoryClass . '::' . $associationName . '::' . implode(',', $foreignKeys);
