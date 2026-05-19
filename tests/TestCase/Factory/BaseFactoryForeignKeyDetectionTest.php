@@ -250,4 +250,35 @@ class BaseFactoryForeignKeyDetectionTest extends TestCase
         $this->assertArrayNotHasKey(0, $map);
         $this->assertSame([], $map, 'Filter-only and Closure conditions must contribute no columns.');
     }
+
+    /**
+     * The FK-column map is cached per table, but the cache key must reflect
+     * the table's belongsTo set: a belongsTo added (or changed) at runtime
+     * after the first call has to be picked up, otherwise the detector and
+     * the build-time auto-skip both consult a stale map. Without this the
+     * only escape is the process-wide reset() — fragile and order-dependent.
+     */
+    public function testForeignKeyColumnCacheReflectsRuntimeAssociationChanges(): void
+    {
+        $table = new Table(['table' => 'cities', 'alias' => 'FkCacheProbe']);
+        $table->belongsTo('Countries', ['foreignKey' => 'country_id']);
+
+        $first = BaseFactory::collectForeignKeyColumns($table);
+        $this->assertSame(['country_id' => 'Countries'], $first);
+
+        // A belongsTo registered AFTER the cached call must be reflected
+        // (no manual resetForeignKeyInDefinitionDetector() in between).
+        $table->belongsTo('LateRegion', [
+            'className' => 'Countries',
+            'foreignKey' => 'late_region_id',
+        ]);
+        $second = BaseFactory::collectForeignKeyColumns($table);
+
+        $this->assertArrayHasKey(
+            'late_region_id',
+            $second,
+            'FK-column cache must invalidate when the belongsTo set changes at runtime.',
+        );
+        $this->assertSame('LateRegion', $second['late_region_id']);
+    }
 }

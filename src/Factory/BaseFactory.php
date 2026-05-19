@@ -1421,7 +1421,44 @@ abstract class BaseFactory
      */
     public static function collectForeignKeyColumns(Table $table): array
     {
-        $cacheKey = $table->getRegistryAlias();
+        // The registry alias alone is NOT a sufficient cache key: it is a
+        // hash of table + connection + behaviors + events and does NOT change
+        // when a belongsTo is added/removed/replaced on the table at runtime.
+        // Fold a lightweight signature of the belongsTo set (alias + foreign
+        // key) into the key so a runtime association change recomputes the
+        // map instead of serving a stale one to the detector and the
+        // build-time auto-skip. Building the signature is cheap (no schema /
+        // condition introspection — that stays behind the cache).
+        $belongsToSignature = [];
+        foreach ($table->associations() as $association) {
+            if (!$association instanceof BelongsTo) {
+                continue;
+            }
+            $part = $association->getAlias()
+                . ':' . implode(',', (array)$association->getForeignKey());
+            // For a foreignKey => false custom join the protected columns are
+            // recovered from `conditions`, not the (absent) foreign key — so
+            // the key must also track the conditions, or replacing the same
+            // alias with a different join keeps a stale map. Array conditions
+            // are folded in; opaque Closure/expression conditions recover no
+            // columns anyway, so they need no signature contribution.
+            if ($association->getForeignKey() === false) {
+                $conditions = $association->getConditions();
+                if (is_array($conditions)) {
+                    try {
+                        $part .= ':' . md5(serialize($conditions));
+                    } catch (Throwable) {
+                        // Unserializable (e.g. a Closure inside the array):
+                        // force a cache miss rather than risk a stale hit.
+                        $part .= ':' . uniqid('', true);
+                    }
+                }
+            }
+            $belongsToSignature[] = $part;
+        }
+        sort($belongsToSignature);
+        $cacheKey = $table->getRegistryAlias()
+            . '#' . md5(implode('|', $belongsToSignature));
         if (isset(self::$fkColumnsByRegistry[$cacheKey])) {
             return self::$fkColumnsByRegistry[$cacheKey];
         }
