@@ -1673,13 +1673,50 @@ abstract class BaseFactory
      * Note: a root table with an unsatisfiable required (NOT NULL) belongsTo
      * cycle raises a `FixtureFactoryException` — see the cycle handling below.
      *
+     * Depth: by default the whole NOT NULL chain is recursed. Pass `$maxDepth`
+     * to compose only the first N levels below the root (`1` = direct parents
+     * only). A cap below the real required depth yields an un-persistable row
+     * — the caller's responsibility, exactly like `$except`. This includes the
+     * cycle fast-fail: a required-parent cycle *beyond* the cap is not reached,
+     * so it surfaces as a save-time NOT NULL error rather than the
+     * `FixtureFactoryException`. A cycle *within* the cap still throws. Opt into
+     * `$strict` to turn that silent shortfall into an actionable exception at
+     * call time (it also restores an actionable message for a capped cycle).
+     *
      * @param array<int, string> $except Association aliases to skip.
+     * @param int|null $maxDepth Cap how many *levels* of required parents are
+     *   composed below the root. `null` (default) recurses the whole NOT NULL
+     *   chain. `1` composes only the root's direct required parents, `2` those
+     *   plus their parents, and so on. A cap below the real required depth can
+     *   produce an un-persistable row (a deeper NOT NULL FK left unsatisfied) —
+     *   by design, the caller's responsibility, exactly like `$except`.
+     * @param bool $strict When `true` and `$maxDepth` truncates the chain so a
+     *   composed boundary parent still has its own unsatisfied required
+     *   belongsTo, fail loudly at call time with an actionable
+     *   `FixtureFactoryException` instead of silently producing an
+     *   un-persistable row. Default `false` keeps the silent contract. A no-op
+     *   without `$maxDepth` (a full chain is never truncated).
+     *
+     * @throws \InvalidArgumentException When `$maxDepth` is provided but not at
+     *   least 1 — "compose zero required parents" is just not calling this.
+     *   `$strict` is set and `$maxDepth` leaves a required parent unsatisfied.
      *
      * @return static
      */
-    public function withRequiredParents(array $except = []): static
-    {
-        return $this->doWithRequiredParents($except, []);
+    public function withRequiredParents(
+        array $except = [],
+        ?int $maxDepth = null,
+        bool $strict = false,
+    ): static {
+        if ($maxDepth !== null && $maxDepth < 1) {
+            throw new InvalidArgumentException(sprintf(
+                'withRequiredParents() $maxDepth must be a positive integer or null, got %d. '
+                . 'To compose no required parents, simply do not call withRequiredParents().',
+                $maxDepth,
+            ));
+        }
+
+        return $this->doWithRequiredParents($except, [], $maxDepth, 0, $strict);
     }
 
     /**
@@ -1689,14 +1726,25 @@ abstract class BaseFactory
      *   unsatisfiable required-parent cycle (self-referential or
      *   `A -> B -> A` NOT NULL graphs) and fail fast with an actionable
      *   exception instead of recursing until the stack overflows.
+     * @param int|null $maxDepth Remaining recursion budget (see
+     *   {@see self::withRequiredParents()}); `null` is unbounded.
+     * @param int $depth Current level below the root (0 = root).
+     * @param bool $strict Throw when `$maxDepth` truncates the chain leaving a
+     *   composed boundary parent with its own unsatisfied required belongsTo.
      *
      * @throws \CakephpFixtureFactories\Error\FixtureFactoryException When a
-     *   required (NOT NULL) belongsTo cycle is detected.
+     *   required (NOT NULL) belongsTo cycle is detected, or when `$strict` and
+     *   the depth cap leaves a required parent unsatisfied.
      *
      * @return static
      */
-    private function doWithRequiredParents(array $except, array $visitedTables): static
-    {
+    private function doWithRequiredParents(
+        array $except,
+        array $visitedTables,
+        ?int $maxDepth,
+        int $depth,
+        bool $strict,
+    ): static {
         if ($this->readBootstrapMode) {
             return clone $this;
         }
@@ -1764,7 +1812,49 @@ abstract class BaseFactory
             // first level. `$except` is intentionally root-scoped: a deeper
             // level's required parents are always needed for that row to
             // persist regardless of what the caller pinned.
-            $parentFactory = $parentFactory->doWithRequiredParents([], $visitedTables);
+            //
+            // `maxDepth` caps how deep that recursion goes: the parent itself
+            // (at $depth + 1) is still composed below, but it is only enriched
+            // with ITS own required parents while that next level stays within
+            // the cap. Reaching the cap with a deeper NOT NULL FK unsatisfied
+            // is the caller's responsibility — same contract as `$except`.
+            if ($maxDepth === null || $depth + 1 < $maxDepth) {
+                $parentFactory = $parentFactory->doWithRequiredParents(
+                    [],
+                    $visitedTables,
+                    $maxDepth,
+                    $depth + 1,
+                    $strict,
+                );
+            } elseif ($strict) {
+                // The cap stops us recursing into $parentFactory. If that
+                // boundary parent still has a required belongsTo that is NOT
+                // already composed on it (configure()/with()/for()) and NOT
+                // pinned/excepted, the composed row cannot persist. Note a
+                // later recycle() cannot rescue it: recycle only substitutes
+                // *composed* branches, and the cap stopped that branch from
+                // being composed. Opt-in strictness turns that silent
+                // shortfall — and a capped cycle — into an actionable failure
+                // at call time.
+                $composedOnParent = $parentFactory->getAssociationBuilder()->getAssociations();
+                foreach ($parentFactory->resolveRequiredParentAliases([]) as $unmetAlias) {
+                    if (isset($composedOnParent[$unmetAlias])) {
+                        continue;
+                    }
+
+                    throw new FixtureFactoryException(sprintf(
+                        'withRequiredParents(maxDepth: %d, strict: true): the depth cap leaves the '
+                        . 'required belongsTo "%s" on table "%s" (reached via "%s") unsatisfied, so '
+                        . 'the composed row cannot persist. Raise maxDepth, pin or recycle that FK, '
+                        . 'add "%s" to $except, or drop strict to accept the silent contract.',
+                        $maxDepth,
+                        $unmetAlias,
+                        $parentFactory->getTable()->getTable(),
+                        $alias,
+                        $alias,
+                    ));
+                }
+            }
 
             // Compose the parent *factory* only — no persistence here. The
             // parent is built and saved as part of the root factory's own

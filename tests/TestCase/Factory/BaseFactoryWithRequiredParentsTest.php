@@ -27,8 +27,10 @@ use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpFixtureFactories\Test\Factory\RequiredParentsAuthorFactory;
 use CakephpFixtureFactories\Test\Factory\RequiredParentsOverrideAuthorFactory;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use InvalidArgumentException;
 use ReflectionMethod;
 use TestApp\Test\Factory\AuthorFactory;
+use Throwable;
 
 /**
  * Behavioural tests for `BaseFactory::withRequiredParents()` — the ergonomic
@@ -613,5 +615,175 @@ class BaseFactoryWithRequiredParentsTest extends TestCase
 
         $this->assertNotNull($country->id);
         $this->assertSame(1, CountryFactory::query()->count());
+    }
+
+    /**
+     * `maxDepth: 1` composes only the root's *direct* required parents — the
+     * grandparent chain is intentionally not recursed into. The composed row
+     * may then be un-persistable (its own NOT NULL FK is unsatisfied); that is
+     * the caller's responsibility, exactly like `$except`.
+     */
+    public function testMaxDepthOneComposesOnlyDirectParentNotGrandparent(): void
+    {
+        $author = RequiredParentsAuthorFactory::new()
+            ->withRequiredParents(maxDepth: 1)
+            ->build();
+
+        $this->assertNotEmpty(
+            $author->address,
+            'maxDepth:1 still composes the direct required parent Address.',
+        );
+        $this->assertEmpty(
+            $author->address->city,
+            'maxDepth:1 must NOT recurse into the grandparent City.',
+        );
+    }
+
+    /**
+     * `maxDepth: 2` composes the root's parents and their parents, but stops
+     * before the third level. Here: Address + City, but not Country.
+     */
+    public function testMaxDepthTwoComposesTwoLevels(): void
+    {
+        $author = RequiredParentsAuthorFactory::new()
+            ->withRequiredParents(maxDepth: 2)
+            ->build();
+
+        $this->assertNotEmpty($author->address, 'Level 1 (Address) composed.');
+        $this->assertNotEmpty($author->address->city, 'Level 2 (City) composed.');
+        $this->assertEmpty(
+            $author->address->city->country,
+            'maxDepth:2 must NOT recurse into the third level (Country).',
+        );
+    }
+
+    /**
+     * Explicit `maxDepth: null` is the unbounded default: the whole NOT NULL
+     * chain is composed, identical to calling `withRequiredParents()`.
+     */
+    public function testMaxDepthNullComposesWholeChain(): void
+    {
+        $author = RequiredParentsAuthorFactory::new()
+            ->withRequiredParents(maxDepth: null)
+            ->build();
+
+        $this->assertNotEmpty($author->address, 'Address composed.');
+        $this->assertNotEmpty($author->address->city, 'City composed.');
+        $this->assertNotEmpty(
+            $author->address->city->country,
+            'maxDepth:null composes the whole chain down to Country.',
+        );
+    }
+
+    /**
+     * `maxDepth: 0` (or negative) is a confusing footgun — "compose zero
+     * required parents" is just not calling the method. Reject it loudly at
+     * call time instead of silently composing nothing.
+     */
+    public function testMaxDepthZeroThrowsInvalidArgument(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        RequiredParentsAuthorFactory::new()->withRequiredParents(maxDepth: 0);
+    }
+
+    /**
+     * A negative cap is equally nonsensical and rejected the same way.
+     */
+    public function testMaxDepthNegativeThrowsInvalidArgument(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        RequiredParentsAuthorFactory::new()->withRequiredParents(maxDepth: -1);
+    }
+
+    /**
+     * The documented `maxDepth` trap: capping below the real required depth
+     * produces a row whose own NOT NULL FK is unsatisfied, so `->save()`
+     * fails. This is the caller's responsibility (same contract as `$except`),
+     * and — being side-effect free — nothing leaks: no Author/Address row is
+     * written when the persist aborts.
+     */
+    public function testMaxDepthBelowRequiredDepthProducesUnpersistableRow(): void
+    {
+        $threw = false;
+        try {
+            RequiredParentsAuthorFactory::new()
+                ->withRequiredParents(maxDepth: 1)
+                ->save();
+        } catch (Throwable $e) {
+            $threw = true;
+        }
+
+        $this->assertTrue(
+            $threw,
+            'maxDepth:1 leaves Address.city_id (NOT NULL) unsatisfied, so save() must fail.',
+        );
+        $this->assertSame(0, AddressFactory::query()->count(), 'No Address leaked.');
+        $this->assertSame(
+            0,
+            RequiredParentsAuthorFactory::query()->count(),
+            'No Author leaked — composition is atomic.',
+        );
+    }
+
+    /**
+     * Opt-in `strict: true`: when `maxDepth` actually truncates the required
+     * chain — a composed boundary parent still has its own unsatisfied
+     * required belongsTo — fail loudly at call time with an actionable
+     * message instead of silently producing an un-persistable row.
+     */
+    public function testStrictThrowsWhenMaxDepthDropsANeededParent(): void
+    {
+        $this->expectException(FixtureFactoryException::class);
+        $this->expectExceptionMessage('maxDepth');
+
+        RequiredParentsAuthorFactory::new()
+            ->withRequiredParents(maxDepth: 1, strict: true);
+    }
+
+    /**
+     * `strict: true` is a no-op when the cap is deep enough to satisfy the
+     * whole required chain — no exception, full chain composed.
+     */
+    public function testStrictDoesNotThrowWhenCapCoversTheChain(): void
+    {
+        $author = RequiredParentsAuthorFactory::new()
+            ->withRequiredParents(maxDepth: 3, strict: true)
+            ->build();
+
+        $this->assertNotEmpty($author->address->city->country);
+    }
+
+    /**
+     * `strict: true` with no cap (full chain) never throws — there is no
+     * truncation to be strict about.
+     */
+    public function testStrictWithoutMaxDepthIsHarmless(): void
+    {
+        $author = RequiredParentsAuthorFactory::new()
+            ->withRequiredParents(strict: true)
+            ->save();
+
+        $this->assertNotNull($author->id);
+    }
+
+    /**
+     * `recycle()` cannot rescue a capped branch: recycle only substitutes
+     * *composed* belongsTo branches, and `maxDepth` stops the recycled
+     * table's branch from being composed at all. So `maxDepth` + a recycle
+     * for a beyond-cap table is genuinely un-persistable, and `strict`
+     * correctly reports it rather than being silenced by the recycle.
+     */
+    public function testStrictStillThrowsWhenRecycleCannotReachACappedBranch(): void
+    {
+        $country = CountryFactory::new()->save();
+
+        $this->expectException(FixtureFactoryException::class);
+        $this->expectExceptionMessage('maxDepth');
+
+        RequiredParentsAuthorFactory::new()
+            ->recycle($country)
+            ->withRequiredParents(maxDepth: 2, strict: true);
     }
 }
