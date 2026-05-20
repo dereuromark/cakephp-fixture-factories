@@ -292,6 +292,47 @@ class BaseFactoryAssociationsTest extends TestCase
         $this->assertSame($n, CustomerFactory::query()->count());
     }
 
+    public function testWithBracketCountOnLeafFactoryArgument(): void
+    {
+        // `with('Alias[N]', SomeFactory::new())` previously dropped the [N]
+        // because the no-dot factory-leaf branch took the passed factory
+        // verbatim, bypassing AssociationBuilder::getAssociatedFactory()
+        // (which is the path that applies the bracket count). Result was
+        // a silent 1-row build instead of N.
+        $times = 4;
+
+        $country = CountryFactory::new()
+            ->with("Cities[$times]", CityFactory::new())
+            ->save();
+
+        $country = CountryFactory::table()->get($country->id, contain: ['Cities']);
+        $this->assertCount(
+            $times,
+            $country->cities,
+            'with("Alias[N]", SomeFactory::new()) must honor [N] just like the array-data path.',
+        );
+    }
+
+    public function testWithBracketCountOnLeafFactoryRespectsExplicitChainedCount(): void
+    {
+        // When the passed factory already chains its own count, the bracket
+        // count overrides it — matching the array-path semantics where
+        // `with('Cities[3]', $array)` always builds 3 regardless of how
+        // many rows are inside `$array` (extras are dropped, fewer are recycled).
+        $bracketCount = 3;
+
+        $country = CountryFactory::new()
+            ->with("Cities[$bracketCount]", CityFactory::new()->count(1))
+            ->save();
+
+        $country = CountryFactory::table()->get($country->id, contain: ['Cities']);
+        $this->assertCount(
+            $bracketCount,
+            $country->cities,
+            'Bracket count must take precedence over the leaf factory\'s own count().',
+        );
+    }
+
     public function testSaveMultipleHasManyAssociationAndTimesWithBrackets(): void
     {
         $times = 5;

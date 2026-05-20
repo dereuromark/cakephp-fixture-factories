@@ -12,8 +12,10 @@ namespace CakephpFixtureFactories\Test\TestCase\Factory;
 
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Factory\Sequence;
+use CakephpFixtureFactories\Generator\CakeGeneratorFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use InvalidArgumentException;
 
 /**
  * `BaseFactory::sequence()` callables receive a single `Sequence` context
@@ -125,6 +127,45 @@ class BaseFactorySequenceObjectTest extends TestCase
 
         $this->assertSame([0, 1, 2, 3, 4], $seenIndexes);
         $this->assertSame([1, 2, 3, 4, 5], $seenPositions);
+    }
+
+    public function testConstructorRejectsZeroOrNegativeTotal(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches('/total must be >= 1/');
+
+        new Sequence(
+            index: 0,
+            total: 0,
+            factory: CountryFactory::new(),
+            generator: CakeGeneratorFactory::create(),
+        );
+    }
+
+    public function testConstructorRejectsNegativeIndex(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches('/index must be in \[0, 3\)/');
+
+        new Sequence(
+            index: -1,
+            total: 3,
+            factory: CountryFactory::new(),
+            generator: CakeGeneratorFactory::create(),
+        );
+    }
+
+    public function testConstructorRejectsIndexAtOrAboveTotal(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches('/index must be in \[0, 3\)/');
+
+        new Sequence(
+            index: 3,
+            total: 3,
+            factory: CountryFactory::new(),
+            generator: CakeGeneratorFactory::create(),
+        );
     }
 
     public function testTotalReflectsCountValue(): void

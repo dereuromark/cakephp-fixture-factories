@@ -11,6 +11,7 @@ use Cake\ORM\Table;
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Error\PersistenceException;
 use CakephpFixtureFactories\Factory\BaseFactory;
+use CakephpFixtureFactories\Factory\DataCompiler;
 use CakephpFixtureFactories\Generator\FakerAdapter;
 use CakephpFixtureFactories\Test\Factory\ArticleFactory;
 use CakephpFixtureFactories\Test\Factory\AuthorFactory;
@@ -276,6 +277,64 @@ class FactoryTransactionStrategyTest extends TestCase
         $strategy->teardownTest();
 
         $this->assertNull(FactoryTransactionStrategy::getActiveInstance());
+    }
+
+    public function testStrategyResetsLeakedPersistDepth(): void
+    {
+        // DataCompiler::$persistDepth is process-wide. If a prior test
+        // threw between startPersistMode() and endPersistMode() (e.g.
+        // an exception inside afterBuild), the depth counter would
+        // stay incremented and the next test would boot already in
+        // persist mode — silently poisoning its association resolution.
+        // setupTest() must reset it.
+        $factory = CityFactory::new();
+        $compiler = $this->dataCompiler($factory);
+        $compiler->startPersistMode();
+        $compiler->startPersistMode();
+        $this->assertTrue($compiler->isInPersistMode(), 'Precondition: depth > 0.');
+
+        $strategy = new LazyFactoryTransactionStrategy();
+        $strategy->setupTest([]);
+
+        $this->assertFalse(
+            $compiler->isInPersistMode(),
+            'setupTest() must reset the leaked persist-depth counter to zero.',
+        );
+
+        $strategy->teardownTest();
+    }
+
+    public function testTeardownResetsLeakedPersistDepth(): void
+    {
+        // Symmetric guarantee on the teardown side: a test that throws
+        // after startPersistMode() but before endPersistMode() must not
+        // leave the counter elevated for the next test in the same process.
+        $strategy = new LazyFactoryTransactionStrategy();
+        $strategy->setupTest([]);
+
+        $factory = CityFactory::new();
+        $compiler = $this->dataCompiler($factory);
+        $compiler->startPersistMode();
+        $this->assertTrue($compiler->isInPersistMode());
+
+        $strategy->teardownTest();
+
+        $this->assertFalse(
+            $compiler->isInPersistMode(),
+            'teardownTest() must reset the leaked persist-depth counter to zero.',
+        );
+    }
+
+    /**
+     * Access a factory's private DataCompiler instance for whitebox
+     * persist-depth assertions. Reflection-only: the depth counter is
+     * not part of the public API.
+     */
+    private function dataCompiler(BaseFactory $factory): DataCompiler
+    {
+        $reflection = new ReflectionProperty(BaseFactory::class, 'dataCompiler');
+
+        return $reflection->getValue($factory);
     }
 
     public function testStrategyResetsSharedDefaultGenerator(): void
