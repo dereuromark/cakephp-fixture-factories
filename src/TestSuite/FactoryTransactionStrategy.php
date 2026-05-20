@@ -113,8 +113,25 @@ class FactoryTransactionStrategy implements FixtureStrategyInterface
         try {
             /** @var \Cake\Database\Connection $primary */
             $primary = ConnectionManager::get($this->primaryConnection);
-        } catch (Throwable) {
-            return; // unconfigured / unknown connection name — silent skip.
+        } catch (Throwable $e) {
+            // The eager guarantee silently disappears when the configured
+            // primary connection name doesn't resolve (typo in a subclass,
+            // missing test connection config, etc.). Tests still PASS for
+            // factory-only writes (the lazy path inside doPersist still
+            // wraps them), but mixed-style tests start leaking direct
+            // $table->save() rows — exactly the bug the eager default was
+            // reintroduced to fix. Surface a warning so the regression is
+            // visible at runtime instead of silently disappearing.
+            trigger_error(sprintf(
+                "FactoryTransactionStrategy: eager begin disabled — primary connection '%s' "
+                . 'is not configured (%s). Direct $table->save() / raw inserts inside tests '
+                . 'will NOT be rolled back at teardown. Set $primaryConnection on a subclass '
+                . "to your real test connection, or set it to '' to silence this warning.",
+                $this->primaryConnection,
+                $e->getMessage(),
+            ), E_USER_WARNING);
+
+            return;
         }
         $this->ensureTransaction($primary);
     }
