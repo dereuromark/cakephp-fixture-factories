@@ -236,6 +236,21 @@ AddressFactory::new()
     ->saveMany();
 ```
 
+Propagation also crosses `hasMany` and `belongsToMany` edges — only the *substitution* is belongsTo-scoped (see [boundary](#when-recycle-doesnt-help) below). So a `belongsTo` branch inside a hasMany child still substitutes:
+
+```php
+$author = AuthorFactory::new()->save();
+
+// ArticlesAuthors is the junction table for Articles ↔ Authors.
+// recycle($author) flows down through the hasMany junction row into
+// ArticlesAuthor.belongsTo Authors and reuses $author instead of inserting fresh:
+ArticleFactory::new()
+    ->without('Authors') // drop the BTM default to isolate the junction path
+    ->with('ArticlesAuthors', ArticlesAuthorFactory::new()->with('Authors'))
+    ->recycle($author)
+    ->save();
+```
+
 ### Multiple recycles
 
 `recycle()` is variadic and chainable. Each call merges into the recycle map (last call wins for the same target table):
@@ -271,7 +286,7 @@ AuthorFactory::new()
 
 - The build graph has no registered `belongsTo` to the recycled entity's table — recycle is a silent no-op.
 - You need different parents on different branches — use `with('AliasName', $entity)` per branch.
-- You want to reuse a `hasMany` or `belongsToMany` collection — recycle only substitutes single-row `belongsTo` parents. Use `with()` with concrete entities for the many side.
+- You want to reuse a `hasMany` or `belongsToMany` collection — recycle only substitutes single-row `belongsTo` parents. The to-many entity itself is always freshly built; recycle flows *into* it so its own belongsTo branches may substitute, but the row itself never collapses into the recycled target. Use `with()` with concrete entities for the many side.
 
 ## `from()` — start from an existing entity
 
