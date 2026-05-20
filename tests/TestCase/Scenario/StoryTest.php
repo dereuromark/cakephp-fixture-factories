@@ -17,8 +17,10 @@ use CakephpFixtureFactories\Scenario\ScenarioAwareTrait;
 use CakephpFixtureFactories\Scenario\Story;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
+use CakephpFixtureFactories\Test\Scenario\AssertionFailingStory;
 use CakephpFixtureFactories\Test\Scenario\BlogStory;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use PHPUnit\Framework\AssertionFailedError;
 use TestApp\Model\Entity\Country;
 
 /**
@@ -216,5 +218,21 @@ class StoryTest extends TestCase
         $story = $this->loadFixtureScenario(BlogStory::class);
 
         $this->assertSame([], $story->getRandomSet('countries', 0));
+    }
+
+    /**
+     * A PHPUnit framework exception (here `AssertionFailedError`, raised
+     * via `Assert::fail()` from inside the scenario's build) must reach
+     * the runner *untouched* — the trait used to wrap every Throwable in
+     * `FixtureScenarioException`, which made the test show as an error
+     * instead of a failure and broke `expectException` / risky-test
+     * handling. Pass-through is the contract.
+     */
+    public function testPhpUnitAssertionFailedErrorBubblesUntouched(): void
+    {
+        $this->expectException(AssertionFailedError::class);
+        $this->expectExceptionMessage('intentional fail from scenario build');
+
+        $this->loadFixtureScenario(AssertionFailingStory::class);
     }
 }
