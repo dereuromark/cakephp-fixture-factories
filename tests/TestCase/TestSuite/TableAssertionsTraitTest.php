@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace CakephpFixtureFactories\Test\TestCase\TestSuite;
 
+use Cake\ORM\Entity;
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
@@ -17,6 +18,7 @@ use CakephpFixtureFactories\TestSuite\TableAssertionsTrait;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
 use InvalidArgumentException;
 use PHPUnit\Framework\AssertionFailedError;
+use stdClass;
 use TestApp\Model\Entity\Country;
 
 /**
@@ -252,5 +254,41 @@ class TableAssertionsTraitTest extends TestCase
             return $e->getMessage();
         }
         $this->fail('Expected an AssertionFailedError but no exception was thrown.');
+    }
+
+    public function testAssertEntityExistsRejectsEntityWithoutSourceTable(): void
+    {
+        // resolveTableForEntity() throws a friendly InvalidArgumentException
+        // when handed a bare entity with no source table set AND no factory
+        // class argument. Without this guard the user would see Cake's raw
+        // "alias is not allowed" error from the table locator. Regression pin.
+        $entity = new Entity(['id' => 1]);
+        $entity->setSource('');
+
+        $caught = null;
+        try {
+            $this->assertEntityExists($entity);
+        } catch (InvalidArgumentException $e) {
+            $caught = $e;
+        }
+        $this->assertNotNull($caught, 'Expected InvalidArgumentException for entity with no source table.');
+        $this->assertMatchesRegularExpression('/no source table/i', $caught->getMessage());
+        $this->assertMatchesRegularExpression('/factoryClass/', $caught->getMessage());
+    }
+
+    public function testGuardFactoryClassRejectsNonBaseFactoryClassString(): void
+    {
+        // guardFactoryClass() throws when a non-BaseFactory class is passed
+        // to any of the trait's assertion methods. Documented contract; pin
+        // it so a refactor can't silently drop the friendly error in favour
+        // of a confusing static-method-not-found further down the call chain.
+        $caught = null;
+        try {
+            $this->assertTableEmpty(stdClass::class);
+        } catch (InvalidArgumentException $e) {
+            $caught = $e;
+        }
+        $this->assertNotNull($caught, 'Expected InvalidArgumentException for non-BaseFactory class.');
+        $this->assertMatchesRegularExpression('/must extend/i', $caught->getMessage());
     }
 }

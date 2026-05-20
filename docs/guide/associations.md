@@ -287,6 +287,7 @@ AuthorFactory::new()
 - The build graph has no registered `belongsTo` to the recycled entity's table — recycle is a silent no-op.
 - You need different parents on different branches — use `with('AliasName', $entity)` per branch.
 - You want to reuse a `hasMany` or `belongsToMany` collection — recycle only substitutes single-row `belongsTo` parents. The to-many entity itself is always freshly built; recycle flows *into* it so its own belongsTo branches may substitute, but the row itself never collapses into the recycled target. Use `with()` with concrete entities for the many side.
+- The chain runs through a `belongsTo` declared with `'foreignKey' => false` (custom-condition join). The independent-save path that handles these takes the bypass around the normal cascade, so recycle does NOT propagate INTO that subtree — fresh parents are built inside it. Use `with('Alias', $entity)` at the call site to share the parent across builds.
 
 ## `from()` — start from an existing entity
 
