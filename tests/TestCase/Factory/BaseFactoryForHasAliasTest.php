@@ -144,4 +144,55 @@ class BaseFactoryForHasAliasTest extends TestCase
             ->has(AddressFactory::new(), 'Address')
             ->save();
     }
+
+    /**
+     * Passing `$pivot` to a hasOne / hasMany alias is meaningless — Cake's
+     * non-junction marshaller has no `_joinData` slot to write, so the pivot
+     * silently drops on save. Reject loudly with a clear "BelongsToMany
+     * only" message instead.
+     */
+    public function testHasRejectsPivotForNonBelongsToManyAlias(): void
+    {
+        // CountriesTable: hasMany Cities. `_joinData` has no meaning here.
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessageMatches('/pivot.*belongsToMany|_joinData/i');
+
+        CountryFactory::new()
+            ->has(CityFactory::new(), 'Cities', ['featured' => true]);
+    }
+
+    /**
+     * The explicit-alias form must also type-check the passed factory's
+     * target table against the alias's target. Without this guard,
+     * `Author::for(City, 'Address')` silently builds a City entity into
+     * the Address slot, mis-wiring at save time.
+     */
+    public function testForRejectsFactoryWhoseTargetDoesNotMatchTheAlias(): void
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessageMatches(
+            "/alias 'Address' targets.*CityFactory.*builds.*Cities/i",
+        );
+
+        // Author's `Address` alias targets `Addresses`; passing CityFactory
+        // is a categorical mismatch that auto-resolution would catch but the
+        // explicit alias path currently lets slide.
+        AuthorFactory::new()->for(CityFactory::new(), 'Address');
+    }
+
+    /**
+     * Same guard on `has()`: a child factory whose target doesn't match the
+     * alias's target table is a mis-wiring.
+     */
+    public function testHasRejectsFactoryWhoseTargetDoesNotMatchTheAlias(): void
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessageMatches(
+            "/alias 'Cities' targets.*CountryFactory.*builds.*Countries/i",
+        );
+
+        // Country's `Cities` alias targets `Cities`; passing CountryFactory
+        // is a mis-wire that has() should reject.
+        CountryFactory::new()->has(CountryFactory::new(), 'Cities');
+    }
 }
