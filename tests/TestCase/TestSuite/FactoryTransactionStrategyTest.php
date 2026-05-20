@@ -6,6 +6,7 @@ namespace CakephpFixtureFactories\Test\TestCase\TestSuite;
 
 use Cake\Core\Configure;
 use Cake\Database\Connection;
+use Cake\ORM\Entity;
 use Cake\ORM\Table;
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Error\PersistenceException;
@@ -20,7 +21,10 @@ use CakephpFixtureFactories\TestSuite\FactoryTransactionStrategy;
 use CakephpFixtureFactories\TestSuite\LazyFactoryTransactionStrategy;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+use ReflectionMethod;
+use ReflectionProperty;
 use RuntimeException;
+use Throwable;
 
 /**
  * Test that the FactoryTransactionStrategy properly manages transactions
@@ -443,5 +447,75 @@ class FactoryTransactionStrategyTest extends TestCase
         } catch (PersistenceException $exception) {
             $this->assertSame('no transaction', $exception->getPrevious()?->getMessage());
         }
+    }
+
+    /**
+     * Bug fix: if `rollback(true)` throws on connection N (broken socket,
+     * killed backend, server-side timeout), the loop must NOT abort —
+     * subsequent connections would never be rolled back and `$connections`
+     * would never reset, leaking the active instance into the next test.
+     * Per-connection isolation + unconditional reset + aggregated rethrow.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testReleaseTransactionsResetsStateEvenIfOneRollbackThrows(): void
+    {
+        $bad = $this->createMock(Connection::class);
+        $bad->method('inTransaction')->willReturn(true);
+        $bad->method('rollback')->willThrowException(new RuntimeException('rollback boom'));
+
+        $good = $this->createMock(Connection::class);
+        $good->method('inTransaction')->willReturn(true);
+        $good->expects($this->once())->method('rollback')->with(true);
+
+        $strategy = new FactoryTransactionStrategy();
+        $connections = new ReflectionProperty($strategy, 'connections');
+        $connections->setValue($strategy, ['bad' => $bad, 'good' => $good]);
+
+        $caught = null;
+        try {
+            $strategy->releaseTransactions();
+        } catch (Throwable $e) {
+            $caught = $e;
+        }
+
+        $this->assertNotNull($caught, 'A rollback failure must still surface to the caller.');
+        $this->assertStringContainsString('bad', $caught->getMessage());
+        $this->assertSame(
+            [],
+            $connections->getValue($strategy),
+            'Connections array must reset regardless of rollback exception — otherwise the strategy leaks into the next test.',
+        );
+    }
+
+    /**
+     * Bug fix: `finalizePersistedEntities()` previously short-circuited when
+     * the table's *own* connection was not in transaction. For associated
+     * entities under a multi-connection cascade the save runs on the
+     * **parent's** connection, not the child's — and the child's connection
+     * may legitimately not be in transaction. Skipping compensation there left
+     * the entity reporting `isNew() === true`, which silently breaks
+     * `Table::delete()` and any other identity-based lookup. The compensation
+     * is idempotent, so it must run unconditionally.
+     */
+    #[AllowMockObjectsWithoutExpectations]
+    public function testFinalizeCompensatesWhenTableConnectionIsNotInTransaction(): void
+    {
+        $entity = new Entity(['x' => 1]);
+        $this->assertTrue($entity->isNew(), 'fresh entity is new before finalize');
+
+        $connection = $this->createMock(Connection::class);
+        $connection->method('inTransaction')->willReturn(false);
+        $table = $this->createMock(Table::class);
+        $table->method('getConnection')->willReturn($connection);
+        $table->method('getAlias')->willReturn('SomeAlias');
+
+        $method = new ReflectionMethod(BaseFactory::class, 'finalizePersistedEntities');
+        $method->invoke(AuthorFactory::new(), [$entity], $table);
+
+        $this->assertFalse(
+            $entity->isNew(),
+            'Compensation must run regardless of the table connection state.',
+        );
+        $this->assertSame('SomeAlias', $entity->getSource());
     }
 }
