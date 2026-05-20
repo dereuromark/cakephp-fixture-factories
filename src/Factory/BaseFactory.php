@@ -1934,7 +1934,7 @@ abstract class BaseFactory
                     . 'auto-resolved. Break it manually: compose a terminating parent explicitly with '
                     . '->with(\'%s\', $entity), pin the FK and pass the alias in $except '
                     . '(e.g. ->withRequiredParents([\'%s\'])), or exclude it via the '
-                    . 'requiredParentAssociations() override hook.',
+                    . 'excludedRequiredParentAssociations() override hook.',
                     $alias,
                     $targetTable,
                     implode(' -> ', $visitedTables),
@@ -2171,8 +2171,9 @@ abstract class BaseFactory
      * by custom conditions at read time, with no FK column to populate). The
      * parent row persists and is reachable via `find()->contain()`, but is
      * NOT attached to the in-memory root entity post-save (attaching would
-     * re-fire the broken cascade). Composite-key opt-in is not yet covered;
-     * opt those in at the call site with `->with('Alias', $factory)` for now.
+     * re-fire the broken cascade). Composite-key belongsTo are also supported
+     * here: the parent is composed like any other to-one association and Cake
+     * populates every FK component from the target binding keys at save time.
      * See {@see self::excludedRequiredParentAssociations()} for the symmetric
      * factory-class-level *exclude* hook.
      *

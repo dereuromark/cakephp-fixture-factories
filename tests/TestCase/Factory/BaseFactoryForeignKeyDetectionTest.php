@@ -17,8 +17,10 @@ namespace CakephpFixtureFactories\Test\TestCase\Factory;
 
 use Cake\Core\Configure;
 use Cake\ORM\Table;
+use Cake\ORM\TableRegistry;
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Factory\BaseFactory;
+use CakephpFixtureFactories\ORM\FactoryTableRegistry;
 use CakephpFixtureFactories\Test\Factory\AddressFactory;
 use CakephpFixtureFactories\Test\Factory\AllowedFkAddressFactory;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
@@ -63,6 +65,8 @@ class BaseFactoryForeignKeyDetectionTest extends TestCase
         restore_error_handler();
         BaseFactory::resetForeignKeyInDefinitionDetector();
         Configure::delete('FixtureFactories.strictDefinition');
+        TableRegistry::getTableLocator()->clear();
+        FactoryTableRegistry::getTableLocator()->clear();
         parent::tearDown();
     }
 
@@ -141,7 +145,7 @@ class BaseFactoryForeignKeyDetectionTest extends TestCase
         $this->assertSame([], $this->capturedErrors, 'A column listed in allowedForeignKeysInDefinition() must not be flagged.');
 
         // The exemption is per-factory: an un-listed smelly factory on the
-        // same column is still flagged.
+        // same managed-FK smell is still flagged.
         SmellyAddressFactory::new()->build();
         $this->assertCount(1, $this->capturedErrors);
         $this->assertStringContainsString('"city_id"', $this->capturedErrors[0]['message']);

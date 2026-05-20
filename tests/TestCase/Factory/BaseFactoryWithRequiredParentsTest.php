@@ -25,6 +25,7 @@ use CakephpFixtureFactories\Test\Factory\AddressFactory;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpFixtureFactories\Test\Factory\RequiredParentsAuthorFactory;
+use CakephpFixtureFactories\Test\Factory\RequiredParentsCompositeOptInTableWithoutModelFactory;
 use CakephpFixtureFactories\Test\Factory\RequiredParentsExcludeAuthorFactory;
 use CakephpFixtureFactories\Test\Factory\RequiredParentsForeignKeyFalseOptInFactory;
 use CakephpFixtureFactories\Test\Factory\RequiredParentsOverrideAuthorFactory;
@@ -426,6 +427,31 @@ class BaseFactoryWithRequiredParentsTest extends TestCase
         $this->assertNotNull(
             $author->business_address_id,
             'Hook opted BusinessAddress in even though its FK is nullable.',
+        );
+    }
+
+    /**
+     * A composite-key belongsTo is never auto-resolved, but the additive hook
+     * can opt it in explicitly. Save-time composition must populate every FK
+     * component from the built parent and persist the parent's own required
+     * chain too.
+     */
+    public function testOverrideHookOptsInCompositeKeyAssociation(): void
+    {
+        $row = RequiredParentsCompositeOptInTableWithoutModelFactory::new()
+            ->withRequiredParents()
+            ->save();
+
+        $city = CityFactory::query()->firstOrFail();
+
+        $this->assertNotNull($row->id);
+        $this->assertSame($city->id, $row->get('foreign_key'));
+        $this->assertSame($city->country_id, $row->get('country_id'));
+        $this->assertSame(1, CityFactory::query()->count(), 'Composite opt-in must compose the parent City.');
+        $this->assertSame(
+            1,
+            CountryFactory::query()->count(),
+            'The opted-in composite parent must still satisfy its own required Country chain.',
         );
     }
 
