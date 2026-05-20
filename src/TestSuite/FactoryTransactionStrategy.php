@@ -60,6 +60,8 @@ use Throwable;
  *
  * Usage (CakePHP 5.0 - 5.1):
  * Use the FactoryTransactionTrait in your test cases.
+ *
+ * @since 2.0.0
  */
 class FactoryTransactionStrategy implements FixtureStrategyInterface
 {
@@ -208,6 +210,8 @@ class FactoryTransactionStrategy implements FixtureStrategyInterface
      *
      * Called from BaseFactory save operations before persistence, so transactions
      * are only started on connections that are actually used.
+     *
+     * @internal
      *
      * @param \Cake\Database\Connection $connection The connection to ensure a transaction on
      *

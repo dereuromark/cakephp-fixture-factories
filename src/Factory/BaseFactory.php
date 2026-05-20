@@ -570,6 +570,9 @@ abstract class BaseFactory
     }
 
     /**
+     * @internal Used by AssociationBuilder / DataCompiler to assemble the
+     *     marshaller's associated-config map. Not part of the public API.
+     *
      * @return array<string, mixed>
      */
     public function getMarshallerOptions(): array
@@ -977,6 +980,8 @@ abstract class BaseFactory
      *   plus `$s->factory` and `$s->generator` for the rare callable that
      *   needs them but doesn't have them in `use(...)` scope.
      *
+     * @since 2.0.0
+     *
      * @param \Cake\Datasource\EntityInterface|callable(\CakephpFixtureFactories\Factory\Sequence<TEntity>): array<string, mixed>|array<string, mixed> ...$states Sequence states
      *
      * @throws \InvalidArgumentException
@@ -1021,6 +1026,8 @@ abstract class BaseFactory
      *     ->sequenceField('priority', 1, 5, 10) // 3-cycle
      *     ->buildMany();
      * ```
+     *
+     * @since 2.0.0
      *
      * @param string $field Column to cycle.
      * @param mixed ...$values Values cycled in order. At least one is required.
@@ -1372,6 +1379,8 @@ abstract class BaseFactory
      * Get the fields that are declared are unique.
      * This should include the uniqueness of the fields in your schema.
      *
+     * @internal Used by UniquenessJanitor and the test suite.
+     *
      * @return array<string>
      */
     public function getUniqueProperties(): array
@@ -1649,6 +1658,8 @@ abstract class BaseFactory
      * the test suite of this plugin (and downstream test-helper code), so that
      * each test starts with an empty dedupe set and a freshly-resolved table
      * FK map.
+     *
+     * @internal
      */
     public static function resetForeignKeyInDefinitionDetector(): void
     {
@@ -1810,6 +1821,8 @@ abstract class BaseFactory
      * `FixtureFactoryException`. A cycle *within* the cap still throws. Opt into
      * `$strict` to turn that silent shortfall into an actionable exception at
      * call time (it also restores an actionable message for a capped cycle).
+     *
+     * @since 2.0.0
      *
      * @param array<int, string> $except Association aliases to skip.
      * @param int|null $maxDepth Cap how many *levels* of required parents are
@@ -2243,6 +2256,8 @@ abstract class BaseFactory
      * See {@see self::excludedRequiredParentAssociations()} for the symmetric
      * factory-class-level *exclude* hook.
      *
+     * @since 2.0.0
+     *
      * @return array<int, string> Additional aliases to compose.
      */
     protected function requiredParentAssociations(): array
@@ -2263,6 +2278,8 @@ abstract class BaseFactory
      * - Scoped to *this* factory class — parent factories higher up the chain
      *   each apply their own exclude list via their own resolver invocation.
      *
+     * @since 2.0.0
+     *
      * @return array<int, string> Aliases to exclude.
      */
     protected function excludedRequiredParentAssociations(): array
@@ -2282,6 +2299,8 @@ abstract class BaseFactory
      * value there is not that anti-pattern. The detector still flags every
      * genuinely managed FK — listing a managed FK column here defeats the
      * check, so don't.
+     *
+     * @since 2.0.0
      *
      * @return array<int, string> Column names exempt from the detector.
      */
@@ -2387,6 +2406,8 @@ abstract class BaseFactory
      * When `$alias` is null, the alias is auto-resolved by the associated
      * factory's target table — equivalent to the previous single-arg form.
      *
+     * @since 2.0.0
+     *
      * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Associated belongsTo factory.
      * @param string|null $alias Explicit association alias on the source table; auto-resolved when null.
      *
@@ -2431,6 +2452,8 @@ abstract class BaseFactory
      * per-key basis where it overlaps; non-overlapping keys are kept from
      * `$pivot`. For a totally pivot-only build, prefer the explicit
      * `$pivot` argument and don't pre-load `_joinData` on the child.
+     *
+     * @since 2.0.0
      *
      * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Associated factory.
      * @param string|null $alias Explicit association alias on the source table; auto-resolved when null.
@@ -2603,6 +2626,8 @@ abstract class BaseFactory
      * typo for "I want one of these but I'm not sure which". Across multiple
      * `recycle()` calls, last wins (a chained `->recycle($a)->recycle($b)` on
      * the same source is treated as an intentional update).
+     *
+     * @since 2.0.0
      *
      * @param \Cake\Datasource\EntityInterface ...$entities One or more
      *     already-built entities to reuse, keyed internally by source table.

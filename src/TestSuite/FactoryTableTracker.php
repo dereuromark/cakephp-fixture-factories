@@ -12,6 +12,8 @@ use Cake\ORM\Table;
  * This singleton class maintains a registry of all tables that have been
  * modified by fixture factories during test execution. This information can
  * be used by transaction strategies to automatically manage database state.
+ *
+ * @since 2.0.0
  */
 class FactoryTableTracker
 {

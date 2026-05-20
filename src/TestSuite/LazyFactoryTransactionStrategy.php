@@ -39,6 +39,8 @@ namespace CakephpFixtureFactories\TestSuite;
  *         'fixtureStrategy' => \CakephpFixtureFactories\TestSuite\LazyFactoryTransactionStrategy::class,
  *     ],
  * ```
+ *
+ * @since 2.0.0
  */
 class LazyFactoryTransactionStrategy extends FactoryTransactionStrategy
 {
