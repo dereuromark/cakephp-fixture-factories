@@ -132,7 +132,7 @@ rather than silently producing a factory that dies on a confusing NOT NULL
 violation at save time. Break the cycle yourself: pin the cyclic FK at the
 call site and exclude the alias via `$except`
 (`->withRequiredParents(['CyclicAlias'])`), or exclude it through the
-`requiredParentAssociations()` override hook.
+`excludedRequiredParentAssociations()` override hook.
 
 ## `$except`: pin one FK literally
 
@@ -269,7 +269,7 @@ Resolution order: `auto-detected ∪ requiredParentAssociations() − excludedRe
 Exclude wins over both the additive hook and per-call `$except` (both subtract).
 Each is independent; either may stay at its default (`[]`).
 
-::: tip foreignKey => false: supported via independent save
+::: tip `foreignKey => false` and composite-key opt-in are both supported
 The additive `requiredParentAssociations()` hook (and `->with('Alias', ...)`)
 support **`foreignKey => false`** custom-condition belongsTo: the parent is
 built and saved independently of the cascade (Cake's
@@ -278,9 +278,12 @@ custom conditions at read time, with no FK column to populate). The parent
 row exists in the database after `save()` and is reachable via
 `->find()->contain('Alias')`, but is **not** attached to the in-memory root
 entity (`$root->{alias}` stays `null` post-save) — attaching it would re-fire
-the broken cascade. **Composite-key** opt-in via the additive hook is not yet
-covered; attach those at the call site with `->with('Alias', $parentFactory)`
-for now.
+the broken cascade.
+
+**Composite-key** belongsTo can also be opted in through the same additive
+hook. Those follow the normal to-one cascade: the parent is composed and Cake
+fills every local FK component from the target binding keys during the root
+save.
 :::
 
 ## It's the pragmatic default — not the assertion tool

@@ -141,7 +141,7 @@ class BaseFactoryForeignKeyDetectionTest extends TestCase
         $this->assertSame([], $this->capturedErrors, 'A column listed in allowedForeignKeysInDefinition() must not be flagged.');
 
         // The exemption is per-factory: an un-listed smelly factory on the
-        // same column is still flagged.
+        // same managed-FK smell is still flagged.
         SmellyAddressFactory::new()->build();
         $this->assertCount(1, $this->capturedErrors);
         $this->assertStringContainsString('"city_id"', $this->capturedErrors[0]['message']);

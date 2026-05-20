@@ -7,15 +7,26 @@ use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\Generator\GeneratorInterface;
 
 /**
- * Like {@see SmellyAddressFactory} (returns the `city_id` FK from
- * `definition()`), but explicitly declares that column intentional via
+ * Returns a non-managed custom join column from `definition()` and explicitly
+ * declares it intentional via
  * {@see BaseFactory::allowedForeignKeysInDefinition()}. Models the supported
- * exception for non-managed condition-join columns.
+ * exception for `foreignKey => false` condition-join columns.
  *
  * @extends BaseFactory<\TestApp\Model\Entity\Address>
  */
 class AllowedFkAddressFactory extends BaseFactory
 {
+    protected function initialize(): void
+    {
+        if (!$this->getTable()->hasAssociation('GhostCity')) {
+            $this->getTable()->belongsTo('GhostCity', [
+                'className' => 'Cities',
+                'foreignKey' => false,
+                'conditions' => ['Addresses.city_uuid = GhostCity.uuid'],
+            ]);
+        }
+    }
+
     protected function getRootTableRegistryName(): string
     {
         return 'Addresses';
@@ -25,12 +36,12 @@ class AllowedFkAddressFactory extends BaseFactory
     {
         return [
             'street' => $generator->streetAddress(),
-            'city_id' => $generator->numberBetween(1, 100),
+            'city_uuid' => $generator->uuid(),
         ];
     }
 
     protected function allowedForeignKeysInDefinition(): array
     {
-        return ['city_id'];
+        return ['city_uuid'];
     }
 }
