@@ -17,8 +17,10 @@ namespace CakephpFixtureFactories\Test\TestCase\Factory;
 
 use Cake\Core\Configure;
 use Cake\ORM\Table;
+use Cake\ORM\TableRegistry;
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Factory\BaseFactory;
+use CakephpFixtureFactories\ORM\FactoryTableRegistry;
 use CakephpFixtureFactories\Test\Factory\AddressFactory;
 use CakephpFixtureFactories\Test\Factory\AllowedFkAddressFactory;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
@@ -63,6 +65,8 @@ class BaseFactoryForeignKeyDetectionTest extends TestCase
         restore_error_handler();
         BaseFactory::resetForeignKeyInDefinitionDetector();
         Configure::delete('FixtureFactories.strictDefinition');
+        TableRegistry::getTableLocator()->clear();
+        FactoryTableRegistry::getTableLocator()->clear();
         parent::tearDown();
     }
 
