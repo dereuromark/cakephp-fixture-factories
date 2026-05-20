@@ -15,7 +15,9 @@ use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpFixtureFactories\TestSuite\TableAssertionsTrait;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use InvalidArgumentException;
 use PHPUnit\Framework\AssertionFailedError;
+use TestApp\Model\Entity\Country;
 
 /**
  * Tests for `TableAssertionsTrait` — expressive assertions composed over
@@ -142,6 +144,52 @@ class TableAssertionsTraitTest extends TestCase
             fn () => $this->assertEntityMissing($country),
         );
         $this->assertMatchesRegularExpression('/missing.*still exists/i', $message);
+    }
+
+    public function testAssertEntityMissingRejectsNeverPersistedEntity(): void
+    {
+        // A built-but-not-saved entity has a null primary key. The previous
+        // implementation short-circuited to false on null PK and silently
+        // passed — a green test that proved nothing. The guard must instead
+        // throw so the caller knows they need to save (then delete) first.
+        $country = CountryFactory::new(['name' => 'NeverSaved'])->build();
+
+        // try/catch instead of expectException so the file-level CS rule
+        // "no assert* after expect*" stays happy — the trait method is
+        // named assertEntityMissing(), which the rule treats as an
+        // assertion call.
+        $caught = null;
+        try {
+            $this->assertEntityMissing($country);
+        } catch (InvalidArgumentException $e) {
+            $caught = $e;
+        }
+        $this->assertNotNull($caught, 'Expected InvalidArgumentException for never-persisted entity.');
+        $this->assertMatchesRegularExpression('/it was never persisted/', $caught->getMessage());
+    }
+
+    public function testAssertEntityMissingRejectsNeverPersistedEntityWithPreassignedPrimaryKey(): void
+    {
+        // Application-assigned-PK case (UUID / string IDs): the entity carries
+        // a non-null PK at build time but was never written. The null-PK guard
+        // alone would let it slip past; the isNew() guard catches it.
+        $country = new Country([
+            'id' => 999_999,
+            'name' => 'Pre-assigned but never saved',
+        ]);
+        $country->setSource('Countries');
+
+        $caught = null;
+        try {
+            $this->assertEntityMissing($country);
+        } catch (InvalidArgumentException $e) {
+            $caught = $e;
+        }
+        $this->assertNotNull(
+            $caught,
+            'Expected InvalidArgumentException for an isNew() entity even with a pre-assigned PK.',
+        );
+        $this->assertMatchesRegularExpression('/it was never persisted/', $caught->getMessage());
     }
 
     public function testAssertTableHasComposesAcrossFactoryClasses(): void

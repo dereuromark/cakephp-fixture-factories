@@ -9,6 +9,7 @@ use Cake\Datasource\ConnectionManager;
 use Cake\TestSuite\Fixture\FixtureStrategyInterface;
 use CakephpFixtureFactories\Error\PersistenceException;
 use CakephpFixtureFactories\Factory\BaseFactory;
+use CakephpFixtureFactories\Factory\DataCompiler;
 use CakephpFixtureFactories\Generator\CakeGeneratorFactory;
 use RuntimeException;
 use Throwable;
@@ -102,6 +103,10 @@ class FactoryTransactionStrategy implements FixtureStrategyInterface
         CakeGeneratorFactory::clearInstances();
         BaseFactory::resetDefaultGenerator();
 
+        // Reset persist-mode depth — a previous test that threw mid-save
+        // (e.g. inside afterBuild) would have left the counter incremented.
+        DataCompiler::resetPersistDepth();
+
         // Eagerly wrap the primary test connection so direct
         // $table->save() / raw insert calls inside a test are also
         // rolled back at teardown. Subclasses that want fully lazy
@@ -152,6 +157,7 @@ class FactoryTransactionStrategy implements FixtureStrategyInterface
             FactoryTableTracker::getInstance()->clear();
             CakeGeneratorFactory::clearInstances();
             BaseFactory::resetDefaultGenerator();
+            DataCompiler::resetPersistDepth();
         }
     }
 

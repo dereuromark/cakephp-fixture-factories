@@ -1471,6 +1471,25 @@ class DataCompiler
     }
 
     /**
+     * Reset the process-wide persist-depth counter.
+     *
+     * Normally startPersistMode()/endPersistMode() balance pair-by-pair. If
+     * something throws *between* startPersistMode() and endPersistMode()
+     * (e.g. an exception inside an `afterBuild` callback, a constraint
+     * violation in the middle of saveMany()), the counter stays incremented.
+     * Without a teardown reset, the next test in the same process boots with
+     * `isInPersistMode() === true` even at top level — quietly poisoning its
+     * association resolution. Called from the transaction strategy's
+     * setupTest()/teardownTest() to make the boundary visible.
+     *
+     * @return void
+     */
+    public static function resetPersistDepth(): void
+    {
+        self::$persistDepth = 0;
+    }
+
+    /**
      * @return array<string>
      */
     public function getEnforcedFields(): array

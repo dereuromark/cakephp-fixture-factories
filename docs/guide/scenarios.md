@@ -127,7 +127,7 @@ class FeedTest extends TestCase
 
 ### API
 
-- `addToPool(string $pool, EntityInterface|array $entities)` — register one or more entities under a named pool; repeated calls append.
+- `addToPool(string $pool, EntityInterface|array $entities)` — register one or more entities under a named pool; repeated calls append. Empty pool names are refused with a clear error (an empty key on the read side produced a useless message before).
 - `getPool(string $pool): array<EntityInterface>` — return every entity in a pool.
 - `getRandom(string $pool): EntityInterface` — uniform random pick from a pool.
 - `getRandomSet(string $pool, int $count): array<EntityInterface>` — `$count` distinct entities drawn from a pool (raises if the pool holds fewer).

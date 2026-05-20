@@ -205,12 +205,48 @@ trait TableAssertionsTrait
      * @param class-string<\CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>>|null $factoryClass
      *     Optional factory class to scope the lookup; see {@see self::assertEntityExists()}.
      * @param string|null $message Optional custom failure message.
+     *
+     * @throws \InvalidArgumentException
      */
     public function assertEntityMissing(
         EntityInterface $entity,
         ?string $factoryClass = null,
         ?string $message = null,
     ): void {
+        // Distinguish "never saved" from "was saved, then deleted".
+        // Without this guard, an unsaved entity makes the assertion pass
+        // silently — worse than no assertion, since the test reads green
+        // and the user thinks deletion worked.
+        //
+        // Two discriminators, in order:
+        //   1. `isNew() === true` — the canonical Cake marker. `build()`
+        //      returns isNew=true entities; `save()` and `get()` return
+        //      isNew=false. This catches the application-assigned-PK
+        //      (UUID / string) case where a PK exists at build time but
+        //      the row was never written.
+        //   2. Null PK component — defensive fallback for hand-built
+        //      entities that bypassed marshalling and never had isNew
+        //      flipped (a raw `new Entity()` with no setNew() call).
+        $table = self::resolveTableForEntity($entity, $factoryClass);
+        if ($entity->isNew() === true) {
+            throw new InvalidArgumentException(sprintf(
+                'assertEntityMissing(): entity `%s` is still marked as new (isNew()=true) — '
+                . 'it was never persisted, so "missing" cannot be verified. Save the entity '
+                . 'first (then delete it) before asserting it is missing.',
+                $entity::class,
+            ));
+        }
+        foreach ((array)$table->getPrimaryKey() as $field) {
+            if ($entity->get($field) === null) {
+                throw new InvalidArgumentException(sprintf(
+                    'assertEntityMissing(): entity `%s` has no value for primary key `%s` — '
+                    . 'it was never persisted, so "missing" cannot be verified. Save the entity '
+                    . 'first (then delete it) before asserting it is missing.',
+                    $entity::class,
+                    $field,
+                ));
+            }
+        }
         $exists = self::entityExistsInDatabase($entity, $factoryClass);
         $this->assertFalse(
             $exists,
