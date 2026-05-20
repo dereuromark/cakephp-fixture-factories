@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace CakephpFixtureFactories\Test\Factory;
@@ -12,7 +13,7 @@ use CakephpFixtureFactories\Generator\GeneratorInterface;
  * {@see BaseFactory::allowedForeignKeysInDefinition()}. Models the supported
  * exception for `foreignKey => false` condition-join columns.
  *
- * @extends BaseFactory<\TestApp\Model\Entity\Address>
+ * @extends \CakephpFixtureFactories\Factory\BaseFactory<\TestApp\Model\Entity\Address>
  */
 class AllowedFkAddressFactory extends BaseFactory
 {
