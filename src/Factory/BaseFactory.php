@@ -764,10 +764,15 @@ abstract class BaseFactory
      */
     private function finalizePersistedEntities(array $entities, Table $table): void
     {
-        if (!$table->getConnection()->inTransaction()) {
-            return;
-        }
-
+        // Compensate Cake 5.4+ deferred clean()/setNew(false) under outer
+        // transactions. The check used to short-circuit when the table's
+        // OWN connection was not in transaction, but for associated entities
+        // under a multi-connection cascade the save runs on the *parent's*
+        // connection — the child's connection may legitimately be idle.
+        // Skipping compensation there left the entity isNew()===true and
+        // silently broke `Table::delete()` / identity-based lookups. The
+        // operations below are idempotent (no harm to clean an already-clean
+        // entity or setNew(false) one that already is), so run unconditionally.
         $alias = $table->getAlias();
         foreach ($entities as $entity) {
             $entity->clean();

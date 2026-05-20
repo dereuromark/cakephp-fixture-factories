@@ -10,6 +10,7 @@ use Cake\TestSuite\Fixture\FixtureStrategyInterface;
 use CakephpFixtureFactories\Error\PersistenceException;
 use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\Generator\CakeGeneratorFactory;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -123,18 +124,18 @@ class FactoryTransactionStrategy implements FixtureStrategyInterface
      */
     public function teardownTest(): void
     {
-        // Rollback all active transactions
-        $this->releaseTransactions();
-
-        // Clear active instance
-        self::$activeInstance = null;
-
-        // Clear tracked tables
-        FactoryTableTracker::getInstance()->clear();
-
-        // Reset generator unique state for next test
-        CakeGeneratorFactory::clearInstances();
-        BaseFactory::resetDefaultGenerator();
+        // try/finally so a rollback failure inside releaseTransactions()
+        // (now aggregated and rethrown) still clears the active instance
+        // and the table tracker — otherwise the next test inherits dead
+        // bookkeeping pointing at a half-released strategy.
+        try {
+            $this->releaseTransactions();
+        } finally {
+            self::$activeInstance = null;
+            FactoryTableTracker::getInstance()->clear();
+            CakeGeneratorFactory::clearInstances();
+            BaseFactory::resetDefaultGenerator();
+        }
     }
 
     /**
@@ -151,12 +152,32 @@ class FactoryTransactionStrategy implements FixtureStrategyInterface
      */
     public function releaseTransactions(): void
     {
-        foreach ($this->connections as $connection) {
-            if ($connection->inTransaction()) {
+        // Per-connection isolation: if rollback throws on connection N
+        // (broken socket, killed backend, server-side timeout), connections
+        // N+1.. still get rolled back, and `$this->connections` resets
+        // *regardless*. The previous abort-on-first-failure semantics left
+        // open transactions on every subsequent connection AND left this
+        // strategy's bookkeeping pointing at dead connections — leaking the
+        // active instance and silently corrupting the next test.
+        $errors = [];
+        foreach ($this->connections as $name => $connection) {
+            if (!$connection->inTransaction()) {
+                continue;
+            }
+            try {
                 $connection->rollback(true);
+            } catch (Throwable $e) {
+                $errors[] = sprintf("'%s': %s", $name, $e->getMessage());
             }
         }
         $this->connections = [];
+
+        if ($errors !== []) {
+            throw new RuntimeException(
+                'releaseTransactions: rollback failed on ' . implode('; ', $errors)
+                . '. Strategy state has been reset; subsequent tests may still need attention.',
+            );
+        }
     }
 
     /**
