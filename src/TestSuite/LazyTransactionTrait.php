@@ -48,6 +48,8 @@ use PHPUnit\Framework\Attributes\Before;
  *     // persists on it.
  * }
  * ```
+ *
+ * @since 2.0.0
  */
 trait LazyTransactionTrait
 {

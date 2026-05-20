@@ -43,6 +43,8 @@ use CakephpFixtureFactories\Error\FixtureScenarioException;
  * `ScenarioAwareTrait::loadFixtureScenario(...)` resolves and calls `load()`
  * the same way it does for plain scenarios. Existing scenarios that
  * implement the interface directly keep working unchanged.
+ *
+ * @since 2.0.0
  */
 abstract class Story implements FixtureScenarioInterface
 {

@@ -41,6 +41,8 @@ use InvalidArgumentException;
  *     }
  * }
  * ```
+ *
+ * @since 2.0.0
  */
 trait TableAssertionsTrait
 {

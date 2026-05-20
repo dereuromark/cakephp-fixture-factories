@@ -39,6 +39,8 @@ use InvalidArgumentException;
  * Construction is internal to the data compiler; callables never need to
  * instantiate `Sequence` themselves.
  *
+ * @since 2.0.0
+ *
  * @template TEntity of \Cake\Datasource\EntityInterface
  */
 final readonly class Sequence

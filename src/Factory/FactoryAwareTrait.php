@@ -9,7 +9,6 @@ declare(strict_types=1);
  *
  * @copyright Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
  * @link https://webrider.de/
- * @since 2.3.0
  * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
 
