@@ -754,4 +754,79 @@ class BaseFactoryAssociationsTest extends TestCase
 
         $this->assertSame($name, $country->cities[0]->name);
     }
+
+    /**
+     * Two `->with('SameAlias', F)` calls on a to-many branch BOTH contribute
+     * entities (DataCompiler appends), but `AssociationBuilder::$associations`
+     * only kept the LAST factory — so `getMarshallerOptions()->associated`
+     * silently dropped nested-marshaller config (e.g. nested `with()` /
+     * `accessibleFields`) from the first branch. The marshaller-routed outer
+     * patch (DataCompiler.php:449) then ran without that config.
+     *
+     * Fix: marshaller options must merge across every factory ever added
+     * under a given alias.
+     */
+    public function testGetMarshallerOptionsMergesAssociatedConfigAcrossDuplicateAliases(): void
+    {
+        // Two with('Authors', ...) on an Article: F1 nests a non-back-link
+        // BusinessAddress, F2 is bare. Merged 'associated' must keep F1's
+        // BusinessAddress config — without the fix only F2 (last-wins) was
+        // reflected in marshaller options. (BusinessAddress is chosen because
+        // it is NOT the back-link Authors->Articles, which would otherwise be
+        // stripped by removeAssociationForToOneFactory.)
+        $factory = ArticleFactory::new()
+            ->with('Authors', AuthorFactory::new()->with('BusinessAddress', AddressFactory::new()))
+            ->with('Authors', AuthorFactory::new());
+
+        $options = $factory->getMarshallerOptions();
+
+        $this->assertArrayHasKey('associated', $options);
+        $this->assertArrayHasKey('Authors', $options['associated']);
+        $authorsOptions = $options['associated']['Authors'];
+        $this->assertArrayHasKey('associated', $authorsOptions);
+        $this->assertArrayHasKey(
+            'BusinessAddress',
+            $authorsOptions['associated'],
+            "Nested 'BusinessAddress' from the first with('Authors', …) must survive a second with('Authors', …).",
+        );
+    }
+
+    /**
+     * For TO-ONE branches (belongsTo / hasOne), DataCompiler's
+     * mergeWithToOne picks the LAST factory only — `$data[$count - 1]`. The
+     * marshaller config must follow the same "last wins" precedence, NOT
+     * union across history; otherwise stale config from a replaced F1
+     * leaks into patchEntity() and accepts/persists fields F2 explicitly
+     * dropped.
+     */
+    public function testGetMarshallerOptionsKeepsLastWinsForDuplicateToOneAliases(): void
+    {
+        // Bare F2 establishes the "what F2 alone produces" baseline (it
+        // includes configure-default associations, that's fine — we just
+        // want to confirm F1's extras did NOT leak into the merged result).
+        $f2 = AddressFactory::new();
+        $f2Baseline = $f2->getMarshallerOptions();
+
+        // F1 has a marker option F2 does not — `setMarshallerOptions()`
+        // adds a synthetic key so we can detect leakage cleanly.
+        $f1 = AddressFactory::new()->setMarshallerOptions(['_leak_probe' => true]);
+
+        $factory = AuthorFactory::new()
+            ->with('Address', $f1)
+            ->with('Address', $f2);
+
+        $options = $factory->getMarshallerOptions();
+
+        $this->assertSame(
+            $f2Baseline,
+            $options['associated']['Address'],
+            'Duplicate belongsTo alias is last-wins: F1 was replaced, so the merged '
+            . 'marshaller config must equal F2 standalone — not a union that leaks F1.',
+        );
+        $this->assertArrayNotHasKey(
+            '_leak_probe',
+            $options['associated']['Address'],
+            'F1 leak probe must not surface on the merged Address options.',
+        );
+    }
 }
