@@ -2052,6 +2052,13 @@ abstract class BaseFactory
             }
         }
 
+        // Factory-class-level exclude hook — the symmetric counterpart to the
+        // additive opt-in and to per-call $except. Exclude wins over both.
+        $excluded = $this->excludedRequiredParentAssociations();
+        if ($excluded !== []) {
+            $aliases = array_values(array_diff($aliases, $excluded));
+        }
+
         return $aliases;
     }
 
@@ -2061,15 +2068,42 @@ abstract class BaseFactory
      *
      * Automatic detection always includes the root table's belongsTo
      * associations whose foreign key is a single scalar NOT NULL column in the
-     * schema. Return additional aliases here to opt in edge cases that
-     * automatic detection deliberately refuses to guess, such as a composite-key or
-     * `foreignKey => false` custom-join belongsTo, which automatic detection
-     * deliberately refuses to build (the PR #85 brittle cases). Returned
-     * aliases are unioned onto the automatically detected set.
+     * schema. Return additional aliases here to opt in associations
+     * auto-detection refuses on its own — typically a *nullable* single-scalar
+     * FK the factory wants composed regardless. Returned aliases are unioned
+     * onto the auto-detected set, then any in
+     * {@see self::excludedRequiredParentAssociations()} or the per-call
+     * `$except` argument are subtracted.
+     *
+     * Note: composite-key and `foreignKey => false` custom-join belongsTo
+     * (the PR #85 brittle cases) are NOT currently supported by additive
+     * opt-in — composing the parent works, but the FK-set path fails. See
+     * {@see self::excludedRequiredParentAssociations()} for the symmetric
+     * factory-class-level *exclude* hook.
      *
      * @return array<int, string> Additional aliases to compose.
      */
     protected function requiredParentAssociations(): array
+    {
+        return [];
+    }
+
+    /**
+     * Permanently drop belongsTo aliases from the automatic required-parent
+     * set used by {@see self::withRequiredParents()} — the factory-class-level
+     * counterpart to the per-call `$except`. Use for FKs satisfied another
+     * way (a DB default, a trigger, a custom join the caller always supplies)
+     * so call sites do not have to repeat `->withRequiredParents(['Alias'])`.
+     *
+     * Composition with the rest of the resolver:
+     * - Wins over {@see self::requiredParentAssociations()} additive opt-ins.
+     * - Composes with the per-call `$except` argument (both subtract).
+     * - Scoped to *this* factory class — parent factories higher up the chain
+     *   each apply their own exclude list via their own resolver invocation.
+     *
+     * @return array<int, string> Aliases to exclude.
+     */
+    protected function excludedRequiredParentAssociations(): array
     {
         return [];
     }

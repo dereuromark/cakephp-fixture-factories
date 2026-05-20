@@ -231,30 +231,51 @@ parents" is just not calling `withRequiredParents()`.
   [`autoSkipComposeOnExplicitForeignKey`](/reference/configuration#autoskipcomposeonexplicitforeignkey)
   and never double-composes.
 
-## Override hook
+## Factory-class hooks: add and exclude
 
-Return extra aliases from `requiredParentAssociations()` to union them onto
-the automatically detected set. This is the supported, non-guessing way to
-include a composite-key or `foreignKey => false` belongsTo that automatic
-detection refuses to build:
+Two symmetric protected hooks let a factory class shape its own required-parent
+set, independently of the per-call `$except` argument:
 
 ```php
 class BillFactory extends BaseFactory
 {
     /**
+     * Add aliases auto-detection refuses on its own (typically a nullable
+     * single-scalar FK the factory wants composed regardless).
+     *
      * @return array<int, string>
      */
     protected function requiredParentAssociations(): array
     {
-        // Add this custom-join one on top of the ordinary auto-detected
-        // required parents.
-        return ['LegacyUuidParent'];
+        return ['OptionalAudit']; // nullable FK, but always composed here
+    }
+
+    /**
+     * Drop auto-detected NOT NULL parents the factory satisfies another way
+     * — a DB default, a trigger, a custom join the caller always supplies.
+     * The factory-class-level counterpart to per-call `$except`, so call
+     * sites stay clean.
+     *
+     * @return array<int, string>
+     */
+    protected function excludedRequiredParentAssociations(): array
+    {
+        return ['LegacyTenant']; // FK populated by a DB default
     }
 }
 ```
 
-Return an empty array (the default) to use only automatic NOT NULL
-single-scalar-FK detection.
+Resolution order: `auto-detected ∪ requiredParentAssociations() − excludedRequiredParentAssociations() − $except`.
+Exclude wins over both the additive hook and per-call `$except` (both subtract).
+Each is independent; either may stay at its default (`[]`).
+
+::: warning Additive opt-in does not (yet) support composite / `foreignKey => false`
+The additive `requiredParentAssociations()` hook composes the opted-in parent
+factory, but the FK-set step that follows fails for **composite-key** and
+**`foreignKey => false` custom-condition** belongsTo (the PR #85 brittle
+cases). Until that is wired, attach them at the call site with
+`->with('Alias', $parentFactory)` instead.
+:::
 
 ## It's the pragmatic default — not the assertion tool
 
