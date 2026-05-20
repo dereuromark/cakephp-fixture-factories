@@ -253,4 +253,38 @@ class StoryTest extends TestCase
 
         $story->load();
     }
+
+    public function testGetRandomThrowsOnRegisteredButEmptyPool(): void
+    {
+        // A pool can be registered without entities (an explicit
+        // addToPool($name, []) is unusual but valid — useful for a story
+        // that conditionally seeds rows). getRandom() must refuse instead
+        // of returning null / a misleading value.
+        $story = new class () extends Story {
+            protected function build(): void
+            {
+                $this->addToPool('empty', []);
+            }
+        };
+        /** @var \CakephpFixtureFactories\Scenario\Story $story */
+        $story = $story->load();
+
+        $this->expectException(FixtureScenarioException::class);
+        $this->expectExceptionMessageMatches('/Cannot draw from empty pool .*empty/');
+
+        $story->getRandom('empty');
+    }
+
+    public function testGetRandomSetRejectsNegativeCount(): void
+    {
+        // A negative $count would be incoherent (the contract is "N distinct
+        // entities"). PHP's int type accepts it; the runtime guard refuses.
+        /** @var \CakephpFixtureFactories\Test\Scenario\BlogStory $story */
+        $story = $this->loadFixtureScenario(BlogStory::class);
+
+        $this->expectException(FixtureScenarioException::class);
+        $this->expectExceptionMessageMatches('/count must be .*got -3/');
+
+        $story->getRandomSet('countries', -3);
+    }
 }

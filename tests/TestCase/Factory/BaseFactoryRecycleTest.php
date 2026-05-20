@@ -435,4 +435,39 @@ class BaseFactoryRecycleTest extends TestCase
             'BTM Authors children must build fresh; recycle does not substitute belongsToMany edges.',
         );
     }
+
+    public function testWithBracketCountAndRecycleDoesNotSubstituteToManyChildren(): void
+    {
+        // The bracket count syntax (`with('Alias[N]', ...)`) is per the
+        // associations guide a hasMany cardinality control: build N rows of
+        // the alias. recycle() only substitutes belongsTo edges, so the N
+        // hasMany children must all be freshly built — none of them collapse
+        // into the recycled entity even though it targets the same source
+        // table. Pins both contracts in one shot.
+        $country = CountryFactory::new()->save();
+        $existingCity = CityFactory::new()->save();
+        $citiesBefore = CityFactory::query()->count();
+
+        $country = CountryFactory::table()->get($country->id);
+        $result = CityFactory::table()->find()->where(['country_id' => $country->id])->count();
+        $this->assertSame(0, $result, 'No cities exist for this country yet.');
+
+        $country = CountryFactory::new()
+            ->with('Cities[3]', CityFactory::new())
+            ->recycle($existingCity)
+            ->save();
+
+        // 3 fresh Cities built — `Cities[3]` is the cardinality, recycle does
+        // not substitute on the to-many edge. So total cities = before + 3.
+        $this->assertSame(
+            $citiesBefore + 3,
+            CityFactory::query()->count(),
+            'Bracket-count hasMany children must build fresh regardless of recycle().',
+        );
+        $this->assertSame(
+            3,
+            CityFactory::query()->where(['country_id' => $country->id])->count(),
+            'Exactly 3 cities composed under the new country.',
+        );
+    }
 }

@@ -2064,6 +2064,8 @@ abstract class BaseFactory
      *
      * @param array<int, string> $except Association aliases to skip.
      *
+     * @throws \CakephpFixtureFactories\Error\FixtureFactoryException
+     *
      * @return array<int, string> Ordered list of belongsTo aliases to compose.
      */
     private function resolveRequiredParentAliases(array $except): array
@@ -2152,14 +2154,43 @@ abstract class BaseFactory
             if (in_array($alias, $except, true)) {
                 continue;
             }
+            // Friendly error when the hook returns an alias the schema does
+            // not declare — OR declares but as a non-belongsTo. Without this
+            // guard the user sees a raw "Class for ... could not be found"
+            // later in doWithRequiredParents() with no hint that
+            // requiredParentAssociations() is the source; or worse, a typo
+            // matching a hasMany / belongsToMany alias is silently accepted
+            // and withRequiredParents() composes a to-many edge instead of
+            // a parent (the exact mistake this hook is meant to catch).
+            if (!$this->getTable()->hasAssociation($alias)) {
+                throw new FixtureFactoryException(sprintf(
+                    '%s::requiredParentAssociations() returned "%s", but `%s` does '
+                    . 'not declare a belongsTo association with that alias. Check the '
+                    . 'spelling, or remove the entry from the hook.',
+                    static::class,
+                    $alias,
+                    $this->getTable()->getRegistryAlias(),
+                ));
+            }
+            if (!$this->getTable()->getAssociation($alias) instanceof BelongsTo) {
+                throw new FixtureFactoryException(sprintf(
+                    '%s::requiredParentAssociations() returned "%s", but `%s.%s` is a '
+                    . '%s, not a belongsTo. The hook is for belongsTo opt-in only — '
+                    . 'use ->has() / ->with() at the call site for to-many edges.',
+                    static::class,
+                    $alias,
+                    $this->getTable()->getRegistryAlias(),
+                    $alias,
+                    self::shortName($this->getTable()->getAssociation($alias)::class),
+                ));
+            }
             // Honor caller-pinned FKs for hook-opted aliases too. The
             // auto-detection loop above already skips an alias whose FK is
             // pinned; the additive hook used to bypass that check, so
             // ->withRequiredParents() would compose a fresh parent over a
             // caller-pinned id. Contract: pinned FK wins on BOTH paths.
             if (
-                $this->getTable()->hasAssociation($alias)
-                && self::belongsToFkAlreadyPinned(
+                self::belongsToFkAlreadyPinned(
                     $this->getTable()->getAssociation($alias),
                     $pinnedFields,
                     $instantiationEntity,
