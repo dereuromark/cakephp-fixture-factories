@@ -24,6 +24,7 @@ use CakephpFixtureFactories\ORM\FactoryTableRegistry;
 use CakephpFixtureFactories\Test\Factory\AddressFactory;
 use CakephpFixtureFactories\Test\Factory\AllowedFkAddressFactory;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
+use CakephpFixtureFactories\Test\Factory\SharedPkSmellyAddressFactory;
 use CakephpFixtureFactories\Test\Factory\SmellyAddressFactory;
 use TestApp\Model\Table\CitiesTable;
 
@@ -284,5 +285,40 @@ class BaseFactoryForeignKeyDetectionTest extends TestCase
             'FK-column cache must invalidate when the belongsTo set changes at runtime.',
         );
         $this->assertSame('LateRegion', $second['late_region_id']);
+    }
+
+    /**
+     * Shared-primary-key 1:1 associations have `child.id` as both PK and the
+     * belongsTo FK column. They are still a real "FK in definition()" case
+     * — pinning `id` here has the same dangling-id / silently-overwritten-
+     * by-composed-parent failure mode that the detector exists to catch.
+     * The detector used to skip every PK column before checking FK status,
+     * silently exempting this pattern. Regression guard.
+     */
+    public function testTriggersDeprecationForSharedPrimaryKeyForeignKey(): void
+    {
+        // Augment the Addresses table with a belongsTo 'Mirror' association
+        // whose foreignKey is the address's own primary key (shared-PK 1:1).
+        $factory = SharedPkSmellyAddressFactory::new();
+        $factory->getTable()->belongsTo('Mirror', [
+            'className' => 'Addresses',
+            'foreignKey' => 'id',
+        ]);
+        // Force-rearm the cache so the new belongsTo is picked up by the
+        // detector even though the table was first touched without it.
+        BaseFactory::resetForeignKeyInDefinitionDetector();
+
+        $factory->build();
+
+        $idFkErrors = array_values(array_filter(
+            $this->capturedErrors,
+            static fn (array $e): bool => str_contains($e['message'], '"id"'),
+        ));
+        $this->assertNotEmpty(
+            $idFkErrors,
+            'Detector must fire on a shared-primary-key belongsTo FK in definition(); '
+            . 'the dangling-id failure mode is the same as for any other FK column.',
+        );
+        $this->assertStringContainsString('"Mirror"', $idFkErrors[0]['message']);
     }
 }

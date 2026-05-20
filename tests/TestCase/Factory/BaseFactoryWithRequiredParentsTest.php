@@ -1107,4 +1107,96 @@ class BaseFactoryWithRequiredParentsTest extends TestCase
             'No fresh Address should be composed when both required-parent FKs are pinned.',
         );
     }
+
+    /**
+     * The `foreignKey => false` independent-save path in
+     * `DataCompiler::mergeWithToOne()` exists specifically so factories
+     * nested UNDER a custom-condition belongsTo still see their `afterSave`
+     * callbacks fire — `replayAssociatedAfterSaveForTree($associatedEntity)`
+     * walks the subtree and replays them. Regression pin: a callback two
+     * levels under a `foreignKey => false` alias MUST fire exactly once.
+     * Without this guard, a future refactor of the independent-save branch
+     * could silently skip the replay and the callback would never run.
+     */
+    public function testForeignKeyFalseIndependentSavePathReplaysNestedAfterSaveCallbacks(): void
+    {
+        $factory = RequiredParentsAuthorFactory::new();
+        $factory->getTable()->belongsTo('GhostCountry', [
+            'className' => 'Countries',
+            'foreignKey' => false,
+            'conditions' => ['Authors.name = GhostCountry.name'],
+        ]);
+
+        $callbackHits = 0;
+        $nestedCityFactory = CityFactory::new()->afterSave(
+            function () use (&$callbackHits): void {
+                $callbackHits++;
+            },
+        );
+
+        $strict = Configure::read('FixtureFactories.strictDefinition');
+        Configure::write('FixtureFactories.strictDefinition', false);
+        try {
+            $factory
+                ->with('GhostCountry', CountryFactory::new()->with('Cities', $nestedCityFactory))
+                ->withRequiredParents()
+                ->save();
+        } finally {
+            Configure::write('FixtureFactories.strictDefinition', $strict);
+        }
+
+        $this->assertSame(
+            1,
+            $callbackHits,
+            'afterSave callback two levels under a foreignKey => false alias must fire exactly once; '
+            . 'the independent-save replay path (DataCompiler::mergeWithToOne()) is load-bearing.',
+        );
+    }
+
+    /**
+     * Contract pin: `recycle()` does NOT propagate INTO a
+     * `foreignKey => false` subtree. The independent-save branch in
+     * `DataCompiler::mergeWithToOne()` operates on the composed entity
+     * produced outside the recycle inheritance — by design, since the
+     * branch is a corner-case bypass that does not go through the normal
+     * cascade. Documented as a known limitation in the recycle guide.
+     */
+    public function testRecycleDoesNotPropagateIntoForeignKeyFalseSubtree(): void
+    {
+        $factory = RequiredParentsAuthorFactory::new();
+        $factory->getTable()->belongsTo('GhostCountry', [
+            'className' => 'Countries',
+            'foreignKey' => false,
+            'conditions' => ['Authors.name = GhostCountry.name'],
+        ]);
+
+        // A persisted Country we'd HOPE recycle() would substitute for the
+        // GhostCountry-side Cities → Countries chain.
+        $recycled = CountryFactory::new(['name' => 'Recycled'])->save();
+        $countryCountBefore = CountryFactory::query()->count();
+
+        $strict = Configure::read('FixtureFactories.strictDefinition');
+        Configure::write('FixtureFactories.strictDefinition', false);
+        try {
+            $factory
+                ->with('GhostCountry', CountryFactory::new()->with('Cities', CityFactory::new()->forCountries()))
+                ->recycle($recycled)
+                ->withRequiredParents()
+                ->save();
+        } finally {
+            Configure::write('FixtureFactories.strictDefinition', $strict);
+        }
+
+        // The recycled Country was NOT substituted inside the GhostCountry
+        // subtree — a fresh GhostCountry, a fresh City, and a fresh Country
+        // for that City all persist. Plus the chain Country for the root
+        // Author's address_id → city_id → country_id. So 3 fresh + the
+        // recycled = 4 total.
+        $this->assertGreaterThan(
+            $countryCountBefore,
+            CountryFactory::query()->count(),
+            'recycle() must NOT propagate into a foreignKey => false subtree — '
+            . 'fresh Countries are built inside it. Documented limitation.',
+        );
+    }
 }

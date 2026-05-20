@@ -1456,16 +1456,20 @@ abstract class BaseFactory
             return;
         }
 
-        $primaryKey = (array)$table->getSchema()->getPrimaryKey();
         $fkColumns = self::collectForeignKeyColumns($table);
         if (!$fkColumns) {
             return;
         }
 
         foreach (array_keys($data) as $column) {
-            if (in_array($column, $primaryKey, true)) {
-                continue;
-            }
+            // Was previously a two-step check: skip PK columns first, then
+            // skip non-FK columns. That silently exempted shared-primary-key
+            // 1:1 associations (child.id is both PK and a belongsTo FK) —
+            // exactly the dangling-id / silently-overwritten-by-composed-parent
+            // failure mode the detector exists to catch. The FK check below
+            // is sufficient on its own: a literal `id => 1` in definition()
+            // for a table whose `id` is just its own PK (not also a FK)
+            // is never in $fkColumns and is skipped naturally.
             if (!isset($fkColumns[$column])) {
                 continue;
             }

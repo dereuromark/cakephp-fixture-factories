@@ -48,6 +48,7 @@ export default defineConfig({
           items: [
             { text: 'Getting Started', link: '/guide/' },
             { text: 'Why factories?', link: '/guide/why-factories' },
+            { text: "What's new in v2", link: '/guide/whats-new-in-v2' },
             { text: 'Setup', link: '/guide/setup' },
           ],
         },
