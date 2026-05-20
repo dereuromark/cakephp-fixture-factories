@@ -18,6 +18,7 @@ namespace CakephpFixtureFactories\Scenario;
 use CakephpFixtureFactories\Error\FixtureScenarioException;
 use CakephpFixtureFactories\Factory\FactoryAwareTrait;
 use Exception;
+use PHPUnit\Framework\Exception as PHPUnitException;
 use Throwable;
 
 trait ScenarioAwareTrait
@@ -72,8 +73,28 @@ trait ScenarioAwareTrait
 
             throw new Exception("`{$scenario}` must implement `" . FixtureScenarioInterface::class . '`');
         } catch (Throwable $e) {
-            // Preserve the original exception so the stack trace and file/line
-            // of the actual scenario failure aren't lost when re-raised.
+            // PHPUnit framework exceptions (AssertionFailedError,
+            // ExpectationFailedException, IncompleteTestError, SkippedTest…)
+            // MUST reach the runner untouched: wrapping them in
+            // FixtureScenarioException makes assertion failures show as
+            // errors instead of failures and breaks expectException / risky-
+            // test handling. Use `instanceof` (no `use` import) so this
+            // trait does NOT introduce a hard runtime dependency on PHPUnit
+            // — `instanceof` against a not-loaded class is `false`, not a
+            // fatal, so non-PHPUnit consumers of `src/` stay healthy.
+            //
+            // PHP `Error` is intentionally NOT passed through: a class-not-
+            // found or constructor mismatch on the scenario class itself is a
+            // scenario-plumbing problem (the documented FixtureScenarioException
+            // case), so those keep wrapping.
+            if ($e instanceof PHPUnitException) {
+                throw $e;
+            }
+
+            // Genuine scenario plumbing problem — class load failure,
+            // interface contract violation, scenario-internal RuntimeException
+            // etc. Wrap so callers can catch a single domain type while still
+            // preserving the original stack trace via $previous.
             throw new FixtureScenarioException($e->getMessage(), $e->getCode(), $e);
         }
     }
