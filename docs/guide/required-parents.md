@@ -225,11 +225,17 @@ parents" is just not calling `withRequiredParents()`.
   `->with('Alias', $savedEntity)` — is left completely untouched: you
   specified that exact row.
 - A FK pinned at the call site (`Factory::new(['fk' => x])`, `->state()`,
-  `->setField()`, `->patchData()`, `->sequenceField()`, or `->sequence()` when
+  `->setField()`, `->sequenceField()`, or `->sequence()` when
   every row sets it non-null) is detected: the alias is treated as already
   satisfied, so it composes cleanly with
   [`autoSkipComposeOnExplicitForeignKey`](/reference/configuration#autoskipcomposeonexplicitforeignkey)
-  and never double-composes.
+  and never double-composes. The pin check applies uniformly to
+  auto-detected NOT NULL aliases **and** to aliases opted in via the
+  [`requiredParentAssociations()`](#factory-class-hooks-add-and-exclude)
+  additive hook. An instantiation pin (`Factory::new(['fk' => x])`) is
+  only honored when no `sequence()` / `sequenceField()` touches the same
+  field; if it does, the instantiation pin can be overridden at build
+  time, so the parent is composed for safety.
 
 ## Factory-class hooks: add and exclude
 

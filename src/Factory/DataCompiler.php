@@ -1545,9 +1545,73 @@ class DataCompiler
         // non-null value (present in every sequence state / every cycle
         // value) — otherwise some row would still need the parent composed.
         // Callable states are opaque pre-build and conservatively ignored.
+        $sequencePinned = $this->pinnedSequenceFields();
+
+        // Instantiation pins are overridden by sequence() / sequenceField()
+        // at build time (compileEntity runs mergeWithSequenceData AFTER
+        // mergeWithInjectedData, BEFORE mergeWithPatchedData). So an
+        // instantiation pin can ONLY be trusted for a field that sequence
+        // does NOT touch — otherwise sequence may null it out on some rows
+        // and the parent must still be composed for those rows.
+        //
+        // Patch wins over sequence (patch is the last merge step), so
+        // dataFromPatch pins are still trusted unconditionally below.
+        $touchedBySequence = $this->fieldsTouchedBySequence();
+        foreach ($touchedBySequence as $field => $_) {
+            if (!array_key_exists($field, $sequencePinned)) {
+                unset($pinned[$field]);
+            }
+        }
+
         return $this->dataFromPatch
-            + $this->pinnedSequenceFields()
+            + $sequencePinned
             + $pinned;
+    }
+
+    /**
+     * Field names that appear in *any* `sequence()` array/entity state
+     * or `sequenceField()` cycle — i.e. any field that sequence may write
+     * at build time, regardless of pin status.
+     *
+     * Callable `sequence()` states are opaque pre-build and intentionally
+     * not introspected; a build mixing callable sequence state with
+     * Factory::new([fk => x]) + withRequiredParents() may still hit the
+     * silently-overridden-pin edge.
+     *
+     * @internal Used by {@see \CakephpFixtureFactories\Factory\BaseFactory::resolveRequiredParentAliases()}
+     *     to drop entity-side FK pins for fields sequence may overwrite.
+     *
+     * @return array<string, true>
+     */
+    public function fieldsTouchedBySequence(): array
+    {
+        $fields = [];
+        foreach ($this->sequenceData as $state) {
+            if ($state instanceof EntityInterface) {
+                // toArray() omits hidden fields (`$_hidden`). That's
+                // symmetric with the build path — mergeWithSequenceData also
+                // applies the state via $state->toArray() — so a hidden FK on
+                // a sequence-state entity is invisible to BOTH the touched
+                // probe AND the actual patch, and the instantiation pin
+                // legitimately survives. No special hidden-field handling
+                // needed here.
+                foreach (array_keys($state->toArray()) as $key) {
+                    $fields[$key] = true;
+                }
+            } elseif (is_array($state)) {
+                foreach (array_keys($state) as $key) {
+                    if (is_string($key)) {
+                        $fields[$key] = true;
+                    }
+                }
+            }
+            // Callable state: cannot inspect statically. Leave untouched.
+        }
+        foreach (array_keys($this->fieldSequences) as $field) {
+            $fields[$field] = true;
+        }
+
+        return $fields;
     }
 
     /**

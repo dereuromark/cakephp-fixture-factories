@@ -79,7 +79,7 @@ Sometimes the test wants a specific orphan id — to assert how the code handles
 ```php
 public function withOrphanAuthorId(): static
 {
-    return $this->patchData(['author_id' => 999999]);
+    return $this->state(['author_id' => 999999]);
 }
 ```
 
@@ -119,7 +119,7 @@ value wins:
 ```php
 // Factory composes the parent in configure()->with('Author').
 // Pinning author_id at the call site auto-skips that composition:
-$article = ArticleFactory::new(['author_id' => $author->id])->persist();
+$article = ArticleFactory::new(['author_id' => $author->id])->save();
 // $article->author_id === $author->id  (no throw-away Author row)
 ```
 
