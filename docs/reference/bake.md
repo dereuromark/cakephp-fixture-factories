@@ -56,6 +56,14 @@ bin/cake bake fixture_factory Articles --all-fields
 
 Foreign-key columns remain excluded regardless of the flag, so the baked factory keeps pushing related rows through the association APIs (`with()` / `for()` / `has()`) instead of emitting raw integer FK values.
 
+### Columns managed by `TimestampBehavior`
+
+Bake also skips columns that `TimestampBehavior` populates automatically on insert — by default `created` and `modified`, plus any extras a project configures on `Model.beforeSave` with `'new'` or `'always'`. Baking a random datetime there would dirty the entity, so the behavior would skip its own update and the fixture would ship a random timestamp instead of the test-run's "now". Skipping at bake time keeps the behavior in charge.
+
+Detection is by **class**, so a renamed alias (`addBehavior('AuditTimestamps', ['className' => 'Timestamp'])`) is recognized. Fields configured `'existing'` (only update on existing rows) or wired to non-`Model.beforeSave` events are NOT skipped — those don't fire on insert, so bake must still emit a value.
+
+**Trade-off for pure `->build()` users:** `TimestampBehavior` only fires on save; if you rely on `->build()` (no persist) and expect the timestamp fields to be populated, override at the factory: `->setField('created', \Cake\I18n\DateTime::now())` or add an `afterBuild` callback.
+
 ## Customizing the generated code
 
 Two configuration keys influence what `bake` writes:

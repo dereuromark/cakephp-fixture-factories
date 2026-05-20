@@ -109,6 +109,154 @@ class DefaultDataGuesserAllFieldsTest extends TestCase
     }
 
     /**
+     * Tables managed by `TimestampBehavior` populate the configured fields
+     * (default `created` / `modified`) automatically at save time. Baking an
+     * explicit `$generator->datetime()` for those columns overrides the
+     * behavior at fixture time (the entity becomes dirty, so the behavior
+     * skips its own update) — producing random fixture timestamps where
+     * users typically want the test-run's "now". Bake now detects the
+     * behavior and skips the fields it manages.
+     */
+    public function testSkipsColumnsManagedByTimestampBehavior(): void
+    {
+        $table = $this->buildTimestampManagedTable();
+
+        $defaults = (new DefaultDataGuesser())
+            ->setIncludeOptional(true)
+            ->guessFor($table);
+
+        $this->assertArrayNotHasKey(
+            'created',
+            $defaults,
+            'TimestampBehavior-managed column must not be baked.',
+        );
+        $this->assertArrayNotHasKey(
+            'modified',
+            $defaults,
+            'TimestampBehavior-managed column must not be baked.',
+        );
+        // Sanity: a non-managed column is still emitted under --all-fields.
+        $this->assertArrayHasKey('name', $defaults);
+    }
+
+    /**
+     * A `TimestampBehavior` reconfigured to only touch a custom field
+     * (`touched_at`) leaves `created` / `modified` un-managed — bake must
+     * emit those again rather than blanket-skip by name.
+     */
+    public function testCustomTimestampBehaviorConfigOnlySkipsItsActualFields(): void
+    {
+        $table = $this->buildTimestampManagedTable([
+            'events' => [
+                'Model.beforeSave' => [
+                    'touched_at' => 'always',
+                ],
+            ],
+        ]);
+
+        $defaults = (new DefaultDataGuesser())
+            ->setIncludeOptional(true)
+            ->guessFor($table);
+
+        // The behavior no longer manages created / modified, so bake must.
+        $this->assertArrayHasKey('created', $defaults);
+        $this->assertArrayHasKey('modified', $defaults);
+    }
+
+    /**
+     * Fields configured `'existing'` (only fire on updates) or wired to a
+     * non-`Model.beforeSave` event (never fires on the insert path) do NOT
+     * fill in on a factory's NEW-row save. Bake must still emit those, or
+     * the NOT NULL insert leaves them null and fails.
+     */
+    public function testTimestampFieldsThatDoNotFireOnInsertAreStillBaked(): void
+    {
+        $table = $this->buildTimestampManagedTable([
+            'events' => [
+                // 'existing' — only fires on updates, not the initial insert.
+                'Model.beforeSave' => [
+                    'created' => 'existing',
+                ],
+                // Non-beforeSave event — never reached on the insert path.
+                'Model.afterSave' => [
+                    'modified' => 'always',
+                ],
+            ],
+        ]);
+
+        $defaults = (new DefaultDataGuesser())
+            ->setIncludeOptional(true)
+            ->guessFor($table);
+
+        $this->assertArrayHasKey(
+            'created',
+            $defaults,
+            "'existing' only fires on updates — bake must emit for insert.",
+        );
+        $this->assertArrayHasKey(
+            'modified',
+            $defaults,
+            'Non-beforeSave events never fire on insert — bake must emit.',
+        );
+    }
+
+    /**
+     * `TimestampBehavior` can be loaded under a custom alias via
+     * `addBehavior('AuditTimestamps', ['className' => 'Timestamp'])`. Detect
+     * by class (instanceof) rather than alias so the skip still applies.
+     */
+    public function testTimestampBehaviorDetectedUnderCustomAlias(): void
+    {
+        $table = $this->buildTimestampManagedTable(behaviorAlias: 'AuditTimestamps');
+
+        $defaults = (new DefaultDataGuesser())
+            ->setIncludeOptional(true)
+            ->guessFor($table);
+
+        $this->assertArrayNotHasKey('created', $defaults);
+        $this->assertArrayNotHasKey('modified', $defaults);
+    }
+
+    /**
+     * Build a real `Cake\ORM\Table` with an inline schema covering the
+     * `created DATETIME NOT NULL` / `modified DATETIME NOT NULL` shape (no
+     * DB default — the case where the existing bake skip rules wouldn't
+     * fire) and a `TimestampBehavior` attached.
+     *
+     * @param array<string, mixed> $behaviorConfig Optional override for the
+     * @param string $behaviorAlias
+     *     `events` config; defaults to TimestampBehavior's stock config
+     *     (created => new, modified => always on Model.beforeSave).
+     */
+    private function buildTimestampManagedTable(
+        array $behaviorConfig = [],
+        string $behaviorAlias = 'Timestamp',
+    ): Table {
+        $schema = new TableSchema('test_managed', [
+            'id' => ['type' => 'integer', 'null' => false],
+            'name' => ['type' => 'string', 'null' => false, 'length' => 64, 'default' => null],
+            'created' => ['type' => 'datetime', 'null' => false, 'default' => null],
+            'modified' => ['type' => 'datetime', 'null' => false, 'default' => null],
+            'touched_at' => ['type' => 'datetime', 'null' => false, 'default' => null],
+        ]);
+        $schema->addConstraint('primary', ['type' => 'primary', 'columns' => ['id']]);
+
+        $table = new Table([
+            'table' => 'test_managed',
+            'alias' => 'TestManaged',
+            'schema' => $schema,
+        ]);
+        if ($behaviorAlias !== 'Timestamp') {
+            // Class alias: load TimestampBehavior under a custom registry name.
+            $table->addBehavior($behaviorAlias, ['className' => 'Timestamp'] + $behaviorConfig);
+        } else {
+            $table->addBehavior('Timestamp', $behaviorConfig);
+        }
+
+        return $table;
+    }
+
+    /**
      * Build a partial-mocked Table with the schema bits the guesser inspects.
      *
      * @param array{

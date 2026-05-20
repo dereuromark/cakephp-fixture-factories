@@ -16,6 +16,7 @@ declare(strict_types=1);
 namespace CakephpFixtureFactories\Codegen;
 
 use Cake\Core\Configure;
+use Cake\ORM\Behavior\TimestampBehavior;
 use Cake\ORM\Table;
 
 /**
@@ -191,9 +192,19 @@ class DefaultDataGuesser
         $foreignKeys = $this->collectForeignKeys($table);
         $uniqueFields = $this->collectSingleColumnUniqueFields($table);
         $primaryKeys = $schema->getPrimaryKey();
+        $behaviorManaged = $this->collectBehaviorManagedFields($table);
 
         foreach ($columns as $column) {
             if (in_array($column, $primaryKeys, true) || in_array($column, $foreignKeys, true)) {
+                continue;
+            }
+            if (in_array($column, $behaviorManaged, true)) {
+                // Field is populated automatically at save time by a Cake
+                // behavior (e.g. `TimestampBehavior` for `created` /
+                // `modified`). Baking a generator value would land in the
+                // entity, make the field dirty, and the behavior would then
+                // skip its own update — producing random fixture timestamps
+                // instead of the test-run's "now". Skip so the behavior runs.
                 continue;
             }
 
@@ -417,6 +428,53 @@ class DefaultDataGuesser
         }
 
         return array_values(array_unique($uniqueFields));
+    }
+
+    /**
+     * Collect column names populated automatically on **insert** by Cake
+     * behaviors attached to the table — i.e. fields the factory's NEW-row
+     * save will leave the behavior to fill in. Today this only inspects
+     * `TimestampBehavior` (`created` / `modified` by default, plus any
+     * additional fields a project configures on `Model.beforeSave`).
+     *
+     * Conservative on purpose: only `Model.beforeSave` events count, and
+     * only fields configured `'new'` or `'always'`. A field configured
+     * `'existing'` (or wired to a non-`beforeSave` event) does NOT fire on
+     * insert, so bake must still emit a value or the NOT NULL insert fails.
+     *
+     * @return array<string>
+     */
+    private function collectBehaviorManagedFields(Table $table): array
+    {
+        $fields = [];
+        // Detect by CLASS, not alias: `addBehavior('AuditTimestamps',
+        // ['className' => 'Timestamp'])` registers TimestampBehavior under a
+        // custom alias, so `has('Timestamp')` is false. Iterate everything
+        // loaded and instanceof-check. Multiple aliases of the behavior union.
+        $behaviors = $table->behaviors();
+        foreach ($behaviors->loaded() as $alias) {
+            $behavior = $behaviors->get($alias);
+            if (!$behavior instanceof TimestampBehavior) {
+                continue;
+            }
+            $events = (array)$behavior->getConfig('events');
+            foreach ($events as $eventName => $fieldsForEvent) {
+                if ($eventName !== 'Model.beforeSave' || !is_array($fieldsForEvent)) {
+                    continue;
+                }
+                foreach ($fieldsForEvent as $field => $when) {
+                    if (
+                        is_string($field)
+                        && $field !== ''
+                        && ($when === 'new' || $when === 'always')
+                    ) {
+                        $fields[$field] = true;
+                    }
+                }
+            }
+        }
+
+        return array_keys($fields);
     }
 
     private function normalizeGeneratorExpression(string $generatorMethod): string
