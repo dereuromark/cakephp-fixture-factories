@@ -988,4 +988,123 @@ class BaseFactoryWithRequiredParentsTest extends TestCase
             ->find()->where(['id' => $author->address_id])->first();
         $this->assertNotNull($address, 'Composed Address must be persisted and matchable by the propagated FK.');
     }
+
+    public function testInstantiationPinIsNotTrustedWhenSequenceMayOverrideIt(): void
+    {
+        // Factory::new(['address_id' => $known->id]) pins the FK via
+        // instantiation. But sequenceField('address_id', [null, null])
+        // overrides it to null on every row at build time (sequence runs
+        // AFTER instantiation in compileEntity). getPinnedFields() used to
+        // treat the instantiation pin as authoritative even when sequence
+        // touched the same field — withRequiredParents() then skipped the
+        // Address composition, sequence set the FK to null, and saveMany()
+        // failed with a NOT NULL constraint violation.
+        //
+        // Fix contract: when sequence/sequenceField touches a field AND
+        // does not itself pin it to non-null on every row, the
+        // instantiation-side pin must NOT be trusted — withRequiredParents()
+        // composes the parent so the FK is supplied through the normal
+        // belongsTo cascade after sequence runs.
+        $known = AddressFactory::new()->save();
+        $addressesBefore = AddressFactory::query()->count();
+
+        $authors = RequiredParentsAuthorFactory::new(['address_id' => $known->id])
+            ->sequenceField('address_id', null, null)
+            ->withRequiredParents()
+            ->count(2)
+            ->saveMany();
+
+        $this->assertCount(2, $authors, 'saveMany must not throw on NOT NULL violation.');
+        foreach ($authors as $author) {
+            $this->assertNotNull(
+                $author->address_id,
+                'Each saved row must have a non-null address_id (composed via withRequiredParents()).',
+            );
+        }
+        $this->assertGreaterThan(
+            $addressesBefore,
+            AddressFactory::query()->count(),
+            'New Address rows must be composed when sequenceField nulls out the instantiation-pinned FK.',
+        );
+    }
+
+    public function testEntityInstantiationPinIsNotTrustedWhenSequenceMayOverrideIt(): void
+    {
+        // Same defect as testInstantiationPinIsNotTrustedWhenSequenceMayOverrideIt
+        // but on the entity-instantiation path: Factory::new($entityWithFk)
+        // populates the DataCompiler's $instantiationEntity, which the
+        // pinned-FK check (BaseFactory::belongsToFkAlreadyPinned) probes
+        // directly. If sequence/sequenceField touches that FK at build time
+        // without pinning it non-null on every row, the entity-side pin
+        // must NOT be trusted either — same contract as the array path.
+        //
+        // Entity instantiation is single-row only (the wrapper API does not
+        // support count() > 1 on an injected entity), so this exercises the
+        // count = 1 + all-null cycle shape, which is enough to surface
+        // the bug: sequence overrides the entity-side FK pin to null and
+        // the save fails with NOT NULL.
+        $known = AddressFactory::new()->save();
+        $authorEntity = RequiredParentsAuthorFactory::new(['address_id' => $known->id])->build();
+
+        $addressesBefore = AddressFactory::query()->count();
+
+        $author = RequiredParentsAuthorFactory::new($authorEntity)
+            ->state(['name' => 'Test Author']) // keep name dirty across the re-wrap
+            ->sequenceField('address_id', null)
+            ->withRequiredParents()
+            ->save();
+
+        $this->assertNotNull(
+            $author->address_id,
+            'Saved row must have a non-null address_id (composed via withRequiredParents()).',
+        );
+        $this->assertGreaterThan(
+            $addressesBefore,
+            AddressFactory::query()->count(),
+            'A new Address row must be composed when sequenceField nulls out the entity-pinned FK.',
+        );
+    }
+
+    public function testHookOptedRequiredParentRespectsCallerPinnedForeignKey(): void
+    {
+        // RequiredParentsOverrideAuthorFactory opts BusinessAddress into
+        // withRequiredParents() via the additive requiredParentAssociations()
+        // hook. When the caller pins business_address_id explicitly, the
+        // hook-opted alias must NOT silently override the pinned value
+        // by composing a fresh BusinessAddress — that contradicts the
+        // documented "pinned FK wins" contract that the auto-detected
+        // aliases already honor.
+        //
+        // Pin address_id too (auto-detected NOT NULL required parent) so the
+        // address-row count below is unambiguous — any extra Address row would
+        // necessarily be the BusinessAddress composition we're guarding against.
+        $primary = AddressFactory::new()->save();
+        $secondary = AddressFactory::new()->save();
+        $addressesBefore = AddressFactory::query()->count();
+
+        $author = RequiredParentsOverrideAuthorFactory::new([
+            'address_id' => $primary->id,
+            'business_address_id' => $secondary->id,
+        ])
+            ->withRequiredParents()
+            ->save();
+
+        $this->assertSame(
+            $secondary->id,
+            $author->business_address_id,
+            'A caller-pinned FK on a hook-opted required parent must survive — '
+            . 'withRequiredParents() must not compose a fresh BusinessAddress over it.',
+        );
+        $this->assertSame(
+            $primary->id,
+            $author->address_id,
+            'A caller-pinned FK on an auto-detected required parent must also survive '
+            . '(existing contract; asserted alongside to keep the regression scope clear).',
+        );
+        $this->assertSame(
+            $addressesBefore,
+            AddressFactory::query()->count(),
+            'No fresh Address should be composed when both required-parent FKs are pinned.',
+        );
+    }
 }

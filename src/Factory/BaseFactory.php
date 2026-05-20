@@ -20,6 +20,7 @@ use Cake\Core\Configure;
 use Cake\Datasource\EntityInterface;
 use Cake\Event\EventManagerInterface;
 use Cake\I18n\I18n;
+use Cake\ORM\Association;
 use Cake\ORM\Association\BelongsTo;
 use Cake\ORM\Association\BelongsToMany;
 use Cake\ORM\Query\SelectQuery;
@@ -1761,9 +1762,9 @@ abstract class BaseFactory
      * Side-effect free: like every other `with*()` / `for*()` chain method,
      * this only *composes* parent factories. Nothing is written to the
      * database until the root factory is persisted (`->save()` /
-     * `->persist()` / `->saveMany()`), so the parents are created in the same
-     * unit as the root entity — atomic, no orphan rows on a later override or
-     * a failed root save, and `->build()` stays purely in-memory.
+     * `->saveMany()`), so the parents are created in the same unit as the
+     * root entity — atomic, no orphan rows on a later override or a failed
+     * root save, and `->build()` stays purely in-memory.
      *
      * Composes cleanly with the rest of the composition layer:
      *
@@ -2007,7 +2008,16 @@ abstract class BaseFactory
             // recycle()d. Demote it to a configure()-style default so recycle
             // substitution works at every depth, while a caller-composed
             // branch keeps its intent.
-            if ($autoResolved) {
+            //
+            // Skip the demotion when the factory was instantiated from a
+            // concrete entity: the entity-injected build path intentionally
+            // ignores configure()-style defaults (the caller fully specified
+            // the row), so a demoted auto-resolved parent would silently
+            // never compose and the save would crash on NOT NULL. The
+            // trade-off: recycle() cannot substitute auto-resolved parents
+            // on an entity-injected chain — corner case (entity injection +
+            // recycle + withRequiredParents simultaneously).
+            if ($autoResolved && !$factory->isInstantiatedFromEntity()) {
                 $factory->getDataCompiler()->demoteAssociationToDefault($alias);
             }
         }
@@ -2065,6 +2075,15 @@ abstract class BaseFactory
         $instantiationEntity = $honorPinnedFks
             ? $this->getDataCompiler()->getInstantiationEntity()
             : null;
+        // Fields the build will potentially overwrite via sequence() /
+        // sequenceField() — see DataCompiler::fieldsTouchedBySequence(). The
+        // entity-pin probe below must IGNORE these fields for the same reason
+        // getPinnedFields() now does: sequence runs after instantiation, so
+        // an entity-pinned FK that sequence touches without fully pinning is
+        // not reliably set at save time. Pass the set into the helper.
+        $sequenceTouchedFields = $honorPinnedFks
+            ? $this->getDataCompiler()->fieldsTouchedBySequence()
+            : [];
 
         $aliases = [];
         foreach ($table->associations() as $association) {
@@ -2084,29 +2103,8 @@ abstract class BaseFactory
             // site: the parent is already satisfied. Composing it would
             // override the pinned value (an explicit ->with() always wins over
             // autoSkipComposeOnExplicitForeignKey), so skip the alias entirely.
-            $foreignKeysForAlias = array_values(array_filter(
-                (array)$association->getForeignKey(),
-                static fn ($fk): bool => is_string($fk) && $fk !== '',
-            ));
-            if ($foreignKeysForAlias !== []) {
-                $allPinnedNonNull = true;
-                foreach ($foreignKeysForAlias as $fkColumn) {
-                    $pinned =
-                        (array_key_exists($fkColumn, $pinnedFields) && $pinnedFields[$fkColumn] !== null)
-                        || (
-                            $instantiationEntity !== null
-                            && $instantiationEntity->has($fkColumn)
-                            && $instantiationEntity->get($fkColumn) !== null
-                        );
-                    if (!$pinned) {
-                        $allPinnedNonNull = false;
-
-                        break;
-                    }
-                }
-                if ($allPinnedNonNull) {
-                    continue;
-                }
+            if (self::belongsToFkAlreadyPinned($association, $pinnedFields, $instantiationEntity, $sequenceTouchedFields)) {
+                continue;
             }
 
             $foreignKeys = (array)$association->getForeignKey();
@@ -2137,6 +2135,22 @@ abstract class BaseFactory
             if (in_array($alias, $except, true)) {
                 continue;
             }
+            // Honor caller-pinned FKs for hook-opted aliases too. The
+            // auto-detection loop above already skips an alias whose FK is
+            // pinned; the additive hook used to bypass that check, so
+            // ->withRequiredParents() would compose a fresh parent over a
+            // caller-pinned id. Contract: pinned FK wins on BOTH paths.
+            if (
+                $this->getTable()->hasAssociation($alias)
+                && self::belongsToFkAlreadyPinned(
+                    $this->getTable()->getAssociation($alias),
+                    $pinnedFields,
+                    $instantiationEntity,
+                    $sequenceTouchedFields,
+                )
+            ) {
+                continue;
+            }
             if (!in_array($alias, $aliases, true)) {
                 $aliases[] = $alias;
             }
@@ -2150,6 +2164,58 @@ abstract class BaseFactory
         }
 
         return $aliases;
+    }
+
+    /**
+     * Return true when every FK column of the given belongsTo association
+     * is already set to a non-null value by the caller — either via patch
+     * data, sequence (fully pinned), instantiation, or the instantiation
+     * entity. Used by both the auto-detection path and the hook-opted-in
+     * path of {@see self::resolveRequiredParentAliases()} so that a
+     * caller-pinned FK uniformly wins on either side.
+     *
+     * Fields appearing in `$sequenceTouchedFields` are excluded from the
+     * entity-side probe: `sequence()` / `sequenceField()` runs AFTER
+     * instantiation at build time, so an entity-side pin that sequence
+     * touches without fully pinning is not reliably set at save time.
+     * The array side of this is already handled by
+     * {@see DataCompiler::getPinnedFields()}.
+     *
+     * @internal
+     *
+     * @param \Cake\ORM\Association $association belongsTo to inspect
+     * @param array<string, mixed> $pinnedFields {@see DataCompiler::getPinnedFields()} result
+     * @param \Cake\Datasource\EntityInterface|null $instantiationEntity Factory::new($entity) payload, if any
+     * @param array<string, true> $sequenceTouchedFields {@see DataCompiler::fieldsTouchedBySequence()} result
+     */
+    private static function belongsToFkAlreadyPinned(
+        Association $association,
+        array $pinnedFields,
+        ?EntityInterface $instantiationEntity,
+        array $sequenceTouchedFields = [],
+    ): bool {
+        $foreignKeysForAlias = array_values(array_filter(
+            (array)$association->getForeignKey(),
+            static fn ($fk): bool => is_string($fk) && $fk !== '',
+        ));
+        if ($foreignKeysForAlias === []) {
+            return false;
+        }
+        foreach ($foreignKeysForAlias as $fkColumn) {
+            $entitySidePinned =
+                $instantiationEntity !== null
+                && !array_key_exists($fkColumn, $sequenceTouchedFields)
+                && $instantiationEntity->has($fkColumn)
+                && $instantiationEntity->get($fkColumn) !== null;
+            $pinned =
+                (array_key_exists($fkColumn, $pinnedFields) && $pinnedFields[$fkColumn] !== null)
+                || $entitySidePinned;
+            if (!$pinned) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
