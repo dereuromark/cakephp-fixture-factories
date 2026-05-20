@@ -324,4 +324,38 @@ class BaseFactoryRecycleTest extends TestCase
 
         CityFactory::new()->recycle($detached);
     }
+
+    /**
+     * Two entities for the same source table in ONE recycle() call would
+     * silently keep only the last — almost always a typo. Reject loudly.
+     * (Across separate `->recycle()->recycle()` calls last-wins still works;
+     * see {@see self::testSeparateRecycleCallsOnSameSourceLastWins}.)
+     */
+    public function testRecycleRejectsTwoEntitiesForSameSourceInOneCall(): void
+    {
+        $a = CityFactory::new()->save();
+        $b = CityFactory::new()->save();
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches('/same source table/');
+
+        AddressFactory::new()->recycle($a, $b);
+    }
+
+    /**
+     * Two separate `->recycle()` calls on the same source table is an
+     * intentional update of the recycle map — last wins is preserved.
+     */
+    public function testSeparateRecycleCallsOnSameSourceLastWins(): void
+    {
+        $first = CityFactory::new(['name' => 'first'])->save();
+        $second = CityFactory::new(['name' => 'second'])->save();
+
+        $address = AddressFactory::new()
+            ->recycle($first)
+            ->recycle($second)
+            ->save();
+
+        $this->assertSame($second->id, $address->city_id);
+    }
 }

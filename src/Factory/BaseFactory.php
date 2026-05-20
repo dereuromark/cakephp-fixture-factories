@@ -2507,10 +2507,25 @@ abstract class BaseFactory
      * Addresses), recycle substitutes both. Use `with('Alias', $entity)`
      * directly for per-alias control.
      *
+     * Only **belongsTo** branches are substituted. A composed `hasOne` /
+     * `hasMany` / `belongsToMany` child is NOT replaced with a recycled
+     * entity — its identity is the *factory's* build (the recycle map only
+     * propagates *into* it so its own belongsTo branches can substitute).
+     * If you need a specific child entity, attach it explicitly with
+     * `with('Alias', $entity)` instead.
+     *
+     * Within a single call, two entities for the same source table are
+     * rejected (`InvalidArgumentException`) — that shape is almost always a
+     * typo for "I want one of these but I'm not sure which". Across multiple
+     * `recycle()` calls, last wins (a chained `->recycle($a)->recycle($b)` on
+     * the same source is treated as an intentional update).
+     *
      * @param \Cake\Datasource\EntityInterface ...$entities One or more
      *     already-built entities to reuse, keyed internally by source table.
      *
-     * @throws \InvalidArgumentException If an entity has no source table set.
+     * @throws \InvalidArgumentException If an entity has no source table set,
+     *     is unsaved, or collides with another entity for the same source
+     *     table in the same call.
      *
      * @return static
      */
@@ -2521,6 +2536,7 @@ abstract class BaseFactory
         }
 
         $factory = clone $this;
+        $seenInCall = [];
         foreach ($entities as $entity) {
             $source = $entity->getSource();
             if ($source === '') {
@@ -2541,6 +2557,22 @@ abstract class BaseFactory
             // Normalize the factory-internal `__ff_<hash>` suffix so the map
             // keys match association target aliases on the lookup side.
             $key = DataCompiler::normalizeTableAlias($source);
+
+            // Within a SINGLE call, reject duplicate-source entities — the
+            // result would silently keep only the last one, almost always a
+            // typo for "I want one of these but I'm not sure which".
+            // Across SEPARATE recycle() calls last-wins is still allowed
+            // (intentional update of the recycle map for that table).
+            if (isset($seenInCall[$key])) {
+                throw new InvalidArgumentException(sprintf(
+                    'recycle() received two entities for the same source table `%s` in one call — '
+                    . 'the second would silently drop the first. Pick one, or chain a second '
+                    . '`->recycle($other)` call if you intentionally want to overwrite the map.',
+                    $key,
+                ));
+            }
+            $seenInCall[$key] = true;
+
             $factory->recycledEntities[$key] = $entity;
         }
 
