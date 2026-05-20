@@ -1068,6 +1068,81 @@ abstract class BaseFactory
     }
 
     /**
+     * Replay this factory's `afterSave()` callbacks on an already-persisted
+     * entity, mirroring the dispatch
+     * {@see self::replayAssociatedAfterSaveForEntity()} performs for entities
+     * saved via the normal cascade. Returns the (possibly replaced) entity so
+     * callbacks that swap it in-place are honored.
+     *
+     * Used by {@see \CakephpFixtureFactories\Factory\DataCompiler::mergeWithToOne()}
+     * for the `foreignKey => false` belongsTo branch, where the parent is
+     * persisted independently (Cake's `BelongsTo::saveAssociated()` cannot
+     * handle that shape) and would otherwise miss factory-level callbacks
+     * the rest of the chain runs through.
+     *
+     * @internal
+     *
+     * @param \Cake\Datasource\EntityInterface $entity The just-persisted entity.
+     *
+     * @return \Cake\Datasource\EntityInterface
+     */
+    public function applyAfterSaveCallbacksToEntity(EntityInterface $entity): EntityInterface
+    {
+        if ($this->afterSaveCallbacks === []) {
+            return $entity;
+        }
+        $result = $this->applyCallbacks([$entity], $this->afterSaveCallbacks);
+
+        return $result[0] ?? $entity;
+    }
+
+    /**
+     * The save options this factory would pass to `Table::saveOrFail()`
+     * during its own `doPersist()` flow. Exposed so the
+     * `foreignKey => false` branch in
+     * {@see \CakephpFixtureFactories\Factory\DataCompiler::mergeWithToOne()}
+     * can persist the parent through the same option set (checkRules,
+     * atomic, the AssociationBuilder-derived `associated` list) instead of
+     * defaulting and silently diverging from cascade-path behavior.
+     *
+     * @internal
+     *
+     * @return array<string, mixed>
+     */
+    public function getSaveOptionsForAssociated(): array
+    {
+        return $this->getSaveOptions();
+    }
+
+    /**
+     * Replay `Model.afterSave` + factory afterSave callbacks for every
+     * nested associated entity under `$entity`, walking THIS factory's
+     * association tree. Returns the (possibly replaced) entity.
+     *
+     * Used by the `foreignKey => false` branch in
+     * {@see \CakephpFixtureFactories\Factory\DataCompiler::mergeWithToOne()}:
+     * since the parent is not attached to the root, the root's normal
+     * post-save walker {@see self::replayAssociatedAfterSaveEvents()} cannot
+     * reach the subtree under this parent — replay it here instead so a
+     * `with('Alias', CountryFactory::new()->with('Continent', …)->afterSave(…))`
+     * sees its nested callbacks regardless of the parent's persist path.
+     *
+     * @internal
+     *
+     * @param \Cake\Datasource\EntityInterface $entity The just-persisted
+     *     parent whose nested associations need their afterSave replayed.
+     *
+     * @return \Cake\Datasource\EntityInterface
+     */
+    public function replayAssociatedAfterSaveForTree(EntityInterface $entity): EntityInterface
+    {
+        $visited = [];
+        $entities = $this->replayAssociatedAfterSaveEvents([$entity], $this, $visited);
+
+        return $entities[0] ?? $entity;
+    }
+
+    /**
      * Sets the value for a single field
      *
      * @param string $field to set
@@ -2075,10 +2150,15 @@ abstract class BaseFactory
      * {@see self::excludedRequiredParentAssociations()} or the per-call
      * `$except` argument are subtracted.
      *
-     * Note: composite-key and `foreignKey => false` custom-join belongsTo
-     * (the PR #85 brittle cases) are NOT currently supported by additive
-     * opt-in — composing the parent works, but the FK-set path fails. See
-     * {@see self::excludedRequiredParentAssociations()} for the symmetric
+     * `foreignKey => false` custom-condition joins are supported: the parent
+     * is built and saved independently of the cascade (Cake's
+     * `BelongsTo::saveAssociated` cannot handle them — the relation is queried
+     * by custom conditions at read time, with no FK column to populate). The
+     * parent row persists and is reachable via `find()->contain()`, but is
+     * NOT attached to the in-memory root entity post-save (attaching would
+     * re-fire the broken cascade). Composite-key opt-in is not yet covered;
+     * opt those in at the call site with `->with('Alias', $factory)` for now.
+     * See {@see self::excludedRequiredParentAssociations()} for the symmetric
      * factory-class-level *exclude* hook.
      *
      * @return array<int, string> Additional aliases to compose.

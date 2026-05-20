@@ -25,6 +25,8 @@ use Cake\Utility\Hash;
 use Cake\Utility\Inflector;
 use CakephpFixtureFactories\Error\FixtureFactoryException;
 use CakephpFixtureFactories\Error\PersistenceException;
+use CakephpFixtureFactories\TestSuite\FactoryTableTracker;
+use CakephpFixtureFactories\TestSuite\FactoryTransactionStrategy;
 use Closure;
 use InvalidArgumentException;
 
@@ -915,6 +917,77 @@ class DataCompiler
                 ));
             }
             $associatedEntity = $associatedEntities[0];
+        }
+
+        // A `foreignKey => false` belongsTo cannot go through Cake's standard
+        // cascade: `BelongsTo::saveAssociated()` does
+        //   array_combine((array)false, $target->extract((array)$bindingKey))
+        // which becomes `['' => value]` (false cast to '') and the subsequent
+        // `$entity->patch('', ...)` throws "Cannot set an empty field". There
+        // is no FK column to populate anyway — the relation is queried by
+        // custom conditions at read time. Save the parent independently and
+        // skip the property-set that would trigger the broken cascade.
+        if (
+            $association instanceof BelongsTo
+            && $association->getForeignKey() === false
+            && $this->isInPersistMode()
+        ) {
+            if ($associatedEntity->isNew()) {
+                // Join the active test transaction so this save participates
+                // in the same rollback unit as the root save — orphan-free on
+                // root failure. No-op when no test strategy is active (this
+                // plugin's contract is test-suite use with the eager strategy).
+                FactoryTransactionStrategy::getActiveInstance()
+                    ?->ensureTransaction($association->getTarget()->getConnection());
+
+                // Match the nested-save semantics the cascade path applies:
+                // tag the entity so FactoryTableBeforeSave treats it as
+                // associated (unique-row reuse etc.), mark new entities
+                // dirty, and let Cake cascade through the parent's own
+                // associations normally — only THIS belongsTo edge is bypassed.
+                $associatedEntity->set(self::IS_ASSOCIATED, true);
+                $this->markEntityDirtyIfNew($associatedEntity);
+                $target = $association->getTarget();
+                // Mirror BaseFactory::doPersist(): the tracker drives
+                // teardown/truncation and diagnostics, so this independent
+                // save must register too.
+                FactoryTableTracker::getInstance()
+                    ->trackTable($target);
+                // Use the factory's own save options (checkRules / atomic /
+                // associated list) so this persist is configured the same
+                // way as the cascade path would have configured it.
+                $target->saveOrFail(
+                    $associatedEntity,
+                    $factory->getSaveOptionsForAssociated(),
+                );
+                // Finalize: Cake 5.4+ defers clean()/setNew(false) until the
+                // outer transaction closes; the cascade path's
+                // finalizePersistedEntities() compensates, mirror it here so
+                // afterSave callbacks observe a consistent post-save shape.
+                if ($target->getConnection()->inTransaction()) {
+                    $associatedEntity->clean();
+                    $associatedEntity->setNew(false);
+                    $associatedEntity->setSource($target->getAlias());
+                }
+                // Replay this branch's factory afterSave callbacks AND the
+                // afterSave events/callbacks for every NESTED associated
+                // factory under it. Since the parent is not attached to the
+                // root, replayAssociatedAfterSaveEvents() on the root can't
+                // discover the subtree — replay it here instead.
+                $associatedEntity = $factory->replayAssociatedAfterSaveForTree($associatedEntity);
+                $associatedEntity = $factory->applyAfterSaveCallbacksToEntity($associatedEntity);
+            }
+
+            // NOTE: we intentionally do NOT call $entity->set($associationName,
+            // $associatedEntity) here. Doing so would (re-)trigger Cake's
+            // BelongsTo::saveAssociated() on the root save and reproduce the
+            // exact "Cannot set an empty field" crash this branch exists to
+            // avoid. Trade-off: the composed parent is persisted and queryable
+            // via custom conditions, but is NOT attached to the in-memory root
+            // entity post-save. A root afterSave() callback that expects to
+            // read `$root->{property}` for a foreignKey => false parent must
+            // re-query it instead.
+            return;
         }
 
         if ($this->isInPersistMode()) {
