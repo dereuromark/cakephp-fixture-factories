@@ -13,6 +13,8 @@ namespace CakephpFixtureFactories\Test\TestCase\Factory;
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Error\AssociationBuilderException;
 use CakephpFixtureFactories\Test\Factory\AddressFactory;
+use CakephpFixtureFactories\Test\Factory\ArticleFactory;
+use CakephpFixtureFactories\Test\Factory\ArticlesAuthorFactory;
 use CakephpFixtureFactories\Test\Factory\AuthorFactory;
 use CakephpFixtureFactories\Test\Factory\BillFactory;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
@@ -357,5 +359,80 @@ class BaseFactoryRecycleTest extends TestCase
             ->save();
 
         $this->assertSame($second->id, $address->city_id);
+    }
+
+    public function testRecyclePropagatesThroughHasManyChildToSiblingBelongsTo(): void
+    {
+        // recycle()'s propagation contract: the recycle map flows DOWN through
+        // every child factory in the build graph, including ones reached
+        // through hasMany / belongsToMany edges. ArticlesAuthors is the
+        // junction table for the Articles ↔ Authors many-to-many; built via
+        // ArticlesAuthorFactory it has TWO belongsTo edges:
+        //   - belongsTo Articles (stripped at build time — the parent IS the
+        //     article)
+        //   - belongsTo Authors (the sibling edge we want recycle to hit)
+        //
+        // Note the explicit without('Authors'): ArticleFactory.configure()
+        // adds the BTM Authors default via hasAuthors(2). Recycle DOES NOT
+        // substitute to-many edges — only belongsTo. To isolate the
+        // belongsTo-inside-junction propagation under test, drop the
+        // default BTM so we're not asserting on a mix of recycled
+        // (junction-side) and fresh (BTM-side) authors.
+        $author = AuthorFactory::new(['name' => 'Recycled Through HasMany'])->save();
+        $authorsBefore = AuthorFactory::query()->count();
+
+        $article = ArticleFactory::new()
+            ->without('Authors')
+            ->with('ArticlesAuthors', ArticlesAuthorFactory::new()->with('Authors'))
+            ->recycle($author)
+            ->save();
+
+        $this->assertNotNull($article->id);
+
+        $junctionRows = ArticlesAuthorFactory::query()
+            ->where(['article_id' => $article->id])
+            ->toArray();
+        $this->assertCount(1, $junctionRows, 'Exactly one junction row for the article.');
+        $this->assertSame(
+            $author->id,
+            $junctionRows[0]->author_id,
+            'Junction row must reference the recycled $author, not a freshly built one.',
+        );
+
+        $this->assertSame(
+            $authorsBefore,
+            AuthorFactory::query()->count(),
+            'recycle($author) must propagate through hasMany ArticlesAuthors into '
+            . 'ArticlesAuthor.belongsTo Authors — no fresh author should be inserted.',
+        );
+    }
+
+    public function testRecycleDoesNotSubstituteDirectBelongsToManyChild(): void
+    {
+        // Contract boundary: recycle() substitutes BELONGS-TO edges only.
+        // A direct belongsToMany child (here ArticleFactory.hasAuthors(2)
+        // adds Authors via the BTM edge) keeps its factory-built identity —
+        // the recycle map flows DOWN into it so any belongsTo branch it
+        // contains may substitute, but the to-many entity itself is never
+        // swapped for the recycled one. This makes the audit-flagged
+        // hasMany-propagation test (above) load-bearing in the opposite
+        // direction too: without this boundary, recycle would silently
+        // collapse legitimate to-many builds into the recycle target.
+        $existing = AuthorFactory::new(['name' => 'Existing'])->save();
+        $authorsBefore = AuthorFactory::query()->count();
+
+        // ArticleFactory.configure() calls hasAuthors(2) by default.
+        $article = ArticleFactory::new()
+            ->recycle($existing)
+            ->save();
+
+        // The 2 default BTM Authors must each be a freshly inserted author —
+        // NOT $existing duplicated twice.
+        $this->assertNotNull($article->id);
+        $this->assertSame(
+            $authorsBefore + ArticleFactory::DEFAULT_NUMBER_OF_AUTHORS,
+            AuthorFactory::query()->count(),
+            'BTM Authors children must build fresh; recycle does not substitute belongsToMany edges.',
+        );
     }
 }
