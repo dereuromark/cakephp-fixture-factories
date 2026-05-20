@@ -25,6 +25,7 @@ use Cake\Utility\Hash;
 use Cake\Utility\Inflector;
 use CakephpFixtureFactories\Error\FixtureFactoryException;
 use CakephpFixtureFactories\Error\PersistenceException;
+use CakephpFixtureFactories\TestSuite\FactoryTableTracker;
 use CakephpFixtureFactories\TestSuite\FactoryTransactionStrategy;
 use Closure;
 use InvalidArgumentException;
@@ -947,7 +948,18 @@ class DataCompiler
                 $associatedEntity->set(self::IS_ASSOCIATED, true);
                 $this->markEntityDirtyIfNew($associatedEntity);
                 $target = $association->getTarget();
-                $target->saveOrFail($associatedEntity);
+                // Mirror BaseFactory::doPersist(): the tracker drives
+                // teardown/truncation and diagnostics, so this independent
+                // save must register too.
+                FactoryTableTracker::getInstance()
+                    ->trackTable($target);
+                // Use the factory's own save options (checkRules / atomic /
+                // associated list) so this persist is configured the same
+                // way as the cascade path would have configured it.
+                $target->saveOrFail(
+                    $associatedEntity,
+                    $factory->getSaveOptionsForAssociated(),
+                );
                 // Finalize: Cake 5.4+ defers clean()/setNew(false) until the
                 // outer transaction closes; the cascade path's
                 // finalizePersistedEntities() compensates, mirror it here so
@@ -957,9 +969,12 @@ class DataCompiler
                     $associatedEntity->setNew(false);
                     $associatedEntity->setSource($target->getAlias());
                 }
-                // Replay this branch's factory afterSave callbacks the way
-                // replayAssociatedAfterSaveForEntity() would on the cascade
-                // path — the entity never reaches the root for that pass.
+                // Replay this branch's factory afterSave callbacks AND the
+                // afterSave events/callbacks for every NESTED associated
+                // factory under it. Since the parent is not attached to the
+                // root, replayAssociatedAfterSaveEvents() on the root can't
+                // discover the subtree — replay it here instead.
+                $associatedEntity = $factory->replayAssociatedAfterSaveForTree($associatedEntity);
                 $associatedEntity = $factory->applyAfterSaveCallbacksToEntity($associatedEntity);
             }
 

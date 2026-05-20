@@ -1097,6 +1097,52 @@ abstract class BaseFactory
     }
 
     /**
+     * The save options this factory would pass to `Table::saveOrFail()`
+     * during its own `doPersist()` flow. Exposed so the
+     * `foreignKey => false` branch in
+     * {@see \CakephpFixtureFactories\Factory\DataCompiler::mergeWithToOne()}
+     * can persist the parent through the same option set (checkRules,
+     * atomic, the AssociationBuilder-derived `associated` list) instead of
+     * defaulting and silently diverging from cascade-path behavior.
+     *
+     * @internal
+     *
+     * @return array<string, mixed>
+     */
+    public function getSaveOptionsForAssociated(): array
+    {
+        return $this->getSaveOptions();
+    }
+
+    /**
+     * Replay `Model.afterSave` + factory afterSave callbacks for every
+     * nested associated entity under `$entity`, walking THIS factory's
+     * association tree. Returns the (possibly replaced) entity.
+     *
+     * Used by the `foreignKey => false` branch in
+     * {@see \CakephpFixtureFactories\Factory\DataCompiler::mergeWithToOne()}:
+     * since the parent is not attached to the root, the root's normal
+     * post-save walker {@see self::replayAssociatedAfterSaveEvents()} cannot
+     * reach the subtree under this parent — replay it here instead so a
+     * `with('Alias', CountryFactory::new()->with('Continent', …)->afterSave(…))`
+     * sees its nested callbacks regardless of the parent's persist path.
+     *
+     * @internal
+     *
+     * @param \Cake\Datasource\EntityInterface $entity The just-persisted
+     *     parent whose nested associations need their afterSave replayed.
+     *
+     * @return \Cake\Datasource\EntityInterface
+     */
+    public function replayAssociatedAfterSaveForTree(EntityInterface $entity): EntityInterface
+    {
+        $visited = [];
+        $entities = $this->replayAssociatedAfterSaveEvents([$entity], $this, $visited);
+
+        return $entities[0] ?? $entity;
+    }
+
+    /**
      * Sets the value for a single field
      *
      * @param string $field to set
