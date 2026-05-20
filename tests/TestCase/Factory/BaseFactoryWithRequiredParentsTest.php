@@ -24,6 +24,7 @@ use CakephpFixtureFactories\ORM\FactoryTableRegistry;
 use CakephpFixtureFactories\Test\Factory\AddressFactory;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
+use CakephpFixtureFactories\Test\Factory\RequiredParentsAuthorConfiguredFactory;
 use CakephpFixtureFactories\Test\Factory\RequiredParentsAuthorFactory;
 use CakephpFixtureFactories\Test\Factory\RequiredParentsCompositeOptInTableWithoutModelFactory;
 use CakephpFixtureFactories\Test\Factory\RequiredParentsExcludeAuthorFactory;
@@ -955,5 +956,36 @@ class BaseFactoryWithRequiredParentsTest extends TestCase
         );
         // Addresses still fan out (Address was not recycled).
         $this->assertSame(4, AddressFactory::query()->count());
+    }
+
+    /**
+     * The canonical downstream-consumer form: a factory whose `configure()`
+     * encodes `withRequiredParents()` as its default. Calling
+     * `Factory::new()->save()` (with no explicit chain on the call site)
+     * must compose the required parents AND propagate their ids into the
+     * child's foreign-key columns — same contract as calling
+     * `withRequiredParents()` externally on the new() result.
+     *
+     * Regression guard: a previous change demoted auto-resolved parents to
+     * the configure-defaults bucket so recycle() can substitute them; that
+     * must not lose foreign-key column propagation on the configure()-time
+     * path.
+     *
+     * @return void
+     */
+    public function testConfigureTimeWithRequiredParentsPropagatesForeignKey(): void
+    {
+        $author = RequiredParentsAuthorConfiguredFactory::new()->save();
+
+        $this->assertNotNull($author->id);
+        $this->assertNotNull(
+            $author->address_id,
+            'Required Address must be composed AND its id propagated into address_id, '
+            . 'whether withRequiredParents() is called externally or from configure().',
+        );
+        // The composed Address really persisted (id reachable via the FK).
+        $address = TableRegistry::getTableLocator()->get('Addresses')
+            ->find()->where(['id' => $author->address_id])->first();
+        $this->assertNotNull($address, 'Composed Address must be persisted and matchable by the propagated FK.');
     }
 }

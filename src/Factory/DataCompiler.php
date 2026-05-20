@@ -1165,13 +1165,24 @@ class DataCompiler
 
     /**
      * Used in the Factory make in order to distinguish default associations
-     * from conscious associations
+     * from conscious associations.
+     *
+     * Anything still in `$dataFromAssociations` at the end of `setUp()` was
+     * contributed by `configure()` and is, by definition, a factory default
+     * — promote it. Anything already in `$dataFromDefaultAssociations` was
+     * placed there *during* `configure()` (e.g. via
+     * {@see self::demoteAssociationToDefault()} when `configure()` ran
+     * `$this->withRequiredParents()`); those entries must be preserved.
+     *
+     * Use a left-priority union (`+`) so a user-set alias still wins over a
+     * pre-existing default for the same alias, matching the original
+     * "explicit beats default" semantic.
      *
      * @return void
      */
     public function collectAssociationsFromDefaultTemplate(): void
     {
-        $this->dataFromDefaultAssociations = $this->dataFromAssociations;
+        $this->dataFromDefaultAssociations = $this->dataFromAssociations + $this->dataFromDefaultAssociations;
         $this->dataFromAssociations = [];
     }
 
