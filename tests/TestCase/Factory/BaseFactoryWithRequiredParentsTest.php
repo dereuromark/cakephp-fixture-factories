@@ -25,6 +25,7 @@ use CakephpFixtureFactories\Test\Factory\AddressFactory;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpFixtureFactories\Test\Factory\RequiredParentsAuthorFactory;
+use CakephpFixtureFactories\Test\Factory\RequiredParentsExcludeAuthorFactory;
 use CakephpFixtureFactories\Test\Factory\RequiredParentsOverrideAuthorFactory;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
 use InvalidArgumentException;
@@ -424,6 +425,31 @@ class BaseFactoryWithRequiredParentsTest extends TestCase
         $this->assertNotNull(
             $author->business_address_id,
             'Hook opted BusinessAddress in even though its FK is nullable.',
+        );
+    }
+
+    /**
+     * Symmetric counterpart to the additive `requiredParentAssociations()`
+     * hook: `excludedRequiredParentAssociations()` lets a factory class
+     * permanently drop an auto-detected NOT NULL belongsTo from
+     * `withRequiredParents()`, for FKs satisfied another way (DB default,
+     * trigger, a custom join the caller always supplies). The per-call
+     * `$except` still works for one-off exclusions; this is the
+     * factory-class-level equivalent so call sites stay clean.
+     */
+    public function testExcludeHookDropsAutoDetectedRequiredParent(): void
+    {
+        $author = RequiredParentsExcludeAuthorFactory::new()
+            ->withRequiredParents()
+            ->build();
+
+        $this->assertEmpty(
+            $author->address,
+            'excludedRequiredParentAssociations() must drop the alias from auto-detection.',
+        );
+        $this->assertNull(
+            $author->address_id,
+            'No Address composed -> the (still NOT NULL) FK stays unset in-memory.',
         );
     }
 
