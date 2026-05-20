@@ -221,6 +221,45 @@ class FactoryTransactionStrategyTest extends TestCase
     }
 
     /**
+     * If `$primaryConnection` is set to an unconfigured/typo'd name (the
+     * typical bug: a subclass declares 'test_min' instead of 'test'), the
+     * eager guarantee silently disappeared. Now emit an `E_USER_WARNING` so
+     * the regression surfaces at runtime — mixed-style tests (Factory +
+     * direct `$table->save()`) would otherwise start leaking direct-save rows.
+     */
+    public function testBadPrimaryConnectionEmitsUserWarning(): void
+    {
+        $strategy = new class () extends FactoryTransactionStrategy {
+            protected string $primaryConnection = 'definitely_not_a_real_connection_name';
+        };
+
+        $captured = [];
+        set_error_handler(
+            function (int $level, string $message) use (&$captured): bool {
+                if ($level === E_USER_WARNING) {
+                    $captured[] = $message;
+
+                    return true;
+                }
+
+                return false;
+            },
+            E_USER_WARNING,
+        );
+
+        try {
+            $strategy->setupTest([]);
+        } finally {
+            restore_error_handler();
+            $strategy->teardownTest();
+        }
+
+        $this->assertNotEmpty($captured, 'Bad $primaryConnection must trigger an E_USER_WARNING.');
+        $this->assertStringContainsString('definitely_not_a_real_connection_name', $captured[0]);
+        $this->assertStringContainsString('eager begin disabled', $captured[0]);
+    }
+
+    /**
      * Test that teardown without any persists works fine
      *
      * @return void
