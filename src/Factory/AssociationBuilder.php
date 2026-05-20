@@ -48,6 +48,31 @@ class AssociationBuilder
     private array $associations = [];
 
     /**
+     * History of every factory ever added under each alias — the
+     * `$associations` map keeps only the last (for back-compat with
+     * `getAssociations()`), but the marshaller config in `getAssociated()`
+     * needs to MERGE across all of them so a `->with('Alias', F1)` followed
+     * by a `->with('Alias', F2)` doesn't silently drop F1's nested
+     * marshaller config (associated branches, accessibleFields, etc.).
+     *
+     * The merge is to-many only. For to-one aliases the merge would
+     * contradict DataCompiler::mergeWithToOne()'s last-wins semantics, so
+     * getAssociated() reverts to single-entry behavior in that case.
+     *
+     * Known edge (not handled): configure()-default → user-explicit override
+     * for the SAME alias does not distinguish "default" from "user" entries
+     * here, so the marshaller config for that alias may carry the default's
+     * nested config even though the user explicitly replaced it. The data
+     * path is unaffected (DataCompiler overrides defaults correctly); only
+     * marshaller accessibleFields keys may include extras for the dropped
+     * default branch. A future refinement could mirror DataCompiler's
+     * default-vs-user separation here.
+     *
+     * @var array<string, array<int, \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>>>
+     */
+    private array $associationHistory = [];
+
+    /**
      * @var array<string, mixed>
      */
     private array $manualAssociations = [];
@@ -319,8 +344,15 @@ class AssociationBuilder
         }
         if (count($explode) === 0) {
             unset($this->associations[$baseAssociationName]);
+            // Keep history aligned: otherwise getAssociated() would
+            // resurrect the dropped alias's marshaller config from history.
+            unset($this->associationHistory[$baseAssociationName]);
         } else {
             $this->associations[$baseAssociationName] = $this->associations[$baseAssociationName]->without(implode('.', $explode));
+            // Same trim on the history so partial-drop semantics carry too.
+            foreach ($this->associationHistory[$baseAssociationName] ?? [] as $i => $entry) {
+                $this->associationHistory[$baseAssociationName][$i] = $entry->without(implode('.', $explode));
+            }
         }
     }
 
@@ -331,7 +363,34 @@ class AssociationBuilder
     {
         $result = [];
         foreach ($this->associations as $name => $associatedFactory) {
-            $result[$name] = $associatedFactory->getMarshallerOptions();
+            // Merge across history ONLY for to-many branches, mirroring
+            // DataCompiler::mergeWithToMany() which iterates every appended
+            // factory. For to-one (belongsTo / hasOne) branches
+            // DataCompiler::mergeWithToOne() uses the LAST factory (`$data[
+            // $count - 1]`), so the marshaller config must do the same —
+            // otherwise stale nested config from a replaced F1 leaks into
+            // patchEntity() for the F2-only branch.
+            try {
+                $association = $this->getAssociation($name);
+                $isToOne = $this->associationIsToOne($association);
+            } catch (Throwable) {
+                // Association lookup failed (e.g. a manually-added alias
+                // not declared on the table); fall back to last-wins to
+                // preserve previous behavior in that edge.
+                $isToOne = true;
+            }
+
+            if ($isToOne) {
+                $result[$name] = $associatedFactory->getMarshallerOptions();
+
+                continue;
+            }
+
+            $merged = [];
+            foreach ($this->associationHistory[$name] ?? [$associatedFactory] as $entry) {
+                $merged = array_replace_recursive($merged, $entry->getMarshallerOptions());
+            }
+            $result[$name] = $merged;
         }
 
         return array_replace_recursive($result, $this->manualAssociations);
@@ -356,6 +415,7 @@ class AssociationBuilder
     public function addAssociation(string $associationName, BaseFactory $factory): void
     {
         $this->associations[$associationName] = $factory;
+        $this->associationHistory[$associationName][] = $factory;
     }
 
     /**
@@ -367,6 +427,13 @@ class AssociationBuilder
     {
         foreach ($this->associations as $associationName => $associatedFactory) {
             $this->associations[$associationName] = $callback($associatedFactory);
+        }
+        // Apply the same transform to the parallel history so getAssociated()
+        // doesn't drift from the canonical associations map.
+        foreach ($this->associationHistory as $associationName => $entries) {
+            foreach ($entries as $i => $entry) {
+                $this->associationHistory[$associationName][$i] = $callback($entry);
+            }
         }
     }
 
