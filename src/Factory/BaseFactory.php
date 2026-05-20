@@ -21,6 +21,7 @@ use Cake\Datasource\EntityInterface;
 use Cake\Event\EventManagerInterface;
 use Cake\I18n\I18n;
 use Cake\ORM\Association\BelongsTo;
+use Cake\ORM\Association\BelongsToMany;
 use Cake\ORM\Query\SelectQuery;
 use Cake\ORM\Table;
 use CakephpFixtureFactories\Error\FixtureFactoryException;
@@ -2324,7 +2325,7 @@ abstract class BaseFactory
         if ($alias === null) {
             $alias = $this->resolveDirectionalAssociation($factory, true);
         } else {
-            $this->guardAliasDirection($alias, true);
+            $this->guardAliasDirection($alias, true, $factory);
         }
 
         return $this->with($alias, $factory);
@@ -2351,6 +2352,8 @@ abstract class BaseFactory
      * @param string|null $alias Explicit association alias on the source table; auto-resolved when null.
      * @param array<string, mixed> $pivot Pivot data for belongsToMany joins.
      *
+     * @throws \RuntimeException
+     *
      * @return static
      */
     public function has(BaseFactory $factory, ?string $alias = null, array $pivot = []): static
@@ -2362,9 +2365,25 @@ abstract class BaseFactory
         if ($alias === null) {
             $alias = $this->resolveDirectionalAssociation($factory, false);
         } else {
-            $this->guardAliasDirection($alias, false);
+            $this->guardAliasDirection($alias, false, $factory);
         }
         if ($pivot !== []) {
+            // Pivot data only has a place to land on belongsToMany joins
+            // (Cake writes it into `_joinData` on the junction row). For
+            // hasOne / hasMany the marshaller has no junction to populate,
+            // so the data was silently dropped on save. Reject loudly.
+            $association = $this->getTable()->getAssociation($alias);
+            if (!$association instanceof BelongsToMany) {
+                throw new RuntimeException(sprintf(
+                    "%s::has() pivot data is only meaningful for belongsToMany; alias '%s' "
+                    . 'is a `%s` association on `%s`. Drop the pivot argument, '
+                    . 'or use the alias that points to a belongsToMany junction.',
+                    self::shortName(static::class),
+                    $alias,
+                    strtolower(self::shortName($association::class)),
+                    $this->getTable()->getRegistryAlias(),
+                ));
+            }
             // Patch `_joinData` into every built child so Cake's belongsToMany
             // marshaller writes the pivot columns onto the join row. The
             // previous `mergeAssociated(['_joinData' => $pivot])` only set
@@ -2387,10 +2406,13 @@ abstract class BaseFactory
      *
      * @param string $alias Association alias on this factory's source table.
      * @param bool $belongsTo `true` when called from `for()`, `false` from `has()`.
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>|null $factory
+     *     Associated factory whose target table should match the alias's
+     *     target. When `null`, only the direction guard runs.
      *
      * @throws \RuntimeException When the alias is unknown or resolves to the wrong cardinality.
      */
-    private function guardAliasDirection(string $alias, bool $belongsTo): void
+    private function guardAliasDirection(string $alias, bool $belongsTo, ?BaseFactory $factory = null): void
     {
         $caller = $belongsTo ? 'for' : 'has';
         $callerShort = self::shortName(static::class);
@@ -2416,24 +2438,46 @@ abstract class BaseFactory
         }
 
         $isBelongsTo = $association instanceof BelongsTo;
-        if ($belongsTo === $isBelongsTo) {
-            return;
+        if ($belongsTo !== $isBelongsTo) {
+            $expected = $belongsTo ? 'belongsTo' : 'has* (hasOne, hasMany, belongsToMany)';
+            $actual = $isBelongsTo ? 'belongsTo' : 'has*';
+
+            throw new RuntimeException(sprintf(
+                "%s::%s() with alias '%s' refers to a %s association — expected %s. "
+                . "Use the matching directional helper, or `with('%s', ...)` if you "
+                . 'want the lower-level form.',
+                $callerShort,
+                $caller,
+                $alias,
+                $actual,
+                $expected,
+                $alias,
+            ));
         }
 
-        $expected = $belongsTo ? 'belongsTo' : 'has* (hasOne, hasMany, belongsToMany)';
-        $actual = $isBelongsTo ? 'belongsTo' : 'has*';
-
-        throw new RuntimeException(sprintf(
-            "%s::%s() with alias '%s' refers to a %s association — expected %s. "
-            . "Use the matching directional helper, or `with('%s', ...)` if you "
-            . 'want the lower-level form.',
-            $callerShort,
-            $caller,
-            $alias,
-            $actual,
-            $expected,
-            $alias,
-        ));
+        // Target-match guard: a `Foo::for(BarFactory, 'Address')` whose Bar
+        // factory does NOT target the Address alias's table is a mis-wire
+        // that the auto-resolve path would have caught — match it here too,
+        // mirroring the disjuncts in resolveDirectionalAssociation().
+        if ($factory !== null) {
+            $factoryRoot = $factory->getRootTableRegistryName();
+            $targets = $association->getClassName() === $factoryRoot
+                || $association->getTarget()->getRegistryAlias() === $factoryRoot
+                || $association->getName() === $factoryRoot;
+            if (!$targets) {
+                throw new RuntimeException(sprintf(
+                    "%s::%s() alias '%s' targets `%s`, but `%s` builds `%s`. "
+                    . 'Pass a factory whose root table matches the alias target, '
+                    . 'or drop the alias argument to let auto-resolution catch it.',
+                    $callerShort,
+                    $caller,
+                    $alias,
+                    $association->getTarget()->getRegistryAlias(),
+                    $factory::class,
+                    $factoryRoot,
+                ));
+            }
+        }
     }
 
     /**
