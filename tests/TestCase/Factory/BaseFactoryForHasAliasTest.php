@@ -195,4 +195,28 @@ class BaseFactoryForHasAliasTest extends TestCase
         // is a mis-wire that has() should reject.
         CountryFactory::new()->has(CountryFactory::new(), 'Cities');
     }
+
+    public function testHasComposesBothBatchesAcrossDuplicateBelongsToManyAdds(): void
+    {
+        // PR #97 added the BTM-only pivot guard. PR #98 added the to-many
+        // history merge so `->has(F1, 'Authors')->has(F2, 'Authors')`
+        // composes entities from BOTH (instead of last-wins). The
+        // combination — duplicate add on a belongsToMany alias — isn't
+        // covered together. Pin it: both batches' authors compose into
+        // the same belongsToMany set so the article ends up with all
+        // three authors.
+        $article = ArticleFactory::new()
+            ->without('Authors')
+            ->has(AuthorFactory::new()->count(2), 'Authors')
+            ->has(AuthorFactory::new()->count(1), 'Authors')
+            ->save();
+
+        $this->assertNotNull($article->id);
+        $reloaded = ArticleFactory::table()->get($article->id, contain: ['Authors']);
+        $this->assertCount(
+            3,
+            $reloaded->authors,
+            'Both duplicate has(..., \'Authors\') batches compose; the history merge keeps both.',
+        );
+    }
 }

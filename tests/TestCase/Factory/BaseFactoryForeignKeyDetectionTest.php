@@ -288,6 +288,41 @@ class BaseFactoryForeignKeyDetectionTest extends TestCase
     }
 
     /**
+     * Cache invalidation must also fire when a belongsTo is REMOVED at
+     * runtime, not just when one is added. Mirror of the add-case test
+     * above. Without this, a downstream test that drops an association
+     * to suppress composition would still see the dropped alias in the
+     * detector's FK map.
+     */
+    public function testForeignKeyColumnCacheReflectsRuntimeAssociationRemoval(): void
+    {
+        $table = new Table(['table' => 'cities', 'alias' => 'FkRemovalProbe']);
+        $table->belongsTo('Countries', ['foreignKey' => 'country_id']);
+        $table->belongsTo('LateRegion', [
+            'className' => 'Countries',
+            'foreignKey' => 'late_region_id',
+        ]);
+
+        $first = BaseFactory::collectForeignKeyColumns($table);
+        $this->assertArrayHasKey('late_region_id', $first);
+
+        // Drop the association — the cache must reflect the removal.
+        $table->associations()->remove('LateRegion');
+        $second = BaseFactory::collectForeignKeyColumns($table);
+
+        $this->assertArrayNotHasKey(
+            'late_region_id',
+            $second,
+            'FK-column cache must invalidate when a belongsTo is removed at runtime.',
+        );
+        $this->assertArrayHasKey(
+            'country_id',
+            $second,
+            'Remaining associations stay in the map after a sibling is removed.',
+        );
+    }
+
+    /**
      * Shared-primary-key 1:1 associations have `child.id` as both PK and the
      * belongsTo FK column. They are still a real "FK in definition()" case
      * — pinning `id` here has the same dangling-id / silently-overwritten-

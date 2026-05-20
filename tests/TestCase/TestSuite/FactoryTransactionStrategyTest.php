@@ -527,6 +527,33 @@ class FactoryTransactionStrategyTest extends TestCase
         }
     }
 
+    public function testEnsureTransactionShortCircuitsWhenConnectionAlreadyInTransaction(): void
+    {
+        // A connection wrapped by an outer test harness reports
+        // inTransaction() === true. ensureTransaction must NOT call begin()
+        // again — double-begin on the same connection is either silently
+        // dropped or rejected by the driver, and either way the strategy's
+        // bookkeeping would track a connection it didn't actually begin.
+        $connection = $this->createMock(Connection::class);
+        $connection->method('configName')->willReturn('outer-wrapped');
+        $connection->method('inTransaction')->willReturn(true);
+        $connection->expects($this->never())->method('enableSavePoints');
+        $connection->expects($this->never())->method('begin');
+
+        $strategy = new FactoryTransactionStrategy();
+        $strategy->ensureTransaction($connection);
+
+        // Strategy must not add an already-wrapped connection to its set,
+        // otherwise teardown would issue rollback(true) on a transaction
+        // the strategy did not begin.
+        $reflection = new ReflectionProperty(FactoryTransactionStrategy::class, 'connections');
+        $this->assertSame(
+            [],
+            $reflection->getValue($strategy),
+            'ensureTransaction must not track a connection it short-circuited.',
+        );
+    }
+
     public function testEnsureTransactionRethrowsPersistenceException(): void
     {
         $connection = $this->createMock(Connection::class);

@@ -22,8 +22,10 @@ use CakephpFixtureFactories\Error\FixtureFactoryException;
 use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\ORM\FactoryTableRegistry;
 use CakephpFixtureFactories\Test\Factory\AddressFactory;
+use CakephpFixtureFactories\Test\Factory\BogusRequiredParentAliasAuthorFactory;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
+use CakephpFixtureFactories\Test\Factory\NonBelongsToRequiredParentAliasAuthorFactory;
 use CakephpFixtureFactories\Test\Factory\RequiredParentsAuthorConfiguredFactory;
 use CakephpFixtureFactories\Test\Factory\RequiredParentsAuthorFactory;
 use CakephpFixtureFactories\Test\Factory\RequiredParentsCompositeOptInTableWithoutModelFactory;
@@ -1198,5 +1200,34 @@ class BaseFactoryWithRequiredParentsTest extends TestCase
             'recycle() must NOT propagate into a foreignKey => false subtree — '
             . 'fresh Countries are built inside it. Documented limitation.',
         );
+    }
+
+    public function testHookReturningUnknownAliasRaisesFriendlyError(): void
+    {
+        // A factory whose requiredParentAssociations() returns an alias that
+        // the schema does not declare must fail loudly at chain time with a
+        // domain-specific message naming both the hook and the typo. Without
+        // this guard the user sees Cake's raw "Class for ... could not be
+        // found" later in doWithRequiredParents() — confusing and unactionable.
+        $this->expectException(FixtureFactoryException::class);
+        $this->expectExceptionMessageMatches('/requiredParentAssociations\(\) returned "TotallyMadeUpAlias"/');
+
+        BogusRequiredParentAliasAuthorFactory::new()->withRequiredParents();
+    }
+
+    public function testHookReturningNonBelongsToAliasRaisesFriendlyError(): void
+    {
+        // The hook is documented as belongsTo-only. A typo or schema-rename
+        // that happens to match a hasMany / belongsToMany alias would
+        // otherwise be silently accepted and withRequiredParents() would
+        // compose a to-many edge instead of a parent — the exact mistake the
+        // hook is meant to prevent. Refuse with a clear message that names
+        // the actual association type so the typo is obvious.
+        $this->expectException(FixtureFactoryException::class);
+        $this->expectExceptionMessageMatches(
+            '/requiredParentAssociations\(\) returned "Articles".*is a BelongsToMany, not a belongsTo/',
+        );
+
+        NonBelongsToRequiredParentAliasAuthorFactory::new()->withRequiredParents();
     }
 }
