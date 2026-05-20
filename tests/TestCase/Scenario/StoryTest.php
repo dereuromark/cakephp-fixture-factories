@@ -235,4 +235,22 @@ class StoryTest extends TestCase
 
         $this->loadFixtureScenario(AssertionFailingStory::class);
     }
+
+    public function testAddToPoolRejectsEmptyPoolName(): void
+    {
+        // An empty pool name slips past PHP's `string` type but produces
+        // a useless error on the read side (`guardPoolExists('')`). Refuse
+        // it at write time with a clear message.
+        $story = new class () extends Story {
+            protected function build(): void
+            {
+                $this->addToPool('', CountryFactory::new()->save());
+            }
+        };
+
+        $this->expectException(FixtureScenarioException::class);
+        $this->expectExceptionMessageMatches('/addToPool.* requires a non-empty pool name/');
+
+        $story->load();
+    }
 }

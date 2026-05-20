@@ -1676,6 +1676,15 @@ abstract class BaseFactory
 
         if (!str_contains($associationName, '.') && $data instanceof BaseFactory) {
             $associatedFactory = $data;
+            // Honor the bracket-count syntax for leaf-factory calls too.
+            // The non-factory path goes through getAssociatedFactory() which
+            // applies the bracket count via getTimeBetweenBrackets(); this
+            // branch used to skip it, so `with('Alias[3]', SomeFactory::new())`
+            // silently dropped the [3] and built 1 row instead of 3.
+            $times = $factory->getAssociationBuilder()->getTimeBetweenBrackets($associationName);
+            if ($times !== null) {
+                $associatedFactory = $associatedFactory->count($times);
+            }
         } else {
             $associatedFactory = $factory->getAssociationBuilder()->getAssociatedFactory($associationName, $data);
         }
@@ -2348,6 +2357,14 @@ abstract class BaseFactory
      * When `$alias` is null, the alias is auto-resolved by the associated
      * factory's target table — equivalent to the previous single-arg form.
      *
+     * **Pivot precedence (belongsToMany only):** `$pivot` is applied as
+     * `state(['_joinData' => $pivot])` on the passed factory just before it
+     * is registered. Because `state()` merges over earlier state, a
+     * `_joinData` value already set on the passed factory wins on a
+     * per-key basis where it overlaps; non-overlapping keys are kept from
+     * `$pivot`. For a totally pivot-only build, prefer the explicit
+     * `$pivot` argument and don't pre-load `_joinData` on the child.
+     *
      * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Associated factory.
      * @param string|null $alias Explicit association alias on the source table; auto-resolved when null.
      * @param array<string, mixed> $pivot Pivot data for belongsToMany joins.
@@ -2606,6 +2623,12 @@ abstract class BaseFactory
     /**
      * Whether the user added explicit `with()` / `for()` / `has()` calls on
      * this factory after `configure()` registered its defaults.
+     *
+     * Note: this flag only tracks user-set *associations* (the alias-keyed
+     * association list). It does NOT track `state(['_joinData' => ...])` —
+     * pivot data is keyed inside the entity's own data, not in the
+     * association list — so a factory carrying only pivot state still
+     * reports `false` here and remains a candidate for `recycle()`.
      *
      * @internal
      */

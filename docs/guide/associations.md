@@ -44,6 +44,8 @@ $article = ArticleFactory::new()->count(5)->with('Authors[3].Address.City.Countr
 ```
 will create 5 articles, having themselves each 3 different associated authors, all located in Kenya.
 
+The bracket count is also honored when the second argument is a factory instance — e.g. `->with('Cities[3]', CityFactory::new()->forCountries())` builds 3 cities. If the passed factory already has its own `->count(n)`, the bracket count wins (so the bracket syntax is the single source of truth for cardinality on that line).
+
 It is also possible to specify the fields of a toMany associated model.
 For example, if we wish to create a random country with two cities having known names:
 

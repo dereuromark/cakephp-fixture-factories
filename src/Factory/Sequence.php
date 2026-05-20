@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace CakephpFixtureFactories\Factory;
 
 use CakephpFixtureFactories\Generator\GeneratorInterface;
+use InvalidArgumentException;
 
 /**
  * Context passed to a `sequence()` callable.
@@ -62,6 +63,8 @@ final readonly class Sequence
      * @param int $total Total number of entities the factory will build (`BaseFactory::getTimes()`).
      * @param \CakephpFixtureFactories\Factory\BaseFactory<TEntity> $factory Owning factory.
      * @param \CakephpFixtureFactories\Generator\GeneratorInterface $generator Configured fixture generator (Faker / DummyGenerator / custom).
+     *
+     * @throws \InvalidArgumentException
      */
     public function __construct(
         public int $index,
@@ -69,6 +72,22 @@ final readonly class Sequence
         public BaseFactory $factory,
         public GeneratorInterface $generator,
     ) {
+        // Self-validating value object: catch internal-misuse early
+        // (a bad index/total contradicts the iteration semantics the rest
+        // of the file uses — `isFirst` / `isLast` derive from them).
+        if ($total < 1) {
+            throw new InvalidArgumentException(sprintf(
+                'Sequence: total must be >= 1 (received %d).',
+                $total,
+            ));
+        }
+        if ($index < 0 || $index >= $total) {
+            throw new InvalidArgumentException(sprintf(
+                'Sequence: index must be in [0, %d) (received %d).',
+                $total,
+                $index,
+            ));
+        }
         $this->position = $index + 1;
         $this->isFirst = $index === 0;
         $this->isLast = $index === $total - 1;

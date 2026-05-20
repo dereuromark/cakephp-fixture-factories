@@ -93,9 +93,22 @@ abstract class Story implements FixtureScenarioInterface
      *
      * @param string $pool Pool identifier (any non-empty string).
      * @param \Cake\Datasource\EntityInterface|array<int, \Cake\Datasource\EntityInterface> $entities
+     *
+     * @throws \CakephpFixtureFactories\Error\FixtureScenarioException
      */
     protected function addToPool(string $pool, EntityInterface|array $entities): static
     {
+        // Empty pool name slips through PHP's typecheck (string accepts '')
+        // but then collides with `guardPoolExists('')` from the read side —
+        // and the read side's typo message ("Available pools: `, `foo`")
+        // is incomprehensible because of how implode renders an empty key.
+        // Refuse at write time instead.
+        if ($pool === '') {
+            throw new FixtureScenarioException(sprintf(
+                '`%s::addToPool()` requires a non-empty pool name.',
+                static::class,
+            ));
+        }
         if ($entities instanceof EntityInterface) {
             $entities = [$entities];
         }
