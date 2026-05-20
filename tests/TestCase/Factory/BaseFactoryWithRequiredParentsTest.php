@@ -26,6 +26,7 @@ use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpFixtureFactories\Test\Factory\RequiredParentsAuthorFactory;
 use CakephpFixtureFactories\Test\Factory\RequiredParentsExcludeAuthorFactory;
+use CakephpFixtureFactories\Test\Factory\RequiredParentsForeignKeyFalseOptInFactory;
 use CakephpFixtureFactories\Test\Factory\RequiredParentsOverrideAuthorFactory;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
 use InvalidArgumentException;
@@ -490,6 +491,77 @@ class BaseFactoryWithRequiredParentsTest extends TestCase
             1,
             CountryFactory::query()->count(),
             'foreignKey => false belongsTo must not be auto-resolved.',
+        );
+    }
+
+    /**
+     * Persisting an explicitly-composed `foreignKey => false` belongsTo must
+     * succeed: the parent is built / saved independently and is NOT cascaded
+     * via the (broken upstream) `BelongsTo::saveAssociated` path. Cake's
+     * `saveAssociated` casts `(array)false` → `[false]` and produces an empty
+     * field for `patch()` — "Cannot set an empty field". A custom-condition
+     * join has no FK to populate, so we never set the property for cascade.
+     */
+    public function testPersistingForeignKeyFalseComposedParentSucceeds(): void
+    {
+        $countryCountBefore = CountryFactory::query()->count();
+        $factory = RequiredParentsAuthorFactory::new();
+        $factory->getTable()->belongsTo('GhostCountry', [
+            'className' => 'Countries',
+            'foreignKey' => false,
+            'conditions' => ['Authors.name = GhostCountry.name'],
+        ]);
+
+        // strictDefinition would (correctly but irrelevantly) flag `name` as
+        // the recovered join column; this test exercises foreignKey => false
+        // persistence, not the detector.
+        $strict = Configure::read('FixtureFactories.strictDefinition');
+        Configure::write('FixtureFactories.strictDefinition', false);
+        try {
+            $author = $factory
+                ->with('GhostCountry', CountryFactory::new())
+                ->withRequiredParents()
+                ->save();
+        } finally {
+            Configure::write('FixtureFactories.strictDefinition', $strict);
+        }
+
+        $this->assertNotNull($author->id, 'Author persisted.');
+        $this->assertSame(
+            $countryCountBefore + 2,
+            CountryFactory::query()->count(),
+            'Both the chain Country (via City) and the foreignKey=>false GhostCountry parent persisted.',
+        );
+    }
+
+    /**
+     * Same fix exercised through the documented additive-hook entry point:
+     * a factory that opts a `foreignKey => false` association in via
+     * `requiredParentAssociations()` must compose AND persist it cleanly.
+     */
+    public function testAdditiveHookComposesForeignKeyFalseAssociation(): void
+    {
+        $countryCountBefore = CountryFactory::query()->count();
+        $factory = RequiredParentsForeignKeyFalseOptInFactory::new();
+        $factory->getTable()->belongsTo('GhostCountry', [
+            'className' => 'Countries',
+            'foreignKey' => false,
+            'conditions' => ['Authors.name = GhostCountry.name'],
+        ]);
+
+        $strict = Configure::read('FixtureFactories.strictDefinition');
+        Configure::write('FixtureFactories.strictDefinition', false);
+        try {
+            $author = $factory->withRequiredParents()->save();
+        } finally {
+            Configure::write('FixtureFactories.strictDefinition', $strict);
+        }
+
+        $this->assertNotNull($author->id);
+        $this->assertSame(
+            $countryCountBefore + 2,
+            CountryFactory::query()->count(),
+            'Additive-hook opt-in of a foreignKey=>false belongsTo composes the parent.',
         );
     }
 

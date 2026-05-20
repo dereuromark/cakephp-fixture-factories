@@ -269,12 +269,18 @@ Resolution order: `auto-detected ∪ requiredParentAssociations() − excludedRe
 Exclude wins over both the additive hook and per-call `$except` (both subtract).
 Each is independent; either may stay at its default (`[]`).
 
-::: warning Additive opt-in does not (yet) support composite / `foreignKey => false`
-The additive `requiredParentAssociations()` hook composes the opted-in parent
-factory, but the FK-set step that follows fails for **composite-key** and
-**`foreignKey => false` custom-condition** belongsTo (the PR #85 brittle
-cases). Until that is wired, attach them at the call site with
-`->with('Alias', $parentFactory)` instead.
+::: tip foreignKey => false: supported via independent save
+The additive `requiredParentAssociations()` hook (and `->with('Alias', ...)`)
+support **`foreignKey => false`** custom-condition belongsTo: the parent is
+built and saved independently of the cascade (Cake's
+`BelongsTo::saveAssociated` cannot handle them — the relation is queried by
+custom conditions at read time, with no FK column to populate). The parent
+row exists in the database after `save()` and is reachable via
+`->find()->contain('Alias')`, but is **not** attached to the in-memory root
+entity (`$root->{alias}` stays `null` post-save) — attaching it would re-fire
+the broken cascade. **Composite-key** opt-in via the additive hook is not yet
+covered; attach those at the call site with `->with('Alias', $parentFactory)`
+for now.
 :::
 
 ## It's the pragmatic default — not the assertion tool
