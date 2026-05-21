@@ -13,6 +13,7 @@ export default defineConfig({
   description: 'Write and run your tests faster — fixture factories for CakePHP and beyond.',
 
   base: docsBase,
+  cleanUrls: true,
 
   head: [
     ['link', { rel: 'icon', type: 'image/png', sizes: '16x16', href: '/cakephp-fixture-factories/favicon-16.png' }],
