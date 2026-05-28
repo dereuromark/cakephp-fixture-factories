@@ -46,6 +46,13 @@ The bundled rules cover the safe, mechanical call-site changes:
 
 It intentionally does **not** rewrite deprecated `persist()` calls, because that return type is shape-dependent and needs a human choice between `save()` and `saveMany()`.
 
+Be careful with the static query helper rewrite:
+
+- `Factory::query()` keeps the old `Factory::find()` semantics of querying through the factory-managed table.
+- That means `Model.beforeFind` listeners are still bypassed on purpose.
+- Use it for database assertions in the "Assert" part of tests, not when you want to verify your real finder/event behavior in the "Act" part.
+- If you need normal CakePHP table/query semantics, use the real table instance instead of `Factory::query()`.
+
 Typical before/after replacements look like this:
 
 ```diff

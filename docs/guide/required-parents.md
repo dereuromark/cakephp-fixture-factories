@@ -272,7 +272,8 @@ class BillFactory extends BaseFactory
 ```
 
 Resolution order: `auto-detected ∪ requiredParentAssociations() − excludedRequiredParentAssociations() − $except`.
-Exclude wins over both the additive hook and per-call `$except` (both subtract).
+The class-level exclude wins over the additive hook; the per-call `$except`
+argument subtracts from the same resolved set.
 Each is independent; either may stay at its default (`[]`).
 
 ::: tip `foreignKey => false` and composite-key opt-in are both supported

@@ -395,7 +395,7 @@ class DataCompiler
      * @return \Cake\Datasource\EntityInterface
      */
     public function compileEntity(
-        array|callable|EntityInterface|string $injectedData = [],
+        EntityInterface|callable|array|string $injectedData = [],
         bool $setPrimaryKey = false,
     ): EntityInterface {
         if (is_string($injectedData)) {
@@ -574,7 +574,7 @@ class DataCompiler
      *
      * @return $this
      */
-    private function mergeWithInjectedData(EntityInterface $entity, array|callable $data)
+    private function mergeWithInjectedData(EntityInterface $entity, callable|array $data)
     {
         if (is_callable($data)) {
             $data = $data(
@@ -1261,7 +1261,7 @@ class DataCompiler
      *
      * @return \Cake\ORM\Association|bool
      */
-    public function getAssociationByPropertyName(string $propertyName): bool|Association
+    public function getAssociationByPropertyName(string $propertyName): Association|bool
     {
         try {
             return $this->getFactory()->getTable()->getAssociation(Inflector::camelize($propertyName));
@@ -1337,7 +1337,7 @@ class DataCompiler
      *
      * @return string|int
      */
-    public function generateRandomPrimaryKey(string $columnType): int|string
+    public function generateRandomPrimaryKey(string $columnType): string|int
     {
         return match ($columnType) {
             'uuid', 'string' => $this->getFactory()->getGenerator()->uuid(),

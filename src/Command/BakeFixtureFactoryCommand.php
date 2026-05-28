@@ -136,7 +136,7 @@ class BakeFixtureFactoryCommand extends BakeCommand
      *
      * @return array<string>|string
      */
-    public function getModelPath(): string|array
+    public function getModelPath(): array|string
     {
         if ($this->plugin) {
             $path = $this->_pluginPath($this->plugin) . APP_DIR . DS . $this->pathToTableDir;
@@ -284,7 +284,7 @@ class BakeFixtureFactoryCommand extends BakeCommand
      *
      * @return int|bool
      */
-    public function bakeFixtureFactory(string $modelName, Arguments $args, ConsoleIo $io): bool|int
+    public function bakeFixtureFactory(string $modelName, Arguments $args, ConsoleIo $io): int|bool
     {
         $this->modelName = $modelName;
 

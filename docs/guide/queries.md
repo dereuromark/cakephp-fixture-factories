@@ -2,10 +2,22 @@
 
 
 The fixture factories are closely related to the database. The package provides several methods to conveniently
-run queries. All methods will by-pass the `beforeFind` event, enabling the direct inspection of your
+run queries. All methods bypass the `beforeFind` event, enabling the direct inspection of your
 test database.
 
-These methods are meant to help performing assertions in the "Assert" part of your tests. Do not use `::query()` in the "Act" part of your tests, e.g. to test finders.
+These methods are meant to help perform assertions in the "Assert" part of your tests. Do not use `::query()` in the "Act" part of your tests, e.g. to test finders.
+
+`Factory::query()` does not represent your application's normal query path. It queries through the factory-managed table, which intentionally disables `Model.beforeFind`. This is correct for:
+
+- asserting rows were written, updated, or deleted
+- counting records directly in the test database
+- fetching rows by criteria without app-level finder/event side effects
+
+It is the wrong tool for:
+
+- testing a custom finder
+- testing tenant scoping or soft-delete filters wired via `beforeFind`
+- testing behavior/listener code that mutates queries during reads
 
 ## `ArticleFactory::query()`
 
@@ -75,8 +87,9 @@ class ArticlesControllerTest extends AppTestCase
 - `assertEntityExists(EntityInterface $entity, ?string $factoryClass = null, ?string $message = null)` — the entity is still in the database (by primary key).
 - `assertEntityMissing(EntityInterface $entity, ?string $factoryClass = null, ?string $message = null)` — the entity is no longer in the database.
 
-> [!IMPORTANT]
-> `assertEntityMissing()` refuses entities that were never persisted — both the "no primary key" case and the application-assigned-PK case (UUID / string IDs) where the entity carries a PK at build time but was never written. The guard checks `isNew()` first and the PK as a fallback. Save the entity (then delete it) before asserting it is missing.
+::: warning
+`assertEntityMissing()` refuses entities that were never persisted — both the "no primary key" case and the application-assigned-PK case (UUID / string IDs) where the entity carries a PK at build time but was never written. The guard checks `isNew()` first and the PK as a fallback. Save the entity (then delete it) before asserting it is missing.
+:::
 
 The optional `$factoryClass` argument on the entity assertions scopes the lookup to that factory's table. Use it when several factory variants share a bare table alias on different connections — without it, the entity's `getSource()` is consulted, which may resolve to whichever factory variant most-recently registered with the locator.
 
