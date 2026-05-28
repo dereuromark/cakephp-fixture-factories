@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -6,11 +7,12 @@ declare(strict_types=1);
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
- * @link          https://webrider.de/
- * @since         1.0.0
- * @license       http://www.opensource.org/licenses/mit-license.php MIT License
+ * @copyright Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
+ * @link https://webrider.de/
+ * @since 1.0.0
+ * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
+
 namespace CakephpFixtureFactories\Test\Factory;
 
 use CakephpFixtureFactories\Factory\BaseFactory;
@@ -20,10 +22,13 @@ use TestApp\Model\Entity\Article;
 /**
  * Class ArticleFactory
  *
- * @extends BaseFactory<\TestApp\Model\Entity\Article>
+ * @extends \CakephpFixtureFactories\Factory\BaseFactory<\TestApp\Model\Entity\Article>
  */
 class ArticleFactory extends BaseFactory
 {
+    /**
+     * @var int
+     */
     public const DEFAULT_NUMBER_OF_AUTHORS = 2;
 
     /**
@@ -42,7 +47,7 @@ class ArticleFactory extends BaseFactory
      * Use the patchData method to set the field values.
      * You may use methods of the factory here
      *
-     * @return void
+     * @return array<string, mixed>
      */
     public function definition(GeneratorInterface $generator): array
     {
@@ -73,7 +78,8 @@ class ArticleFactory extends BaseFactory
      *
      * @param mixed $parameter
      * @param int $n
-     * @return ArticleFactory
+     *
+     * @return self
      */
     public function hasBills(mixed $n = 1, mixed $parameter = null): self
     {
@@ -92,7 +98,8 @@ class ArticleFactory extends BaseFactory
      *
      * @param mixed $parameter
      * @param int $n
-     * @return ArticleFactory
+     *
+     * @return self
      */
     public function hasBillsWithArticle(mixed $n = 1, mixed $parameter = null): self
     {
@@ -109,7 +116,8 @@ class ArticleFactory extends BaseFactory
      * Set the Article's title
      *
      * @param string $title
-     * @return ArticleFactory
+     *
+     * @return self
      */
     public function withTitle(string $title): self
     {
@@ -119,7 +127,7 @@ class ArticleFactory extends BaseFactory
     /**
      * Set the Article's title as a random job title
      *
-     * @return ArticleFactory
+     * @return self
      */
     public function setJobTitle(): self
     {

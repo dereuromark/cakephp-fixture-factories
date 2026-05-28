@@ -940,7 +940,7 @@ abstract class BaseFactory
      *
      * @return static
      */
-    public function state(array|callable|EntityInterface $data): static
+    public function state(EntityInterface|callable|array $data): static
     {
         $factory = clone $this;
         if (is_callable($data)) {
@@ -988,7 +988,7 @@ abstract class BaseFactory
      *
      * @return static
      */
-    public function sequence(array|callable|EntityInterface ...$states): static
+    public function sequence(EntityInterface|callable|array ...$states): static
     {
         if ($states === []) {
             throw new InvalidArgumentException('sequence() expects at least one array, entity or callable state.');
@@ -1354,7 +1354,7 @@ abstract class BaseFactory
      *
      * @return static
      */
-    public function setPrimaryKeyOffset(int|string|array $primaryKeyOffset): static
+    public function setPrimaryKeyOffset(array|string|int $primaryKeyOffset): static
     {
         $factory = clone $this;
         $factory->getDataCompiler()->setPrimaryKeyOffset($primaryKeyOffset);
@@ -1681,7 +1681,7 @@ abstract class BaseFactory
      *
      * @return static
      */
-    public function with(string $associationName, array|int|callable|BaseFactory|EntityInterface|string $data = []): static
+    public function with(string $associationName, BaseFactory|EntityInterface|callable|array|string|int $data = []): static
     {
         if ($this->readBootstrapMode) {
             return clone $this;

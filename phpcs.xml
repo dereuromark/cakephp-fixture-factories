@@ -4,9 +4,8 @@
     <arg value="nps"/>
 
     <file>src/</file>
+    <file>tests/Factory/</file>
     <file>tests/TestCase/</file>
-    <file>tests/TestApp/tests/Factory/</file>
-    <file>tests/TestApp/plugins/TestPlugin/tests/Factory/</file>
 
     <exclude-pattern>/templates/</exclude-pattern>
     <exclude-pattern>/tests/TestCase/Rector/Fixture/</exclude-pattern>

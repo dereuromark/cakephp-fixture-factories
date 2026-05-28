@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace CakephpFixtureFactories\Test\Factory;
@@ -12,7 +13,7 @@ use CakephpFixtureFactories\Generator\GeneratorInterface;
  * downstream consumers) rather than expecting callers to chain it on at
  * `::new(...)` sites.
  *
- * @extends BaseFactory<\TestApp\Model\Entity\Author>
+ * @extends \CakephpFixtureFactories\Factory\BaseFactory<\TestApp\Model\Entity\Author>
  */
 class RequiredParentsAuthorConfiguredFactory extends BaseFactory
 {

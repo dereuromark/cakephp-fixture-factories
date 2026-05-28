@@ -39,7 +39,7 @@ trait FactoryAwareTrait
      */
     public function getFactory(
         string $name,
-        array|callable|int|EntityInterface|string|null $makeParameter = [],
+        EntityInterface|callable|array|string|int|null $makeParameter = [],
         int $times = 1,
     ): BaseFactory {
         $factoryClassName = $this->getFactoryClassName($name);
