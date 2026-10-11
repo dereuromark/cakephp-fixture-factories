@@ -128,3 +128,20 @@ jobs:
         working-directory: docs
       - run: npm run docs:build:versioned
         working-directory: docs
+
+  php-minimum:
+    name: PHP 8.2 with Faker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, intl, pdo_sqlite
+          coverage: none
+      - name: Install dependencies without the optional PHP 8.3 generator
+        run: |
+          composer remove --dev johnykvsky/dummygenerator --no-update
+          composer update --prefer-dist --no-progress --prefer-stable
+      - name: Run factory, command and transaction coverage
+        run: vendor/bin/phpunit tests/TestCase/Factory tests/TestCase/Command tests/TestCase/TestSuite

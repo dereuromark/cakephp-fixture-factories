@@ -50,7 +50,7 @@ Never auto-resolved:
 The last two are exactly the brittle edge cases that
 [PR #85](https://github.com/dereuromark/cakephp-fixture-factories/pull/85) hit:
 guessing how to build them is unsafe, so automatic detection refuses. Opt them
-in explicitly (see [Override hook](#override-hook)) — never guessed.
+in explicitly (see [Override hook](#factory-class-hooks-add-and-exclude)) — never guessed.
 
 ## Side-effect free, atomic
 

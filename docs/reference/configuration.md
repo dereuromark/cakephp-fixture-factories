@@ -48,7 +48,7 @@ See [Generators](/guide/generators) for the full comparison.
 
 Default locale for the generator. Falls back to `I18n::getLocale()` when not set.
 
-> Faker has full locale support; DummyGenerator's locale support is limited.
+> Faker uses the selected locale. The DummyGenerator adapter ignores it.
 
 ### `seed`
 

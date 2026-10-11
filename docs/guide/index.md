@@ -116,9 +116,9 @@ The transaction strategy rolls the inserted article back after the test. If your
 
 ## Where to next?
 
-- [Fixture Factories](factories) — full factory API
-- [Usage Examples](examples) — common patterns
-- [Associations](associations) — building object graphs
-- [Scenarios](scenarios) — reusable test setups
-- [Generators](generators) — switching between Faker and DummyGenerator
-- [Bake command](/reference/bake) and [Persist command](/reference/persist) — CLI reference
+- [Fixture Factories](factories), full factory API
+- [Usage Examples](examples), common patterns
+- [Associations](associations), building object graphs
+- [Scenarios](scenarios), reusable test setups
+- [Generators](generators), switching between Faker and DummyGenerator
+- [Bake command](/reference/bake) and [Persist command](/reference/persist), CLI reference

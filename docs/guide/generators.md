@@ -14,7 +14,7 @@ This document provides a detailed comparison between the available fake data gen
 - **Package**: [johnykvsky/dummygenerator](https://github.com/johnykvsky/dummygenerator)
 - **Minimum PHP**: 8.3+
 - **Install**: `composer require --dev johnykvsky/dummygenerator`
-- **Best for**: Modern PHP 8.3+ projects, native enum support, lightweight footprint
+- **Best for**: Modern PHP 8.3+ projects, native enum support, the alternative generator adapter
 
 ### How the default is chosen
 
@@ -62,8 +62,8 @@ $statusValue = $this->getGenerator()->enumValue(TestStatus::class);
 - Example: `CakeGeneratorFactory::create('fr_FR')`
 
 **DummyGenerator**:
-- Limited locale support
-- Parameter is accepted for interface compatibility but may not affect output
+- The plugin adapter ignores the locale parameter
+- Use Faker when locale-specific output matters
 - Focuses on generic data generation
 
 ### 3. Method Compatibility
@@ -97,17 +97,9 @@ $generator->seed(1234);
 $generator->seed(1234); // Uses XoshiroRandomizer internally
 ```
 
-### 5. Performance
+### 5. Measuring performance
 
-**Faker**:
-- Mature and well-tested
-- Larger footprint
-- More features and providers
-
-**DummyGenerator**:
-- Modern PHP 8.3+ optimizations
-- Leaner codebase
-- Faster for basic operations
+Generator overhead depends on the selected methods, associations and database writes. Measure representative factories in your own test suite before choosing a generator for speed. This plugin does not provide comparative timing or memory benchmarks.
 
 ## Switching Generators
 
@@ -301,29 +293,12 @@ See `config/app.example.php` in this plugin for all available configuration opti
 | Colors | ✅ | ✅ |
 | Credit cards | ✅ | ✅ |
 | Barcodes (EAN, ISBN) | ✅ | ✅ |
-| Locale support | ✅ Full | ⚠️ Limited |
+| Locale support | ✅ Full | Not used by the adapter |
 | Native enum support | ⚠️ Shimmed | ✅ Native |
 | `unique()` modifier | ✅ | ✅ |
 | `optional()` modifier | ✅ | ✅ |
 | Seeding | ✅ | ✅ |
 | Minimum PHP version | 8.2+ | 8.3+ |
-
-## Performance Comparison
-
-While both generators are fast enough for testing purposes, here's a general comparison:
-
-**Faker**:
-- Mature codebase with extensive providers
-- ~5-10ms average per factory creation
-- Larger memory footprint
-
-**DummyGenerator**:
-- Modern PHP 8.3+ optimizations
-- ~3-7ms average per factory creation
-- Smaller memory footprint
-- Native enum handling is faster
-
-> **Note**: Performance differences are typically negligible for test suites. Choose based on features and PHP version requirements rather than performance.
 
 ## Troubleshooting
 

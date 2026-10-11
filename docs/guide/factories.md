@@ -64,7 +64,7 @@ class ArticleFactory extends BaseFactory
     {
         return $this->state([
             'is_published' => true,
-            'published' => new FrozenTime('-1 day'),
+            'published' => new \Cake\I18n\DateTime('-1 day'),
         ]);
     }
 

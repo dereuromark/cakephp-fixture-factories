@@ -236,7 +236,7 @@ AddressFactory::new()
     ->saveMany();
 ```
 
-Propagation also crosses `hasMany` and `belongsToMany` edges — only the *substitution* is belongsTo-scoped (see [boundary](#when-recycle-doesnt-help) below). So a `belongsTo` branch inside a hasMany child still substitutes:
+Propagation also crosses `hasMany` and `belongsToMany` edges — only the *substitution* is belongsTo-scoped (see [boundary](#when-recycle-doesn-t-help) below). So a `belongsTo` branch inside a hasMany child still substitutes:
 
 ```php
 $author = AuthorFactory::new()->save();
