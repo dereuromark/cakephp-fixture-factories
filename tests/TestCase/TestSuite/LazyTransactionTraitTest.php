@@ -17,8 +17,7 @@ use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
  * class out of the eager primary-connection wrap that the default
  * {@see FactoryTransactionStrategy} performs in setupTest().
  *
- * The trait wires its release call to PHPUnit's #[PreCondition] hook so it
- * fires before each test in the using class. We test the underlying
+ * The trait releases the eager transaction during CakePHP fixture setup. We test the underlying
  * `releaseTransactions()` flow directly here so the assertions don't
  * depend on PHPUnit's attribute dispatch order.
  */
@@ -71,7 +70,7 @@ class LazyTransactionTraitTest extends TestCase
 
     /**
      * Calling releaseEagerTransactionForTest() — the method PHPUnit
-     * normally fires from the trait's #[PreCondition] hook — rolls back the
+     * normally runs from the trait during fixture setup — rolls back the
      * eager-begun transaction. Subsequent direct table operations
      * inside the test would NOT be covered by the rollback.
      *

@@ -159,7 +159,7 @@ class HeavyConnectionTest extends \Cake\TestSuite\TestCase
 {
     use LazyTransactionTrait;
 
-    // Eager begin from setupTest() is rolled back via #[PreCondition].
+    // Release the eager transaction before application setUp() seeds data.
     // Tests in this class run with the lazy contract.
 }
 ```

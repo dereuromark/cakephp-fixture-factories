@@ -39,8 +39,8 @@ use Throwable;
  *   `'fixtureStrategy'`.
  * - For a single test class that should run lazily while the rest of
  *   the suite stays eager, `use` {@see LazyTransactionTrait} on that
- *   class. Its `#[Before]` hook releases the eager-begun transaction
- *   before the test body runs; subsequent Factory persists will then
+ *   class. It releases the eager transaction immediately after CakePHP
+ *   fixture setup, before application setUp() seeds data. Factory saves then
  *   lazily begin a fresh one.
  *
  * The strategy automatically tracks which tables are written to by

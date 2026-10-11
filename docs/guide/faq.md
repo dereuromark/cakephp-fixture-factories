@@ -67,7 +67,7 @@ CakeGeneratorFactory::registerAdapter('custom', MyCustomAdapter::class);
 Configure::write('FixtureFactories.generatorType', 'custom');
 ```
 
-See [Generators — custom generators](factories#custom-generators).
+See [Custom generators](/guide/factories#custom-generators).
 
 ## How do I migrate from `vierge-noire/cakephp-fixture-factories`?
 
