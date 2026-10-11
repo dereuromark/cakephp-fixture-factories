@@ -192,7 +192,7 @@ abstract class Story implements FixtureScenarioInterface
             $keys = [$keys];
         }
 
-        return array_values(array_map(static fn ($k) => $entities[$k], $keys));
+        return array_map(static fn ($k) => $entities[$k], $keys);
     }
 
     private function guardPoolExists(string $pool): void

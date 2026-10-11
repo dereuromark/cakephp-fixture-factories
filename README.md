@@ -1,11 +1,11 @@
 <p align="center">
-    <a href="https://dereuromark.github.io/cakephp-fixture-factories/" target="_blank"><img src="https://vierge-noire.github.io/images/fixture_factories.svg" alt="ff-logo" width="150"  /></a>
+    <a href="https://dereuromark.github.io/cakephp-fixture-factories/" target="_blank"><img src="https://dereuromark.github.io/cakephp-fixture-factories/logo.svg" alt="ff-logo" width="150"  /></a>
 </p>
 <h1 align="center">
 CakePHP Fixture Factories
 </h1>
 <h3 align="center">
-Write and run your tests faster. On any PHP application.
+Build test data with CakePHP's ORM.
 </h3>
 
 <p align="center">
@@ -47,7 +47,7 @@ ArticleFactory::new()
     ->saveMany();
 ```
 
-Five articles, each with three authors, each with an address chain — persisted, in one expression.
+Five articles, each with three authors, each with an address chain, persisted, in one expression.
 
 See [Getting Started](https://dereuromark.github.io/cakephp-fixture-factories/guide/) for the full walkthrough.
 

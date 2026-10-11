@@ -10,7 +10,7 @@ const isLegacyDocs = docsSeries === 'v1'
 
 export default defineConfig({
   title: 'CakePHP Fixture Factories',
-  description: 'Write and run your tests faster — fixture factories for CakePHP and beyond.',
+  description: 'Write and run your tests faster with fixture factories for CakePHP and beyond.',
 
   base: docsBase,
   cleanUrls: true,
@@ -23,7 +23,7 @@ export default defineConfig({
     ['meta', { name: 'theme-color', content: '#d33c43' }],
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:title', content: 'CakePHP Fixture Factories' }],
-    ['meta', { property: 'og:description', content: 'Write and run your tests faster — fixture factories for CakePHP and beyond.' }],
+    ['meta', { property: 'og:description', content: 'Write and run your tests faster with fixture factories for CakePHP and beyond.' }],
   ],
 
   themeConfig: {
@@ -47,9 +47,10 @@ export default defineConfig({
         {
           text: 'Introduction',
           items: [
+            ...(!isLegacyDocs ? [{ text: 'Installation', link: '/guide/installation' }] : []),
             { text: 'Getting Started', link: '/guide/' },
             { text: 'Why factories?', link: '/guide/why-factories' },
-            { text: "What's new in v2", link: '/guide/whats-new-in-v2' },
+            ...(!isLegacyDocs ? [{ text: "What's new in v2", link: '/guide/whats-new-in-v2' }] : []),
             { text: 'Setup', link: '/guide/setup' },
           ],
         },
@@ -60,8 +61,8 @@ export default defineConfig({
             { text: 'Usage Examples', link: '/guide/examples' },
             { text: 'Associations', link: '/guide/associations' },
             { text: 'Associations (standalone cakephp/orm)', link: '/guide/non-cakephp-associations' },
-            { text: 'Foreign keys in definition()', link: '/guide/foreign-keys-in-definition' },
-            { text: 'Required parents', link: '/guide/required-parents' },
+            ...(!isLegacyDocs ? [{ text: 'Foreign keys in definition()', link: '/guide/foreign-keys-in-definition' }] : []),
+            ...(!isLegacyDocs ? [{ text: 'Required parents', link: '/guide/required-parents' }] : []),
             { text: 'Scenarios', link: '/guide/scenarios' },
             { text: 'Best Practices', link: '/guide/best-practices' },
           ],

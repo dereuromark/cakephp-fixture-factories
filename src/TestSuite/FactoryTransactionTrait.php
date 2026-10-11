@@ -20,7 +20,7 @@ use Cake\TestSuite\Fixture\FixtureStrategyInterface;
  * the strategy globally instead:
  *
  * ```php
- * // config/app.php or tests/bootstrap.php
+ * // Merge into the array returned by config/app.php.
  * return [
  *     'TestSuite' => [
  *         'fixtureStrategy' => \CakephpFixtureFactories\TestSuite\FactoryTransactionStrategy::class,
@@ -33,7 +33,7 @@ use Cake\TestSuite\Fixture\FixtureStrategyInterface;
  * - Transaction rollback handles ALL data (factory and application code)
  * - Unique generator state is reset regardless of table usage
  *
- * Example (CakePHP 4.3 - 5.1):
+ * Example (CakePHP 5.0 - 5.1):
  * ```php
  * use Cake\TestSuite\TestCase;
  * use CakephpFixtureFactories\TestSuite\FactoryTransactionTrait;

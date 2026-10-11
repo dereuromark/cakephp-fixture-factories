@@ -44,7 +44,7 @@ It wraps every test in a transaction and rolls back on tear-down — so factory 
 
 ## Will tests be slower with factories?
 
-Generally no — often faster. Transaction rollback is cheaper than truncation, and tests no longer pull in unused fixture rows. The generator overhead per row is microseconds.
+Performance depends on your schema, association graph and cleanup strategy. Factories let each test create the rows it needs. Measure your own suite when comparing transaction rollback with truncation or static fixtures.
 
 ## Can I bake factories for a plugin?
 
@@ -67,7 +67,7 @@ CakeGeneratorFactory::registerAdapter('custom', MyCustomAdapter::class);
 Configure::write('FixtureFactories.generatorType', 'custom');
 ```
 
-See [Generators — custom generators](generators#custom-generators).
+See [Custom generators](/guide/factories#custom-generators).
 
 ## How do I migrate from `vierge-noire/cakephp-fixture-factories`?
 

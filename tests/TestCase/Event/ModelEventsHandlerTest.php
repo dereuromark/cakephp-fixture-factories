@@ -63,7 +63,6 @@ class ModelEventsHandlerTest extends TestCase
         $this->assertCount(2, $Countries->getEventManager()->listeners('Model.beforeMarshal'));
 
         $method = new ReflectionMethod(ModelEventsHandler::class, 'processListener');
-        $method->setAccessible(true);
         $method->invoke(new ModelEventsHandler(['Model.beforeMarshal'], []), $Countries, $listener, 'Model.beforeMarshal');
 
         $this->assertCount(2, $Countries->getEventManager()->listeners('Model.beforeMarshal'));

@@ -143,8 +143,7 @@ ProductFactory::new()
     ->saveMany();
 ```
 
-See the [Sequence section](factories.md#sequence-per-row-state) of the
-factories guide.
+See [Usage examples](/guide/examples) for more factory patterns.
 
 ## `Story` scenarios
 

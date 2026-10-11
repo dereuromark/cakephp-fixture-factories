@@ -5,11 +5,11 @@ description: Quick start guide for CakePHP Fixture Factories
 
 # Getting Started
 
-This guide walks you through installing the plugin, baking your first factory, and saving test data.
+Bake your first factory and use it in a test after installing the plugin.
 
 ## What is this?
 
-CakePHP Fixture Factories replaces the static `$fixtures` array workflow with a programmatic, type-safe factory pattern — like FactoryBot (Ruby) or factory_boy (Python), tailored to CakePHP and the wider PHP ecosystem.
+CakePHP Fixture Factories replaces the static `$fixtures` array workflow with a programmatic, type-safe factory pattern, like FactoryBot (Ruby) or factory_boy (Python), tailored to CakePHP and the wider PHP ecosystem.
 
 You write a factory class per table; tests then build exactly the data they need:
 
@@ -20,70 +20,13 @@ $articles = ArticleFactory::new()
     ->saveMany();
 ```
 
-Five articles, each with three authors, each with a full address chain — persisted, in one expression.
+Five articles, each with three authors, each with a full address chain, persisted, in one expression.
 
-## Installation
+## Before you start
 
-```bash
-composer require --dev dereuromark/cakephp-fixture-factories
-```
+Complete [Installation](/guide/installation) first. This walkthrough assumes an existing CakePHP application with an `Articles` table containing `id`, `title` and `body`, its `ArticlesTable` class, and the same schema in the separate `test` database. Run your application's test migrations before saving factory data. Factory baking reads the application schema; it does not create tables or migrations.
 
-You'll also need a data generator. Pick one (or install both):
-
-```bash
-# Faker — mature, full locale support
-composer require --dev fakerphp/faker
-
-# DummyGenerator — lean, PHP 8.3+, native enums
-composer require --dev johnykvsky/dummygenerator
-```
-
-## Load the plugin
-
-This plugin is dev-only — factories live under `tests/Factory/` and are never
-called from production code paths. One command sets that up:
-
-```bash
-bin/cake plugin load --only-debug CakephpFixtureFactories
-```
-
-This writes `config/plugins.php` with `onlyDebug => true`, so CakePHP only
-loads the plugin when `Configure::read('debug')` is true. The plugin stays out
-of production HTTP requests even if dev dependencies are accidentally shipped.
-
-::: tip Prefer hand-edited config?
-The equivalent `config/plugins.php` entry:
-
-```php
-return [
-    'CakephpFixtureFactories' => [
-        'onlyDebug' => true,
-    ],
-];
-```
-:::
-
-::: details Without flags, the CLI prompts based on composer keywords
-This plugin's `composer.json` declares `dev` and `cli` keywords, so running
-`bin/cake plugin load CakephpFixtureFactories` (no flags) interactively
-suggests `onlyDebug: true`, `onlyCli: true`, and `optional: true` — accepting
-all three gives you the same gating plus `onlyCli` (skip loading on web
-requests) and `optional` (no error if the package is absent in production).
-:::
-
-## Configure the fixture strategy (recommended)
-
-The plugin ships with `FactoryTransactionStrategy` — wraps each test in a transaction, rolls everything back afterwards, resets unique generator state. No more `$fixtures` arrays.
-
-In `config/app.php`:
-
-```php
-'TestSuite' => [
-    'fixtureStrategy' => \CakephpFixtureFactories\TestSuite\FactoryTransactionStrategy::class,
-],
-```
-
-For older CakePHP versions (5.0 – 5.1) use the trait — see [Setup](setup).
+Use [Setup](/guide/setup) to configure database cleanup between tests. With CakePHP 5.2 or newer, the global `FactoryTransactionStrategy` is the easiest option. On CakePHP 5.0 or 5.1, add `FactoryTransactionTrait` to the test class.
 
 ## Bake your first factory
 
@@ -139,13 +82,43 @@ $article = ArticleFactory::new()
 $articles = ArticleFactory::new()->count(5)->saveMany();
 ```
 
-That's it — your test now has data without touching a fixture file.
+A complete test with the factory transaction trait:
+
+```php
+namespace App\Test\TestCase\Model\Table;
+
+use App\Test\Factory\ArticleFactory;
+use Cake\TestSuite\TestCase;
+use CakephpFixtureFactories\TestSuite\FactoryTransactionTrait;
+
+class ArticlesTableTest extends TestCase
+{
+    use FactoryTransactionTrait;
+
+    public function testSavedArticle(): void
+    {
+        $article = ArticleFactory::new(['title' => 'Hello'])->save();
+
+        $this->assertFalse($article->isNew());
+        $this->assertSame('Hello', $article->title);
+        $this->assertNotEmpty($article->id);
+    }
+}
+```
+
+Save this as `tests/TestCase/Model/Table/ArticlesTableTest.php` and run:
+
+```bash
+vendor/bin/phpunit tests/TestCase/Model/Table/ArticlesTableTest.php
+```
+
+The transaction strategy rolls the inserted article back after the test. If your suite already configures the strategy globally, omit the trait.
 
 ## Where to next?
 
-- [Fixture Factories](factories) — full factory API
-- [Usage Examples](examples) — common patterns
-- [Associations](associations) — building object graphs
-- [Scenarios](scenarios) — reusable test setups
-- [Generators](generators) — switching between Faker and DummyGenerator
-- [Bake command](/reference/bake) and [Persist command](/reference/persist) — CLI reference
+- [Fixture Factories](factories), full factory API
+- [Usage Examples](examples), common patterns
+- [Associations](associations), building object graphs
+- [Scenarios](scenarios), reusable test setups
+- [Generators](generators), switching between Faker and DummyGenerator
+- [Bake command](/reference/bake) and [Persist command](/reference/persist), CLI reference

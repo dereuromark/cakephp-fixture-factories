@@ -61,7 +61,8 @@ function navigate(event: Event): void {
   <div :class="props.mobile ? 'version-switcher version-switcher-mobile' : 'version-switcher'">
     <div class="version-select-wrap">
       <select
-        id="docs-version-switcher"
+        :id="props.mobile ? 'docs-version-switcher-mobile' : 'docs-version-switcher'"
+        aria-label="Documentation version"
         class="version-select"
         v-model="selectedValue"
         @change="navigate"
@@ -129,5 +130,10 @@ function navigate(event: Event): void {
 
 .version-switcher-mobile .version-select {
   min-width: 100%;
+}
+@media (max-width: 767px) {
+  .version-switcher:not(.version-switcher-mobile) {
+    display: none;
+  }
 }
 </style>

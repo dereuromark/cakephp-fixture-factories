@@ -2,15 +2,9 @@
 
 Generate factory classes from your existing schema. Recommended over hand-writing them.
 
-## Loading the plugin
+## Before baking
 
-In `src/Application.php`:
-
-```php
-$this->addPlugin('CakephpFixtureFactories');
-```
-
-See the cookbook for [how to load a plugin](https://book.cakephp.org/5/en/plugins.html#loading-a-plugin).
+Complete [Installation](/guide/installation), including loading Bake and preparing the database schema. The command reads your table classes and existing columns to generate factories; it does not create the tables.
 
 ## Usage
 

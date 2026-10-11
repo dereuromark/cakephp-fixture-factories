@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace CakephpFixtureFactories\TestSuite;
 
-use PHPUnit\Framework\Attributes\Before;
-
 /**
  * Per-test-class opt-out of the eager priming the default
  * {@see FactoryTransactionStrategy} performs in `setupTest()`.
@@ -18,13 +16,10 @@ use PHPUnit\Framework\Attributes\Before;
  * because they want to observe direct-write side effects from a
  * separate connection.
  *
- * `use` the trait in the affected test class. The `#[Before]` hook
- * runs after the active strategy's `setupTest()` has primed the
- * primary connection, then immediately rolls that transaction back
- * via {@see FactoryTransactionStrategy::releaseTransactions()}.
- * Subsequent `BaseFactory::save()` / `saveMany()` calls inside the
- * test will lazily begin a fresh transaction via
- * `ensureTransaction()`.
+ * Add the trait to a CakePHP test class. It releases the eager transaction
+ * immediately after CakePHP installs the fixture strategy, before the
+ * application's setUp() creates test data. Factory saves in setUp() or
+ * the test body then start a fresh transaction for teardown to roll back.
  *
  * Cost: one extra `BEGIN` / `ROLLBACK` pair on the primary connection
  * for every test in the using class. Negligible at typical suite
@@ -54,17 +49,21 @@ use PHPUnit\Framework\Attributes\Before;
 trait LazyTransactionTrait
 {
     /**
-     * Release the eager-begun transaction the active strategy started
-     * in `setupTest()`.
-     *
-     * Runs as a PHPUnit `#[Before]` hook, which fires after the
-     * fixture strategy's `setupTest()` has installed itself and
-     * begun the eager transaction, but before the test method body —
-     * so the released transaction never sees test traffic.
+     * Release the eager transaction before application test setup continues.
      *
      * @return void
      */
-    #[Before]
+    protected function setupFixtures(): void
+    {
+        parent::setupFixtures();
+        $this->releaseEagerTransactionForTest();
+    }
+
+    /**
+     * Release transactions owned by the active factory fixture strategy.
+     *
+     * @return void
+     */
     public function releaseEagerTransactionForTest(): void
     {
         FactoryTransactionStrategy::getActiveInstance()?->releaseTransactions();

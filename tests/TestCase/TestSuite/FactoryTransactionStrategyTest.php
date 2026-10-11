@@ -21,6 +21,7 @@ use CakephpFixtureFactories\TestSuite\FactoryTableTracker;
 use CakephpFixtureFactories\TestSuite\FactoryTransactionStrategy;
 use CakephpFixtureFactories\TestSuite\LazyFactoryTransactionStrategy;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use DummyGenerator\DummyGenerator;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use ReflectionMethod;
 use ReflectionProperty;
@@ -339,6 +340,9 @@ class FactoryTransactionStrategyTest extends TestCase
 
     public function testStrategyResetsSharedDefaultGenerator(): void
     {
+        if (!class_exists(DummyGenerator::class)) {
+            $this->markTestSkipped('The optional DummyGenerator package is not installed.');
+        }
         Configure::write('FixtureFactories.generatorType', 'faker');
         BaseFactory::setDefaultGenerator('dummy');
 

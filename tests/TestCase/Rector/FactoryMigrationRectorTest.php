@@ -11,6 +11,8 @@ use Rector\Testing\PHPUnit\AbstractRectorTestCase;
 
 class FactoryMigrationRectorTest extends AbstractRectorTestCase
 {
+    private bool $rectorInitialized = false;
+
     protected function setUp(): void
     {
         if ($this->hasUnsupportedTokenizerStack()) {
@@ -21,6 +23,14 @@ class FactoryMigrationRectorTest extends AbstractRectorTestCase
         }
 
         parent::setUp();
+        $this->rectorInitialized = true;
+    }
+
+    protected function tearDown(): void
+    {
+        if ($this->rectorInitialized) {
+            parent::tearDown();
+        }
     }
 
     /**

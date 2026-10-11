@@ -5,7 +5,7 @@ description: All FixtureFactories config keys
 
 # Configuration Reference
 
-All settings live under the `FixtureFactories` key in your `config/app.php` (or `tests/bootstrap.php`). A complete annotated example ships with the plugin at [`config/app.example.php`](https://github.com/dereuromark/cakephp-fixture-factories/blob/main/config/app.example.php).
+Add settings under the `FixtureFactories` key in the array returned by `config/app.php`. In `tests/bootstrap.php`, use `Configure::write()` instead of returning an array. A complete annotated example ships with the plugin at [`config/app.example.php`](https://github.com/dereuromark/cakephp-fixture-factories/blob/main/config/app.example.php).
 
 ```php
 return [
@@ -24,6 +24,14 @@ return [
         'columnPatterns' => [],
     ],
 ];
+```
+
+For a test-only override after the application bootstrap has loaded its configuration:
+
+```php
+use Cake\Core\Configure;
+
+Configure::write('FixtureFactories.seed', 9999);
 ```
 
 ## Keys
@@ -48,7 +56,7 @@ See [Generators](/guide/generators) for the full comparison.
 
 Default locale for the generator. Falls back to `I18n::getLocale()` when not set.
 
-> Faker has full locale support; DummyGenerator's locale support is limited.
+> Faker uses the selected locale. The DummyGenerator adapter ignores it.
 
 ### `seed`
 

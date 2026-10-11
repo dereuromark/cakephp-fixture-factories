@@ -389,7 +389,6 @@ class AssociationBuilderTest extends TestCase
 
         $AssociationBuilder = new AssociationBuilder($addressFactory);
         $method = new ReflectionMethod(AssociationBuilder::class, 'findBackAssociation');
-        $method->setAccessible(true);
 
         $backAssociation = $method->invoke(
             $AssociationBuilder,

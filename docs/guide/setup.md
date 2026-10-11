@@ -19,37 +19,7 @@ See also: [Associations for standalone `cakephp/orm`](non-cakephp-associations.m
 
 ## CakePHP apps
 
-To bake and use factories, load the CakephpFixtureFactories plugin. Factories
-live under `tests/Factory/` and are never called from production code paths,
-so you want the plugin loaded only when `debug` is true:
-
-```bash
-bin/cake plugin load --only-debug CakephpFixtureFactories
-```
-
-This writes `config/plugins.php` with `onlyDebug => true`. CakePHP then loads
-the plugin only when `Configure::read('debug')` is true — the plugin stays out
-of production HTTP requests even if dev dependencies are accidentally shipped.
-
-The resulting entry, if you prefer hand-edited config:
-
-```php
-// config/plugins.php
-return [
-    'CakephpFixtureFactories' => [
-        'onlyDebug' => true,
-    ],
-];
-```
-
-::: tip Composer-keyword recommendations
-This plugin declares `dev` and `cli` in its composer keywords, so running
-`bin/cake plugin load CakephpFixtureFactories` without flags will
-interactively suggest `onlyDebug: true`, `onlyCli: true`, and `optional: true`.
-Accepting all three additionally skips loading on web requests (`onlyCli`) and
-silences the missing-plugin error in production builds that strip dev deps
-(`optional`).
-:::
+Follow [Installation](/guide/installation) to install and load the plugin, choose a generator and prepare a separate test database.
 
 **We recommend using migrations for managing the schema of your test DB with the [CakePHP Migrations plugin](https://book.cakephp.org/migrations/5/index.html#using-migrations-for-tests).**
 
@@ -189,7 +159,7 @@ class HeavyConnectionTest extends \Cake\TestSuite\TestCase
 {
     use LazyTransactionTrait;
 
-    // Eager begin from setupTest() is rolled back via #[Before].
+    // Release the eager transaction before application setUp() seeds data.
     // Tests in this class run with the lazy contract.
 }
 ```

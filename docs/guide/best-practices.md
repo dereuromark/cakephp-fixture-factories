@@ -52,7 +52,7 @@ over scattering raw state arrays through unrelated tests:
 $article = ArticleFactory::new()
     ->state([
         'is_published' => true,
-        'published' => new FrozenTime('-1 day'),
+        'published' => new \Cake\I18n\DateTime('-1 day'),
         'is_featured' => true,
     ])
     ->save();

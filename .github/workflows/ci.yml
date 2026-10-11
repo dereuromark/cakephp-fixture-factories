@@ -28,7 +28,7 @@ jobs:
           POSTGRES_USER: root
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -82,7 +82,7 @@ jobs:
     name: PHPStan / Code Standards - PHP ${{ matrix.php-version }}
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -111,3 +111,40 @@ jobs:
 
       - name: Run phpcs
         run: composer cs-check
+
+  docs:
+    name: Documentation
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
+      - run: npm ci
+        working-directory: docs
+      - run: npm run docs:build:versioned
+        working-directory: docs
+
+  php-minimum:
+    name: PHP 8.2 with Faker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, intl, pdo_sqlite
+          coverage: none
+      - name: Install dependencies without the optional PHP 8.3 generator
+        run: |
+          composer remove --dev johnykvsky/dummygenerator --no-update
+          composer update --prefer-dist --no-progress --prefer-stable
+      - name: Run factory, command and transaction coverage
+        run: vendor/bin/phpunit --filter 'TestCase.(Factory|Command|TestSuite)'
