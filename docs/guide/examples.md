@@ -224,7 +224,7 @@ A single entity can be normalized the same way when a caller expects a
 $article = (new \Cake\ORM\ResultSet(ArticleFactory::new()->saveMany()))->first(); // Cake\Datasource\EntityInterface
 ```
 
-Do not forget to check the [plugin's tests](https://github.com/dereuromark/cakephp-fixture-factories/tree/main/tests) for
+Do not forget to check the [plugin's tests](https://github.com/dereuromark/cakephp-fixture-factories/tree/cake6/tests) for
 more insights!
 
 ### Using `FactoryAwareTrait`

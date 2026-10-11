@@ -33,6 +33,9 @@ class FactoryTableLocator extends TableLocator
      */
     protected function createInstance(string $alias, array $options): Table
     {
+        if (!array_key_exists('associations', $options)) {
+            $options['associations'] = $this->getConfig($alias)['associations'] ?? null;
+        }
         $options['associations'] ??= new FactoryAssociationCollection($this);
 
         return parent::createInstance($alias, $options);

@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace CakephpFixtureFactories\Test\TestCase\ORM;
 
+use Cake\ORM\AssociationCollection;
 use Cake\ORM\TableRegistry;
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\ORM\FactoryTableLocator;
@@ -45,6 +46,31 @@ class FactoryTableRegistryTest extends TestCase
 
         $this->assertSame($locator->get('Cities'), $cities);
         $this->assertNotSame(TableRegistry::getTableLocator()->get('Cities'), $cities);
+    }
+
+    public function testConfiguredAssociationCollectionIsPreserved(): void
+    {
+        $locator = new FactoryTableLocator();
+        $associations = new AssociationCollection();
+        $locator->setConfig('Countries', ['associations' => $associations]);
+
+        $countries = $locator->get('Countries');
+
+        $this->assertSame($associations, $countries->associations());
+        $this->assertTrue($associations->has('Cities'));
+    }
+
+    public function testGetAssociationCollectionOverridesConfiguredCollection(): void
+    {
+        $locator = new FactoryTableLocator();
+        $configured = new AssociationCollection();
+        $provided = new AssociationCollection();
+        $locator->setConfig('Countries', ['associations' => $configured]);
+
+        $countries = $locator->get('Countries', ['associations' => $provided]);
+
+        $this->assertSame($provided, $countries->associations());
+        $this->assertFalse($configured->has('Cities'));
     }
 
     public static function tables(): array
