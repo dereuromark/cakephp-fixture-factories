@@ -66,6 +66,10 @@ cp "$CURRENT_CONFIG" "$LEGACY_WORKTREE_DIR/docs/.vitepress/config.ts"
 rm -rf "$LEGACY_WORKTREE_DIR/docs/.vitepress/theme"
 cp -R "$CURRENT_THEME_DIR" "$LEGACY_WORKTREE_DIR/docs/.vitepress/theme"
 
+# Build both versions with the current patched documentation toolchain.
+cp "$ROOT_DIR/package.json" "$LEGACY_WORKTREE_DIR/docs/package.json"
+cp "$ROOT_DIR/package-lock.json" "$LEGACY_WORKTREE_DIR/docs/package-lock.json"
+
 echo "Installing legacy docs dependencies"
 (cd "$LEGACY_WORKTREE_DIR/docs" && npm ci)
 

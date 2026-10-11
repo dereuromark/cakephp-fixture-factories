@@ -11,7 +11,6 @@ use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
-use PhpParser\Node\VariadicPlaceholder;
 use PHPStan\Type\ObjectType;
 use PHPStan\Type\UnionType;
 use Rector\Rector\AbstractRector;
@@ -147,16 +146,16 @@ final class FactoryLegacyMakeToNewRector extends AbstractRector
     }
 
     /**
-     * @param array<\PhpParser\Node\Arg|\PhpParser\Node\VariadicPlaceholder> $args
+     * @param array<\PhpParser\Node> $args
      *
      * @return array<\PhpParser\Node\Arg>
      */
     private function normalizeArgs(array $args): array
     {
-        return array_values(array_filter($args, static fn (Arg|VariadicPlaceholder $arg): bool => $arg instanceof Arg));
+        return array_values(array_filter($args, static fn (Node $arg): bool => $arg instanceof Arg));
     }
 
-    private function resolveArg(Arg|VariadicPlaceholder|null $arg): ?Arg
+    private function resolveArg(?Node $arg): ?Arg
     {
         return $arg instanceof Arg ? $arg : null;
     }

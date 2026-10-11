@@ -36,7 +36,7 @@ class CakephpFixtureFactoriesPlugin extends BasePlugin
      *
      * No-op if cakephp-ide-helper is not present.
      *
-     * @param \Cake\Core\PluginApplicationInterface<\Cake\Core\BasePlugin> $app
+     * @param \Cake\Core\PluginApplicationInterface $app
      *
      * @return void
      */

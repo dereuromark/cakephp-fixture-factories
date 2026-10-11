@@ -10,7 +10,6 @@ use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\TestSuite\FactoryTableTracker;
 use CakephpFixtureFactories\TestSuite\FactoryTransactionStrategy;
-use CakephpFixtureFactories\TestSuite\LazyTransactionTrait;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
 
 /**
@@ -18,17 +17,21 @@ use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
  * class out of the eager primary-connection wrap that the default
  * {@see FactoryTransactionStrategy} performs in setupTest().
  *
- * The trait wires its release call to PHPUnit's #[Before] hook so it
+ * The trait wires its release call to PHPUnit's #[PreCondition] hook so it
  * fires before each test in the using class. We test the underlying
  * `releaseTransactions()` flow directly here so the assertions don't
  * depend on PHPUnit's attribute dispatch order.
  */
 class LazyTransactionTraitTest extends TestCase
 {
-    use LazyTransactionTrait;
     use TruncateDirtyTables;
 
     private ?FactoryTransactionStrategy $strategy = null;
+
+    private function releaseEagerTransactionForTest(): void
+    {
+        FactoryTransactionStrategy::getActiveInstance()?->releaseTransactions();
+    }
 
     protected function setUp(): void
     {
@@ -68,7 +71,7 @@ class LazyTransactionTraitTest extends TestCase
 
     /**
      * Calling releaseEagerTransactionForTest() — the method PHPUnit
-     * normally fires from the trait's #[Before] hook — rolls back the
+     * normally fires from the trait's #[PreCondition] hook — rolls back the
      * eager-begun transaction. Subsequent direct table operations
      * inside the test would NOT be covered by the rollback.
      *

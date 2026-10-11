@@ -10,7 +10,7 @@ const isLegacyDocs = docsSeries === 'v1'
 
 export default defineConfig({
   title: 'CakePHP Fixture Factories',
-  description: 'Write and run your tests faster — fixture factories for CakePHP and beyond.',
+  description: 'Write and run your tests faster with fixture factories for CakePHP and beyond.',
 
   base: docsBase,
   cleanUrls: true,
@@ -23,7 +23,7 @@ export default defineConfig({
     ['meta', { name: 'theme-color', content: '#d33c43' }],
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:title', content: 'CakePHP Fixture Factories' }],
-    ['meta', { property: 'og:description', content: 'Write and run your tests faster — fixture factories for CakePHP and beyond.' }],
+    ['meta', { property: 'og:description', content: 'Write and run your tests faster with fixture factories for CakePHP and beyond.' }],
   ],
 
   themeConfig: {
@@ -47,6 +47,7 @@ export default defineConfig({
         {
           text: 'Introduction',
           items: [
+            ...(!isLegacyDocs ? [{ text: 'Installation', link: '/guide/installation' }] : []),
             { text: 'Getting Started', link: '/guide/' },
             { text: 'Why factories?', link: '/guide/why-factories' },
             { text: "What's new in v2", link: '/guide/whats-new-in-v2' },

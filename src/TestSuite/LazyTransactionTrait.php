@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace CakephpFixtureFactories\TestSuite;
 
-use PHPUnit\Framework\Attributes\Before;
+use PHPUnit\Framework\Attributes\PreCondition;
 
 /**
  * Per-test-class opt-out of the eager priming the default
@@ -18,7 +18,7 @@ use PHPUnit\Framework\Attributes\Before;
  * because they want to observe direct-write side effects from a
  * separate connection.
  *
- * `use` the trait in the affected test class. The `#[Before]` hook
+ * `use` the trait in the affected test class. The `#[PreCondition]` hook
  * runs after the active strategy's `setupTest()` has primed the
  * primary connection, then immediately rolls that transaction back
  * via {@see FactoryTransactionStrategy::releaseTransactions()}.
@@ -57,14 +57,14 @@ trait LazyTransactionTrait
      * Release the eager-begun transaction the active strategy started
      * in `setupTest()`.
      *
-     * Runs as a PHPUnit `#[Before]` hook, which fires after the
+     * Runs as a PHPUnit `#[PreCondition]` hook, which fires after the
      * fixture strategy's `setupTest()` has installed itself and
      * begun the eager transaction, but before the test method body —
      * so the released transaction never sees test traffic.
      *
      * @return void
      */
-    #[Before]
+    #[PreCondition]
     public function releaseEagerTransactionForTest(): void
     {
         FactoryTransactionStrategy::getActiveInstance()?->releaseTransactions();
