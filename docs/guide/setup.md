@@ -13,7 +13,7 @@ The section below covers the rarer case of using this plugin with a **standalone
 
 For applications that use `cakephp/orm` directly (without the rest of the Cake framework), use whatever method your test stack provides for managing the database, or opt for the universal [test-database-cleaner](https://github.com/vierge-noire/test-database-cleaner).
 
-Define your DB connections in your test `bootstrap.php` as described in the [CakePHP cookbook](https://book.cakephp.org/5/en/orm/database-basics.html#configuration).
+Define your DB connections in your test `bootstrap.php` as described in the [CakePHP cookbook](https://book.cakephp.org/6.x/orm/database-basics.html#configuration).
 
 See also: [Associations for standalone `cakephp/orm`](non-cakephp-associations.md).
 
@@ -25,7 +25,7 @@ Follow [Installation](/guide/installation) to install and load the plugin, choos
 
 ## Cleaning data between tests
 
-Test data must be cleaned between tests to avoid entity collisions and unexpected results. CakePHP ships with [Fixture State Managers](https://book.cakephp.org/5/en/development/testing.html#fixture-state-managers) and provides the `TruncateStrategy` (truncate all tables after each test run) as well as the `TransactionStrategy` (create a transaction and roll it back after each test run).
+Test data must be cleaned between tests to avoid entity collisions and unexpected results. CakePHP ships with [Fixture State Managers](https://book.cakephp.org/6.x/development/testing.html#fixture-state-managers) and provides the `TruncateStrategy` (truncate all tables after each test run) as well as the `TransactionStrategy` (create a transaction and roll it back after each test run).
 
 For fixture-factory–driven test suites, this plugin provides a dedicated strategy that pairs cleanly with factories — see below.
 
@@ -39,9 +39,9 @@ This plugin provides the `FactoryTransactionStrategy` which automatically:
 
 Unlike the standard `TransactionStrategy`, this doesn't require manually listing fixtures — in fact, the strategy works best if you don't use classic `$fixtures` arrays at all.
 
-### CakePHP 5.2+ (global configuration)
+### Global configuration
 
-In CakePHP 5.2+, configure the fixture strategy globally in `config/app.php`:
+On CakePHP 6, configure the fixture strategy globally in `config/app.php`:
 
 ```php
 'TestSuite' => [
@@ -53,9 +53,9 @@ This applies the strategy to **all test cases** automatically. No traits needed.
 
 > **Tip**: See `config/app.example.php` in this plugin for a full list of available configuration options, including generator type, seed, and instance-level generator management.
 
-### CakePHP 5.0–5.1 (trait-based)
+### Per-test configuration
 
-For older CakePHP versions, use `FactoryTransactionTrait`. Two patterns:
+To scope the strategy to selected test classes, use `FactoryTransactionTrait`:
 
 ::: code-group
 

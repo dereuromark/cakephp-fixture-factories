@@ -53,7 +53,7 @@ class AssociationBuilder
      * `getAssociations()`), but the marshaller config in `getAssociated()`
      * needs to MERGE across all of them so a `->with('Alias', F1)` followed
      * by a `->with('Alias', F2)` doesn't silently drop F1's nested
-     * marshaller config (associated branches, accessibleFields, etc.).
+     * marshaller config (associated branches, patchableFields, etc.).
      *
      * The merge is to-many only. For to-one aliases the merge would
      * contradict DataCompiler::mergeWithToOne()'s last-wins semantics, so
@@ -64,7 +64,7 @@ class AssociationBuilder
      * here, so the marshaller config for that alias may carry the default's
      * nested config even though the user explicitly replaced it. The data
      * path is unaffected (DataCompiler overrides defaults correctly); only
-     * marshaller accessibleFields keys may include extras for the dropped
+     * marshaller patchableFields keys may include extras for the dropped
      * default branch. A future refinement could mirror DataCompiler's
      * default-vs-user separation here.
      *

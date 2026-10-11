@@ -29,8 +29,8 @@ Yes. Factories work standalone via the `getTable()` API. See [Associations for n
 
 ## Faker or DummyGenerator — which should I pick?
 
-- **Faker** if you need extensive locale-specific data, or are on PHP < 8.3.
-- **DummyGenerator** if you're on PHP 8.3+ and want a leaner footprint with native enum support.
+- **Faker** if you need extensive locale-specific data.
+- **DummyGenerator** if you want a leaner footprint with native enum support.
 
 Both are interchangeable per-factory or globally. See [Generators](generators) for the full matrix.
 

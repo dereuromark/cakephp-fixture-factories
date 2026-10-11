@@ -5,7 +5,7 @@ description: All FixtureFactories config keys
 
 # Configuration Reference
 
-Add settings under the `FixtureFactories` key in the array returned by `config/app.php`. In `tests/bootstrap.php`, use `Configure::write()` instead of returning an array. A complete annotated example ships with the plugin at [`config/app.example.php`](https://github.com/dereuromark/cakephp-fixture-factories/blob/main/config/app.example.php).
+Add settings under the `FixtureFactories` key in the array returned by `config/app.php`. In `tests/bootstrap.php`, use `Configure::write()` instead of returning an array. A complete annotated example ships with the plugin at [`config/app.example.php`](https://github.com/dereuromark/cakephp-fixture-factories/blob/cake6/config/app.example.php).
 
 ```php
 return [
@@ -41,7 +41,7 @@ Configure::write('FixtureFactories.seed', 9999);
 Generator adapter to use for fake data.
 
 - `'faker'` — [FakerPHP/Faker](https://github.com/FakerPHP/Faker). Requires `composer require --dev fakerphp/faker`.
-- `'dummy'` — [johnykvsky/dummygenerator](https://github.com/johnykvsky/dummygenerator). Requires `composer require --dev johnykvsky/dummygenerator`. PHP 8.3+.
+- `'dummy'` — [johnykvsky/dummygenerator](https://github.com/johnykvsky/dummygenerator). Requires `composer require --dev johnykvsky/dummygenerator`.
 
 When this key is unset, the plugin auto-detects which library is installed.
 Precedence: explicit `Configure::write('FixtureFactories.generatorType', ...)`

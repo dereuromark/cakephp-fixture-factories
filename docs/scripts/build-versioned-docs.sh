@@ -20,20 +20,7 @@ detect_latest_label() {
         return
     fi
 
-    local latest_v2_tag
-    latest_v2_tag="$(git -C "$REPO_DIR" tag --list '2.*' --sort=-version:refname | head -n1)"
-
-    case "$latest_v2_tag" in
-        *-beta*)
-            printf '%s\n' 'v2 (beta)'
-            ;;
-        *-rc*|*-RC*)
-            printf '%s\n' 'v2 (rc)'
-            ;;
-        *)
-            printf '%s\n' 'v2 (latest)'
-            ;;
-    esac
+    printf '%s\n' 'CakePHP 6 (development)'
 }
 
 cleanup() {
@@ -54,7 +41,7 @@ DOCS_VERSION_TEXT="$LATEST_LABEL" \
 DOCS_LATEST_LINK_TEXT="$LATEST_LABEL" \
 DOCS_LEGACY_LINK_TEXT="$LEGACY_LABEL" \
 DOCS_SERIES="v2" \
-DOCS_EDIT_BRANCH="main" \
+DOCS_EDIT_BRANCH="cake6" \
 npx vitepress build "$ROOT_DIR"
 mkdir -p "$VERSIONED_DIST_DIR"
 cp -R "$DIST_DIR"/. "$VERSIONED_DIST_DIR"/

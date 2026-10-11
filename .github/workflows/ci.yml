@@ -5,13 +5,16 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   tests:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        php-version: ['8.3', '8.5']
+        php-version: ['8.5']
         db-type: [sqlite, mysql, pgsql]
         composer-type: [lowest, stable, dev]
 
@@ -44,14 +47,19 @@ jobs:
       - name: Validate composer.json
         run: composer validate
 
+      - name: Use the reviewed CakePHP 6 test-suite-light fork
+        run: composer config repositories.cake6-test-suite-light vcs https://github.com/dereuromark/cakephp-test-suite-light
+
       - name: Install dependencies
+        env:
+          COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ secrets.GITHUB_TOKEN }}"}}'
         run: |
           if [[ ${{ matrix.composer-type }} == 'lowest' ]]; then
-            composer update --prefer-dist --no-progress --no-suggest --prefer-stable --prefer-lowest
+            composer update --prefer-dist --no-progress --prefer-stable --prefer-lowest
           elif [[ ${{ matrix.composer-type }} == 'stable' ]]; then
-            composer update --prefer-dist --no-progress --no-suggest --prefer-stable
+            composer update --prefer-dist --no-progress --prefer-stable
           else
-            composer update --prefer-dist --no-progress --no-suggest
+            composer update --prefer-dist --no-progress
           fi
 
       - name: Run tests
@@ -59,14 +67,14 @@ jobs:
           if [ ${{ matrix.db-type }} == 'mysql' ]; then
             sudo service mysql start && mysql -h 127.0.0.1 -u root -proot -e 'CREATE DATABASE IF NOT EXISTS test_fixture_factories;';
           fi
-          if [[ '${{ matrix.php-version }}' == '8.3' && '${{ matrix.composer-type }}' == 'stable' ]]; then
+          if [[ '${{ matrix.php-version }}' == '8.5' && '${{ matrix.composer-type }}' == 'stable' ]]; then
             composer ${{ matrix.db-type }} -- --with-coverage
           else
             composer ${{ matrix.db-type }}
           fi
 
       - name: Upload coverage reports to Codecov
-        if: success() && matrix.php-version == '8.3'
+        if: success() && matrix.php-version == '8.5'
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -77,7 +85,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php-version: ['8.3']
+        php-version: ['8.5']
 
     name: PHPStan / Code Standards - PHP ${{ matrix.php-version }}
 
@@ -97,8 +105,13 @@ jobs:
       - name: Validate composer.json
         run: composer validate
 
+      - name: Use the reviewed CakePHP 6 test-suite-light fork
+        run: composer config repositories.cake6-test-suite-light vcs https://github.com/dereuromark/cakephp-test-suite-light
+
       - name: Install dependencies
-        run: composer update --prefer-dist --no-progress --no-suggest --prefer-stable
+        env:
+          COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ secrets.GITHUB_TOKEN }}"}}'
+        run: composer update --prefer-dist --no-progress --prefer-stable
 
       - name: Bake factories to perform analysis in the following steps
         run: vendor/bin/phpunit tests/TestCase/Command/BakeFixtureFactoryCommandTest.php
@@ -133,16 +146,20 @@ jobs:
         working-directory: docs
 
   php-minimum:
-    name: PHP 8.2 with Faker
+    name: PHP 8.5 with Faker
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
+          php-version: '8.5'
           extensions: mbstring, intl, pdo_sqlite
           coverage: none
-      - name: Install dependencies without the optional PHP 8.3 generator
+      - name: Use the reviewed CakePHP 6 test-suite-light fork
+        run: composer config repositories.cake6-test-suite-light vcs https://github.com/dereuromark/cakephp-test-suite-light
+      - name: Install dependencies without the optional DummyGenerator backend
+        env:
+          COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ secrets.GITHUB_TOKEN }}"}}'
         run: |
           composer remove --dev johnykvsky/dummygenerator --no-update
           composer update --prefer-dist --no-progress --prefer-stable

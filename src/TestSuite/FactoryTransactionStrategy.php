@@ -50,7 +50,7 @@ use Throwable;
  * state at teardown to prevent collision-prone accumulation between
  * tests.
  *
- * Usage (CakePHP 5.2+):
+ * Global configuration:
  * Configure globally in config/app.php:
  * ```php
  *     'TestSuite' => [
@@ -58,7 +58,7 @@ use Throwable;
  *     ],
  * ```
  *
- * Usage (CakePHP 5.0 - 5.1):
+ * Per-test configuration:
  * Use the FactoryTransactionTrait in your test cases.
  *
  * @since 2.0.0

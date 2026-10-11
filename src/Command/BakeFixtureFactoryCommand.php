@@ -18,7 +18,7 @@ namespace CakephpFixtureFactories\Command;
 use Bake\Command\BakeCommand;
 use Bake\Utility\TemplateRenderer;
 use Cake\Console\Arguments;
-use Cake\Console\ConsoleIo;
+use Cake\Console\ConsoleIoInterface;
 use Cake\Console\ConsoleOptionParser;
 use Cake\Core\Configure;
 use Cake\ORM\Table;
@@ -29,6 +29,7 @@ use CakephpFixtureFactories\Codegen\DefaultDataGuesser;
 use CakephpFixtureFactories\Factory\FactoryAwareTrait;
 use Exception;
 use ReflectionClass;
+use function Cake\Core\pluginSplit;
 
 class BakeFixtureFactoryCommand extends BakeCommand
 {
@@ -92,11 +93,11 @@ class BakeFixtureFactoryCommand extends BakeCommand
 
     /**
      * @param string $tableName Name of the table being baked
-     * @param \Cake\Console\ConsoleIo $io Console
+     * @param \Cake\Console\ConsoleIoInterface $io Console
      *
      * @return $this
      */
-    public function setTable(string $tableName, ConsoleIo $io)
+    public function setTable(string $tableName, ConsoleIoInterface $io)
     {
         if ($this->plugin) {
             $tableName = $this->plugin . ".$tableName";
@@ -113,17 +114,15 @@ class BakeFixtureFactoryCommand extends BakeCommand
     }
 
     /**
-     * @param \Cake\Console\Arguments $args Arguments
-     *
      * @return string
      */
-    public function getPath(Arguments $args): string
+    public function getPath(): string
     {
         $outputDir = Configure::read('FixtureFactories.testFixtureOutputDir', 'Factory/');
         $outputDir = rtrim($outputDir, DS) . '/';
 
         if ($this->plugin) {
-            $path = $this->_pluginPath($this->plugin) . 'tests/' . $outputDir;
+            $path = $this->pluginPath($this->plugin) . 'tests/' . $outputDir;
         } else {
             $path = TESTS . $outputDir;
         }
@@ -139,7 +138,7 @@ class BakeFixtureFactoryCommand extends BakeCommand
     public function getModelPath(): array|string
     {
         if ($this->plugin) {
-            $path = $this->_pluginPath($this->plugin) . APP_DIR . DS . $this->pathToTableDir;
+            $path = $this->pluginPath($this->plugin) . APP_DIR . DS . $this->pathToTableDir;
         } else {
             $path = APP . $this->pathToTableDir;
         }
@@ -162,11 +161,11 @@ class BakeFixtureFactoryCommand extends BakeCommand
     /**
      * List the tables, ignore tables that should not be baked
      *
-     * @param \Cake\Console\ConsoleIo $io Console
+     * @param \Cake\Console\ConsoleIoInterface $io Console
      *
      * @return array<string>
      */
-    public function getTableList(ConsoleIo $io): array
+    public function getTableList(ConsoleIoInterface $io): array
     {
         $modelPath = $this->getModelPathString();
         $tables = glob($modelPath . '*Table.php') ?: [];
@@ -193,11 +192,11 @@ class BakeFixtureFactoryCommand extends BakeCommand
      * Return false if the table is not found or is abstract, interface or trait
      *
      * @param string $table Table
-     * @param \Cake\Console\ConsoleIo $io Console
+     * @param \Cake\Console\ConsoleIoInterface $io Console
      *
      * @return bool
      */
-    public function thisTableShouldBeBaked(string $table, ConsoleIo $io): bool
+    public function thisTableShouldBeBaked(string $table, ConsoleIoInterface $io): bool
     {
         /** @var class-string $tableClassName */
         $tableClassName = ($this->plugin ?: Configure::read('App.namespace'))
@@ -218,11 +217,11 @@ class BakeFixtureFactoryCommand extends BakeCommand
 
     /**
      * @param \Cake\Console\Arguments $args Arguments
-     * @param \Cake\Console\ConsoleIo $io Console
+     * @param \Cake\Console\ConsoleIoInterface $io Console
      *
      * @return int Exit code: CODE_SUCCESS unless no tables were found.
      */
-    private function bakeAllModels(Arguments $args, ConsoleIo $io): int
+    private function bakeAllModels(Arguments $args, ConsoleIoInterface $io): int
     {
         $tables = $this->getTableList($io);
         if (!$tables) {
@@ -240,19 +239,21 @@ class BakeFixtureFactoryCommand extends BakeCommand
     /**
      * Execute the command.
      *
-     * @param \Cake\Console\Arguments $args The command arguments.
-     * @param \Cake\Console\ConsoleIo $io The console io
-     *
      * @return int|null The exit code or null for success
      */
-    public function execute(Arguments $args, ConsoleIo $io): ?int
+    public function execute(): ?int
     {
+        $args = $this->args;
+        $io = $this->io;
         // Parent extractCommonProperties() already camelizes parts and throws
         // InvalidArgumentException on backslash separators (i.e. `Foo\Bar`),
         // so no extra plugin parsing is needed here.
         $this->extractCommonProperties($args);
         $model = $args->getArgument('model') ?? '';
-        $model = $this->_getName($model);
+        [$plugin, $model] = pluginSplit($model);
+        if ($plugin !== null) {
+            $this->plugin = $plugin;
+        }
         $loud = !$args->getOption('quiet');
 
         if ($args->getOption('all')) {
@@ -280,11 +281,11 @@ class BakeFixtureFactoryCommand extends BakeCommand
     /**
      * @param string $modelName Name of the model
      * @param \Cake\Console\Arguments $args Arguments
-     * @param \Cake\Console\ConsoleIo $io Console
+     * @param \Cake\Console\ConsoleIoInterface $io Console
      *
      * @return int|bool
      */
-    public function bakeFixtureFactory(string $modelName, Arguments $args, ConsoleIo $io): int|bool
+    public function bakeFixtureFactory(string $modelName, Arguments $args, ConsoleIoInterface $io): int|bool
     {
         $this->modelName = $modelName;
 
@@ -295,7 +296,7 @@ class BakeFixtureFactoryCommand extends BakeCommand
 
         $contents = $renderer->generate($this->template());
 
-        $path = $this->getPath($args);
+        $path = $this->getPath();
         $filename = $path . $this->getFactoryFileName($modelName);
 
         /** @var bool $forceOverwrite */
@@ -416,7 +417,7 @@ class BakeFixtureFactoryCommand extends BakeCommand
         $name = ($this->plugin ? $this->plugin . '.' : '') . $this->name;
         $parser = new ConsoleOptionParser($name);
 
-        $parser = $this->_setCommonOptions($parser);
+        $parser = $this->setCommonOptions($parser);
 
         $parser->setDescription(
             'Fixture factory generator.',

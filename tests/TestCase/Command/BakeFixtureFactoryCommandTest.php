@@ -85,9 +85,9 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
     {
         $args = new Arguments([], [], []);
 
-        $path = $this->FactoryCommand->getPath($args);
+        $path = $this->FactoryCommand->getPath();
         Configure::write('FixtureFactories.testFixtureOutputDir', 'my/custom/path');
-        $customPath = $this->FactoryCommand->getPath($args);
+        $customPath = $this->FactoryCommand->getPath();
 
         $this->assertStringEndsWith('tests' . DS . 'TestApp' . DS . 'tests' . DS . 'Factory' . DS, $path);
         $this->assertStringEndsWith('tests' . DS . 'TestApp' . DS . 'tests' . DS . 'my' . DS . 'custom' . DS . 'path' . DS, $customPath);

@@ -31,7 +31,7 @@ use Cake\ORM\Entity as BaseEntity;
  */
 class Bill extends BaseEntity
 {
-    protected array $_accessible = [
+    protected array $patchable = [
         'customer_id' => true,
         'article_id' => true,
         'amount' => true,

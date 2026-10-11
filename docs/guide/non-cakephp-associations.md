@@ -58,5 +58,5 @@ $city = CityFactory::new()
 ```
 which will set the city's country, and provide 4 random addresses.
 
-The [CakePHP cookbook chapter on associations](https://book.cakephp.org/5/en/orm/associations.html) describes how to define your associations.
+The [CakePHP cookbook chapter on associations](https://book.cakephp.org/6.x/orm/associations.html) describes how to define your associations.
 Non-CakePHP applications don't need to create any table objects — use the `getTable()` public method instead.

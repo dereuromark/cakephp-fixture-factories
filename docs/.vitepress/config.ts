@@ -1,11 +1,11 @@
 import { defineConfig } from 'vitepress'
 
 const docsBase = process.env.DOCS_BASE ?? '/cakephp-fixture-factories/'
-const currentVersion = process.env.DOCS_VERSION_TEXT ?? 'v2 (latest)'
-const latestLinkText = process.env.DOCS_LATEST_LINK_TEXT ?? 'v2 (latest)'
+const currentVersion = process.env.DOCS_VERSION_TEXT ?? 'CakePHP 6 (development)'
+const latestLinkText = process.env.DOCS_LATEST_LINK_TEXT ?? 'CakePHP 6 (development)'
 const legacyLinkText = process.env.DOCS_LEGACY_LINK_TEXT ?? 'v1 (legacy)'
 const docsSeries = process.env.DOCS_SERIES ?? 'v2'
-const editBranch = process.env.DOCS_EDIT_BRANCH ?? 'main'
+const editBranch = process.env.DOCS_EDIT_BRANCH ?? 'cake6'
 const isLegacyDocs = docsSeries === 'v1'
 
 export default defineConfig({

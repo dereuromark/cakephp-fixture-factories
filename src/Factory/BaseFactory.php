@@ -93,7 +93,7 @@ abstract class BaseFactory
     protected array $marshallerOptions = [
         'validate' => false,
         'forceNew' => true,
-        'accessibleFields' => ['*' => true],
+        'patchableFields' => ['*' => true],
     ];
 
     /**
@@ -725,8 +725,7 @@ abstract class BaseFactory
             if (count($entities) === 1) {
                 $saved = [$table->saveOrFail($entities[0], $this->getSaveOptions())];
             } else {
-                $result = $table->saveManyOrFail($entities, $this->getSaveOptions());
-                $saved = is_array($result) ? array_values($result) : iterator_to_array($result, false);
+                $saved = array_values($table->saveManyOrFail($entities, $this->getSaveOptions()));
             }
         } catch (Throwable $exception) {
             $factory = static::class;

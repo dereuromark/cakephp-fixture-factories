@@ -33,7 +33,7 @@ See [Generators](generators) for the comparison.
 
 ## `DummyGenerator library is not installed`
 
-Same shape as the Faker error. Install with `composer require --dev johnykvsky/dummygenerator` (requires PHP 8.3+) or switch back to `'faker'`.
+Same shape as the Faker error. Install with `composer require --dev johnykvsky/dummygenerator` or switch back to `'faker'`.
 
 ## `No random data generator found`
 

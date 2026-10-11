@@ -328,7 +328,7 @@ class BaseFactoryWithRequiredParentsTest extends TestCase
         $address = AddressFactory::new()->save();
         $author = AuthorFactory::new()->getTable()->newEntity(
             ['name' => 'Hidden FK', 'address_id' => $address->id],
-            ['accessibleFields' => ['*' => true]],
+            ['patchableFields' => ['*' => true]],
         );
         $author->setHidden(['address_id'], true);
         $addressCountBefore = AddressFactory::query()->count();
@@ -397,7 +397,7 @@ class BaseFactoryWithRequiredParentsTest extends TestCase
         $address = AddressFactory::new()->save();
         $author = AuthorFactory::new()->getTable()->newEntity(
             ['name' => 'Pinned', 'address_id' => $address->id],
-            ['accessibleFields' => ['*' => true]],
+            ['patchableFields' => ['*' => true]],
         );
         $addressCountBefore = AddressFactory::query()->count();
 

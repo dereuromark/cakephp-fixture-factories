@@ -298,7 +298,7 @@ $article = $articlesTable->newEntity(['title' => 'Existing']);
 $factory = ArticleFactory::from($article);
 ```
 
-Unlike `state(EntityInterface)` (which extracts via `toArray()`), `from()` preserves the entity's identity, so `_accessible`/`_virtual`/source-alias stay intact.
+Unlike `state(EntityInterface)` (which extracts via `toArray()`), `from()` preserves the entity's identity, so `patchable`/`virtual`/source-alias stay intact.
 
 ### `from()` / `new($entity)` wrap exactly one entity
 

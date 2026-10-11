@@ -16,7 +16,7 @@ namespace CakephpFixtureFactories\Command;
 
 use Cake\Command\Command;
 use Cake\Console\Arguments;
-use Cake\Console\ConsoleIo;
+use Cake\Console\ConsoleIoInterface;
 use Cake\Console\ConsoleOptionParser;
 use Cake\Datasource\ConnectionManager;
 use CakephpFixtureFactories\Error\FactoryNotFoundException;
@@ -89,8 +89,10 @@ class PersistCommand extends Command
     /**
      * @inheritDoc
      */
-    public function execute(Arguments $args, ConsoleIo $io): int
+    public function execute(): int
     {
+        $args = $this->args;
+        $io = $this->io;
         $factory = null;
         try {
             $factory = $this->parseFactory($args);
@@ -169,13 +171,13 @@ class PersistCommand extends Command
     /**
      * @param \Cake\Console\Arguments $args Arguments
      * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Factory
-     * @param \Cake\Console\ConsoleIo $io Console
+     * @param \Cake\Console\ConsoleIoInterface $io Console
      *
      * @throws \CakephpFixtureFactories\Error\FactoryNotFoundException if the method is not found in the factory
      *
      * @return \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>
      */
-    protected function attachMethod(Arguments $args, BaseFactory $factory, ConsoleIo $io): BaseFactory
+    protected function attachMethod(Arguments $args, BaseFactory $factory, ConsoleIoInterface $io): BaseFactory
     {
         /** @var string|null $method */
         $method = $args->getOption('method');
@@ -269,11 +271,11 @@ class PersistCommand extends Command
     /**
      * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Factory
      * @param \Cake\Console\Arguments $args Arguments
-     * @param \Cake\Console\ConsoleIo $io Console
+     * @param \Cake\Console\ConsoleIoInterface $io Console
      *
      * @return void
      */
-    protected function persist(BaseFactory $factory, Arguments $args, ConsoleIo $io): void
+    protected function persist(BaseFactory $factory, Arguments $args, ConsoleIoInterface $io): void
     {
         $connection = $args->getOption('connection') ?? 'test';
         if (!is_string($connection)) {
@@ -299,11 +301,11 @@ class PersistCommand extends Command
     /**
      * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Factory
      * @param \Cake\Console\Arguments $args Arguments
-     * @param \Cake\Console\ConsoleIo $io Console
+     * @param \Cake\Console\ConsoleIoInterface $io Console
      *
      * @return void
      */
-    protected function dryRun(BaseFactory $factory, Arguments $args, ConsoleIo $io): void
+    protected function dryRun(BaseFactory $factory, Arguments $args, ConsoleIoInterface $io): void
     {
         $connection = $args->getOption('connection') ?? 'test';
         if (!is_string($connection)) {

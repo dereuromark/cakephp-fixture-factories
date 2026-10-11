@@ -17,6 +17,7 @@ namespace CakephpFixtureFactories\Test\TestCase\Command;
 
 use Cake\Console\Arguments;
 use Cake\Console\ConsoleIo;
+use Cake\Console\ConsoleIoInterface;
 use Cake\Console\Exception\StopException;
 use Cake\Core\Configure;
 use Cake\Datasource\ConnectionManager;
@@ -31,6 +32,7 @@ use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
 use PHPUnit\Framework\Attributes\DataProvider;
+use ReflectionProperty;
 
 class PersistCommandTest extends TestCase
 {
@@ -82,7 +84,7 @@ class PersistCommandTest extends TestCase
     {
         $args = new Arguments([$factoryString], [], [PersistCommand::ARG_NAME]);
 
-        $output = $this->command->execute($args, $this->io);
+        $output = $this->executeCommand($this->command, $args, $this->io);
 
         $this->assertSame(PersistCommand::CODE_SUCCESS, $output);
         $this->assertSame(1, ArticleFactory::query()->count());
@@ -102,7 +104,7 @@ class PersistCommandTest extends TestCase
     {
         $args = new Arguments([$factoryString], [], [PersistCommand::ARG_NAME]);
 
-        $output = $this->command->execute($args, $this->io);
+        $output = $this->executeCommand($this->command, $args, $this->io);
 
         $this->assertSame(PersistCommand::CODE_SUCCESS, $output);
         $this->assertSame(1, BillFactory::query()->count());
@@ -114,7 +116,7 @@ class PersistCommandTest extends TestCase
         $number = '3';
         $args = new Arguments([$factoryString], compact('number'), [PersistCommand::ARG_NAME]);
 
-        $output = $this->command->execute($args, $this->io);
+        $output = $this->executeCommand($this->command, $args, $this->io);
 
         $this->assertSame(PersistCommand::CODE_SUCCESS, $output);
         $this->assertEquals($number, ArticleFactory::query()->count());
@@ -125,7 +127,7 @@ class PersistCommandTest extends TestCase
         $number = '3';
         $args = new Arguments(['Article'], ['method' => 'hasBills', 'number' => $number], [PersistCommand::ARG_NAME]);
 
-        $output = $this->command->execute($args, $this->io);
+        $output = $this->executeCommand($this->command, $args, $this->io);
 
         $this->assertSame(PersistCommand::CODE_SUCCESS, $output);
         $this->assertEquals($number, ArticleFactory::query()->count());
@@ -138,7 +140,7 @@ class PersistCommandTest extends TestCase
         $numberOfAddresses = 4;
         $args = new Arguments(['Country'], ['with' => "Cities[$numberOfCities].Addresses[$numberOfAddresses]"], [PersistCommand::ARG_NAME]);
 
-        $output = $this->command->execute($args, $this->io);
+        $output = $this->executeCommand($this->command, $args, $this->io);
 
         $this->assertSame(PersistCommand::CODE_SUCCESS, $output);
         $this->assertEquals(1, CountryFactory::query()->count());
@@ -151,7 +153,7 @@ class PersistCommandTest extends TestCase
         $number = '3';
         $args = new Arguments(['Article'], ['method' => 'hasBills', 'number' => $number, 'dry-run' => true], [PersistCommand::ARG_NAME]);
 
-        $output = $this->command->execute($args, $this->io);
+        $output = $this->executeCommand($this->command, $args, $this->io);
 
         $this->assertSame(PersistCommand::CODE_SUCCESS, $output);
         $this->assertSame(0, ArticleFactory::query()->count());
@@ -164,7 +166,7 @@ class PersistCommandTest extends TestCase
         $args = new Arguments([$className], [], [PersistCommand::ARG_NAME]);
 
         $this->expectException(StopException::class);
-        $this->command->execute($args, $this->io);
+        $this->executeCommand($this->command, $args, $this->io);
     }
 
     public function testPersistWithWrongMethod(): void
@@ -174,7 +176,7 @@ class PersistCommandTest extends TestCase
         $args = new Arguments([$className], compact('method'), [PersistCommand::ARG_NAME]);
 
         $this->expectException(StopException::class);
-        $this->command->execute($args, $this->io);
+        $this->executeCommand($this->command, $args, $this->io);
     }
 
     public function testPersistWithProtectedMethod(): void
@@ -184,7 +186,7 @@ class PersistCommandTest extends TestCase
         $args = new Arguments([$className], compact('method'), [PersistCommand::ARG_NAME]);
 
         $this->expectException(StopException::class);
-        $this->command->execute($args, $this->io);
+        $this->executeCommand($this->command, $args, $this->io);
     }
 
     public function testPersistWithMethodRequiringArguments(): void
@@ -194,7 +196,7 @@ class PersistCommandTest extends TestCase
         $args = new Arguments([$className], compact('method'), [PersistCommand::ARG_NAME]);
 
         $this->expectException(StopException::class);
-        $this->command->execute($args, $this->io);
+        $this->executeCommand($this->command, $args, $this->io);
     }
 
     public function testPersistWithMethodReturningNonFactory(): void
@@ -204,7 +206,7 @@ class PersistCommandTest extends TestCase
         $args = new Arguments([$className], compact('method'), [PersistCommand::ARG_NAME]);
 
         $this->expectException(StopException::class);
-        $this->command->execute($args, $this->io);
+        $this->executeCommand($this->command, $args, $this->io);
     }
 
     public function testPersistWithInvalidNumberString(): void
@@ -214,7 +216,7 @@ class PersistCommandTest extends TestCase
         $args = new Arguments([$className], compact('number'), [PersistCommand::ARG_NAME]);
 
         $this->expectException(StopException::class);
-        $this->command->execute($args, $this->io);
+        $this->executeCommand($this->command, $args, $this->io);
     }
 
     public function testPersistWithFloatNumberString(): void
@@ -224,7 +226,7 @@ class PersistCommandTest extends TestCase
         $args = new Arguments([$className], compact('number'), [PersistCommand::ARG_NAME]);
 
         $this->expectException(StopException::class);
-        $this->command->execute($args, $this->io);
+        $this->executeCommand($this->command, $args, $this->io);
     }
 
     /**
@@ -234,12 +236,12 @@ class PersistCommandTest extends TestCase
     {
         $aliasesBefore = ConnectionManager::aliases();
 
-        $output = $this->command->execute(new Arguments([ArticleFactory::class], [], [PersistCommand::ARG_NAME]), $this->io);
+        $output = $this->executeCommand($this->command, new Arguments([ArticleFactory::class], [], [PersistCommand::ARG_NAME]), $this->io);
         $this->assertSame(PersistCommand::CODE_SUCCESS, $output);
         $configName = TableRegistry::getTableLocator()->get('TestPlugin.Bills')->getConnection()->configName();
         $this->assertSame('test', $configName);
 
-        $output = $this->command->execute(new Arguments([ArticleFactory::class], ['connection' => 'dummy'], [PersistCommand::ARG_NAME]), $this->io);
+        $output = $this->executeCommand($this->command, new Arguments([ArticleFactory::class], ['connection' => 'dummy'], [PersistCommand::ARG_NAME]), $this->io);
         $this->assertSame(PersistCommand::CODE_SUCCESS, $output);
         $this->assertSame($aliasesBefore, ConnectionManager::aliases());
     }
@@ -248,7 +250,8 @@ class PersistCommandTest extends TestCase
     {
         $beforeAliases = ConnectionManager::aliases();
 
-        $output = $this->command->execute(
+        $output = $this->executeCommand(
+            $this->command,
             new Arguments([ArticleFactory::class], ['connection' => 'dummy'], [PersistCommand::ARG_NAME]),
             $this->io,
         );
@@ -270,12 +273,21 @@ class PersistCommandTest extends TestCase
             }
         };
 
-        $output = $command->execute(
+        $output = $this->executeCommand(
+            $command,
             new Arguments([ArticleFactory::class], ['connection' => 'dummy', 'dry-run' => true], [PersistCommand::ARG_NAME]),
             $this->io,
         );
 
         $this->assertSame(PersistCommand::CODE_SUCCESS, $output);
         $this->assertSame(1, $command->aliasCalls);
+    }
+
+    protected function executeCommand(PersistCommand $command, Arguments $args, ConsoleIoInterface $io): int
+    {
+        (new ReflectionProperty($command, 'args'))->setValue($command, $args);
+        (new ReflectionProperty($command, 'io'))->setValue($command, $io);
+
+        return $command->execute();
     }
 }
