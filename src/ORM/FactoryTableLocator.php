@@ -31,9 +31,19 @@ class FactoryTableLocator extends TableLocator
     /**
      * @inheritDoc
      */
-    protected function _create(array $options): Table
+    protected function createInstance(string $alias, array $options): Table
     {
-        $table = parent::_create($options);
+        $options += ['associations' => new FactoryAssociationCollection($this)];
+
+        return parent::createInstance($alias, $options);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    protected function create(array $options): Table
+    {
+        $table = parent::create($options);
 
         $defaultBehaviors = (array)Configure::read('FixtureFactories.testFixtureGlobalBehaviors', []);
         $defaultBehaviors[] = 'Timestamp';

@@ -127,7 +127,7 @@ $article = ArticleFactory::new()
 ```
 
 When injecting a single string in the factory, the latter will assign the injected string to the
-[display field](https://book.cakephp.org/5/en/orm/retrieving-data-and-resultsets.html#finding-key-value-pairs) of the factory's table:
+[display field](https://book.cakephp.org/6/en/orm/retrieving-data-and-resultsets.html#finding-key-value-pairs) of the factory's table:
 ```php
 $article = ArticleFactory::new('Foo')->build();
 $articles = ArticleFactory::new('Foo')->count(3)->buildMany();
@@ -323,7 +323,7 @@ with the database, and yet you would need to simulate the output of a select que
 For example in a `ArticlesIndexController` you want to emulate a query returning
 10 articles and want to test that the rendering is made properly.
 
-In your test, where `$this` is the TestCase extending [CakePHP's TestCase](https://book.cakephp.org/5/en/development/testing.html#mocking-model-methods):
+In your test, where `$this` is the TestCase extending [CakePHP's TestCase](https://book.cakephp.org/6/en/development/testing.html#mocking-model-methods):
 ```php
 $articleFactory = ArticleFactory::new()->count(10)->hasAuthors();
 \CakephpFixtureFactories\ORM\SelectQueryMocker::mock($this, $articleFactory);

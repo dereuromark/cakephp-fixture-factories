@@ -27,22 +27,22 @@
     ],
     "license": "MIT",
     "require": {
-        "php": ">=8.2",
-        "cakephp/orm": "^5.0"
+        "php": ">=8.5",
+        "cakephp/orm": "^6.0@dev"
     },
     "require-dev": {
-        "cakephp/bake": "^3.0.0",
-        "cakephp/migrations": "^4.7.0 || ^5.0.0",
-        "cakephp/twig-view": "^2.0.2",
-        "dereuromark/cakephp-ide-helper": "^2.17",
+        "cakephp/bake": "^4.0@dev",
+        "cakephp/migrations": "dev-fix/6.x-cakephp-compatibility",
+        "cakephp/twig-view": "^3.0@dev",
+        "dereuromark/cakephp-ide-helper": "dev-cake6",
         "fakerphp/faker": "^1.23",
         "johnykvsky/dummygenerator": "^0.2.1",
         "josegonzalez/dotenv": "^4.0.0",
         "php-collective/code-sniffer": "dev-master",
         "phpstan/phpstan": "^2.1",
-        "phpunit/phpunit": "^11.5 || ^12.1 || ^13.0",
+        "phpunit/phpunit": "^13.0",
         "rector/rector": "^2.1",
-        "vierge-noire/cakephp-test-suite-light": "^3.0"
+        "vierge-noire/cakephp-test-suite-light": "dev-cake6"
     },
     "suggest": {
         "dereuromark/cakephp-ide-helper": "Lets `bin/cake annotate classes` (and `annotate all`) keep your Factory subclass docblocks in sync via the bundled FactoryAnnotatorTask. Requires version with PathAwareClassAnnotatorTaskInterface support."
@@ -78,6 +78,6 @@
             "dealerdirect/phpcodesniffer-composer-installer": true
         }
     },
-    "minimum-stability": "stable",
+    "minimum-stability": "dev",
     "prefer-stable": true
 }

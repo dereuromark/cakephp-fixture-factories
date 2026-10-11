@@ -8,6 +8,14 @@ description: Per-version upgrade notes
 This page collects breaking-change notes between minor versions. For migrating
 from `vierge-noire/cakephp-fixture-factories`, see the [migration guide](migration.md).
 
+## CakePHP 6 development branch
+
+Commands now implement `execute()` and use inherited `$this->args` and `$this->io`. Custom factory tables and behaviors use CakePHP 6's inherited property names. Entity mass-assignment rules use `$patchable`, and marshaller overrides use `patchableFields`.
+
+Factory associations continue to resolve targets through the fixture factory locator, including unique associated-row reuse. Test schema caches are scoped to this checkout to keep tables from other test applications out of metadata lookups.
+
+Baking factories uses Bake 4. Follow [Installation](./installation) for the development dependency settings.
+
 ## v2 migration helpers
 
 Version 2 targets projects already on `1.4.x`.

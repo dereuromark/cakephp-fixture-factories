@@ -28,7 +28,7 @@ class Author extends Entity
     /**
      * @inheritdoc
      */
-    protected array $_accessible = ['*' => false];
+    protected array $patchable = ['*' => false];
 
     protected function _setFieldWithSetter_1(string $value): string
     {

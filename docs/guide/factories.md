@@ -255,7 +255,7 @@ protected function configure(): static
 }
 ```
 
-Pass either a single event or an array of events. The full list lives in the [CakePHP cookbook](https://book.cakephp.org/5/en/orm/table-objects.html#event-list).
+Pass either a single event or an array of events. The full list lives in the [CakePHP cookbook](https://book.cakephp.org/6/en/orm/table-objects.html#event-list).
 
 ### Custom event managers
 

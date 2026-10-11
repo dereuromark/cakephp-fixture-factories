@@ -89,6 +89,8 @@ class TestCaseWithFixtureBaking extends TestCase
         $options['quiet'] = $options['quiet'] ?? true;
         $options['connection'] = $options['connection'] ?? 'default';
         $args = new Arguments($args, $options, $argNames);
-        $this->assertEquals(0, $this->FactoryCommand->execute($args, $this->io));
+        (new \ReflectionProperty($this->FactoryCommand, 'args'))->setValue($this->FactoryCommand, $args);
+        (new \ReflectionProperty($this->FactoryCommand, 'io'))->setValue($this->FactoryCommand, $this->io);
+        $this->assertEquals(0, $this->FactoryCommand->execute());
     }
 }

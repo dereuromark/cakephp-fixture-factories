@@ -26,7 +26,7 @@ class Article extends Entity
     /**
      * @inheritdoc
      */
-    protected array $_accessible = [
+    protected array $patchable = [
         'title' => true,
         'body' => true,
         'published' => true,
@@ -36,7 +36,7 @@ class Article extends Entity
         'authors' => true,
     ];
 
-    protected array $_hidden = [
+    protected array $hidden = [
         self::HIDDEN_PARAGRAPH_PROPERTY_NAME,
     ];
 }

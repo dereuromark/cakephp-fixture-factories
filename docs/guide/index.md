@@ -26,7 +26,7 @@ Five articles, each with three authors, each with a full address chain, persiste
 
 Complete [Installation](/guide/installation) first. This walkthrough assumes an existing CakePHP application with an `Articles` table containing `id`, `title` and `body`, its `ArticlesTable` class, and the same schema in the separate `test` database. Run your application's test migrations before saving factory data. Factory baking reads the application schema; it does not create tables or migrations.
 
-Use [Setup](/guide/setup) to configure database cleanup between tests. With CakePHP 5.2 or newer, the global `FactoryTransactionStrategy` is the easiest option. On CakePHP 5.0 or 5.1, add `FactoryTransactionTrait` to the test class.
+Use [Setup](/guide/setup) to configure database cleanup between tests. On CakePHP 6, configure `FactoryTransactionStrategy` globally or add `FactoryTransactionTrait` to individual test classes.
 
 ## Bake your first factory
 

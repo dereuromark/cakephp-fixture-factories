@@ -32,7 +32,7 @@ namespace CakephpFixtureFactories\TestSuite;
  * {@see LazyTransactionTrait} on that class instead of swapping the
  * global strategy.
  *
- * Usage (CakePHP 5.2+):
+ * Global configuration:
  * Configure globally in config/app.php:
  * ```php
  *     'TestSuite' => [

@@ -123,7 +123,7 @@ final class FactoryTableBeforeSave
             ->find()
             ->select($this->getPropertiesToPatchFromDuplicate())
             ->where($conditions)
-            ->disableHydration()
+            ->enableHydration(false)
             ->first();
 
         return $duplicate;

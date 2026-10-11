@@ -15,9 +15,7 @@ use Cake\TestSuite\Fixture\FixtureStrategyInterface;
  * - Rollback after each test
  * - Reset unique generator state
  *
- * CakePHP 5.2+ Note:
- * This trait is only needed for CakePHP 5.0 - 5.1. In CakePHP 5.2+, you can configure
- * the strategy globally instead:
+ * On CakePHP 6, you can configure the strategy globally instead of using this trait:
  *
  * ```php
  * // Merge into the array returned by config/app.php.
@@ -33,7 +31,7 @@ use Cake\TestSuite\Fixture\FixtureStrategyInterface;
  * - Transaction rollback handles ALL data (factory and application code)
  * - Unique generator state is reset regardless of table usage
  *
- * Example (CakePHP 5.0 - 5.1):
+ * Per-test example:
  * ```php
  * use Cake\TestSuite\TestCase;
  * use CakephpFixtureFactories\TestSuite\FactoryTransactionTrait;

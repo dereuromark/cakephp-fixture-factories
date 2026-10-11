@@ -801,7 +801,7 @@ class BaseFactoryAssociationsTest extends TestCase
      * entities (DataCompiler appends), but `AssociationBuilder::$associations`
      * only kept the LAST factory — so `getMarshallerOptions()->associated`
      * silently dropped nested-marshaller config (e.g. nested `with()` /
-     * `accessibleFields`) from the first branch. The marshaller-routed outer
+     * `patchableFields`) from the first branch. The marshaller-routed outer
      * patch (DataCompiler.php:449) then ran without that config.
      *
      * Fix: marshaller options must merge across every factory ever added

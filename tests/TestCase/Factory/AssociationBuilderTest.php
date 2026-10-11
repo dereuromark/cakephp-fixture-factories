@@ -245,17 +245,17 @@ class AssociationBuilderTest extends TestCase
             'City' => [
                 'validate' => false,
                 'forceNew' => true,
-                'accessibleFields' => ['*' => true],
+                'patchableFields' => ['*' => true],
                 'associated' => [
                     'Countries' => [
                         'validate' => false,
                         'forceNew' => true,
-                        'accessibleFields' => ['*' => true],
+                        'patchableFields' => ['*' => true],
                         'associated' => [
                             'Cities' => [
                                 'validate' => false,
                                 'forceNew' => true,
-                                'accessibleFields' => ['*' => true],
+                                'patchableFields' => ['*' => true],
                             ],
                         ],
                     ],
@@ -308,7 +308,7 @@ class AssociationBuilderTest extends TestCase
                 'City' => [
                     'validate' => false,
                     'forceNew' => true,
-                    'accessibleFields' => ['*' => true],
+                    'patchableFields' => ['*' => true],
                 ],
             ],
             $AddressFactory->getAssociatedFactories(),
@@ -323,12 +323,12 @@ class AssociationBuilderTest extends TestCase
             'Countries' => [
                 'validate' => false,
                 'forceNew' => true,
-                'accessibleFields' => ['*' => true],
+                'patchableFields' => ['*' => true],
             ],
             'Addresses' => [
                 'validate' => false,
                 'forceNew' => true,
-                'accessibleFields' => ['*' => true],
+                'patchableFields' => ['*' => true],
             ],
         ];
         $this->assertSame($expected, $CityFactory->getAssociatedFactories());
@@ -344,22 +344,22 @@ class AssociationBuilderTest extends TestCase
             'ExclusivePremiumAuthors' => [
                 'validate' => false,
                 'forceNew' => true,
-                'accessibleFields' => ['*' => true],
+                'patchableFields' => ['*' => true],
                 'associated' => [
                     'Address' => [
                         'validate' => false,
                         'forceNew' => true,
-                        'accessibleFields' => ['*' => true],
+                        'patchableFields' => ['*' => true],
                         'associated' => [
                             'City' => [
                                 'validate' => false,
                                 'forceNew' => true,
-                                'accessibleFields' => ['*' => true],
+                                'patchableFields' => ['*' => true],
                                 'associated' => [
                                     'Countries' => [
                                         'validate' => false,
                                         'forceNew' => true,
-                                        'accessibleFields' => ['*' => true],
+                                        'patchableFields' => ['*' => true],
                                     ],
                                 ],
                             ],
@@ -430,7 +430,7 @@ class AssociationBuilderTest extends TestCase
             'Cities' => [
                 'validate' => false,
                 'forceNew' => true,
-                'accessibleFields' => ['*' => true],
+                'patchableFields' => ['*' => true],
             ],
         ], $CountryFactory->getAssociatedFactories());
 

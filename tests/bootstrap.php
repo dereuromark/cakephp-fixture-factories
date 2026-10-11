@@ -75,11 +75,13 @@ Cache::setConfig([
     '_cake_translations_' => [
         'engine' => 'File',
         'prefix' => 'cake_core_',
+        'path' => CACHE . 'translations' . DS,
         'serialize' => true,
     ],
     '_cake_model_' => [
         'engine' => 'File',
         'prefix' => 'cake_model_',
+        'path' => CACHE . 'models' . DS,
         'serialize' => true,
     ],
 ]);
