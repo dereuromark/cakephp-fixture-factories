@@ -339,6 +339,9 @@ class FactoryTransactionStrategyTest extends TestCase
 
     public function testStrategyResetsSharedDefaultGenerator(): void
     {
+        if (!class_exists(\DummyGenerator\DummyGenerator::class)) {
+            $this->markTestSkipped('The optional DummyGenerator package is not installed.');
+        }
         Configure::write('FixtureFactories.generatorType', 'faker');
         BaseFactory::setDefaultGenerator('dummy');
 

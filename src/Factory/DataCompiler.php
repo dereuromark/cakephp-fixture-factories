@@ -851,20 +851,6 @@ class DataCompiler
     }
 
     /**
-     * There might be several data feeding a toOne relation
-     * One reason can be the default template value.
-     * Here the latest inserted record is taken
-     *
-     * @param \Cake\Datasource\EntityInterface $entity Entity produced by the factory.
-     * @param string $associationName Association
-     * @param array<int, \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>> $data Data to inject
-     *
-     * @throws \CakephpFixtureFactories\Error\FixtureFactoryException
-     *
-     * @return void
-     */
-
-    /**
      * @param \Cake\Datasource\EntityInterface $entity Entity produced by the factory.
      * @param string $associationName Association property name.
      * @param array<int, \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>> $data Data to inject

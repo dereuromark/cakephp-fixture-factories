@@ -144,4 +144,4 @@ jobs:
           composer remove --dev johnykvsky/dummygenerator --no-update
           composer update --prefer-dist --no-progress --prefer-stable
       - name: Run factory, command and transaction coverage
-        run: vendor/bin/phpunit tests/TestCase/Factory tests/TestCase/Command tests/TestCase/TestSuite
+        run: vendor/bin/phpunit --filter 'TestCase.(Factory|Command|TestSuite)'

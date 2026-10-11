@@ -3,8 +3,8 @@
 /**
  * CakePHP Fixture Factories configuration example.
  *
- * Add these settings to your application's config/app.php or
- * tests/bootstrap.php to customize fixture factory behavior.
+ * Merge these settings into the array returned by config/app.php.
+ * In tests/bootstrap.php, use Configure::write() for individual overrides.
  */
 return [
     'FixtureFactories' => [

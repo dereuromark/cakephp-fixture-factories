@@ -131,4 +131,9 @@ function navigate(event: Event): void {
 .version-switcher-mobile .version-select {
   min-width: 100%;
 }
+@media (max-width: 767px) {
+  .version-switcher:not(.version-switcher-mobile) {
+    display: none;
+  }
+}
 </style>
