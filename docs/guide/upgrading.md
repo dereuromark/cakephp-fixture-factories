@@ -10,9 +10,9 @@ from `vierge-noire/cakephp-fixture-factories`, see the [migration guide](migrati
 
 ## CakePHP 6 development branch
 
-Commands now implement `execute()` and use inherited `$this->args` and `$this->io`. Custom factory tables and behaviors use CakePHP 6's inherited property names. Entity mass-assignment rules use `$patchable`, and marshaller overrides use `patchableFields`.
+This branch requires PHP 8.5 or newer and uses PHPUnit 13 for the plugin test suite. Commands now implement `execute()` and use inherited `$this->args` and `$this->io`. Custom factory tables and behaviors use CakePHP 6's inherited property names. Entity mass-assignment rules use `$patchable`, and marshaller overrides use `patchableFields`.
 
-Factory associations continue to resolve targets through the fixture factory locator, including unique associated-row reuse. Test schema caches are scoped to this checkout to keep tables from other test applications out of metadata lookups.
+Factory associations continue to resolve targets through the fixture factory locator, including unique associated-row reuse.
 
 Baking factories uses Bake 4. Follow [Installation](./installation) for the development dependency settings.
 

@@ -1,6 +1,6 @@
 # Installation
 
-This development branch targets CakePHP 6. In your application, enable development dependencies before installing it:
+This development branch targets CakePHP 6 and requires PHP 8.5 or newer. The plugin test suite uses PHPUnit 13. In your application, enable development dependencies before installing it:
 
 ```bash
 composer config minimum-stability dev
@@ -40,7 +40,7 @@ bin/cake plugin load --only-debug Bake
 
 ## Prepare the test database
 
-Configure a separate `test` connection in your application and create its schema using your application's migrations. Factories create records in existing tables; they do not create the schema. The [CakePHP testing guide](https://book.cakephp.org/6/en/development/testing.html#test-database-setup) explains test connection aliases. [Setup](/guide/setup) covers migration and transaction cleanup options.
+Configure a separate `test` connection in your application and create its schema using your application's migrations. Factories create records in existing tables; they do not create the schema. The [CakePHP testing guide](https://book.cakephp.org/6.x/development/testing.html#test-database-setup) explains test connection aliases. [Setup](/guide/setup) covers migration and transaction cleanup options.
 
 Continue with [Getting started](/guide/) to bake and run one factory.
 

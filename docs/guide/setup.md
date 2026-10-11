@@ -13,7 +13,7 @@ The section below covers the rarer case of using this plugin with a **standalone
 
 For applications that use `cakephp/orm` directly (without the rest of the Cake framework), use whatever method your test stack provides for managing the database, or opt for the universal [test-database-cleaner](https://github.com/vierge-noire/test-database-cleaner).
 
-Define your DB connections in your test `bootstrap.php` as described in the [CakePHP cookbook](https://book.cakephp.org/6/en/orm/database-basics.html#configuration).
+Define your DB connections in your test `bootstrap.php` as described in the [CakePHP cookbook](https://book.cakephp.org/6.x/orm/database-basics.html#configuration).
 
 See also: [Associations for standalone `cakephp/orm`](non-cakephp-associations.md).
 
@@ -25,7 +25,7 @@ Follow [Installation](/guide/installation) to install and load the plugin, choos
 
 ## Cleaning data between tests
 
-Test data must be cleaned between tests to avoid entity collisions and unexpected results. CakePHP ships with [Fixture State Managers](https://book.cakephp.org/6/en/development/testing.html#fixture-state-managers) and provides the `TruncateStrategy` (truncate all tables after each test run) as well as the `TransactionStrategy` (create a transaction and roll it back after each test run).
+Test data must be cleaned between tests to avoid entity collisions and unexpected results. CakePHP ships with [Fixture State Managers](https://book.cakephp.org/6.x/development/testing.html#fixture-state-managers) and provides the `TruncateStrategy` (truncate all tables after each test run) as well as the `TransactionStrategy` (create a transaction and roll it back after each test run).
 
 For fixture-factory–driven test suites, this plugin provides a dedicated strategy that pairs cleanly with factories — see below.
 

@@ -27,7 +27,7 @@ features:
   - icon: |
       <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="2" x2="6" y2="9"/><line x1="18" y1="2" x2="18" y2="9"/><path d="M5 9h14a1 1 0 0 1 1 1v4a6 6 0 0 1-6 6h-4a6 6 0 0 1-6-6v-4a1 1 0 0 1 1-1z"/><line x1="12" y1="20" x2="12" y2="22"/></svg>
     title: Pluggable Generators
-    details: Pick Faker (mature, full locales) or DummyGenerator (lean, PHP 8.3+, native enums). Or plug in your own.
+    details: Pick Faker (mature, full locales) or DummyGenerator (lean, native enums). Or plug in your own.
   - icon: |
       <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="12" cy="18" r="3"/><path d="M6 9v3a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3V9"/><path d="M12 12v3"/></svg>
     title: Deep Associations

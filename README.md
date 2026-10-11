@@ -9,8 +9,8 @@ Build test data with CakePHP's ORM.
 </h3>
 
 <p align="center">
-    <a href="https://github.com/dereuromark/cakephp-fixture-factories/actions/workflows/ci.yml?query=branch%3Amain"><img src="https://github.com/dereuromark/cakephp-fixture-factories/actions/workflows/ci.yml/badge.svg?branch=main" alt="Build Status"></a>
-    <a href="https://codecov.io/gh/dereuromark/cakephp-fixture-factories"><img src="https://codecov.io/gh/dereuromark/cakephp-fixture-factories/branch/main/graph/badge.svg" alt="Coverage Status"></a>
+    <a href="https://github.com/dereuromark/cakephp-fixture-factories/actions/workflows/ci.yml?query=branch%3Acake6"><img src="https://github.com/dereuromark/cakephp-fixture-factories/actions/workflows/ci.yml/badge.svg?branch=cake6" alt="Build Status"></a>
+    <a href="https://app.codecov.io/gh/dereuromark/cakephp-fixture-factories/tree/cake6"><img src="https://codecov.io/gh/dereuromark/cakephp-fixture-factories/branch/cake6/graph/badge.svg" alt="Coverage Status"></a>
     <a href="https://packagist.org/packages/dereuromark/cakephp-fixture-factories"><img src="https://poser.pugx.org/dereuromark/cakephp-fixture-factories/v/stable.svg" alt="Latest Stable Version"></a>
     <a href="https://php.net/"><img src="https://img.shields.io/badge/php-%3E%3D%208.5-8892BF.svg" alt="Minimum PHP Version"></a>
     <a href="https://phpstan.org/"><img src="https://img.shields.io/badge/PHPStan-level%208-brightgreen.svg" alt="PHPStan Level 8"></a>
@@ -19,7 +19,7 @@ Build test data with CakePHP's ORM.
     <a href="https://github.com/php-collective/code-sniffer"><img src="https://img.shields.io/badge/cs-PhpCollective-purple.svg?style=flat-square" alt="Coding Standards"></a>
 </p>
 
-This development branch targets **CakePHP 6**. See [version map](https://github.com/dereuromark/cakephp-fixture-factories/wiki#cakephp-version-map) for details.
+This development branch targets **CakePHP 6**. Use its [installation instructions](docs/guide/installation.md) for development dependencies. See [version map](https://github.com/dereuromark/cakephp-fixture-factories/wiki#cakephp-version-map) for details.
 
 A maintained fork of [vierge-noire/cakephp-fixture-factories](https://github.com/vierge-noire/cakephp-fixture-factories) with:
 

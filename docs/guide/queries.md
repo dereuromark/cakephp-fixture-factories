@@ -29,7 +29,7 @@ ArticleFactory::query()->find('list');
 ArticleFactory::query()->where(['title LIKE' => '%Cake%']);
 ```
 
-See the [CakePHP query-builder docs](https://book.cakephp.org/6/en/orm/query-builder.html).
+See the [CakePHP query-builder docs](https://book.cakephp.org/6.x/orm/query-builder.html).
 
 ## `ArticleFactory::query()->count()`
 
@@ -54,7 +54,7 @@ This is the direct replacement for the old deprecated `ArticleFactory::get(...)`
 
 ## `ArticleFactory::query()->firstOrFail()`
 
-Returns the first entity matching the optional conditions, or throws if none exist. See the [CakePHP `firstOrFail()` docs](https://book.cakephp.org/6/en/orm/query-builder.html#getting-results).
+Returns the first entity matching the optional conditions, or throws if none exist. See the [CakePHP `firstOrFail()` docs](https://book.cakephp.org/6.x/orm/query-builder.html#getting-results).
 
 ## Expressive database assertions: `TableAssertionsTrait`
 

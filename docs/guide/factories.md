@@ -255,7 +255,7 @@ protected function configure(): static
 }
 ```
 
-Pass either a single event or an array of events. The full list lives in the [CakePHP cookbook](https://book.cakephp.org/6/en/orm/table-objects.html#event-list).
+Pass either a single event or an array of events. The full list lives in the [CakePHP cookbook](https://book.cakephp.org/6.x/orm/table-objects.html#event-list).
 
 ### Custom event managers
 
@@ -402,7 +402,7 @@ BaseFactory::resetDefaultGenerator();
 
 The following generators are available out of the box:
 - **faker** (default): [FakerPHP/Faker](https://github.com/FakerPHP/Faker) - Full-featured data generation
-- **dummy**: [johnykvsky/dummygenerator](https://github.com/johnykvsky/dummygenerator) - Modern and lean PHP 8.3+ generator, supports enums natively.
+- **dummy**: [johnykvsky/dummygenerator](https://github.com/johnykvsky/dummygenerator) - Alternative generator, supports enums natively.
 
 Both are included as "require-dev" dependencies in this plugin.
 Choose the one you want to use and "require" it.

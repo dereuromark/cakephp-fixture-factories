@@ -17,6 +17,7 @@ namespace CakephpFixtureFactories\Test\TestCase\ORM;
 
 use Cake\ORM\TableRegistry;
 use Cake\TestSuite\TestCase;
+use CakephpFixtureFactories\ORM\FactoryTableLocator;
 use CakephpFixtureFactories\ORM\FactoryTableRegistry;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
@@ -34,6 +35,16 @@ class FactoryTableRegistryTest extends TestCase
     public function setUp(): void
     {
         TableRegistry::getTableLocator()->clear();
+    }
+
+    public function testNullAssociationCollectionKeepsFactoryTargets(): void
+    {
+        $locator = new FactoryTableLocator();
+        $countries = $locator->get('Countries', ['associations' => null]);
+        $cities = $countries->getAssociation('Cities')->getTarget();
+
+        $this->assertSame($locator->get('Cities'), $cities);
+        $this->assertNotSame(TableRegistry::getTableLocator()->get('Cities'), $cities);
     }
 
     public static function tables(): array

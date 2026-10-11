@@ -33,7 +33,7 @@ class FactoryTableLocator extends TableLocator
      */
     protected function createInstance(string $alias, array $options): Table
     {
-        $options += ['associations' => new FactoryAssociationCollection($this)];
+        $options['associations'] ??= new FactoryAssociationCollection($this);
 
         return parent::createInstance($alias, $options);
     }

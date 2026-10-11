@@ -6,15 +6,13 @@ This document provides a detailed comparison between the available fake data gen
 
 ### Faker
 - **Package**: [FakerPHP/Faker](https://github.com/FakerPHP/Faker)
-- **Minimum PHP**: 8.2+ (project requirement)
 - **Install**: `composer require --dev fakerphp/faker`
 - **Best for**: Mature, feature-rich data generation with extensive locale support
 
 ### Dummy
 - **Package**: [johnykvsky/dummygenerator](https://github.com/johnykvsky/dummygenerator)
-- **Minimum PHP**: 8.3+
 - **Install**: `composer require --dev johnykvsky/dummygenerator`
-- **Best for**: Modern PHP 8.3+ projects, native enum support, the alternative generator adapter
+- **Best for**: Native enum support and the alternative generator adapter
 
 ### How the default is chosen
 
@@ -192,22 +190,13 @@ vendor/bin/phpunit
 
 ## Common Pitfalls
 
-### 1. PHP Version Requirements
-
-**Problem**: DummyGenerator requires PHP 8.3+
-
-**Solution**: Check your PHP version before switching:
-```bash
-php -v
-```
-
-### 2. Locale-Specific Data
+### 1. Locale-Specific Data
 
 **Problem**: DummyGenerator doesn't support locale-specific data like Faker
 
 **Solution**: If you need locale-specific data, stick with Faker or implement custom data providers
 
-### 3. Unique Values
+### 2. Unique Values
 
 **Problem**: Different retry mechanisms for unique values
 
@@ -254,16 +243,13 @@ BaseFactory::setDefaultGenerator('dummy');
 
 ### 3. Test with Both Generators (Optional)
 
-If your library supports multiple PHP versions, test with both:
+To check both generator backends in CI:
 
 ```yaml
 # .github/workflows/ci.yml
 matrix:
-  php: ['8.2', '8.3', '8.4']
+  php: ['8.5']
   generator: ['faker', 'dummy']
-  exclude:
-    - php: '8.2'
-      generator: 'dummy'
 ```
 
 ### 4. Seed for Reproducible Tests
@@ -298,7 +284,6 @@ See `config/app.example.php` in this plugin for all available configuration opti
 | `unique()` modifier | ✅ | ✅ |
 | `optional()` modifier | ✅ | ✅ |
 | Seeding | ✅ | ✅ |
-| Minimum PHP version | 8.2+ | 8.3+ |
 
 ## Troubleshooting
 
@@ -326,15 +311,15 @@ DummyGenerator library is not installed. Please install it using: `composer requ
 
 - [Faker Documentation](https://fakerphp.github.io/)
 - [DummyGenerator Documentation](https://github.com/johnykvsky/dummygenerator)
-- [GeneratorInterface Source](https://github.com/dereuromark/cakephp-fixture-factories/blob/main/src/Generator/GeneratorInterface.php)
+- [GeneratorInterface Source](https://github.com/dereuromark/cakephp-fixture-factories/blob/cake6/src/Generator/GeneratorInterface.php)
 - [Factory Documentation](factories)
 
 ## FAQ
 
 ### Which generator should I use?
 
-- **Use Faker** if you need extensive locale support or need to support PHP < 8.3
-- **Use DummyGenerator** if you're on PHP 8.3+ and want a modern, lean solution with native enum support
+- **Use Faker** if you need extensive locale support
+- **Use DummyGenerator** if you want native enum support
 
 ### Can I use both generators in the same project?
 
