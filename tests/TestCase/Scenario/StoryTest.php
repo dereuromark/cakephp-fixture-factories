@@ -92,6 +92,7 @@ class StoryTest extends TestCase
 
         $set = $story->getRandomSet('cities', 3);
         $this->assertCount(3, $set);
+        $this->assertTrue(array_is_list($set));
 
         // All entries must be distinct (no repeats within one draw).
         $ids = array_map(static fn ($e) => $e->id, $set);

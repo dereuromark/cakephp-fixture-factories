@@ -30,6 +30,12 @@ final class FactoryLegacyMakeToNewRector extends AbstractRector
      */
     public function refactor(Node $node): ?Node
     {
+        foreach ($node->args as $arg) {
+            if (!$arg instanceof Arg) {
+                return null;
+            }
+        }
+
         if (!$node->class instanceof Name) {
             return null;
         }
