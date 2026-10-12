@@ -46,6 +46,6 @@ Continue with [Getting started](/guide/) to bake and run one factory.
 
 ## Development test dependencies
 
-The plugin's own test suite currently uses the reviewed [CakePHP 6 test-suite-light fork](https://github.com/vierge-noire/cakephp-test-suite-light/pull/75). Its CI adds that VCS repository during dependency installation; applications using factories do not need this test dependency.
+The plugin's own test suite uses the [`dereuromark/cakephp-test-suite-light` fork, branch `cake6`](https://github.com/dereuromark/cakephp-test-suite-light/tree/cake6) for database cleanup. CI adds this fork as a VCS repository when installing development dependencies. Applications using factories do not need this test dependency.
 
 The test suite also temporarily uses Migrations `dev-fix/6.x-cakephp-compatibility` while [Migrations #1121](https://github.com/cakephp/migrations/pull/1121) is pending.
