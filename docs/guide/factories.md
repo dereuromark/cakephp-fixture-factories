@@ -202,7 +202,7 @@ Each subsequent call to `email()` or `userName()` is guaranteed not to repeat a 
 > [!WARNING]
 > `->unique()` retries internally until it finds an unused value, then gives up — Faker throws `OverflowException`, DummyGenerator does the same after 10 000 attempts. Use it only on fields with a large enough value space.
 >
-> Uniqueness is only guaranteed within one factory class. Two factories writing the same unique column get different seeds and will almost never collide, but `->unique()` does not track values across them.
+> `->unique()` tracks values per generator, and by default each factory class has its own. Two factories writing the same unique column get different seeds and rarely collide, but do not rely on `->unique()` to dedup across factories, or across instances that called `setGenerator()`.
 >
 > The recommended [`FactoryTransactionStrategy`](setup#factory-transaction-strategy-recommended) resets unique state between tests automatically. If you can't use it, see [Troubleshooting](troubleshooting#overflowexception-from-unique) for the manual reset.
 
