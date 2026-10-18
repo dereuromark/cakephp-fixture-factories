@@ -202,6 +202,8 @@ Each subsequent call to `email()` or `userName()` is guaranteed not to repeat a 
 > [!WARNING]
 > `->unique()` retries internally until it finds an unused value, then gives up — Faker throws `OverflowException`, DummyGenerator does the same after 10 000 attempts. Use it only on fields with a large enough value space.
 >
+> Uniqueness is only guaranteed within one factory class. Two factories writing the same unique column get different seeds and will almost never collide, but `->unique()` does not track values across them.
+>
 > The recommended [`FactoryTransactionStrategy`](setup#factory-transaction-strategy-recommended) resets unique state between tests automatically. If you can't use it, see [Troubleshooting](troubleshooting#overflowexception-from-unique) for the manual reset.
 
 Use `->unique()` on individual fields *inside* the factory; use `$uniqueProperties` to express that an *entire entity* shouldn't be recreated when its identifying field is reused. They solve different problems and compose cleanly.

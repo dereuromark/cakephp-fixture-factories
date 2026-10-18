@@ -81,6 +81,7 @@ Most methods work identically across both generators. However, some methods are 
 ### 4. Seeding Behavior
 
 Both generators support seeding for reproducible test data. By default, factories are seeded with `1234`.
+Each factory class mixes its class name into that seed, so two factories with the same definition still produce different values. A shared generator set via `BaseFactory::setDefaultGenerator()` uses the plain seed and one sequence for all factories.
 You can configure a different seed globally:
 
 ```php
@@ -268,7 +269,7 @@ matrix:
 
 ### 4. Seed for Reproducible Tests
 
-Factories are seeded with `1234` by default for reproducible data. You can configure a different seed globally:
+Factories are seeded with `1234` by default for reproducible data, combined with the factory class name so each factory gets its own sequence. You can configure a different seed globally:
 
 ```php
 // In tests/bootstrap.php or config/app.php
