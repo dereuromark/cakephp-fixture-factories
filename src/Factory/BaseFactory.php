@@ -416,7 +416,7 @@ abstract class BaseFactory
         ]);
         if (!isset(self::$defaultGenerators[$cacheKey])) {
             $generator = clone CakeGeneratorFactory::create($locale);
-            $generator->seed(static::getGeneratorSeed());
+            $generator->seed(static::getClassGeneratorSeed());
             self::$defaultGenerators[$cacheKey] = $generator;
         }
 
@@ -468,7 +468,7 @@ abstract class BaseFactory
     {
         $resolvedLocale = self::resolveLocale($locale);
         $generator = clone CakeGeneratorFactory::create($resolvedLocale, $type);
-        $generator->seed(static::getGeneratorSeed());
+        $generator->seed(static::getClassGeneratorSeed());
 
         if (Configure::read('FixtureFactories.instanceLevelGenerator', true)) {
             $factory = clone $this;
@@ -527,6 +527,19 @@ abstract class BaseFactory
     protected static function getGeneratorSeed(): int
     {
         return (int)Configure::read('FixtureFactories.seed', 1234);
+    }
+
+    /**
+     * Get the seed for this factory class's own generator.
+     *
+     * Mixes the class name into the configured seed so that two factories
+     * with the same definition do not produce the same value sequence.
+     *
+     * @return int
+     */
+    protected static function getClassGeneratorSeed(): int
+    {
+        return static::getGeneratorSeed() ^ crc32(static::class);
     }
 
     /**
