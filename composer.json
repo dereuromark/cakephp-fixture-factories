@@ -5,6 +5,7 @@
     "keywords": ["cakephp", "tests", "dynamic", "fixtures", "dev", "cli", "testing", "factories", "faker"],
     "homepage": "https://dereuromark.github.io/cakephp-fixture-factories/",
     "support": {
+        "issues": "https://github.com/dereuromark/cakephp-fixture-factories/issues",
         "source": "https://github.com/dereuromark/cakephp-fixture-factories"
     },
     "authors": [
@@ -28,6 +29,7 @@
     "license": "MIT",
     "require": {
         "php": ">=8.5",
+        "cakephp/i18n": "^6.0@dev",
         "cakephp/orm": "^6.0@dev"
     },
     "require-dev": {
@@ -45,6 +47,7 @@
         "vierge-noire/cakephp-test-suite-light": "dev-cake6"
     },
     "suggest": {
+        "cakephp/cakephp": "Needed for the bake and persist commands and the FactoryTransactionStrategy. A standalone cakephp/orm install only gets the factories.",
         "dereuromark/cakephp-ide-helper": "Lets `bin/cake annotate classes` (and `annotate all`) keep your Factory subclass docblocks in sync via the bundled FactoryAnnotatorTask. Requires version with PathAwareClassAnnotatorTaskInterface support."
     },
     "autoload": {
