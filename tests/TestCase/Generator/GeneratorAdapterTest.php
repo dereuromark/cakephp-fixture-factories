@@ -15,8 +15,10 @@ use CakephpFixtureFactories\Generator\FakerAdapter;
 use CakephpFixtureFactories\Generator\GeneratorInterface;
 use CakephpFixtureFactories\Test\Factory\AlternativeSeedArticleFactory;
 use CakephpFixtureFactories\Test\Factory\ArticleFactory;
+use CakephpFixtureFactories\Test\Factory\AuthorFactory;
 use InvalidArgumentException;
 use OverflowException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use TestApp\Model\Enum\EmptyTestStatus;
 use TestApp\Model\Enum\SingleCaseStatus;
 use TestApp\Model\Enum\TestStatus;
@@ -564,6 +566,36 @@ class GeneratorAdapterTest extends TestCase
         $gen2 = $factory2->getGenerator();
 
         $this->assertNotSame($gen1, $gen2);
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function generatorTypeProvider(): array
+    {
+        return [
+            'faker' => ['faker'],
+            'dummy' => ['dummy'],
+        ];
+    }
+
+    /**
+     * Different factory classes must not share one value sequence, otherwise
+     * two factories filling the same unique column collide on their first row.
+     *
+     * @param string $type Generator type
+     *
+     * @return void
+     */
+    #[DataProvider('generatorTypeProvider')]
+    public function testDifferentFactoryClassesProduceDifferentSequences(string $type): void
+    {
+        Configure::write('FixtureFactories.generatorType', $type);
+
+        $article = ArticleFactory::new()->getGenerator()->lexify('??????????');
+        $author = AuthorFactory::new()->getGenerator()->lexify('??????????');
+
+        $this->assertNotSame($article, $author);
     }
 
     public function testDifferentFactorySeedsDoNotPoisonSharedDefaultGeneratorCache(): void

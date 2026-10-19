@@ -13,6 +13,8 @@ The section below covers the rarer case of using this plugin with a **standalone
 
 For applications that use `cakephp/orm` directly (without the rest of the Cake framework), use whatever method your test stack provides for managing the database, or opt for the universal [test-database-cleaner](https://github.com/vierge-noire/test-database-cleaner).
 
+Only the factories work in this mode. The `bake` and `persist` commands and `FactoryTransactionStrategy` need the full `cakephp/cakephp` package.
+
 Define your DB connections in your test `bootstrap.php` as described in the [CakePHP cookbook](https://book.cakephp.org/6.x/orm/database-basics.html#configuration).
 
 See also: [Associations for standalone `cakephp/orm`](non-cakephp-associations.md).
