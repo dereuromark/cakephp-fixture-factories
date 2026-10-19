@@ -15,7 +15,7 @@ use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpFixtureFactories\TestSuite\TableAssertionsTrait;
-use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use CakephpFixtureFactories\TestSuite\TruncateDirtyTables;
 use InvalidArgumentException;
 use PHPUnit\Framework\AssertionFailedError;
 use stdClass;

@@ -19,7 +19,7 @@ use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpFixtureFactories\Test\Scenario\AssertionFailingStory;
 use CakephpFixtureFactories\Test\Scenario\BlogStory;
-use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use CakephpFixtureFactories\TestSuite\TruncateDirtyTables;
 use PHPUnit\Framework\AssertionFailedError;
 use TestApp\Model\Entity\Country;
 

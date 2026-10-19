@@ -20,7 +20,7 @@ use CakephpFixtureFactories\Error\PersistenceException;
 use CakephpFixtureFactories\Test\Factory\BillFactory;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
-use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use CakephpFixtureFactories\TestSuite\TruncateDirtyTables;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 class BaseFactoryPrimaryKeyOffsetTest extends TestCase

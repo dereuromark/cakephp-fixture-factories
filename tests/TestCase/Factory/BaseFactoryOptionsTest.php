@@ -19,7 +19,7 @@ use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Error\PersistenceException;
 use CakephpFixtureFactories\Test\Factory\SchemaAwareCountryFactory;
 use CakephpFixtureFactories\Test\Factory\StrictCityFactory;
-use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use CakephpFixtureFactories\TestSuite\TruncateDirtyTables;
 
 class BaseFactoryOptionsTest extends TestCase
 {

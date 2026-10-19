@@ -32,7 +32,7 @@ use CakephpFixtureFactories\Test\Factory\RequiredParentsCompositeOptInTableWitho
 use CakephpFixtureFactories\Test\Factory\RequiredParentsExcludeAuthorFactory;
 use CakephpFixtureFactories\Test\Factory\RequiredParentsForeignKeyFalseOptInFactory;
 use CakephpFixtureFactories\Test\Factory\RequiredParentsOverrideAuthorFactory;
-use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use CakephpFixtureFactories\TestSuite\TruncateDirtyTables;
 use InvalidArgumentException;
 use ReflectionMethod;
 use TestApp\Test\Factory\AuthorFactory;

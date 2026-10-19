@@ -8,7 +8,7 @@ use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Generator\CakeGeneratorFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
-use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use CakephpFixtureFactories\TestSuite\TruncateDirtyTables;
 
 class UuidShimTest extends TestCase
 {

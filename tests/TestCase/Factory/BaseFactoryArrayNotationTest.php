@@ -20,7 +20,7 @@ use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Error\FixtureFactoryException;
 use CakephpFixtureFactories\Test\Factory\ArticleFactory;
 use CakephpFixtureFactories\Test\Factory\AuthorFactory;
-use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use CakephpFixtureFactories\TestSuite\TruncateDirtyTables;
 
 class BaseFactoryArrayNotationTest extends TestCase
 {

@@ -31,7 +31,7 @@ use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpFixtureFactories\Test\Factory\CustomerFactory;
 use CakephpFixtureFactories\Test\Factory\SubDirectory\SubCityFactory;
-use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use CakephpFixtureFactories\TestSuite\TruncateDirtyTables;
 use TestApp\Model\Entity\Address;
 use TestApp\Model\Entity\City;
 use TestApp\Model\Entity\Country;

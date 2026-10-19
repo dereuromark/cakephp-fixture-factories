@@ -20,7 +20,7 @@ use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\ORM\SelectQueryMocker;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
-use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use CakephpFixtureFactories\TestSuite\TruncateDirtyTables;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use TestApp\Model\Entity\Country;
 

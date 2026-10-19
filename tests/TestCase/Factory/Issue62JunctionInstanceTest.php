@@ -9,7 +9,7 @@ use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\ORM\FactoryTableRegistry;
 use CakephpFixtureFactories\Test\Factory\ArticleFactory;
 use CakephpFixtureFactories\Test\Factory\AuthorFactory;
-use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use CakephpFixtureFactories\TestSuite\TruncateDirtyTables;
 
 /**
  * Regression coverage for issue #62.

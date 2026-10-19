@@ -43,11 +43,10 @@
         "php-collective/code-sniffer": "dev-master",
         "phpstan/phpstan": "^2.1",
         "phpunit/phpunit": "^11.5 || ^12.1 || ^13.0",
-        "rector/rector": "^2.1",
-        "vierge-noire/cakephp-test-suite-light": "^3.0"
+        "rector/rector": "^2.1"
     },
     "suggest": {
-        "cakephp/cakephp": "Needed for the bake and persist commands and the FactoryTransactionStrategy. A standalone cakephp/orm install only gets the factories.",
+        "cakephp/cakephp": "Needed for the bake and persist commands and the test suite strategies (FactoryTransactionStrategy, TriggerStrategy). A standalone cakephp/orm install only gets the factories.",
         "dereuromark/cakephp-ide-helper": "Lets `bin/cake annotate classes` (and `annotate all`) keep your Factory subclass docblocks in sync via the bundled FactoryAnnotatorTask. Requires version with PathAwareClassAnnotatorTaskInterface support."
     },
     "autoload": {

@@ -21,7 +21,7 @@ use Cake\ORM\ResultSet;
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Test\Factory\ArticleFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
-use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use CakephpFixtureFactories\TestSuite\TruncateDirtyTables;
 use PHPUnit\Framework\Attributes\DataProvider;
 use TestApp\Model\Entity\Address;
 use TestApp\Model\Entity\Country;

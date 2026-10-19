@@ -17,7 +17,7 @@ namespace CakephpFixtureFactories\Test\TestCase\Factory;
 
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Test\Factory\ArticleFactory;
-use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use CakephpFixtureFactories\TestSuite\TruncateDirtyTables;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 class FixtureInjectorTest extends TestCase

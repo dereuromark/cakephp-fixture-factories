@@ -20,7 +20,7 @@ use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpFixtureFactories\TestSuite\FactoryTableTracker;
 use CakephpFixtureFactories\TestSuite\FactoryTransactionStrategy;
 use CakephpFixtureFactories\TestSuite\LazyFactoryTransactionStrategy;
-use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use CakephpFixtureFactories\TestSuite\TruncateDirtyTables;
 use DummyGenerator\DummyGenerator;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use ReflectionMethod;

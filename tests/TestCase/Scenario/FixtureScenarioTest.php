@@ -24,7 +24,7 @@ use CakephpFixtureFactories\Test\Factory\AuthorFactory;
 use CakephpFixtureFactories\Test\Scenario\NAustralianAuthorsScenario;
 use CakephpFixtureFactories\Test\Scenario\SubFolder\SubFolderScenario;
 use CakephpFixtureFactories\Test\Scenario\TenAustralianAuthorsScenario;
-use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use CakephpFixtureFactories\TestSuite\TruncateDirtyTables;
 use PHPUnit\Framework\Attributes\DataProvider;
 use TestApp\Model\Entity\Author;
 

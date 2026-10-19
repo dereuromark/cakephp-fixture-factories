@@ -14,7 +14,7 @@ use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Factory\Sequence;
 use CakephpFixtureFactories\Generator\CakeGeneratorFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
-use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use CakephpFixtureFactories\TestSuite\TruncateDirtyTables;
 use InvalidArgumentException;
 
 /**

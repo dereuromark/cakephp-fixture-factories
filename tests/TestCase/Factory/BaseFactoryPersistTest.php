@@ -18,7 +18,7 @@ namespace CakephpFixtureFactories\Test\TestCase\Factory;
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
-use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use CakephpFixtureFactories\TestSuite\TruncateDirtyTables;
 use RuntimeException;
 use TestApp\Model\Entity\Country;
 
