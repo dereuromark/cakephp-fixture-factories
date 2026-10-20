@@ -8,7 +8,7 @@ declare(strict_types=1);
  * Redistributions of files must retain the above copyright notice.
  *
  * @copyright Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
- * @link https://webrider.de/
+ * @link https://github.com/dereuromark/cakephp-fixture-factories
  * @since 1.0.0
  * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
@@ -113,10 +113,8 @@ abstract class BaseTriggerBasedTableSniffer extends BaseTableSniffer
     }
 
     /**
-     * Get the sniffer started
-     * Typically create the dirty table collector
-     * Truncate all tables
-     * Create the spying triggers
+     * Starts the sniffer if the dirty table collector is missing: creates the collector,
+     * the triggers and the truncate procedure, then marks all tables as dirty.
      *
      * @return void
      */
@@ -128,7 +126,7 @@ abstract class BaseTriggerBasedTableSniffer extends BaseTableSniffer
                 $this->createTriggers();
             } catch (Throwable $e) {
                 $message = $e->getMessage();
-                $message .= ' ----- Please truncate your test schema manually and run the test suite again.';
+                $message .= PHP_EOL . 'Please truncate your test schema manually and run the test suite again.';
 
                 throw new RuntimeException($message);
             }

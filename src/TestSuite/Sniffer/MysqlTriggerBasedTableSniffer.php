@@ -8,7 +8,7 @@ declare(strict_types=1);
  * Redistributions of files must retain the above copyright notice.
  *
  * @copyright Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
- * @link https://webrider.de/
+ * @link https://github.com/dereuromark/cakephp-fixture-factories
  * @since 1.0.0
  * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
@@ -37,8 +37,7 @@ class MysqlTriggerBasedTableSniffer extends BaseTriggerBasedTableSniffer
         try {
             $truncate();
         } catch (Throwable $e) {
-//            // The dirty table collector might not be found because the session
-//            // was interrupted.
+            // The dirty table collector might not be found because the session was interrupted.
             $this->init();
             try {
                 $truncate();

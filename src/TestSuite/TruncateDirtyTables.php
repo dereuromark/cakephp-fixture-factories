@@ -8,7 +8,7 @@ declare(strict_types=1);
  * Redistributions of files must retain the above copyright notice.
  *
  * @copyright Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
- * @link https://webrider.de/
+ * @link https://github.com/dereuromark/cakephp-fixture-factories
  * @since 1.0.0
  * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
@@ -19,7 +19,7 @@ use Cake\TestSuite\Fixture\FixtureStrategyInterface;
 
 /**
  * Will truncate the test DBs before each test
- * This enables the developer to query her/his test database
+ * This enables the developer to query their test database
  * after a test has run.
  *
  * Trait TruncateTablesTrait
