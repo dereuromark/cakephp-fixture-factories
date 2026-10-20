@@ -54,7 +54,7 @@ class MysqlTriggerBasedTableSniffer extends BaseTriggerBasedTableSniffer
     {
         /** @var \Cake\Database\Connection $connection */
         $connection = $this->getConnection();
-        foreach ($this->getAllTablesExceptPhinxlogsAndCollector(true) as $table) {
+        foreach ($this->getScopedTables(true) as $table) {
             $connection->execute(
                 "CREATE TRIGGER {$this->getTriggerName($table)} AFTER INSERT ON `{$table}` "
                 . "FOR EACH ROW INSERT IGNORE INTO {$this->collectorName()} VALUES ('{$table}')",
@@ -120,7 +120,7 @@ class MysqlTriggerBasedTableSniffer extends BaseTriggerBasedTableSniffer
      */
     public function markAllTablesAsDirty(): void
     {
-        $tables = $this->getAllTablesExceptPhinxlogsAndCollector();
+        $tables = $this->getScopedTables();
         if (!$tables) {
             return;
         }

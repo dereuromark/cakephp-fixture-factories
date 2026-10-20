@@ -29,7 +29,7 @@ class SqliteTriggerBasedTableSniffer extends BaseTriggerBasedTableSniffer
      */
     public function collectorName(): string
     {
-        return ($this->isInTempMode() ? 'temp.' : '') . parent::collectorName();
+        return ($this->isInTemporaryMode() ? 'temp.' : '') . parent::collectorName();
     }
 
     /**
@@ -75,10 +75,10 @@ class SqliteTriggerBasedTableSniffer extends BaseTriggerBasedTableSniffer
     public function createTriggers(): void
     {
         $dirtyTable = self::DIRTY_TABLE_COLLECTOR;
-        $temporary = $this->isInTempMode() ? 'TEMPORARY' : '';
+        $temporary = $this->isInTemporaryMode() ? 'TEMPORARY' : '';
 
         $stmts = [];
-        foreach ($this->getAllTablesExceptPhinxlogsAndCollector(true) as $table) {
+        foreach ($this->getScopedTables(true) as $table) {
             $stmts[] = "
             CREATE {$temporary} TRIGGER {$this->getTriggerName($table)} AFTER INSERT ON `$table` 
                 BEGIN
@@ -117,7 +117,7 @@ class SqliteTriggerBasedTableSniffer extends BaseTriggerBasedTableSniffer
      */
     public function markAllTablesAsDirty(): void
     {
-        $tables = $this->getAllTablesExceptPhinxlogsAndCollector();
+        $tables = $this->getScopedTables();
         if (!$tables) {
             return;
         }

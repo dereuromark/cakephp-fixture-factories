@@ -15,7 +15,6 @@ declare(strict_types=1);
 
 namespace CakephpFixtureFactories\TestSuite;
 
-use Cake\Core\Configure;
 use Cake\Datasource\ConnectionManager;
 use Cake\TestSuite\Fixture\FixtureHelper;
 use Cake\TestSuite\Fixture\FixtureStrategyInterface;
@@ -37,7 +36,14 @@ class TriggerStrategy implements FixtureStrategyInterface
      *
      * @var string
      */
-    public const TEST_SUITE_LIGHT_IGNORED_CONNECTIONS_CONFIG_KEY = 'TestSuiteLightIgnoredConnections';
+    public const TEST_SUITE_LIGHT_IGNORED_CONNECTIONS_CONFIG_KEY = TriggerStrategyScope::LEGACY_IGNORED_CONNECTIONS_KEY;
+
+    protected TriggerStrategyScope $scope;
+
+    public function __construct(?TriggerStrategyScope $scope = null)
+    {
+        $this->scope = $scope ?? new TriggerStrategyScope();
+    }
 
     /**
      * @inheritDoc
@@ -79,23 +85,7 @@ class TriggerStrategy implements FixtureStrategyInterface
      */
     public function isConnectionTruncationSkipped(string $connectionName): bool
     {
-        $ignoredConnections = Configure::read(self::TEST_SUITE_LIGHT_IGNORED_CONNECTIONS_CONFIG_KEY, []);
-
-        // CakePHP 4 solves a DebugKit issue by creating an Sqlite connection
-        // in tests/bootstrap.php. This connection should be ignored.
-        if ($connectionName === 'test_debug_kit' || in_array($connectionName, $ignoredConnections)) {
-            return true;
-        }
-
-        if ((ConnectionManager::getConfig($connectionName)['skipInTestSuiteLight'] ?? false) === true) {
-            return true;
-        }
-
-        if ($connectionName === 'test' || strpos($connectionName, 'test_') === 0) {
-            return false;
-        }
-
-        return true;
+        return !$this->scope->isConnectionIncluded($connectionName);
     }
 
     /**
@@ -105,13 +95,6 @@ class TriggerStrategy implements FixtureStrategyInterface
      */
     protected function getActiveConnections(): array
     {
-        $connections = ConnectionManager::configured();
-        foreach ($connections as $i => $connectionName) {
-            if ($this->isConnectionTruncationSkipped($connectionName)) {
-                unset($connections[$i]);
-            }
-        }
-
-        return $connections;
+        return $this->scope->filterConnections(ConnectionManager::configured());
     }
 }

@@ -16,6 +16,7 @@ declare(strict_types=1);
 namespace CakephpFixtureFactories\TestSuite\Sniffer;
 
 use Cake\Datasource\ConnectionInterface;
+use CakephpFixtureFactories\TestSuite\TriggerStrategyScope;
 use Exception;
 
 abstract class BaseTableSniffer
@@ -23,7 +24,9 @@ abstract class BaseTableSniffer
     /**
      * @var array<string>
      */
-    public const MIGRATION_TABLES = ['cake_migrations', 'cake_seeds'];
+    public const MIGRATION_TABLES = TriggerStrategyScope::MIGRATION_TABLES;
+
+    protected TriggerStrategyScope $scope;
 
     /**
      * @var \Cake\Datasource\ConnectionInterface
@@ -62,9 +65,11 @@ abstract class BaseTableSniffer
 
     /**
      * @param \Cake\Datasource\ConnectionInterface $connection
+     * @param \CakephpFixtureFactories\TestSuite\TriggerStrategyScope|null $scope
      */
-    public function __construct(ConnectionInterface $connection)
+    public function __construct(ConnectionInterface $connection, ?TriggerStrategyScope $scope = null)
     {
+        $this->scope = $scope ?? new TriggerStrategyScope();
         $this->setConnection($connection);
     }
 
@@ -168,20 +173,25 @@ abstract class BaseTableSniffer
      * Covers `*phinxlog*` and the Migrations 5 `cake_migrations` / `cake_seeds` tables.
      * A trigger on those would outlive the collector when the Migrator rebuilds the schema.
      *
+     * @deprecated Use getScopedTables() instead.
+     *
      * @param bool $forceFetch
      *
      * @return array<string>
      */
     public function getAllTablesExceptPhinxlogs(bool $forceFetch = false): array
     {
-        $allTables = $this->getAllTables($forceFetch);
-        foreach ($allTables as $i => $table) {
-            if (str_contains($table, 'phinxlog') || in_array($table, static::MIGRATION_TABLES, true)) {
-                unset($allTables[$i]);
-            }
-        }
+        return $this->scope->filterMigrationTables($this->getAllTables($forceFetch));
+    }
 
-        return $allTables;
+    /**
+     * @param bool $forceFetch
+     *
+     * @return array<string>
+     */
+    public function getScopedTables(bool $forceFetch = false): array
+    {
+        return $this->scope->filterTables($this->getAllTables($forceFetch));
     }
 
     /**
