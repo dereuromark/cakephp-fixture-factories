@@ -16,7 +16,7 @@ declare(strict_types=1);
 namespace CakephpFixtureFactories\TestSuite\Sniffer;
 
 use Cake\Datasource\ConnectionInterface;
-use Exception;
+use CakephpFixtureFactories\TestSuite\TriggerStrategyScope;
 use RuntimeException;
 use Throwable;
 
@@ -27,7 +27,12 @@ abstract class BaseTriggerBasedTableSniffer extends BaseTableSniffer
      *
      * @var string
      */
-    public const DIRTY_TABLE_COLLECTOR = 'test_suite_light_dirty_tables';
+    public const DIRTY_TABLE_COLLECTOR = 'fixture_factories_dirty_tables';
+
+    /**
+     * @var string
+     */
+    public const LEGACY_DIRTY_TABLE_COLLECTOR = 'test_suite_light_dirty_tables';
 
     /**
      * @var string
@@ -95,11 +100,12 @@ abstract class BaseTriggerBasedTableSniffer extends BaseTableSniffer
 
     /**
      * @param \Cake\Datasource\ConnectionInterface $connection
+     * @param \CakephpFixtureFactories\TestSuite\TriggerStrategyScope|null $scope
      */
-    public function __construct(ConnectionInterface $connection)
+    public function __construct(ConnectionInterface $connection, ?TriggerStrategyScope $scope = null)
     {
+        parent::__construct($connection, $scope);
         $this->mode = $this->getDefaultMode($connection);
-        parent::__construct($connection);
     }
 
     /**
@@ -133,6 +139,25 @@ abstract class BaseTriggerBasedTableSniffer extends BaseTableSniffer
             $this->createTruncateDirtyTablesProcedure();
             $this->markAllTablesAsDirty();
         }
+    }
+
+    /**
+     * Drops the triggers and collector a test-suite-light setup left behind, so init() reinstalls them.
+     *
+     * @return void
+     */
+    public function migrateLegacyCollector(): void
+    {
+        if (!in_array(self::LEGACY_DIRTY_TABLE_COLLECTOR, $this->getAllTables(true), true)) {
+            return;
+        }
+
+        $this->dropTriggers();
+        // Also drop a new collector, otherwise init() would skip reinstalling the triggers.
+        $this->dropDirtyTableCollector();
+        /** @var \Cake\Database\Connection $connection */
+        $connection = $this->getConnection();
+        $connection->execute('DROP TABLE IF EXISTS ' . self::LEGACY_DIRTY_TABLE_COLLECTOR);
     }
 
     /**
@@ -179,20 +204,15 @@ abstract class BaseTriggerBasedTableSniffer extends BaseTableSniffer
     /**
      * Fetch all tables, excluded from Phinx related and the dirty table collector.
      *
+     * @deprecated Use getScopedTables() instead.
+     *
      * @param bool $forceFetch
      *
      * @return array<string>
      */
     public function getAllTablesExceptPhinxlogsAndCollector(bool $forceFetch = false): array
     {
-        $allTables = $this->getAllTablesExceptPhinxlogs($forceFetch);
-
-        $key = array_search($this->collectorName(), $allTables, true);
-        if ($key !== false) {
-            unset($allTables[$key]);
-        }
-
-        return $allTables;
+        return $this->getScopedTables($forceFetch);
     }
 
     /**
@@ -202,7 +222,7 @@ abstract class BaseTriggerBasedTableSniffer extends BaseTableSniffer
      */
     public function createDirtyTableCollector(): void
     {
-        $temporary = $this->isInTempMode() ? 'TEMPORARY' : '';
+        $temporary = $this->isInTemporaryMode() ? 'TEMPORARY' : '';
         $dirtyTable = self::DIRTY_TABLE_COLLECTOR;
 
         /** @var \Cake\Database\Connection $connection */
@@ -228,23 +248,43 @@ abstract class BaseTriggerBasedTableSniffer extends BaseTableSniffer
     }
 
     /**
-     * The dirty table collector is not temporary
+     * Keep the dirty table collector in a permanent table.
      *
      * @return void
      */
-    public function activateMainMode(): void
+    public function activatePermanentMode(): void
     {
         $this->setMode(self::PERM_MODE);
     }
 
     /**
-     * The dirty table collector is temporary
+     * Keep the dirty table collector in a temporary table.
+     *
+     * @return void
+     */
+    public function activateTemporaryMode(): void
+    {
+        $this->setMode(self::TEMP_MODE);
+    }
+
+    /**
+     * @deprecated Use activatePermanentMode() instead.
+     *
+     * @return void
+     */
+    public function activateMainMode(): void
+    {
+        $this->activatePermanentMode();
+    }
+
+    /**
+     * @deprecated Use activateTemporaryMode() instead.
      *
      * @return void
      */
     public function activateTempMode(): void
     {
-        $this->setMode(self::TEMP_MODE);
+        $this->activateTemporaryMode();
     }
 
     /**
@@ -274,31 +314,21 @@ abstract class BaseTriggerBasedTableSniffer extends BaseTableSniffer
     }
 
     /**
-     * Defines the default mode for the dirty table collector.
+     * Returns the configured collector mode, PERM when none is set.
      *
      * @param \Cake\Datasource\ConnectionInterface $connection
-     *
-     * @throws \Exception
      *
      * @return string
      */
     public function getDefaultMode(ConnectionInterface $connection): string
     {
-        $mode = $connection->config()[self::MODE_KEY] ?? self::PERM_MODE;
-        if (!in_array($mode, [self::TEMP_MODE, self::PERM_MODE])) {
-            $msg = self::MODE_KEY . ' can only be equal to ' . self::PERM_MODE . ' or ' . self::TEMP_MODE;
-
-            throw new Exception($msg);
-        }
-        assert(is_string($mode));
-
-        return $mode;
+        return $this->scope->collectorMode($connection->configName());
     }
 
     /**
      * @return bool
      */
-    public function isInTempMode(): bool
+    public function isInTemporaryMode(): bool
     {
         return $this->getMode() === self::TEMP_MODE;
     }
@@ -306,8 +336,28 @@ abstract class BaseTriggerBasedTableSniffer extends BaseTableSniffer
     /**
      * @return bool
      */
-    public function isInMainMode(): bool
+    public function isInPermanentMode(): bool
     {
         return $this->getMode() === self::PERM_MODE;
+    }
+
+    /**
+     * @deprecated Use isInTemporaryMode() instead.
+     *
+     * @return bool
+     */
+    public function isInTempMode(): bool
+    {
+        return $this->isInTemporaryMode();
+    }
+
+    /**
+     * @deprecated Use isInPermanentMode() instead.
+     *
+     * @return bool
+     */
+    public function isInMainMode(): bool
+    {
+        return $this->isInPermanentMode();
     }
 }

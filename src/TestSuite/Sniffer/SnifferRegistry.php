@@ -20,6 +20,7 @@ use Cake\Database\Driver\Postgres;
 use Cake\Database\Driver\Sqlite;
 use Cake\Datasource\ConnectionInterface;
 use Cake\Datasource\ConnectionManager;
+use CakephpFixtureFactories\TestSuite\TriggerStrategyScope;
 use PHPUnit\Framework\Exception;
 use RuntimeException;
 
@@ -45,6 +46,9 @@ class SnifferRegistry
         $snifferName = self::getConnectionSnifferName($connectionName);
         $obj = new $snifferName(self::getConnection($connectionName));
         assert($obj instanceof BaseTableSniffer);
+        if ($obj instanceof BaseTriggerBasedTableSniffer) {
+            $obj->migrateLegacyCollector();
+        }
         self::$sniffers[$connectionName] = $obj;
 
         return $obj;
@@ -106,11 +110,11 @@ class SnifferRegistry
      */
     public static function getConnectionSnifferName(string $connectionName): string
     {
-        $config = ConnectionManager::getConfig($connectionName);
         $driver = '';
 
-        if (isset($config['tableSniffer'])) {
-            $snifferName = $config['tableSniffer'];
+        $configuredSniffer = (new TriggerStrategyScope())->tableSniffer($connectionName);
+        if ($configuredSniffer !== null) {
+            $snifferName = $configuredSniffer;
         } else {
             try {
                 $driver = self::getConnection($connectionName)->config()['driver'];

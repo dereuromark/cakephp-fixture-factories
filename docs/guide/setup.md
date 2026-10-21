@@ -202,16 +202,33 @@ Supported drivers: MySQL, Postgres and SQLite. The test database user needs perm
 
 - Migration bookkeeping tables (`*phinxlog*`, `cake_migrations`, `cake_seeds`) get no trigger.
 - A table created after the triggers were installed has no trigger, so it is not cleaned. Run your migrations before the first test, which is the usual `Migrator` setup.
-- Skip a connection with `Configure::write('TestSuiteLightIgnoredConnections', ['test_other'])`, or with `'skipInTestSuiteLight' => true` in its config.
-- Set `'dirtyTableCollectorMode' => 'TEMP'` on a connection to keep the collector in a temporary table.
-- Set `'tableSniffer' => MySniffer::class` on a connection to use your own sniffer.
+
+The strategy reads its settings from the `FixtureFactories` config key:
+
+```php
+'FixtureFactories' => [
+    'ignoredConnections' => ['test_other'],
+    'collectorMode' => 'TEMP', // Or key by connection name, e.g. ['test_other' => 'TEMP']
+    'tableSniffer' => MySniffer::class,
+],
+```
+
+The legacy `TestSuiteLightIgnoredConnections`, `skipInTestSuiteLight`, `dirtyTableCollectorMode`, and per-connection `tableSniffer` keys are deprecated but still read. For `collectorMode` and `tableSniffer`, a connection-specific entry takes precedence over a plain string, then the legacy connection setting, then the default. Ignored connections from both Configure keys are combined.
 
 ### Migrating from `vierge-noire/cakephp-test-suite-light`
 
-The strategy is a port of `CakephpTestSuiteLight\Fixture\TriggerStrategy`. The collector table and trigger names are unchanged, so an existing test database keeps working. Swap the namespaces and remove the package:
+The strategy is a port of `CakephpTestSuiteLight\Fixture\TriggerStrategy`. The collector is now `fixture_factories_dirty_tables`. On first use, an existing test-suite-light database is migrated automatically: the old `test_suite_light_dirty_tables` table and its triggers are dropped, and the triggers are installed again for the new collector. Swap the namespaces and remove the package:
 
 | Before | After |
 |---|---|
 | `CakephpTestSuiteLight\Fixture\TriggerStrategy` | `CakephpFixtureFactories\TestSuite\TriggerStrategy` |
 | `CakephpTestSuiteLight\Fixture\TruncateDirtyTables` | `CakephpFixtureFactories\TestSuite\TruncateDirtyTables` |
 | `CakephpTestSuiteLight\Sniffer\*` | `CakephpFixtureFactories\TestSuite\Sniffer\*` |
+
+If you call sniffer methods directly, these names changed. The old ones still work but are deprecated:
+
+| Deprecated | Use |
+|---|---|
+| `activateMainMode()` / `isInMainMode()` | `activatePermanentMode()` / `isInPermanentMode()` |
+| `activateTempMode()` / `isInTempMode()` | `activateTemporaryMode()` / `isInTemporaryMode()` |
+| `getAllTablesExceptPhinxlogs()` / `getAllTablesExceptPhinxlogsAndCollector()` | `getScopedTables()` |

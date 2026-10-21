@@ -60,7 +60,7 @@ class PostgresTriggerBasedTableSniffer extends BaseTriggerBasedTableSniffer
         $dirtyTable = self::DIRTY_TABLE_COLLECTOR;
 
         $stmts = [];
-        foreach ($this->getAllTablesExceptPhinxlogsAndCollector(true) as $table) {
+        foreach ($this->getScopedTables(true) as $table) {
             $stmts[] = "
                 CREATE OR REPLACE FUNCTION mark_table_{$table}_as_dirty() RETURNS TRIGGER LANGUAGE PLPGSQL AS $$
                 DECLARE
@@ -127,7 +127,7 @@ class PostgresTriggerBasedTableSniffer extends BaseTriggerBasedTableSniffer
      */
     public function markAllTablesAsDirty(): void
     {
-        $tables = $this->getAllTablesExceptPhinxlogsAndCollector();
+        $tables = $this->getScopedTables();
         if (!$tables) {
             return;
         }
