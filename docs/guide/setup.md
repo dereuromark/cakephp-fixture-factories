@@ -13,7 +13,7 @@ The section below covers the rarer case of using this plugin with a **standalone
 
 For applications that use `cakephp/orm` directly (without the rest of the Cake framework), use whatever method your test stack provides for managing the database, or opt for the universal [test-database-cleaner](https://github.com/vierge-noire/test-database-cleaner).
 
-Only the factories work in this mode. The `bake` and `persist` commands and `FactoryTransactionStrategy` need the full `cakephp/cakephp` package.
+Only the factories work in this mode. The `bake` and `persist` commands and the test suite strategies need the full `cakephp/cakephp` package.
 
 Define your DB connections in your test `bootstrap.php` as described in the [CakePHP cookbook](https://book.cakephp.org/5/en/orm/database-basics.html#configuration).
 
@@ -174,3 +174,61 @@ final class MyEagerStrategy extends \CakephpFixtureFactories\TestSuite\FactoryTr
     protected string $primaryConnection = 'test_main';
 }
 ```
+
+## Trigger Strategy
+
+`TriggerStrategy` cleans up without a wrapping transaction. On first use it installs an `AFTER INSERT` trigger on every table of the `test` connection and every `test_*` connection. The triggers record the touched tables in a collector table. At the start of each test, only those tables are truncated. Nothing happens at teardown.
+
+Use it when a test cannot run inside one transaction:
+
+- the code under test commits, rolls back or opens its own transactions
+- the test writes through more than one connection or process
+- the test runs DDL, which commits implicitly on MySQL
+- you want to inspect the test database after a failing test, since its data stays until the next test starts
+
+When none of these apply, `FactoryTransactionStrategy` is faster: a rollback costs less than truncating tables.
+
+```php
+'TestSuite' => [
+    'fixtureStrategy' => \CakephpFixtureFactories\TestSuite\TriggerStrategy::class,
+],
+```
+
+On CakePHP 5.0-5.1, use the `CakephpFixtureFactories\TestSuite\TruncateDirtyTables` trait in your base test case instead.
+
+Supported drivers: MySQL, Postgres and SQLite. The test database user needs permission to create triggers (and procedures, on MySQL).
+
+### Notes
+
+- Migration bookkeeping tables (`*phinxlog*`, `cake_migrations`, `cake_seeds`) get no trigger.
+- A table created after the triggers were installed has no trigger, so it is not cleaned. Run your migrations before the first test, which is the usual `Migrator` setup.
+
+The strategy reads its settings from the `FixtureFactories` config key:
+
+```php
+'FixtureFactories' => [
+    'ignoredConnections' => ['test_other'],
+    'collectorMode' => 'TEMP', // Or key by connection name, e.g. ['test_other' => 'TEMP']
+    'tableSniffer' => MySniffer::class,
+],
+```
+
+The legacy `TestSuiteLightIgnoredConnections`, `skipInTestSuiteLight`, `dirtyTableCollectorMode`, and per-connection `tableSniffer` keys are deprecated but still read. For `collectorMode` and `tableSniffer`, a connection-specific entry takes precedence over a plain string, then the legacy connection setting, then the default. Ignored connections from both Configure keys are combined.
+
+### Migrating from `vierge-noire/cakephp-test-suite-light`
+
+The strategy is a port of `CakephpTestSuiteLight\Fixture\TriggerStrategy`. The collector is now `fixture_factories_dirty_tables`. On first use, an existing test-suite-light database is migrated automatically: the old `test_suite_light_dirty_tables` table and its triggers are dropped, and the triggers are installed again for the new collector. Swap the namespaces and remove the package:
+
+| Before | After |
+|---|---|
+| `CakephpTestSuiteLight\Fixture\TriggerStrategy` | `CakephpFixtureFactories\TestSuite\TriggerStrategy` |
+| `CakephpTestSuiteLight\Fixture\TruncateDirtyTables` | `CakephpFixtureFactories\TestSuite\TruncateDirtyTables` |
+| `CakephpTestSuiteLight\Sniffer\*` | `CakephpFixtureFactories\TestSuite\Sniffer\*` |
+
+If you call sniffer methods directly, these names changed. The old ones still work but are deprecated:
+
+| Deprecated | Use |
+|---|---|
+| `activateMainMode()` / `isInMainMode()` | `activatePermanentMode()` / `isInPermanentMode()` |
+| `activateTempMode()` / `isInTempMode()` | `activateTemporaryMode()` / `isInTemporaryMode()` |
+| `getAllTablesExceptPhinxlogs()` / `getAllTablesExceptPhinxlogsAndCollector()` | `getScopedTables()` |

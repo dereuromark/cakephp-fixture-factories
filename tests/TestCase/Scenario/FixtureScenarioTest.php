@@ -8,7 +8,7 @@ declare(strict_types=1);
  * Redistributions of files must retain the above copyright notice.
  *
  * @copyright Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
- * @link https://webrider.de/
+ * @link https://github.com/vierge-noire/cakephp-fixture-factories
  * @since 2.3.0
  * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
@@ -24,7 +24,7 @@ use CakephpFixtureFactories\Test\Factory\AuthorFactory;
 use CakephpFixtureFactories\Test\Scenario\NAustralianAuthorsScenario;
 use CakephpFixtureFactories\Test\Scenario\SubFolder\SubFolderScenario;
 use CakephpFixtureFactories\Test\Scenario\TenAustralianAuthorsScenario;
-use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use CakephpFixtureFactories\TestSuite\TruncateDirtyTables;
 use PHPUnit\Framework\Attributes\DataProvider;
 use TestApp\Model\Entity\Author;
 

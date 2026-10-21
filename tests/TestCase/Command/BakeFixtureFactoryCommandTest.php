@@ -8,7 +8,7 @@ declare(strict_types=1);
  * Redistributions of files must retain the above copyright notice.
  *
  * @copyright Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
- * @link https://webrider.de/
+ * @link https://github.com/vierge-noire/cakephp-fixture-factories
  * @since 1.0.0
  * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
@@ -22,7 +22,7 @@ use Cake\Core\Configure;
 use CakephpFixtureFactories\Codegen\DefaultDataGuesser;
 use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\Test\Util\TestCaseWithFixtureBaking;
-use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use CakephpFixtureFactories\TestSuite\TruncateDirtyTables;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\DataProvider;

@@ -10,7 +10,7 @@ use CakephpFixtureFactories\Factory\BaseFactory;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\TestSuite\FactoryTableTracker;
 use CakephpFixtureFactories\TestSuite\FactoryTransactionStrategy;
-use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use CakephpFixtureFactories\TestSuite\TruncateDirtyTables;
 
 /**
  * Coverage for {@see LazyTransactionTrait}: opting a single test

@@ -8,7 +8,7 @@ declare(strict_types=1);
  * Redistributions of files must retain the above copyright notice.
  *
  * @copyright Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
- * @link https://webrider.de/
+ * @link https://github.com/vierge-noire/cakephp-fixture-factories
  * @since 1.0.0
  * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
@@ -20,7 +20,7 @@ use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Error\FixtureFactoryException;
 use CakephpFixtureFactories\Test\Factory\ArticleFactory;
 use CakephpFixtureFactories\Test\Factory\AuthorFactory;
-use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use CakephpFixtureFactories\TestSuite\TruncateDirtyTables;
 
 class BaseFactoryArrayNotationTest extends TestCase
 {

@@ -8,7 +8,7 @@ declare(strict_types=1);
  * Redistributions of files must retain the above copyright notice.
  *
  * @copyright Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
- * @link https://webrider.de/
+ * @link https://github.com/vierge-noire/cakephp-fixture-factories
  * @since 2.8.0
  * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
@@ -19,7 +19,7 @@ use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Test\Factory\BillFactory;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
-use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use CakephpFixtureFactories\TestSuite\TruncateDirtyTables;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 class BaseFactoryDisablePrimaryKeyOffsetTest extends TestCase

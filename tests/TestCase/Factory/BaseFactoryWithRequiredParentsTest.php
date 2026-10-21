@@ -8,7 +8,7 @@ declare(strict_types=1);
  * Redistributions of files must retain the above copyright notice.
  *
  * @copyright Copyright (c) 2020 Juan Pablo Ramirez and Nicolas Masson
- * @link https://webrider.de/
+ * @link https://github.com/vierge-noire/cakephp-fixture-factories
  * @since 2.0.0
  * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
@@ -32,7 +32,7 @@ use CakephpFixtureFactories\Test\Factory\RequiredParentsCompositeOptInTableWitho
 use CakephpFixtureFactories\Test\Factory\RequiredParentsExcludeAuthorFactory;
 use CakephpFixtureFactories\Test\Factory\RequiredParentsForeignKeyFalseOptInFactory;
 use CakephpFixtureFactories\Test\Factory\RequiredParentsOverrideAuthorFactory;
-use CakephpTestSuiteLight\Fixture\TruncateDirtyTables;
+use CakephpFixtureFactories\TestSuite\TruncateDirtyTables;
 use InvalidArgumentException;
 use ReflectionMethod;
 use TestApp\Test\Factory\AuthorFactory;
