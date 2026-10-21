@@ -208,12 +208,12 @@ The strategy reads its settings from the `FixtureFactories` config key:
 ```php
 'FixtureFactories' => [
     'ignoredConnections' => ['test_other'],
-    'collectorMode' => 'TEMP', // Or ['test_other' => 'TEMP']
-    'tableSniffer' => MySniffer::class, // Or ['test_other' => MySniffer::class]
+    'collectorMode' => 'TEMP', // Or key by connection name, e.g. ['test_other' => 'TEMP']
+    'tableSniffer' => MySniffer::class,
 ],
 ```
 
-For `collectorMode` and `tableSniffer`, a connection-specific entry takes precedence over a plain string, then the legacy connection setting, then the default. The legacy `TestSuiteLightIgnoredConnections`, `skipInTestSuiteLight`, `dirtyTableCollectorMode`, and per-connection `tableSniffer` keys are deprecated but still read. Ignored connections from both Configure keys are combined.
+The legacy `TestSuiteLightIgnoredConnections`, `skipInTestSuiteLight`, `dirtyTableCollectorMode`, and per-connection `tableSniffer` keys are deprecated but still read. For `collectorMode` and `tableSniffer`, a connection-specific entry takes precedence over a plain string, then the legacy connection setting, then the default. Ignored connections from both Configure keys are combined.
 
 ### Migrating from `vierge-noire/cakephp-test-suite-light`
 
