@@ -289,13 +289,13 @@ class DataCompiler
         if ($isToOne) {
             $associationFieldName = $this->getAssociationPropertyName($associationName);
             if (
-                $this->dataFromInstantiation instanceof EntityInterface &&
-                $this->dataFromInstantiation->has($associationFieldName)
+                $this->dataFromInstantiation instanceof EntityInterface
+                && $this->dataFromInstantiation->has($associationFieldName)
             ) {
                 $factory = $factory->state($this->dataFromInstantiation->get($associationFieldName));
             } elseif (
-                is_array($this->dataFromInstantiation) &&
-                isset($this->dataFromInstantiation[$associationFieldName])
+                is_array($this->dataFromInstantiation)
+                && isset($this->dataFromInstantiation[$associationFieldName])
             ) {
                 $factory = $factory->state($this->dataFromInstantiation[$associationFieldName]);
             }

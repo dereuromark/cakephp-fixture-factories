@@ -197,13 +197,13 @@ class AssociationBuilder
         $forwardForeignKey = (array)$forwardAssociation->getForeignKey();
         foreach ($associatedTable->associations() as $association) {
             if (
-                $association instanceof BelongsTo &&
-                (
-                    $association->getClassName() === $currentTableName ||
-                    $association->getTarget()->getAlias() === $currentTableName ||
-                    $association->getTarget()->getRegistryAlias() === $currentTableName
-                ) &&
-                (array)$association->getForeignKey() === $forwardForeignKey
+                $association instanceof BelongsTo
+                && (
+                    $association->getClassName() === $currentTableName
+                    || $association->getTarget()->getAlias() === $currentTableName
+                    || $association->getTarget()->getRegistryAlias() === $currentTableName
+                )
+                && (array)$association->getForeignKey() === $forwardForeignKey
             ) {
                 return $association;
             }

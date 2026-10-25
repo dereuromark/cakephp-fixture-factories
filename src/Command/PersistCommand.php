@@ -98,7 +98,7 @@ class PersistCommand extends Command
             $factory = $this->countFactory($args, $factory);
             $factory = $this->with($args, $factory);
             $factory = $this->attachMethod($args, $factory, $io);
-        } catch (FactoryNotFoundException | InvalidArgumentException $e) {
+        } catch (FactoryNotFoundException|InvalidArgumentException $e) {
             $io->error($e->getMessage());
             $this->abort();
         }

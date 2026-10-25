@@ -143,7 +143,7 @@ class ModelEventsHandler
             $reflection = new ReflectionFunction(Closure::fromCallable($listener));
 
             return $reflection->getClosureThis();
-        } catch (ReflectionException | TypeError) {
+        } catch (ReflectionException|TypeError) {
             return null;
         }
     }

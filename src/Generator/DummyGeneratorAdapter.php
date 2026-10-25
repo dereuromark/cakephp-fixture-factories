@@ -173,7 +173,7 @@ class DummyGeneratorAdapter implements GeneratorInterface
             }
 
             return $this->generator->$method(...$arguments);
-        } catch (BadMethodCallException | InvalidArgumentException $e) {
+        } catch (BadMethodCallException|InvalidArgumentException $e) {
             throw new BadMethodCallException("Method `$method` not found on DummyGenerator");
         }
     }
