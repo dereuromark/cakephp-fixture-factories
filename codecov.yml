@@ -1,0 +1,7 @@
+codecov:
+  notify:
+    # Wait for the sqlite, mysql and pgsql reports before computing status.
+    after_n_builds: 3
+
+comment:
+  after_n_builds: 3
