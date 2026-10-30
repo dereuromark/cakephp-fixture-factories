@@ -2,8 +2,13 @@ name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   tests:
@@ -11,15 +16,26 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php-version: ['8.3', '8.5']
-        db-type: [sqlite, mysql, pgsql]
-        composer-type: [lowest, stable, dev]
+        include:
+          # Database axis: every driver on both PHP versions, with coverage on 8.3.
+          - { php-version: '8.3', db-type: sqlite, composer-type: stable, coverage: true }
+          - { php-version: '8.3', db-type: mysql, composer-type: stable, coverage: true }
+          - { php-version: '8.3', db-type: pgsql, composer-type: stable, coverage: true }
+          - { php-version: '8.5', db-type: sqlite, composer-type: stable }
+          - { php-version: '8.5', db-type: mysql, composer-type: stable }
+          - { php-version: '8.5', db-type: pgsql, composer-type: stable }
+          # Dependency axis: version bugs do not depend on the driver, pgsql
+          # stays for its sequence and NOT NULL strictness.
+          - { php-version: '8.3', db-type: sqlite, composer-type: lowest }
+          - { php-version: '8.3', db-type: pgsql, composer-type: lowest }
+          - { php-version: '8.5', db-type: sqlite, composer-type: dev }
 
     name: Tests - PHP ${{ matrix.php-version }} & ${{ matrix.db-type }} & ${{ matrix.composer-type }}
 
     services:
       postgres:
-        image: postgres
+        # An empty image skips the service on non-pgsql jobs.
+        image: ${{ matrix.db-type == 'pgsql' && 'postgres' || '' }}
         ports:
           - 5432:5432
         env:
@@ -36,7 +52,7 @@ jobs:
           php-version: ${{ matrix.php-version }}
           extensions: mbstring, intl, apcu, pdo_${{ matrix.db-type }}
           ini-values: apc.enable_cli = 1
-          coverage: pcov
+          coverage: ${{ matrix.coverage && 'pcov' || 'none' }}
 
       - name: Update composer
         run: composer self-update --snapshot
@@ -59,17 +75,19 @@ jobs:
           if [ ${{ matrix.db-type }} == 'mysql' ]; then
             sudo service mysql start && mysql -h 127.0.0.1 -u root -proot -e 'CREATE DATABASE IF NOT EXISTS test_fixture_factories;';
           fi
-          if [[ '${{ matrix.php-version }}' == '8.3' && '${{ matrix.composer-type }}' == 'stable' ]]; then
+          if [[ '${{ matrix.coverage }}' == 'true' ]]; then
             composer ${{ matrix.db-type }} -- --with-coverage
           else
             composer ${{ matrix.db-type }}
           fi
 
       - name: Upload coverage reports to Codecov
-        if: success() && matrix.php-version == '8.3'
+        if: success() && matrix.coverage
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.xml
+          flags: ${{ matrix.db-type }}
 
   checks:
     runs-on: ubuntu-latest
