@@ -20,6 +20,7 @@ use Cake\Database\Driver\Postgres;
 use Cake\Datasource\EntityInterface;
 use Cake\ORM\Association;
 use Cake\ORM\Association\BelongsTo;
+use Cake\ORM\Association\BelongsToMany;
 use Cake\ORM\Association\HasOne;
 use Cake\Utility\Hash;
 use Cake\Utility\Inflector;
@@ -1005,7 +1006,37 @@ class DataCompiler
                 $associationData = array_merge($associationData, $this->getManyEntities($factory));
             }
         }
+        $association = $this->getAssociationByPropertyName($associationName);
+        if ($association instanceof BelongsToMany) {
+            $this->hydrateJoinData($association, $associationData);
+        }
         $entity->set($associationName, $associationData);
+    }
+
+    /**
+     * Cake only saves `_joinData` that is an entity; a plain array (set by
+     * `has()` pivot data on the child factory) is skipped and the join row
+     * is written without the pivot columns.
+     *
+     * @param \Cake\ORM\Association\BelongsToMany<\Cake\ORM\Table> $association Association
+     * @param array<\Cake\Datasource\EntityInterface> $entities Target entities
+     *
+     * @return void
+     */
+    private function hydrateJoinData(BelongsToMany $association, array $entities): void
+    {
+        $property = $association->getJunctionProperty();
+        foreach ($entities as $target) {
+            $joinData = $target->get($property);
+            if (!is_array($joinData)) {
+                continue;
+            }
+            $target->set(
+                $property,
+                $association->junction()->newEntity($joinData, ['validate' => false]),
+                ['setter' => false],
+            );
+        }
     }
 
     /**
