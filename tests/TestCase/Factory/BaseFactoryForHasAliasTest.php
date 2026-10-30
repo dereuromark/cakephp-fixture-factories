@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace CakephpFixtureFactories\Test\TestCase\Factory;
 
+use Cake\Datasource\EntityInterface;
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Test\Factory\AddressFactory;
 use CakephpFixtureFactories\Test\Factory\ArticleFactory;
@@ -74,11 +75,42 @@ class BaseFactoryForHasAliasTest extends TestCase
 
         $this->assertNotEmpty($author->articles, 'has() with alias must register the Articles association.');
         $joinData = $author->articles[0]->_joinData ?? null;
-        $this->assertNotNull($joinData, 'Pivot data must be threaded into _joinData on the related entity.');
-        // Build-time `_joinData` is an array; post-save Cake hydrates it into
-        // an entity. The test uses build() so we get the array form.
-        $this->assertSame('X', is_array($joinData) ? $joinData['pivot_marker'] : $joinData->get('pivot_marker'));
-        $this->assertSame(42, is_array($joinData) ? $joinData['pivot_count'] : $joinData->get('pivot_count'));
+        $this->assertInstanceOf(EntityInterface::class, $joinData, 'Pivot data must be threaded into _joinData on the related entity.');
+        $this->assertSame('X', $joinData->get('pivot_marker'));
+        $this->assertSame(42, $joinData->get('pivot_count'));
+    }
+
+    public function testHasPivotDataIsPersistedOnSave(): void
+    {
+        $article = ArticleFactory::new()
+            ->without('Authors')
+            ->has(AuthorFactory::new()->count(2), 'Authors', ['featured' => true])
+            ->save();
+
+        $rows = $this->getTableLocator()->get('ArticlesAuthors')
+            ->find()
+            ->where(['article_id' => $article->id])
+            ->all()
+            ->toArray();
+
+        $this->assertCount(2, $rows);
+        foreach ($rows as $row) {
+            $this->assertTrue($row->featured);
+        }
+    }
+
+    public function testHasPivotDataIsPersistedOnSaveFromInverseSide(): void
+    {
+        $author = AuthorFactory::new()
+            ->has(ArticleFactory::new()->without('Authors'), 'Articles', ['featured' => true])
+            ->save();
+
+        $row = $this->getTableLocator()->get('ArticlesAuthors')
+            ->find()
+            ->where(['author_id' => $author->id])
+            ->firstOrFail();
+
+        $this->assertTrue($row->featured);
     }
 
     public function testForFallsBackToAutoResolveWhenAliasIsNull(): void
