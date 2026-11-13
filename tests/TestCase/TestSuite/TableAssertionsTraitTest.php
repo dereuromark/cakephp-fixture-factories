@@ -14,6 +14,7 @@ use Cake\ORM\Entity;
 use Cake\TestSuite\TestCase;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
+use CakephpFixtureFactories\Test\Factory\PluginCountryFactory;
 use CakephpFixtureFactories\TestSuite\TableAssertionsTrait;
 use CakephpFixtureFactories\TestSuite\TruncateDirtyTables;
 use InvalidArgumentException;
@@ -290,5 +291,23 @@ class TableAssertionsTraitTest extends TestCase
         }
         $this->assertNotNull($caught, 'Expected InvalidArgumentException for non-BaseFactory class.');
         $this->assertMatchesRegularExpression('/must extend/i', $caught->getMessage());
+    }
+
+    /**
+     * The plugin table shares its bare alias with the app table, which is
+     * what the entity's source resolves to.
+     */
+    public function testAssertEntityExistsQueriesTheTableThatSavedTheEntity(): void
+    {
+        $factory = PluginCountryFactory::new();
+        $finds = 0;
+        $factory->getTable()->getEventManager()->on('Model.beforeFind', function () use (&$finds): void {
+            $finds++;
+        });
+
+        $country = $factory->save();
+        $this->assertEntityExists($country);
+
+        $this->assertSame(1, $finds);
     }
 }

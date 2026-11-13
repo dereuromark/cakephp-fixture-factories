@@ -91,7 +91,7 @@ class ArticlesControllerTest extends AppTestCase
 `assertEntityMissing()` refuses entities that were never persisted — both the "no primary key" case and the application-assigned-PK case (UUID / string IDs) where the entity carries a PK at build time but was never written. The guard checks `isNew()` first and the PK as a fallback. Save the entity (then delete it) before asserting it is missing.
 :::
 
-The optional `$factoryClass` argument on the entity assertions scopes the lookup to that factory's table. Use it when several factory variants share a bare table alias on different connections — without it, the entity's `getSource()` is consulted, which may resolve to whichever factory variant most-recently registered with the locator.
+The optional `$factoryClass` argument on the entity assertions scopes the lookup to that factory's table. Without it, an entity saved by a factory is looked up in the table that saved it, so app and plugin tables that share a bare alias on different connections stay apart. Pass the factory class for entities no factory saved (loaded or built by hand): those are resolved through `getSource()`, which may point at another table of the same alias.
 
 `$criteria` is passed straight to `Factory::query()->where(...)`, so the same operator forms work — e.g. `['title LIKE' => '%Cake%']`, `['status IN' => ['draft', 'published']]`, `['author_id' => $author->id]`.
 

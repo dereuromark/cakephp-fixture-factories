@@ -18,6 +18,7 @@ namespace CakephpFixtureFactories\ORM;
 use Cake\Datasource\EntityInterface;
 use Cake\ORM\Table;
 use CakephpFixtureFactories\Factory\DataCompiler;
+use WeakMap;
 
 /**
  * Class FactoryTableBeforeSave
@@ -26,6 +27,14 @@ use CakephpFixtureFactories\Factory\DataCompiler;
  */
 final class FactoryTableBeforeSave
 {
+    /**
+     * The table each entity was saved through. An entity only knows its bare
+     * source alias, which another table of that name may hold in the locator.
+     *
+     * @var \WeakMap<\Cake\Datasource\EntityInterface, \Cake\ORM\Table>|null
+     */
+    private static ?WeakMap $savedThrough = null;
+
     /**
      * @var \Cake\ORM\Table
      */
@@ -57,6 +66,19 @@ final class FactoryTableBeforeSave
         $handler = new self($table, $entity);
 
         $handler->handleUniqueFields();
+
+        self::$savedThrough ??= new WeakMap();
+        self::$savedThrough[$entity] = $table;
+    }
+
+    /**
+     * @param \Cake\Datasource\EntityInterface $entity Entity saved by a factory
+     *
+     * @return \Cake\ORM\Table|null The table that saved it, null if no factory table did
+     */
+    public static function savedThrough(EntityInterface $entity): ?Table
+    {
+        return self::$savedThrough[$entity] ?? null;
     }
 
     /**
