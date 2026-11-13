@@ -405,6 +405,18 @@ class AssociationBuilder
     }
 
     /**
+     * Every factory appended under an alias, oldest first.
+     *
+     * @param string $associationName Association
+     *
+     * @return array<int, \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>>
+     */
+    public function getAssociationHistory(string $associationName): array
+    {
+        return $this->associationHistory[$associationName] ?? [];
+    }
+
+    /**
      * Add an associated factory to the BaseFactory
      *
      * @param string $associationName Association
