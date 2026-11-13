@@ -925,7 +925,7 @@ class DataCompiler
                 // root failure. No-op when no test strategy is active (this
                 // plugin's contract is test-suite use with the eager strategy).
                 FactoryTransactionStrategy::getActiveInstance()
-                    ?->ensureTransaction($association->getTarget()->getConnection());
+                    ?->ensureTransaction($factory->getTable()->getConnection());
 
                 // Match the nested-save semantics the cascade path applies:
                 // tag the entity so FactoryTableBeforeSave treats it as
@@ -934,7 +934,9 @@ class DataCompiler
                 // associations normally — only THIS belongsTo edge is bypassed.
                 $associatedEntity->set(self::IS_ASSOCIATED, true);
                 $this->markEntityDirtyIfNew($associatedEntity);
-                $target = $association->getTarget();
+                // The factory's table, not the association target: only that one
+                // carries the model events and behaviors the factory listens to.
+                $target = $factory->getTable();
                 // Mirror BaseFactory::doPersist(): the tracker drives
                 // teardown/truncation and diagnostics, so this independent
                 // save must register too.
@@ -943,10 +945,7 @@ class DataCompiler
                 // Use the factory's own save options (checkRules / atomic /
                 // associated list) so this persist is configured the same
                 // way as the cascade path would have configured it.
-                $target->saveOrFail(
-                    $associatedEntity,
-                    $factory->getSaveOptionsForAssociated(),
-                );
+                $afterSaveFired = $factory->saveDetached($associatedEntity);
                 // Finalize: Cake 5.4+ defers clean()/setNew(false) until the
                 // outer transaction closes; the cascade path's
                 // finalizePersistedEntities() compensates, mirror it here so
@@ -961,7 +960,7 @@ class DataCompiler
                 // factory under it. Since the parent is not attached to the
                 // root, replayAssociatedAfterSaveEvents() on the root can't
                 // discover the subtree — replay it here instead.
-                $associatedEntity = $factory->replayAssociatedAfterSaveForTree($associatedEntity);
+                $associatedEntity = $factory->replayAssociatedAfterSaveForTree($associatedEntity, $afterSaveFired);
                 $associatedEntity = $factory->applyAfterSaveCallbacksToEntity($associatedEntity);
             }
 
