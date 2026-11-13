@@ -16,6 +16,7 @@ declare(strict_types=1);
 namespace CakephpFixtureFactories\Factory;
 
 use ArrayObject;
+use Cake\Core\App;
 use Cake\Core\Configure;
 use Cake\Datasource\EntityInterface;
 use Cake\Event\EventInterface;
@@ -2754,10 +2755,7 @@ abstract class BaseFactory
         // mirroring the disjuncts in resolveDirectionalAssociation().
         if ($factory !== null) {
             $factoryRoot = $factory->getRootTableRegistryName();
-            $targets = $association->getClassName() === $factoryRoot
-                || $association->getTarget()->getRegistryAlias() === $factoryRoot
-                || $association->getName() === $factoryRoot;
-            if (!$targets) {
+            if (!self::associationTargets($association, $factoryRoot)) {
                 throw new RuntimeException(sprintf(
                     "%s::%s() alias '%s' targets `%s`, but `%s` builds `%s`. "
                     . 'Pass a factory whose root table matches the alias target, '
@@ -2942,6 +2940,32 @@ abstract class BaseFactory
     }
 
     /**
+     * Whether an association points at the table a factory builds.
+     *
+     * A `className` given as a class name is compared by class: the registry
+     * alias of such a target is the association name, not the table's.
+     *
+     * @param \Cake\ORM\Association $association Association on the source table
+     * @param string $registryName Root table registry name of the related factory
+     *
+     * @return bool
+     */
+    private static function associationTargets(Association $association, string $registryName): bool
+    {
+        $className = $association->getClassName();
+        if (
+            $className === $registryName
+            || $association->getTarget()->getRegistryAlias() === $registryName
+            || $association->getName() === $registryName
+        ) {
+            return true;
+        }
+
+        return str_contains($className, '\\')
+            && ltrim($className, '\\') === App::className($registryName, 'Model/Table', 'Table');
+    }
+
+    /**
      * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Related factory
      * @param bool $belongsTo Whether to resolve a belongsTo association
      *
@@ -2956,10 +2980,7 @@ abstract class BaseFactory
         /** @var array<int, array{alias: string, foreignKey: string}> $matches */
         $matches = [];
         foreach ($sourceTable->associations() as $association) {
-            $associationTargetsFactory = $association->getClassName() === $targetRegistryAlias
-                || $association->getTarget()->getRegistryAlias() === $targetRegistryAlias
-                || $association->getName() === $targetRegistryAlias;
-            if (!$associationTargetsFactory) {
+            if (!self::associationTargets($association, $targetRegistryAlias)) {
                 continue;
             }
             $isBelongsTo = $association instanceof BelongsTo;
