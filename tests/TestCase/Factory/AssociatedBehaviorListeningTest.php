@@ -12,6 +12,7 @@ use CakephpFixtureFactories\Test\Factory\BillFactory;
 use CakephpFixtureFactories\Test\Factory\CityFactory;
 use CakephpFixtureFactories\Test\Factory\CountryFactory;
 use CakephpFixtureFactories\Test\Factory\CustomerFactory;
+use CakephpFixtureFactories\Test\Factory\SluggableCountryFactory;
 use CakephpFixtureFactories\TestSuite\TruncateDirtyTables;
 
 class AssociatedBehaviorListeningTest extends TestCase
@@ -42,6 +43,15 @@ class AssociatedBehaviorListeningTest extends TestCase
             ->save();
 
         $this->assertNull($city->get('country')->get('slug'));
+    }
+
+    public function testBelongsToFactoryListensToItsConfiguredBehaviors(): void
+    {
+        $city = CityFactory::new()
+            ->with('Countries', SluggableCountryFactory::new(['name' => 'Some Country']))
+            ->save();
+
+        $this->assertSame('Some-Country', $city->get('country')->get('slug'));
     }
 
     public function testNestedFactoryListensToItsBehaviors(): void
