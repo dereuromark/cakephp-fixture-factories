@@ -18,6 +18,7 @@ namespace CakephpFixtureFactories\Factory;
 use ArrayObject;
 use Cake\Core\Configure;
 use Cake\Datasource\EntityInterface;
+use Cake\Event\EventInterface;
 use Cake\Event\EventManagerInterface;
 use Cake\I18n\I18n;
 use Cake\ORM\Association;
@@ -33,6 +34,7 @@ use CakephpFixtureFactories\TestSuite\FactoryTableTracker;
 use CakephpFixtureFactories\TestSuite\FactoryTransactionStrategy;
 use InvalidArgumentException;
 use RuntimeException;
+use SplObjectStorage;
 use Throwable;
 
 /**
@@ -734,7 +736,11 @@ abstract class BaseFactory
             $strategy->ensureTransaction($table->getConnection());
         }
 
+        /** @var \SplObjectStorage<\Cake\Datasource\EntityInterface, bool> $afterSaveFired */
+        $afterSaveFired = new SplObjectStorage();
+        $restore = [];
         try {
+            $this->routeAssociatedSavesThroughFactoryTables($this, $afterSaveFired, $restore);
             if (count($entities) === 1) {
                 $saved = [$table->saveOrFail($entities[0], $this->getSaveOptions())];
             } else {
@@ -750,10 +756,15 @@ abstract class BaseFactory
                 (int)$exception->getCode(),
                 $exception,
             );
+        } finally {
+            foreach (array_reverse($restore) as $undo) {
+                $undo();
+            }
         }
 
         $this->finalizePersistedEntities($saved, $table);
-        $saved = $this->replayAssociatedAfterSaveEvents($saved, $this);
+        $visited = [];
+        $saved = $this->replayAssociatedAfterSaveEvents($saved, $this, $visited, $afterSaveFired);
         $saved = $this->applyCallbacks($saved, $this->afterSaveCallbacks);
 
         return $saved;
@@ -800,6 +811,75 @@ abstract class BaseFactory
     }
 
     /**
+     * Point each association at its associated factory's table for the
+     * duration of the save.
+     *
+     * Cake's cascading save writes an associated entity through the
+     * association target. That is whatever instance the locator held when the
+     * association was first resolved, so the model events and behaviors the
+     * associated factory listens to were skipped.
+     *
+     * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory Factory whose associations are routed
+     * @param \SplObjectStorage<\Cake\Datasource\EntityInterface, bool> $afterSaveFired Collects entities whose Model.afterSave already ran
+     * @param array<\Closure(): void> $restore Collects callbacks undoing the routing
+     * @param array<int, true> $visited Recursion guard
+     * @param array<int, array{original: \Cake\ORM\Table, target: \Cake\ORM\Table}> $routed Targets chosen per association
+     *
+     * @return void
+     */
+    private function routeAssociatedSavesThroughFactoryTables(
+        BaseFactory $factory,
+        SplObjectStorage $afterSaveFired,
+        array &$restore,
+        array &$visited = [],
+        array &$routed = [],
+    ): void {
+        foreach ($factory->getAssociationBuilder()->getAssociations() as $associationName => $associationFactory) {
+            $association = $factory->getAssociationBuilder()->getAssociation($associationName);
+            $target = $associationFactory->getTable();
+            $associationId = spl_object_id($association);
+            if (isset($routed[$associationId])) {
+                // Two branches share this association and want different tables:
+                // neither can win, so the save uses the original target.
+                if ($routed[$associationId]['target'] !== $target) {
+                    $association->setTarget($routed[$associationId]['original']);
+                }
+            } else {
+                $original = $association->getTarget();
+                $routed[$associationId] = compact('original', 'target');
+                // A belongsToMany junction is wired to the target instance, so that one stays.
+                if ($original !== $target && !$association instanceof BelongsToMany) {
+                    $restore[] = static function () use ($association, $original): void {
+                        $association->setTarget($original);
+                    };
+                    $association->setTarget($target);
+                }
+            }
+
+            if (isset($visited[spl_object_id($associationFactory)])) {
+                continue;
+            }
+            $visited[spl_object_id($associationFactory)] = true;
+
+            $record = static function (EventInterface $event, EntityInterface $entity) use ($afterSaveFired): void {
+                $afterSaveFired->offsetSet($entity, true);
+            };
+            $restore[] = static function () use ($target, $record): void {
+                $target->getEventManager()->off('Model.afterSave', $record);
+            };
+            $target->getEventManager()->on('Model.afterSave', $record);
+
+            $this->routeAssociatedSavesThroughFactoryTables(
+                $associationFactory,
+                $afterSaveFired,
+                $restore,
+                $visited,
+                $routed,
+            );
+        }
+    }
+
+    /**
      * Replay child-factory Model.afterSave listeners and afterSave callbacks
      * for saved associated entities.
      *
@@ -815,17 +895,22 @@ abstract class BaseFactory
      * @param array<\Cake\Datasource\EntityInterface> $entities
      * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $factory
      * @param array<string, bool> $visited Replay guard
+     * @param \SplObjectStorage<\Cake\Datasource\EntityInterface, bool>|null $afterSaveFired Entities whose Model.afterSave ran during the save
      *
      * @return array<\Cake\Datasource\EntityInterface>
      */
-    private function replayAssociatedAfterSaveEvents(array $entities, BaseFactory $factory, array &$visited = []): array
-    {
+    private function replayAssociatedAfterSaveEvents(
+        array $entities,
+        BaseFactory $factory,
+        array &$visited = [],
+        ?SplObjectStorage $afterSaveFired = null,
+    ): array {
         foreach ($factory->getAssociationBuilder()->getAssociations() as $associationName => $associationFactory) {
             $property = $factory->getAssociationBuilder()->getAssociation($associationName)->getProperty();
             foreach ($entities as $index => $entity) {
                 $value = $entity->get($property);
                 if ($value instanceof EntityInterface) {
-                    $entity->set($property, $this->replayAssociatedAfterSaveForEntity($value, $associationFactory, $visited));
+                    $entity->set($property, $this->replayAssociatedAfterSaveForEntity($value, $associationFactory, $visited, $afterSaveFired));
                     $entity->setDirty($property, false);
                     $entities[$index] = $entity;
 
@@ -838,7 +923,7 @@ abstract class BaseFactory
                 $updated = [];
                 foreach ($value as $item) {
                     if ($item instanceof EntityInterface) {
-                        $updated[] = $this->replayAssociatedAfterSaveForEntity($item, $associationFactory, $visited);
+                        $updated[] = $this->replayAssociatedAfterSaveForEntity($item, $associationFactory, $visited, $afterSaveFired);
                     } else {
                         $updated[] = $item;
                     }
@@ -856,6 +941,7 @@ abstract class BaseFactory
      * @param \Cake\Datasource\EntityInterface $entity Associated entity
      * @param \CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface> $associationFactory Associated factory
      * @param array<string, bool> $visited Replay guard
+     * @param \SplObjectStorage<\Cake\Datasource\EntityInterface, bool>|null $afterSaveFired Entities whose Model.afterSave ran during the save
      *
      * @return \Cake\Datasource\EntityInterface
      */
@@ -863,6 +949,7 @@ abstract class BaseFactory
         EntityInterface $entity,
         BaseFactory $associationFactory,
         array &$visited,
+        ?SplObjectStorage $afterSaveFired = null,
     ): EntityInterface {
         $key = $this->buildAssociatedReplayKey($associationFactory, $entity);
         if (isset($visited[$key])) {
@@ -875,15 +962,17 @@ abstract class BaseFactory
         // finalized before any afterSave logic inspects them.
         $associationFactory->finalizePersistedEntities([$entity], $associationFactory->getTable());
 
-        $options = new ArrayObject(['associated' => true, 'atomic' => false]);
-        $associationFactory->getTable()->dispatchEvent('Model.afterSave', compact('entity', 'options'));
+        if ($afterSaveFired === null || !$afterSaveFired->offsetExists($entity)) {
+            $options = new ArrayObject(['associated' => true, 'atomic' => false]);
+            $associationFactory->getTable()->dispatchEvent('Model.afterSave', compact('entity', 'options'));
+        }
 
         $entities = [$entity];
         if ($associationFactory->afterSaveCallbacks !== []) {
             $entities = $associationFactory->applyCallbacks($entities, $associationFactory->afterSaveCallbacks);
         }
 
-        $entities = $this->replayAssociatedAfterSaveEvents($entities, $associationFactory, $visited);
+        $entities = $this->replayAssociatedAfterSaveEvents($entities, $associationFactory, $visited, $afterSaveFired);
 
         return $entities[0];
     }

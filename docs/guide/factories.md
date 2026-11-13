@@ -288,6 +288,16 @@ $article = ArticleFactory::new()->listeningToBehaviors('Sluggable')->build();
 
 Or set them as defaults in `configure()`.
 
+An associated factory keeps its own listening setup when it is saved through its parent, for `belongsTo`, `hasOne` and `hasMany` associations:
+
+```php
+$city = CityFactory::new()
+    ->with('Countries', CountryFactory::new()->listeningToBehaviors('Sluggable'))
+    ->save();
+```
+
+The same holds for `listeningToModelEvents()`. A `belongsToMany` target is saved through the table the association already resolved to, so save the associated entities first and pass them in, or use a global behavior.
+
 You can also declare a behavior globally — useful for behaviors that touch many tables and need to populate not-nullable fields. Configure global behaviors via `FixtureFactories.testFixtureGlobalBehaviors`. The root table must already listen for the behavior:
 
 ```php
