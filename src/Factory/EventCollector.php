@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace CakephpFixtureFactories\Factory;
 
+use Cake\Core\App;
 use Cake\Core\Configure;
 use Cake\Datasource\ConnectionManager;
 use Cake\Event\EventManagerInterface;
@@ -145,13 +146,29 @@ class EventCollector
         // bare alias, matching the behavior CakePHP itself documents for
         // explicit `set()` calls on the table locator.
         foreach ([$this->getRootTableAlias(), $this->rootTableRegistryName] as $alias) {
-            if ($alias === $registryAlias) {
+            if ($alias === $registryAlias || !$this->ownsAlias($alias, $table)) {
                 continue;
             }
             $locator->set($alias, $table);
         }
 
         return $this->table = $table;
+    }
+
+    /**
+     * A plugin table shares its bare alias with a same-named app table. Cake
+     * resolves that alias to the app class, so the plugin table must not claim it.
+     *
+     * @param string $alias Registry alias to mirror the table under
+     * @param \Cake\ORM\Table $table Factory table
+     *
+     * @return bool
+     */
+    private function ownsAlias(string $alias, Table $table): bool
+    {
+        $conventionalClass = App::className($alias, 'Model/Table', 'Table');
+
+        return $conventionalClass === null || $table instanceof $conventionalClass;
     }
 
     /**
