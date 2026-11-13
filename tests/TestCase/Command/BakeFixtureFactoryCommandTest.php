@@ -72,6 +72,7 @@ class BakeFixtureFactoryCommandTest extends TestCaseWithFixtureBaking
      */
     public array $pluginTables = [
         'Bills',
+        'Countries',
         'Customers',
     ];
 
