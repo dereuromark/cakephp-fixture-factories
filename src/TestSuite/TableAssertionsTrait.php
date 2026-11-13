@@ -13,6 +13,7 @@ namespace CakephpFixtureFactories\TestSuite;
 use Cake\Datasource\EntityInterface;
 use Cake\ORM\Table;
 use CakephpFixtureFactories\Factory\BaseFactory;
+use CakephpFixtureFactories\ORM\FactoryTableBeforeSave;
 use CakephpFixtureFactories\ORM\FactoryTableRegistry;
 use InvalidArgumentException;
 
@@ -169,7 +170,8 @@ trait TableAssertionsTrait
     /**
      * Assert that the given entity still exists in the database (by primary key).
      *
-     * By default, the underlying table is resolved through the entity's
+     * By default, the lookup uses the table a factory saved the entity
+     * through. Entities that no factory saved are resolved through their
      * `getSource()` plus the factory locator. Pass `$factoryClass` to query
      * via an explicit factory's table instead — this disambiguates multi-
      * connection setups where the same bare alias is shared by several
@@ -305,8 +307,8 @@ trait TableAssertionsTrait
      * When `$factoryClass` is passed, it scopes the lookup unambiguously —
      * useful for multi-connection / multi-listener setups where the bare
      * alias gets reused by several factory variants and the most-recently-
-     * registered one wins on the locator. Otherwise the entity's
-     * `getSource()` is used.
+     * registered one wins on the locator. Otherwise the table a factory
+     * saved the entity through is used, then the entity's `getSource()`.
      *
      * @param \Cake\Datasource\EntityInterface $entity
      * @param class-string<\CakephpFixtureFactories\Factory\BaseFactory<\Cake\Datasource\EntityInterface>>|null $factoryClass
@@ -319,6 +321,10 @@ trait TableAssertionsTrait
             self::guardFactoryClass($factoryClass);
 
             return $factoryClass::table();
+        }
+        $table = FactoryTableBeforeSave::savedThrough($entity);
+        if ($table !== null) {
+            return $table;
         }
         $source = $entity->getSource();
         if ($source === '') {
